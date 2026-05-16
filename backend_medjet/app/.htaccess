@@ -1,0 +1,8 @@
+<FilesMatch "\.(php)$">
+    <RequireAll>
+        Require all granted
+    </RequireAll>
+</FilesMatch>
+
+ErrorDocument 404 /public/error.php?code=404
+ErrorDocument 500 /public/error.php?code=500
