@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "510933674549",
+    "project_id": "medjat",
+    "storage_bucket": "medjat.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:510933674549:android:9bf1923ea4bbc5d1c35f7c",
+        "android_client_info": {
+          "package_name": "com.khawarizmie.medjat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAmOmpXWHxt7bkW4wRt7T94Mz1ycXDYNXI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
