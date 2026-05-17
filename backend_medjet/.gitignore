@@ -1,0 +1,31 @@
+# ============================================
+# Medjat Backend - .gitignore
+# ============================================
+
+# Secrets & runtime (CRITICAL - never commit)
+config/env.php
+core/firebase_credentials.json
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Composer
+vendor/
+
+# Cache runtime files
+cache_system/cache_storage/*.cache
+
+# Uploads
+uploads/
+
+# Temp / scratch PHP
+test_*.php
+describe_*.php

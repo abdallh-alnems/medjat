@@ -1,0 +1,66 @@
+class PayrollModel {
+  final int id;
+  final int employeeId;
+  final String? employeeName;
+  final int month;
+  final int year;
+  final double baseSalary;
+  final double totalDeductions;
+  final double totalOvertime;
+  final double netSalary;
+  final String status;
+  final DateTime? generatedAt;
+
+  PayrollModel({
+    required this.id,
+    required this.employeeId,
+    this.employeeName,
+    required this.month,
+    required this.year,
+    this.baseSalary = 0,
+    this.totalDeductions = 0,
+    this.totalOvertime = 0,
+    this.netSalary = 0,
+    this.status = 'draft',
+    this.generatedAt,
+  });
+
+  factory PayrollModel.fromJson(Map<String, dynamic> json) {
+    return PayrollModel(
+      id: json['id'] ?? 0,
+      employeeId: json['employee_id'] ?? 0,
+      employeeName: json['employee_name'],
+      month: json['month'] ?? 1,
+      year: json['year'] ?? 2026,
+      baseSalary: (json['base_salary'] as num?)?.toDouble() ?? 0,
+      totalDeductions: (json['total_deductions'] as num?)?.toDouble() ?? 0,
+      totalOvertime: (json['total_overtime'] as num?)?.toDouble() ?? 0,
+      netSalary: (json['net_salary'] as num?)?.toDouble() ?? 0,
+      status: json['status'] ?? 'draft',
+      generatedAt: json['generated_at'] != null
+          ? DateTime.tryParse(json['generated_at'])
+          : null,
+    );
+  }
+
+  String get statusLabel {
+    switch (status) {
+      case 'draft':
+        return 'مسودة';
+      case 'approved':
+        return 'معتمد';
+      case 'paid':
+        return 'مدفوع';
+      default:
+        return status;
+    }
+  }
+
+  String get monthLabel {
+    const months = [
+      '', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+      'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+    ];
+    return '${months[month]} $year';
+  }
+}

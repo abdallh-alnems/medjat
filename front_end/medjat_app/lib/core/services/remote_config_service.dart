@@ -6,11 +6,9 @@ import '../utils/version_compare.dart';
 class UpdateCheckResult {
   final bool needsForceUpdate;
   final bool isMaintenance;
-  final String maintenanceMessage;
   UpdateCheckResult({
     required this.needsForceUpdate,
     required this.isMaintenance,
-    required this.maintenanceMessage,
   });
 }
 
@@ -27,7 +25,6 @@ class RemoteConfigService extends GetxService {
     remoteConfig.setDefaults(const {
       'min_required_version': '0.0.0',
       'maintenance_enabled': false,
-      'maintenance_message': 'التطبيق تحت الصيانة حالياً، سنعود قريباً',
     });
   }
 
@@ -37,7 +34,6 @@ class RemoteConfigService extends GetxService {
     } catch (_) {}
 
     final maintenanceEnabled = remoteConfig.getBool('maintenance_enabled');
-    final maintenanceMessage = remoteConfig.getString('maintenance_message');
     final minVersion = remoteConfig.getString('min_required_version');
 
     bool needsUpdate = false;
@@ -50,7 +46,6 @@ class RemoteConfigService extends GetxService {
     return UpdateCheckResult(
       needsForceUpdate: needsUpdate,
       isMaintenance: maintenanceEnabled,
-      maintenanceMessage: maintenanceMessage,
     );
   }
 

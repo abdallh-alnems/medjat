@@ -1,0 +1,125 @@
+# Medjat API - Apache Configuration
+
+# Enable Rewrite Engine
+RewriteEngine On
+
+# Pass HTTP Basic Authentication to PHP
+RewriteCond %{HTTP:Authorization} ^(.+)$
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header always append X-Frame-Options SAMEORIGIN
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header unset Server
+    Header unset X-Powered-By
+</IfModule>
+
+# CORS Headers for API
+<IfModule mod_headers.c>
+    <FilesMatch "\.(php)$">
+        Header always set Access-Control-Max-Age "3600"
+    </FilesMatch>
+</IfModule>
+
+# Handle OPTIONS requests for CORS
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^(.*)$ $1 [R=200,L]
+
+# Block malicious requests
+<IfModule mod_rewrite.c>
+    RewriteCond %{QUERY_STRING} (union|select|insert|delete|update|cast|create|char|convert|alter|declare|exec|script|drop|truncate) [NC]
+    RewriteRule .* - [F,L]
+
+    RewriteCond %{QUERY_STRING} (javascript:|vbscript:|onload=|onerror=|onclick=|<script|</script) [NC]
+    RewriteRule .* - [F,L]
+
+    RewriteCond %{QUERY_STRING} (\.\./|\.\.\\|%2e%2e%2f|%2e%2e%5c) [NC]
+    RewriteRule .* - [F,L]
+
+    RewriteCond %{QUERY_STRING} (base64|eval|system|shell_exec|exec|passthru) [NC]
+    RewriteRule .* - [F,L]
+</IfModule>
+
+# File Access Restrictions
+<Files "config.php">
+    Require all denied
+</Files>
+
+<Files "connect.php">
+    Require all denied
+</Files>
+
+<Files "*.log">
+    Require all denied
+</Files>
+
+<Files ".env*">
+    Require all denied
+</Files>
+
+<Files "firebase_credentials.json">
+    Require all denied
+</Files>
+
+<FilesMatch "\.(json)$">
+    Require all denied
+</FilesMatch>
+
+# Directory Browsing
+Options -Indexes
+
+# Error Pages
+ErrorDocument 400 /public/error.php?code=400
+ErrorDocument 401 /public/error.php?code=401
+ErrorDocument 403 /public/error.php?code=403
+ErrorDocument 404 /public/error.php?code=404
+ErrorDocument 429 /public/error.php?code=429
+ErrorDocument 500 /public/error.php?code=500
+
+# Compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE application/json
+    AddOutputFilterByType DEFLATE text/html
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE text/javascript
+    AddOutputFilterByType DEFLATE text/plain
+    AddOutputFilterByType DEFLATE text/xml
+</IfModule>
+
+# Browser Caching
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType application/json "access plus 5 minutes"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/jpg "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+</IfModule>
+
+# PHP Settings
+<IfModule mod_php.c>
+    php_flag display_errors Off
+    php_flag log_errors On
+    php_value memory_limit 256M
+    php_value max_execution_time 300
+    php_value max_input_time 60
+    php_value post_max_size 32M
+    php_value upload_max_filesize 32M
+    php_value session.cookie_httponly 1
+    php_value session.use_strict_mode 1
+    php_value session.cookie_secure 1
+    php_value expose_php Off
+    php_value allow_url_fopen Off
+    php_value allow_url_include Off
+</IfModule>
+
+# Prevent access to sensitive file extensions
+<FilesMatch "\.(htaccess|htpasswd|ini|log|sh|inc|bak|sql|conf)$">
+    Require all denied
+</FilesMatch>

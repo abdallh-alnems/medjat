@@ -1,0 +1,28 @@
+<?php
+
+return [
+    'login_success' => 'Login successful',
+    'logout_success' => 'Logged out successfully',
+    'check_in_success' => 'Check-in successful',
+    'check_out_success' => 'Check-out successful',
+    'already_checked_in' => 'Already checked in today',
+    'gps_out_of_range' => 'You are outside the branch area',
+    'invalid_qr' => 'Invalid QR code for this branch',
+    'employee_not_found' => 'Employee not found',
+    'branch_not_found' => 'Branch not found',
+    'tenant_not_found' => 'Company not found',
+    'tenant_suspended' => 'Company account is suspended',
+    'subscription_expired' => 'Subscription has expired',
+    'permission_denied' => 'Permission denied for this action',
+    'payroll_generated' => 'Payroll generated successfully',
+    'leave_applied' => 'Leave request submitted',
+    'leave_approved' => 'Leave approved',
+    'leave_rejected' => 'Leave rejected',
+    'absence_converted' => 'Absence converted to leave',
+    'warning_issued' => 'Warning issued',
+    'document_uploaded' => 'Document uploaded successfully',
+    'rules_updated' => 'Rules updated successfully',
+    'profile_updated' => 'Profile updated',
+    'offline_synced' => 'Offline data synced',
+    'force_update' => 'Please update the app to continue',
+];

@@ -1,0 +1,28 @@
+<?php
+
+return [
+    'login_success' => 'تم تسجيل الدخول بنجاح',
+    'logout_success' => 'تم تسجيل الخروج بنجاح',
+    'check_in_success' => 'تم تسجيل الحضور بنجاح',
+    'check_out_success' => 'تم تسجيل الانصراف بنجاح',
+    'already_checked_in' => 'تم تسجيل الحضور مسبقاً اليوم',
+    'gps_out_of_range' => 'أنت خارج نطاق الفرع',
+    'invalid_qr' => 'كود QR غير صالح لهذا الفرع',
+    'employee_not_found' => 'لم يتم العثور على ملف الموظف',
+    'branch_not_found' => 'لم يتم العثور على الفرع',
+    'tenant_not_found' => 'لم يتم العثور على الشركة',
+    'tenant_suspended' => 'حساب الشركة موقوف',
+    'subscription_expired' => 'الاشتراك منتهي',
+    'permission_denied' => 'ليس لديك صلاحية لهذا الإجراء',
+    'payroll_generated' => 'تم إنشاء كشوف الرواتب',
+    'leave_applied' => 'تم تقديم طلب الإجازة',
+    'leave_approved' => 'تم الموافقة على الإجازة',
+    'leave_rejected' => 'تم رفض الإجازة',
+    'absence_converted' => 'تم تحويل الغياب إلى إجازة',
+    'warning_issued' => 'تم إصدار إنذار',
+    'document_uploaded' => 'تم رفع المستند بنجاح',
+    'rules_updated' => 'تم تحديث القواعد',
+    'profile_updated' => 'تم تحديث البيانات',
+    'offline_synced' => 'تم مزامنة البيانات المحلية',
+    'force_update' => 'يرجى تحديث التطبيق للاستمرار',
+];

@@ -3,23 +3,33 @@ import '../../class/crud.dart';
 import 'app_routes.dart';
 import '../theme/app_spacing.dart';
 import '../../services/remote_config_service.dart';
+import '../../package/rating_app.dart';
 import '../../widget/app_gate.dart';
 import '../../../data/data_source/remote/auth_data/auth_data.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
+import '../../../logic/bindings/home_binding.dart';
+import '../../../logic/bindings/attendance_binding.dart';
 import '../../../view/screen/auth/login_screen.dart';
 import '../../../view/screen/auth/forgot_password_screen.dart';
 import '../../../view/screen/splash/splash_screen.dart';
 import '../../../view/screen/home/home_screen.dart';
+import '../../../view/screen/attendance/scan_qr_screen.dart';
+import '../../../view/screen/attendance/attendance_success_screen.dart';
 import '../../../view/screen/placeholder_screen.dart';
 import '../../../core/shared/layout/tab_shell.dart';
+import '../../services/connectivity_service.dart';
+import '../../services/location_service.dart';
 
 class AppBindings extends Bindings {
   @override
   void dependencies() {
     Get.lazyPut<CRUD>(() => CRUD());
     Get.lazyPut<AuthData>(() => AuthData());
+    Get.put<ConnectivityService>(ConnectivityService(), permanent: true);
+    Get.put<LocationService>(LocationService(), permanent: true);
     Get.put<AuthController>(AuthController(), permanent: true);
     Get.put<RemoteConfigService>(RemoteConfigService(), permanent: true);
+    Get.put<RateMyAppController>(RateMyAppController(), permanent: true);
   }
 }
 
@@ -58,19 +68,20 @@ List<GetPage> getPages = [
         ],
       ),
     ),
-    binding: TabBinding(),
+    binding: HomeBinding(),
     transition: Transition.fadeIn,
     transitionDuration: AppMotion.transition,
   ),
   GetPage(
     name: AppRoutes.scanQr,
-    page: () => const PlaceholderScreen(title: 'مسح QR'),
+    page: () => const ScanQrScreen(),
+    binding: AttendanceBinding(),
     transition: Transition.fadeIn,
     transitionDuration: AppMotion.transition,
   ),
   GetPage(
     name: AppRoutes.attendanceSuccess,
-    page: () => const PlaceholderScreen(title: 'تم التسجيل'),
+    page: () => const AttendanceSuccessScreen(),
   ),
   GetPage(
     name: AppRoutes.attendanceDetail,

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -22,12 +23,11 @@ void main() async {
   final remoteConfig = FirebaseRemoteConfig.instance;
   await remoteConfig.setConfigSettings(RemoteConfigSettings(
     fetchTimeout: const Duration(seconds: 10),
-    minimumFetchInterval: Duration.zero,
+    minimumFetchInterval: kDebugMode ? Duration.zero : const Duration(hours: 1),
   ));
   await remoteConfig.setDefaults(const {
     'min_required_version': '0.0.0',
     'maintenance_enabled': false,
-    'maintenance_message': 'التطبيق تحت الصيانة حالياً، سنعود قريباً',
   });
 
   SystemChrome.setPreferredOrientations([

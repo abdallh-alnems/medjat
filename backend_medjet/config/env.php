@@ -1,8 +1,8 @@
 <?php
 
-define('DB_DSN', getenv('DB_DSN') ?: 'mysql:host=localhost;dbname=medjat;charset=utf8mb4');
+define('DB_DSN', getenv('DB_DSN') ?: 'mysql:host=localhost;port=8889;dbname=medjat;charset=utf8mb4');
 define('DB_USER', getenv('DB_USER') ?: 'root');
-define('DB_PASS', getenv('DB_PASS') ?: '');
+define('DB_PASS', getenv('DB_PASS') ?: 'root');
 
 define('API_VERSION', '1.0');
 define('API_RATE_LIMIT', 100);

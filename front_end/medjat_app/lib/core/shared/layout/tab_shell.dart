@@ -9,7 +9,7 @@ class TabShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<_TabController>();
+    final controller = Get.find<TabNavController>();
     final isLight = Theme.of(context).brightness == Brightness.light;
     final colors = isLight ? AppColors.light : AppColors.dark;
 
@@ -58,7 +58,7 @@ class TabShell extends StatelessWidget {
   }
 }
 
-class _TabController extends GetxController {
+class TabNavController extends GetxController {
   final currentIndex = 0.obs;
   void changeTab(int index) => currentIndex.value = index;
 }
@@ -66,6 +66,6 @@ class _TabController extends GetxController {
 class TabBinding extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<_TabController>(() => _TabController());
+    Get.lazyPut<TabNavController>(() => TabNavController());
   }
 }

@@ -1,61 +1,90 @@
+import 'dart:async';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import '../constant/theme/app_colors.dart';
 import '../constant/theme/app_spacing.dart';
-import '../services/remote_config_service.dart';
 
 class AppGate extends StatefulWidget {
   final Widget child;
   const AppGate({super.key, required this.child});
+
+  static _AppGateState? _instance;
+
+  static void trigger(bool enabled) {
+    _instance?._setMaintenance(enabled);
+  }
 
   @override
   State<AppGate> createState() => _AppGateState();
 }
 
 class _AppGateState extends State<AppGate> with WidgetsBindingObserver {
-  bool _checking = true;
   bool _isMaintenance = false;
-  bool _needsForceUpdate = false;
-  String _maintenanceMessage = '';
+  bool _isChecking = true;
+  StreamSubscription<RemoteConfigUpdate>? _rcSubscription;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _check();
+    AppGate._instance = this;
+    _init();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _rcSubscription?.cancel();
+    AppGate._instance = null;
     super.dispose();
+  }
+
+  Future<void> _init() async {
+    try {
+      final rc = FirebaseRemoteConfig.instance;
+      await rc.setConfigSettings(RemoteConfigSettings(
+        fetchTimeout: const Duration(seconds: 5),
+        minimumFetchInterval:
+            kDebugMode ? Duration.zero : const Duration(hours: 1),
+      ));
+      await rc.fetchAndActivate();
+      _isMaintenance = rc.getBool('maintenance_enabled');
+      _rcSubscription = rc.onConfigUpdated.listen((_) async {
+        await rc.activate();
+        if (!mounted) return;
+        final m = rc.getBool('maintenance_enabled');
+        _setMaintenance(m);
+      });
+    } catch (_) {}
+
+    if (mounted) setState(() => _isChecking = false);
+  }
+
+  void _setMaintenance(bool enabled) {
+    if (!mounted || enabled == _isMaintenance) return;
+    setState(() => _isMaintenance = enabled);
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _check();
+    if (state == AppLifecycleState.resumed) {
+      _checkNow();
+    }
   }
 
-  Future<void> _check() async {
+  Future<void> _checkNow() async {
     try {
-      final service = Get.find<RemoteConfigService>();
-      final result = await service.check();
-      if (!mounted) return;
-      setState(() {
-        _isMaintenance = result.isMaintenance;
-        _needsForceUpdate = result.needsForceUpdate;
-        _maintenanceMessage = result.maintenanceMessage;
-        _checking = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _checking = false);
-    }
+      final rc = FirebaseRemoteConfig.instance;
+      await rc.fetchAndActivate();
+      final m = rc.getBool('maintenance_enabled');
+      _setMaintenance(m);
+    } catch (_) {}
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_checking) {
+    if (_isChecking) {
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(
@@ -66,16 +95,14 @@ class _AppGateState extends State<AppGate> with WidgetsBindingObserver {
       );
     }
 
-    if (_isMaintenance) return _MaintenanceScreen(message: _maintenanceMessage);
-    if (_needsForceUpdate) return const _ForceUpdateScreen();
+    if (_isMaintenance) return const _MaintenanceScreen();
 
     return widget.child;
   }
 }
 
 class _MaintenanceScreen extends StatelessWidget {
-  final String message;
-  const _MaintenanceScreen({required this.message});
+  const _MaintenanceScreen();
 
   @override
   Widget build(BuildContext context) {
@@ -83,109 +110,47 @@ class _MaintenanceScreen extends StatelessWidget {
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: colors.canvas,
         body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.s5),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colors.warning.withValues(alpha: 0.12),
+          child: Center(
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: AppSpacing.s5),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 96,
+                    height: 96,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: colors.warning.withValues(alpha: 0.12),
+                    ),
+                    child: Icon(Icons.build_rounded,
+                        size: 48, color: colors.warning),
                   ),
-                  child: Icon(Icons.build_rounded, size: 48, color: colors.warning),
-                ),
-                const SizedBox(height: AppSpacing.s6),
-                Text(
-                  'تحت الصيانة',
-                  style: TextStyle(
-                    fontFamily: 'IBM Plex Sans Arabic',
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: colors.textPrimary,
+                  const SizedBox(height: AppSpacing.s6),
+                  Text(
+                    'تحت الصيانة',
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: colors.textPrimary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.s3),
-                Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'IBM Plex Sans Arabic',
-                    fontSize: 16,
-                    color: colors.textSecondary,
-                    height: 1.5,
+                  const SizedBox(height: AppSpacing.s3),
+                  Text(
+                    'التطبيق تحت الصيانة حالياً، سنعود قريباً',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 16,
+                      color: colors.textSecondary,
+                      height: 1.5,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ForceUpdateScreen extends StatelessWidget {
-  const _ForceUpdateScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return PopScope(
-      canPop: false,
-      child: Scaffold(
-        backgroundColor: colors.canvas,
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.s5),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colors.brandSubtle,
-                  ),
-                  child: Icon(Icons.system_update_rounded, size: 48, color: colors.brand),
-                ),
-                const SizedBox(height: AppSpacing.s6),
-                Text(
-                  'تحديث مطلوب',
-                  style: TextStyle(
-                    fontFamily: 'IBM Plex Sans Arabic',
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: colors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.s3),
-                Text(
-                  'هذه النسخة لم تعد مدعومة. يرجى التحديث للاستمرار في استخدام التطبيق.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'IBM Plex Sans Arabic',
-                    fontSize: 16,
-                    color: colors.textSecondary,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.s7),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.shop_outlined),
-                    label: const Text('تحديث الآن'),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
