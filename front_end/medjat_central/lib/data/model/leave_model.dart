@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 class LeaveModel {
   final int id;
   final int employeeId;
@@ -38,11 +40,11 @@ class LeaveModel {
   String get typeLabel {
     switch (type) {
       case 'recurring':
-        return 'متكررة';
+        return 'leave_recurring'.tr;
       case 'single':
-        return 'مرة واحدة';
+        return 'leave_single'.tr;
       case 'absence_conversion':
-        return 'تحويل غياب';
+        return 'leave_absence_conversion'.tr;
       default:
         return type;
     }
@@ -51,11 +53,11 @@ class LeaveModel {
   String get statusLabel {
     switch (status) {
       case 'pending':
-        return 'قيد المراجعة';
+        return 'status_pending'.tr;
       case 'approved':
-        return 'مقبولة';
+        return 'status_approved'.tr;
       case 'rejected':
-        return 'مرفوضة';
+        return 'status_rejected'.tr;
       default:
         return status;
     }

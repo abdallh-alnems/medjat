@@ -17,7 +17,7 @@ class DeductionRulesScreen extends StatelessWidget {
     final ctrl = Get.put(DeductionRulesController());
 
     return Scaffold(
-      appBar: AppBar(title: const Text('قواعد الخصم والإضافي')),
+      appBar: AppBar(title: Text('deduction_rules'.tr)),
       floatingActionButton: FloatingActionButton(
         heroTag: 'fab_deduction_rules',
         onPressed: () => _showAddRuleSheet(context, ctrl),
@@ -40,7 +40,7 @@ class DeductionRulesScreen extends StatelessWidget {
                               size: 48,
                               color: AppColors.of(context).textTertiary),
                           const SizedBox(height: AppSpacing.s3),
-                          Text('لا يوجد قواعد',
+                          Text('no_rules'.tr,
                               style: AppTextStyles.bodySecondary(context)),
                         ],
                       ),
@@ -70,12 +70,12 @@ class DeductionRulesScreen extends StatelessWidget {
   }
 
   void _showAddRuleSheet(BuildContext context, DeductionRulesController ctrl) {
-    _showRuleSheet(context, ctrl, title: 'إضافة قاعدة');
+    _showRuleSheet(context, ctrl, title: 'add_rule'.tr);
   }
 
   void _showEditRuleSheet(
       BuildContext context, DeductionRulesController ctrl, DeductionRuleModel rule) {
-    _showRuleSheet(context, ctrl, title: 'تعديل القاعدة', rule: rule);
+    _showRuleSheet(context, ctrl, title: 'edit_rule'.tr, rule: rule);
   }
 
   void _showRuleSheet(
@@ -106,12 +106,12 @@ class DeductionRulesScreen extends StatelessWidget {
               Text(title, style: AppTextStyles.h3(context)),
               const SizedBox(height: AppSpacing.s4),
               PrimaryInput(
-                label: 'اسم القاعدة',
+                label: 'rule_name'.tr,
                 controller: nameCtrl,
-                hint: 'مثال: خصم تأخير',
+                hint: 'rule_name'.tr,
               ),
               const SizedBox(height: AppSpacing.s3),
-              Text('النوع',
+              Text('type'.tr,
                   style: TextStyle(
                     fontFamily: 'IBM Plex Sans Arabic',
                     fontSize: 12,
@@ -126,33 +126,33 @@ class DeductionRulesScreen extends StatelessWidget {
                     runSpacing: AppSpacing.s2,
                     children: [
                       _TypeChip(
-                        label: 'تأخير نسبي',
+                        label: 'late_proportional'.tr,
                         selected: selectedType == 'late_proportional',
                         onTap: () => setState(() => selectedType = 'late_proportional'),
                       ),
                       _TypeChip(
-                        label: 'تأخير ثابت',
+                        label: 'late_fixed'.tr,
                         selected: selectedType == 'late_fixed',
                         onTap: () => setState(() => selectedType = 'late_fixed'),
                       ),
                       _TypeChip(
-                        label: 'غياب',
+                        label: 'absence_type'.tr,
                         selected: selectedType == 'absence',
                         onTap: () => setState(() => selectedType = 'absence'),
                       ),
                       _TypeChip(
-                        label: 'مخصص',
+                        label: 'custom'.tr,
                         selected: selectedType == 'custom',
                         onTap: () => setState(() => selectedType = 'custom'),
                       ),
                       _TypeChip(
-                        label: 'إضافي',
+                        label: 'overtime'.tr,
                         selected: selectedType == 'overtime_hourly',
                         onTap: () =>
                             setState(() => selectedType = 'overtime_hourly'),
                       ),
                       _TypeChip(
-                        label: 'مكافأة',
+                        label: 'bonus'.tr,
                         selected: selectedType == 'bonus_fixed',
                         onTap: () => setState(() => selectedType = 'bonus_fixed'),
                       ),
@@ -162,14 +162,14 @@ class DeductionRulesScreen extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.s3),
               PrimaryInput(
-                label: 'القيمة',
+                label: 'value'.tr,
                 controller: valueCtrl,
                 keyboardType: TextInputType.number,
                 hint: '0.00',
               ),
               const SizedBox(height: AppSpacing.s4),
               PrimaryButton(
-                text: rule != null ? 'تحديث' : 'إضافة',
+                text: rule != null ? 'update'.tr : 'add'.tr,
                 onPressed: () {
                   final data = {
                     'name': nameCtrl.text.trim(),
@@ -197,10 +197,10 @@ class DeductionRulesScreen extends StatelessWidget {
       BuildContext context, DeductionRulesController ctrl, DeductionRuleModel rule) {
     Get.dialog(
       AlertDialog(
-        title: const Text('حذف القاعدة'),
-        content: Text('هل تريد حذف "${rule.name}"؟'),
+        title: Text('delete_rule'.tr),
+        content: Text('${'confirm_delete'.tr} "${rule.name}"؟'),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('إلغاء')),
+          TextButton(onPressed: () => Get.back(), child: Text('cancel'.tr)),
           TextButton(
             onPressed: () {
               Get.back();
@@ -208,7 +208,7 @@ class DeductionRulesScreen extends StatelessWidget {
             },
             style: TextButton.styleFrom(
                 foregroundColor: AppColors.of(context).error),
-            child: const Text('حذف'),
+            child: Text('delete'.tr),
           ),
         ],
       ),

@@ -6,6 +6,7 @@ import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/constant/theme/theme.dart';
 import '../../../core/shared/input_fields/primary_input.dart';
 import '../../../core/shared/input_fields/password_input.dart';
+import '../../../core/services/locale_service.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
 
 class LoginScreen extends StatelessWidget {
@@ -19,6 +20,7 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = Get.find<AuthController>();
     final colors = AppColors.of(context);
+    final localeSvc = Get.find<LocaleService>();
 
     return Scaffold(
       backgroundColor: colors.canvas,
@@ -32,6 +34,30 @@ class LoginScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: Obx(() => GestureDetector(
+                          onTap: localeSvc.toggleLocale,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpacing.s4, vertical: AppSpacing.s2),
+                            decoration: BoxDecoration(
+                              color: colors.brandSubtle,
+                              borderRadius: BorderRadius.circular(AppRadius.full),
+                            ),
+                            child: Text(
+                              localeSvc.isArabic ? 'English' : 'العربية',
+                              style: TextStyle(
+                                fontFamily: 'IBM Plex Sans Arabic',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: colors.brand,
+                              ),
+                            ),
+                          ),
+                        )),
+                  ),
+                  const SizedBox(height: AppSpacing.s7),
                   Center(
                     child: Container(
                       width: 80,
@@ -47,7 +73,7 @@ class LoginScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.s5),
                   Center(
                     child: Text(
-                      'Medjat Central',
+                      'app_name'.tr,
                       style: TextStyle(
                         fontFamily: 'Geist',
                         fontSize: 28,
@@ -59,7 +85,7 @@ class LoginScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.s1),
                   Center(
                     child: Text(
-                      'لوحة إدارة الموارد البشرية',
+                      'hr_management_panel'.tr,
                       style: TextStyle(
                         fontFamily: 'IBM Plex Sans Arabic',
                         fontSize: 14,
@@ -70,13 +96,13 @@ class LoginScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.s7),
 
                   PrimaryInput(
-                    label: 'البريد الإلكتروني',
+                    label: 'email'.tr,
                     hint: 'admin@company.com',
                     controller: _emailCtrl,
                     keyboardType: TextInputType.emailAddress,
                     validator: (v) {
-                      if (v == null || v.isEmpty) return 'أدخل البريد الإلكتروني';
-                      if (!v.contains('@')) return 'بريد إلكتروني غير صحيح';
+                      if (v == null || v.isEmpty) return 'enter_email'.tr;
+                      if (!v.contains('@')) return 'invalid_email'.tr;
                       return null;
                     },
                   ),
@@ -84,13 +110,30 @@ class LoginScreen extends StatelessWidget {
                   PasswordInput(
                     controller: _passCtrl,
                     validator: (v) {
-                      if (v == null || v.isEmpty) return 'أدخل كلمة السر';
+                      if (v == null || v.isEmpty) return 'enter_password'.tr;
                       return null;
                     },
                   ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: GestureDetector(
+                      onTap: () => Get.toNamed(AppRoutes.forgotPassword),
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.s1),
+                        child: Text(
+                          'forgot_password'.tr,
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 13,
+                            color: colors.brand,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: AppSpacing.s5),
                   Obx(() => _AuthButton(
-                        label: 'تسجيل الدخول',
+                        label: 'login'.tr,
                         isLoading: auth.isEmailLoading.value,
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
@@ -104,21 +147,6 @@ class LoginScreen extends StatelessWidget {
                         textColor: Colors.white,
                       )),
 
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(
-                      onPressed: () => Get.toNamed(AppRoutes.signup),
-                      child: Text(
-                        'إنشاء حساب جديد',
-                        style: TextStyle(
-                          fontFamily: 'IBM Plex Sans Arabic',
-                          fontSize: 14,
-                          color: colors.brand,
-                        ),
-                      ),
-                    ),
-                  ),
-
                   const SizedBox(height: AppSpacing.s4),
                   Row(
                     children: [
@@ -126,7 +154,7 @@ class LoginScreen extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.symmetric(
                             horizontal: AppSpacing.s3),
-                        child: Text('أو',
+                        child: Text('or'.tr,
                             style: TextStyle(
                               fontFamily: 'IBM Plex Sans Arabic',
                               fontSize: 13,
@@ -139,7 +167,7 @@ class LoginScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.s5),
 
                   Obx(() => _AuthButton(
-                        label: 'المتابعة بحساب Google',
+                        label: 'continue_google'.tr,
                         isLoading: auth.isGoogleLoading.value,
                         onPressed: auth.onGoogleSignIn,
                         color: colors.surface,
@@ -151,7 +179,7 @@ class LoginScreen extends StatelessWidget {
                   if (Platform.isIOS) ...[
                     const SizedBox(height: AppSpacing.s3),
                     Obx(() => _AuthButton(
-                          label: 'المتابعة بحساب Apple',
+                          label: 'continue_apple'.tr,
                           isLoading: auth.isAppleLoading.value,
                           onPressed: auth.onAppleSignIn,
                           color: colors.textPrimary,
@@ -160,6 +188,33 @@ class LoginScreen extends StatelessWidget {
                               size: 20, color: colors.canvas),
                         )),
                   ],
+
+                  const SizedBox(height: AppSpacing.s5),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'dont_have_account'.tr,
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Sans Arabic',
+                          fontSize: 13,
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => Get.toNamed(AppRoutes.signup),
+                        child: Text(
+                          'create_account'.tr,
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: colors.brand,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),

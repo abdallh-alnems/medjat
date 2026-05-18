@@ -18,6 +18,7 @@ import '../../../logic/bindings/home_binding.dart';
 import '../../../view/screen/auth/login_screen.dart';
 import '../../../view/screen/auth/signup_screen.dart';
 import '../../../view/screen/auth/verify_email_screen.dart';
+import '../../../view/screen/auth/forgot_password_screen.dart';
 import '../../../view/screen/splash/splash_screen.dart';
 import '../../../view/screen/onboarding/onboarding_screen.dart';
 import '../../../view/screen/dashboard/dashboard_screen.dart';
@@ -68,6 +69,12 @@ List<GetPage<dynamic>> getPages = [
   GetPage(
     name: AppRoutes.verifyEmail,
     page: () => const VerifyEmailScreen(),
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.forgotPassword,
+    page: () => ForgotPasswordScreen(),
     transition: Transition.fadeIn,
     transitionDuration: AppMotion.transition,
   ),
@@ -176,36 +183,36 @@ class MoreScreen extends StatelessWidget {
     final settingsCtrl = Get.find<SettingsController>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('المزيد')),
+      appBar: AppBar(title: Text('more'.tr)),
       body: ListView(
         children: [
           if (auth.user?.canManageEmployees == true)
             _MenuTile(
               icon: Icons.groups_outlined,
-              title: 'الإجازات',
+              title: 'leaves'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.leaveManage),
             ),
           if (auth.user?.canManageBranches == true)
             _MenuTile(
               icon: Icons.account_tree_outlined,
-              title: 'الفروع',
+              title: 'branches'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.branchManage),
             ),
           if (auth.user?.canViewReports == true)
             _MenuTile(
               icon: Icons.assessment_outlined,
-              title: 'التقارير',
+              title: 'reports'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.reports),
             ),
           _MenuTile(
             icon: Icons.settings_outlined,
-            title: 'الإعدادات',
+            title: 'settings'.tr,
             onTap: () => _navigateToSettings(context),
           ),
           const Divider(),
           _MenuTile(
             icon: Icons.logout,
-            title: 'تسجيل الخروج',
+            title: 'logout'.tr,
             onTap: () => settingsCtrl.logout(),
             isDestructive: true,
           ),
@@ -232,37 +239,37 @@ class _InlineSettingsScreen extends StatelessWidget {
     final colors = AppColors.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('الإعدادات')),
+      appBar: AppBar(title: Text('settings'.tr)),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.s4),
         children: [
           if (auth.user?.canManageBranches == true) ...[
-            const _SettingsSectionHeader(title: 'الشركة'),
+            _SettingsSectionHeader(title: 'company'.tr),
             _SettingsTile(
               icon: Icons.tune_outlined,
-              title: 'قواعد الخصم والإضافي',
-              subtitle: 'تحديد قواعد التأخير والغياب',
+              title: 'deduction_rules'.tr,
+              subtitle: 'set_late_absence_rules'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.deductionRules),
             ),
             _SettingsTile(
               icon: Icons.admin_panel_settings_outlined,
-              title: 'إدارة الصلاحيات',
-              subtitle: 'الأدوار والمستخدمين',
+              title: 'role_management'.tr,
+              subtitle: 'roles_users'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.rolesManage),
             ),
             _SettingsTile(
               icon: Icons.business_outlined,
-              title: 'بيانات الشركة',
-              subtitle: 'تعديل معلومات الشركة',
+              title: 'company_data'.tr,
+              subtitle: 'edit_company_info'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.companySettings),
             ),
             const SizedBox(height: AppSpacing.s5),
           ],
-          const _SettingsSectionHeader(title: 'التطبيق'),
+          _SettingsSectionHeader(title: 'app'.tr),
           _SettingsTile(
             icon: Icons.dark_mode_outlined,
-            title: 'الوضع الداكن',
-            subtitle: 'تفعيل الوضع الداكن',
+            title: 'dark_mode'.tr,
+            subtitle: 'enable_dark_mode'.tr,
             trailing: Obx(() => Switch.adaptive(
                   value: settingsCtrl.isDark,
                   onChanged: (_) => settingsCtrl.toggleTheme(),
@@ -271,11 +278,11 @@ class _InlineSettingsScreen extends StatelessWidget {
           ),
           _SettingsTile(
             icon: Icons.lock_outline,
-            title: 'تغيير كلمة السر',
+            title: 'change_password'.tr,
             onTap: () {},
           ),
           const SizedBox(height: AppSpacing.s5),
-          const _SettingsSectionHeader(title: 'الحساب'),
+          _SettingsSectionHeader(title: 'account'.tr),
           Container(
             margin: const EdgeInsets.only(bottom: AppSpacing.s3),
             padding: const EdgeInsets.all(AppSpacing.s4),
@@ -307,7 +314,7 @@ class _InlineSettingsScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        auth.user?.name ?? 'مدير',
+                        auth.user?.name ?? 'admin'.tr,
                         style: const TextStyle(
                           fontFamily: 'IBM Plex Sans Arabic',
                           fontSize: 15,
@@ -331,7 +338,7 @@ class _InlineSettingsScreen extends StatelessWidget {
               style: TextButton.styleFrom(
                 foregroundColor: colors.error,
               ),
-              child: const Text('تسجيل الخروج'),
+              child: Text('logout'.tr),
             ),
           ),
         ],

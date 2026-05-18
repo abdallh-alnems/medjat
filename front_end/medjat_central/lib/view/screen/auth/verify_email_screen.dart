@@ -73,7 +73,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                 ),
                 const SizedBox(height: AppSpacing.s6),
                 Text(
-                  'تحقق من بريدك الإلكتروني',
+                  'verify_your_email'.tr,
                   style: TextStyle(
                     fontFamily: 'IBM Plex Sans Arabic',
                     fontSize: 22,
@@ -83,7 +83,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                 ),
                 const SizedBox(height: AppSpacing.s3),
                 Text(
-                  'أرسلنا رابط تفعيل إلى',
+                  'sent_activation_link_to'.tr,
                   style: TextStyle(
                     fontFamily: 'IBM Plex Sans Arabic',
                     fontSize: 14,
@@ -103,7 +103,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                 ),
                 const SizedBox(height: AppSpacing.s3),
                 Text(
-                  'اضغط على الرابط في البريد لتفعيل حسابك',
+                  'click_link_to_activate'.tr,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'IBM Plex Sans Arabic',
@@ -113,12 +113,12 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                 ),
                 const SizedBox(height: AppSpacing.s7),
                 PrimaryButton(
-                  text: 'تم التفعيل',
+                  text: 'activated'.tr,
                   onPressed: () => auth.checkEmailVerified(),
                 ),
                 const SizedBox(height: AppSpacing.s4),
                 Obx(() => PrimaryButton(
-                      text: 'إعادة إرسال الرابط',
+                      text: 'resend_link'.tr,
                       isLoading: auth.isSendingVerification.value,
                       onPressed: auth.isSendingVerification.value
                           ? () {}
@@ -131,7 +131,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                     await auth.logout();
                   },
                   child: Text(
-                    'تغيير البريد الإلكتروني أو العودة',
+                    'change_email_or_back'.tr,
                     style: TextStyle(
                       fontFamily: 'IBM Plex Sans Arabic',
                       fontSize: 13,

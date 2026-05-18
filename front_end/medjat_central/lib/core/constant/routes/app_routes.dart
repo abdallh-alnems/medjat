@@ -17,4 +17,5 @@ abstract class AppRoutes {
   static const String deductionRules = '/settings/deduction-rules';
   static const String rolesManage = '/settings/roles';
   static const String companySettings = '/settings/company';
+  static const String forgotPassword = '/forgot-password';
 }

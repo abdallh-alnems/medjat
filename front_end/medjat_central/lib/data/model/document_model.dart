@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 class DocumentModel {
   final int id;
   final int employeeId;
@@ -36,11 +38,11 @@ class DocumentModel {
   String get statusLabel {
     switch (status) {
       case 'uploaded':
-        return 'مرفوعة';
+        return 'status_uploaded'.tr;
       case 'required':
-        return 'مطلوبة';
+        return 'status_required'.tr;
       case 'expired':
-        return 'منتهية الصلاحية';
+        return 'status_expired'.tr;
       default:
         return status;
     }

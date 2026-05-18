@@ -17,7 +17,7 @@ class EmployeesScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('الموظفون'),
+        title: Text('employees'.tr),
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list_outlined),
@@ -44,7 +44,7 @@ class EmployeesScreen extends StatelessWidget {
             child: TextField(
               onChanged: ctrl.onSearch,
               decoration: InputDecoration(
-                hintText: 'بحث عن موظف...',
+                hintText: 'search_employee'.tr,
                 prefixIcon: Icon(Icons.search,
                     color: AppColors.of(context).textTertiary),
               ),
@@ -71,7 +71,7 @@ class EmployeesScreen extends StatelessWidget {
                                     size: 48,
                                     color: AppColors.of(context).textTertiary),
                                 const SizedBox(height: AppSpacing.s3),
-                                Text('لا يوجد موظفون',
+                                Text('no_employees'.tr,
                                     style: AppTextStyles.bodySecondary(context)),
                               ],
                             ),
@@ -119,10 +119,10 @@ class EmployeesScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('تصفية', style: AppTextStyles.h3(context)),
+            Text('filter'.tr, style: AppTextStyles.h3(context)),
             const SizedBox(height: AppSpacing.s4),
             ListTile(
-              title: const Text('كل الفروع'),
+              title: Text('all_branches'.tr),
               onTap: () {
                 ctrl.filterByBranch(null);
                 Get.back();

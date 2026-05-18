@@ -113,4 +113,9 @@ class AppLinks {
   static String notificationRead(int id) =>
       '$base/app/notifications/read.php?id=$id';
   static String get registerFcm => '$base/app/auth/update_fcm_token.php';
+
+  // ── Forgot Password (OTP via email) ───────────────────
+  static String get forgotPasswordSend => '$base/app/auth/forgot_password.php';
+  static String get forgotPasswordVerify => '$base/app/auth/verify_reset_code.php';
+  static String get forgotPasswordReset => '$base/app/auth/reset_password.php';
 }

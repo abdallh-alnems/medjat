@@ -17,7 +17,7 @@ class RoleManagementScreen extends StatelessWidget {
     final ctrl = Get.put(RoleManagementController());
 
     return Scaffold(
-      appBar: AppBar(title: const Text('إدارة الصلاحيات')),
+      appBar: AppBar(title: Text('role_management'.tr)),
       floatingActionButton: FloatingActionButton(
         heroTag: 'fab_role_management',
         onPressed: () => _showAddRoleSheet(context, ctrl),
@@ -43,7 +43,7 @@ class RoleManagementScreen extends StatelessWidget {
                               size: 48,
                               color: AppColors.of(context).textTertiary),
                           const SizedBox(height: AppSpacing.s3),
-                          Text('لا يوجد أدوار',
+                          Text('no_roles'.tr,
                               style: AppTextStyles.bodySecondary(context)),
                         ],
                       ),
@@ -75,12 +75,12 @@ class RoleManagementScreen extends StatelessWidget {
 
   void _showAddRoleSheet(
       BuildContext context, RoleManagementController ctrl) {
-    _showRoleSheet(context, ctrl, title: 'إضافة دور');
+    _showRoleSheet(context, ctrl, title: 'add_role'.tr);
   }
 
   void _showEditRoleSheet(
       BuildContext context, RoleManagementController ctrl, RoleModel role) {
-    _showRoleSheet(context, ctrl, title: 'تعديل الدور', role: role);
+    _showRoleSheet(context, ctrl, title: 'edit_role'.tr, role: role);
   }
 
   void _showRoleSheet(
@@ -102,14 +102,14 @@ class RoleManagementScreen extends StatelessWidget {
       'manage_company_settings',
     ];
     final permissionLabels = {
-      'manage_employees': 'إدارة الموظفين',
-      'manage_attendance': 'تسجيل الحضور',
-      'manage_payroll': 'حساب الرواتب',
-      'view_reports': 'مشاهدة التقارير',
-      'manage_documents': 'إدارة الأوراق',
-      'manage_leaves': 'إدارة الإجازات',
-      'add_managers': 'إضافة مديرين',
-      'manage_company_settings': 'إعدادات الشركة',
+      'manage_employees': 'manage_employees'.tr,
+      'manage_attendance': 'manage_attendance'.tr,
+      'manage_payroll': 'manage_payroll'.tr,
+      'view_reports': 'view_reports'.tr,
+      'manage_documents': 'manage_documents'.tr,
+      'manage_leaves': 'manage_leaves'.tr,
+      'add_managers': 'add_managers'.tr,
+      'manage_company_settings': 'manage_company_settings'.tr,
     };
     final Set<String> selected = Set<String>.from(role?.permissions ?? []);
 
@@ -132,12 +132,12 @@ class RoleManagementScreen extends StatelessWidget {
                   Text(title, style: AppTextStyles.h3(context)),
                   const SizedBox(height: AppSpacing.s4),
                   PrimaryInput(
-                    label: 'اسم الدور',
+                    label: 'role_name'.tr,
                     controller: nameCtrl,
-                    hint: 'مثال: مدير فرع',
+                    hint: 'role_name'.tr,
                   ),
                   const SizedBox(height: AppSpacing.s3),
-                  Text('النطاق',
+                  Text('scope'.tr,
                       style: TextStyle(
                         fontFamily: 'IBM Plex Sans Arabic',
                         fontSize: 12,
@@ -149,7 +149,7 @@ class RoleManagementScreen extends StatelessWidget {
                     children: [
                       Expanded(
                         child: _ScopeChip(
-                          label: 'كل الفروع',
+                          label: 'all_branches'.tr,
                           selected: scope == 'all',
                           onTap: () => setState(() => scope = 'all'),
                         ),
@@ -157,7 +157,7 @@ class RoleManagementScreen extends StatelessWidget {
                       const SizedBox(width: AppSpacing.s2),
                       Expanded(
                         child: _ScopeChip(
-                          label: 'فرع محدد',
+                          label: 'specific_branch'.tr,
                           selected: scope == 'branch',
                           onTap: () => setState(() => scope = 'branch'),
                         ),
@@ -179,7 +179,7 @@ class RoleManagementScreen extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: AppSpacing.s4),
-                  Text('الصلاحيات',
+                  Text('permissions'.tr,
                       style: TextStyle(
                         fontFamily: 'IBM Plex Sans Arabic',
                         fontSize: 12,
@@ -213,7 +213,7 @@ class RoleManagementScreen extends StatelessWidget {
                   }),
                   const SizedBox(height: AppSpacing.s4),
                   PrimaryButton(
-                    text: role != null ? 'تحديث' : 'إضافة',
+                    text: role != null ? 'update'.tr : 'add'.tr,
                     onPressed: () {
                       final data = {
                         'name': nameCtrl.text.trim(),
@@ -244,10 +244,10 @@ class RoleManagementScreen extends StatelessWidget {
       BuildContext context, RoleManagementController ctrl, RoleModel role) {
     Get.dialog(
       AlertDialog(
-        title: const Text('حذف الدور'),
-        content: Text('هل تريد حذف "${role.name}"؟'),
+        title: Text('delete_rule'.tr),
+        content: Text('${'confirm_delete'.tr} "${role.name}"؟'),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('إلغاء')),
+          TextButton(onPressed: () => Get.back(), child: Text('cancel'.tr)),
           TextButton(
             onPressed: () {
               Get.back();
@@ -255,7 +255,7 @@ class RoleManagementScreen extends StatelessWidget {
             },
             style: TextButton.styleFrom(
                 foregroundColor: AppColors.of(context).error),
-            child: const Text('حذف'),
+            child: Text('delete'.tr),
           ),
         ],
       ),

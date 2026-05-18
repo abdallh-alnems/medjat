@@ -21,7 +21,7 @@ class SignUpScreen extends StatelessWidget {
     final colors = AppColors.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('إنشاء حساب جديد')),
+      appBar: AppBar(title: Text('create_account'.tr)),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -46,7 +46,7 @@ class SignUpScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.s5),
                   Center(
                     child: Text(
-                      'إنشاء حساب جديد',
+                      'create_account'.tr,
                       style: TextStyle(
                         fontFamily: 'IBM Plex Sans Arabic',
                         fontSize: 22,
@@ -58,7 +58,7 @@ class SignUpScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.s1),
                   Center(
                     child: Text(
-                      'أدخل بياناتك لإنشاء حساب الإدارة',
+                      'enter_data_to_create_account'.tr,
                       style: TextStyle(
                         fontFamily: 'IBM Plex Sans Arabic',
                         fontSize: 14,
@@ -69,24 +69,24 @@ class SignUpScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.s7),
 
                   PrimaryInput(
-                    label: 'الاسم',
-                    hint: 'الاسم',
+                    label: 'name'.tr,
+                    hint: 'name'.tr,
                     controller: _nameCtrl,
                     validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'أدخل اسمك';
-                      if (v.trim().length < 3) return 'الاسم قصير';
+                      if (v == null || v.trim().isEmpty) return 'enter_name'.tr;
+                      if (v.trim().length < 3) return 'name_too_short'.tr;
                       return null;
                     },
                   ),
                   const SizedBox(height: AppSpacing.s4),
                   PrimaryInput(
-                    label: 'البريد الإلكتروني',
+                    label: 'email'.tr,
                     hint: 'admin@company.com',
                     controller: _emailCtrl,
                     keyboardType: TextInputType.emailAddress,
                     validator: (v) {
-                      if (v == null || v.isEmpty) return 'أدخل البريد الإلكتروني';
-                      if (!v.contains('@')) return 'بريد إلكتروني غير صحيح';
+                      if (v == null || v.isEmpty) return 'enter_email'.tr;
+                      if (!v.contains('@')) return 'invalid_email'.tr;
                       return null;
                     },
                   ),
@@ -94,26 +94,26 @@ class SignUpScreen extends StatelessWidget {
                   PasswordInput(
                     controller: _passCtrl,
                     validator: (v) {
-                      if (v == null || v.isEmpty) return 'أدخل كلمة السر';
-                      if (v.length < 6) return 'كلمة السر يجب أن تكون ٦ أحرف على الأقل';
+                      if (v == null || v.isEmpty) return 'enter_password'.tr;
+                      if (v.length < 6) return 'password_min_length'.tr;
                       return null;
                     },
                   ),
                   const SizedBox(height: AppSpacing.s4),
                   PasswordInput(
-                    label: 'تأكيد كلمة السر',
-                    hint: 'أعد إدخال كلمة السر',
+                    label: 'confirm_password'.tr,
+                    hint: 're_enter_password'.tr,
                     controller: _confirmPassCtrl,
                     validator: (v) {
-                      if (v == null || v.isEmpty) return 'أعد إدخال كلمة السر';
-                      if (v != _passCtrl.text) return 'كلمتا السر غير متطابقتين';
+                      if (v == null || v.isEmpty) return 're_enter_password'.tr;
+                      if (v != _passCtrl.text) return 'passwords_not_match'.tr;
                       return null;
                     },
                   ),
                   const SizedBox(height: AppSpacing.s6),
 
                   Obx(() => PrimaryButton(
-                        text: 'إنشاء الحساب',
+                        text: 'create_account_btn'.tr,
                         isLoading: auth.isEmailLoading.value,
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
@@ -131,7 +131,7 @@ class SignUpScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'لديك حساب بالفعل؟',
+                        'already_have_account'.tr,
                         style: TextStyle(
                           fontFamily: 'IBM Plex Sans Arabic',
                           fontSize: 14,
@@ -141,7 +141,7 @@ class SignUpScreen extends StatelessWidget {
                       TextButton(
                         onPressed: () => Get.back(),
                         child: Text(
-                          'تسجيل الدخول',
+                          'login'.tr,
                           style: TextStyle(
                             fontFamily: 'IBM Plex Sans Arabic',
                             fontSize: 14,

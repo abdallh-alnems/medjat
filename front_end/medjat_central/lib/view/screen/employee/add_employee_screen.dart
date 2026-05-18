@@ -18,7 +18,7 @@ class AddEmployeeScreen extends StatelessWidget {
     final ctrl = Get.put(AddEmployeeController());
 
     return Scaffold(
-      appBar: AppBar(title: const Text('إضافة موظف')),
+      appBar: AppBar(title: Text('add_employee'.tr)),
       body: Obx(() {
         if (ctrl.status.value == StatusRequest.success &&
             ctrl.activationCode != null) {
@@ -50,46 +50,46 @@ class _AddEmployeeForm extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('البيانات الأساسية', style: AppTextStyles.h3(context)),
+            Text('basic_info'.tr, style: AppTextStyles.h3(context)),
             const SizedBox(height: AppSpacing.s4),
             PrimaryInput(
-              label: 'الاسم بالكامل',
+              label: 'full_name'.tr,
               controller: nameCtrl,
               validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'الاسم مطلوب' : null,
+                  v == null || v.trim().isEmpty ? 'name_required'.tr : null,
             ),
             const SizedBox(height: AppSpacing.s3),
             PrimaryInput(
-              label: 'رقم الموبايل',
+              label: 'phone_number'.tr,
               controller: phoneCtrl,
               keyboardType: TextInputType.phone,
               validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'رقم الموبايل مطلوب' : null,
+                  v == null || v.trim().isEmpty ? 'phone_required'.tr : null,
             ),
             const SizedBox(height: AppSpacing.s3),
             PrimaryInput(
-              label: 'الوظيفة',
+              label: 'job_title'.tr,
               controller: jobTitleCtrl,
-              hint: 'مثال: محاسب — مدير مبيعات',
+              hint: 'job_title'.tr,
             ),
             const SizedBox(height: AppSpacing.s3),
             PrimaryInput(
-              label: 'الراتب الأساسي',
+              label: 'base_salary'.tr,
               controller: salaryCtrl,
               keyboardType: TextInputType.number,
               hint: '0.00',
               validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'الراتب مطلوب' : null,
+                  v == null || v.trim().isEmpty ? 'salary_required'.tr : null,
             ),
             const SizedBox(height: AppSpacing.s3),
             PrimaryInput(
-              label: 'البريد الإلكتروني',
+              label: 'email'.tr,
               controller: emailCtrl,
               keyboardType: TextInputType.emailAddress,
               hint: 'optional@company.com',
             ),
             const SizedBox(height: AppSpacing.s4),
-            Text('الفرع', style: AppTextStyles.h3(context)),
+            Text('branch'.tr, style: AppTextStyles.h3(context)),
             const SizedBox(height: AppSpacing.s3),
             GetBuilder<AddEmployeeController>(
               builder: (_) {
@@ -105,7 +105,7 @@ class _AddEmployeeForm extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.s6),
             Obx(() => PrimaryButton(
-                  text: 'إضافة الموظف',
+                  text: 'add_employee_btn'.tr,
                   isLoading: ctrl.status.value == StatusRequest.loading,
                   onPressed: () => _submit(ctrl, nameCtrl, phoneCtrl,
                       jobTitleCtrl, salaryCtrl, emailCtrl, formKey),
@@ -128,7 +128,7 @@ class _AddEmployeeForm extends StatelessWidget {
   ) {
     if (!formKey.currentState!.validate()) return;
     if (ctrl.selectedBranchId == null) {
-      Get.snackbar('خطأ', 'يرجى اختيار الفرع',
+      Get.snackbar('error'.tr, 'please_select_branch'.tr,
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
@@ -168,9 +168,9 @@ class _ActivationCodeView extends StatelessWidget {
                 size: 36, color: colors.success),
           ),
           const SizedBox(height: AppSpacing.s5),
-          Text('تم إضافة الموظف بنجاح', style: AppTextStyles.h2(context)),
+          Text('employee_added_success'.tr, style: AppTextStyles.h2(context)),
           const SizedBox(height: AppSpacing.s6),
-          Text('كود التفعيل', style: AppTextStyles.bodySecondary(context)),
+          Text('activation_code'.tr, style: AppTextStyles.bodySecondary(context)),
           const SizedBox(height: AppSpacing.s3),
           Container(
             padding: const EdgeInsets.symmetric(
@@ -195,7 +195,7 @@ class _ActivationCodeView extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.s3),
           Text(
-            'أرسل هذا الكود للموظف — صالح لمدة ٢٤ ساعة',
+            'send_code_hint'.tr,
             style: AppTextStyles.sm(context),
             textAlign: TextAlign.center,
           ),
@@ -204,15 +204,15 @@ class _ActivationCodeView extends StatelessWidget {
             onPressed: () {
               Clipboard.setData(
                   ClipboardData(text: ctrl.activationCode ?? ''));
-              Get.snackbar('تم', 'تم نسخ الكود',
+              Get.snackbar('done'.tr, 'code_copied'.tr,
                   snackPosition: SnackPosition.BOTTOM);
             },
             icon: const Icon(Icons.copy, size: 18),
-            label: const Text('نسخ الكود'),
+            label: Text('copy_code'.tr),
           ),
           const SizedBox(height: AppSpacing.s5),
           PrimaryButton(
-            text: 'تم',
+            text: 'done'.tr,
             onPressed: () => Get.back(result: true),
           ),
         ],
@@ -237,7 +237,7 @@ class _BranchSelector extends StatelessWidget {
     final colors = AppColors.of(context);
 
     if (branches.isEmpty) {
-      return Text('لا يوجد فروع متاحة', style: AppTextStyles.sm(context));
+      return Text('no_branches_available'.tr, style: AppTextStyles.sm(context));
     }
 
     return Wrap(

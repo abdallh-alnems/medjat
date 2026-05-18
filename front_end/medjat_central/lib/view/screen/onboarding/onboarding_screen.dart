@@ -55,21 +55,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text('أنشئ شركتك',
+              Text('create_your_company'.tr,
                   style:
-                      TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: AppSpacing.s4),
               TextFormField(
                 controller: nameCtrl,
-                decoration: const InputDecoration(labelText: 'اسم الشركة'),
+                decoration: InputDecoration(labelText: 'company_name'.tr),
                 validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'مطلوب' : null,
+                    (v == null || v.trim().isEmpty) ? 'required'.tr : null,
               ),
               const SizedBox(height: AppSpacing.s3),
               TextFormField(
                 controller: phoneCtrl,
                 decoration:
-                    const InputDecoration(labelText: 'رقم الموبايل (اختياري)'),
+                    InputDecoration(labelText: 'phone_optional'.tr),
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: AppSpacing.s5),
@@ -79,9 +79,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     Get.back(result: true);
                   }
                 },
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.s2),
-                  child: Text('إنشاء'),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
+                  child: Text('create'.tr),
                 ),
               ),
             ],
@@ -98,7 +98,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final token = await _firebaseToken();
     if (token == null) {
       setState(() => _loading = false);
-      Get.snackbar('خطأ', 'لازم تسجل دخول الأول',
+      Get.snackbar('error'.tr, 'must_login_first'.tr,
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
@@ -115,15 +115,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       final data = (resp['data'] as Map?)?['data'] as Map?;
       if (data != null && data['success'] == true) {
         _auth.hasTenant.value = true;
-        Get.snackbar('تم', 'تم إنشاء الشركة بنجاح',
+        Get.snackbar('done'.tr, 'company_created_success'.tr,
             snackPosition: SnackPosition.BOTTOM);
         Get.offAllNamed(AppRoutes.home);
         return;
       }
     }
     final msg =
-        (resp['data'] as Map?)?['message'] as String? ?? 'فشل إنشاء الشركة';
-    Get.snackbar('خطأ', msg, snackPosition: SnackPosition.BOTTOM);
+        (resp['data'] as Map?)?['message'] as String? ?? 'company_creation_failed'.tr;
+    Get.snackbar('error'.tr, msg, snackPosition: SnackPosition.BOTTOM);
   }
 
   Future<void> _onJoinCompany() async {
@@ -145,15 +145,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text('انضم لشركة',
+              Text('join_company'.tr,
                   style:
-                      TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: AppSpacing.s4),
               TextFormField(
                 controller: codeCtrl,
-                decoration: const InputDecoration(labelText: 'كود الدعوة'),
+                decoration: InputDecoration(labelText: 'invite_code'.tr),
                 validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'مطلوب' : null,
+                    (v == null || v.trim().isEmpty) ? 'required'.tr : null,
               ),
               const SizedBox(height: AppSpacing.s5),
               ElevatedButton(
@@ -162,9 +162,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     Get.back(result: true);
                   }
                 },
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.s2),
-                  child: Text('انضم'),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
+                  child: Text('join'.tr),
                 ),
               ),
             ],
@@ -181,7 +181,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final token = await _firebaseToken();
     if (token == null) {
       setState(() => _loading = false);
-      Get.snackbar('خطأ', 'لازم تسجل دخول الأول',
+      Get.snackbar('error'.tr, 'must_login_first'.tr,
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
@@ -197,15 +197,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       final data = (resp['data'] as Map?)?['data'] as Map?;
       if (data != null && data['success'] == true) {
         _auth.hasTenant.value = true;
-        Get.snackbar('تم', 'تم الانضمام للشركة بنجاح',
+        Get.snackbar('done'.tr, 'company_joined_success'.tr,
             snackPosition: SnackPosition.BOTTOM);
         Get.offAllNamed(AppRoutes.home);
         return;
       }
     }
     final msg = (resp['data'] as Map?)?['message'] as String? ??
-        'كود الدعوة غير صالح';
-    Get.snackbar('خطأ', msg, snackPosition: SnackPosition.BOTTOM);
+        'invalid_invite_code'.tr;
+    Get.snackbar('error'.tr, msg, snackPosition: SnackPosition.BOTTOM);
   }
 
   @override
@@ -218,8 +218,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.logout, color: colors.error),
-            onPressed: () => _auth.logout(),
-            tooltip: 'تسجيل الخروج',
+            onPressed: () {
+              Get.dialog(AlertDialog(
+                title: Text('logout'.tr),
+                content: Text('هل أنت متأكد من تسجيل الخروج؟'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Get.back(),
+                    child: Text('إلغاء'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Get.back();
+                      _auth.logout();
+                    },
+                    style: TextButton.styleFrom(foregroundColor: colors.error),
+                    child: Text('logout'.tr),
+                  ),
+                ],
+              ));
+            },
+            tooltip: 'logout'.tr,
           ),
         ],
       ),
@@ -234,13 +253,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   size: 80, color: colors.brand),
               const SizedBox(height: AppSpacing.s4),
               Text(
-                'أهلاً $name 👋',
+                '${'welcome'.tr} $name 👋',
                 textAlign: TextAlign.center,
                 style: AppTextStyles.h2(context),
               ),
               const SizedBox(height: AppSpacing.s2),
               Text(
-                'لسه مش جزء من أي شركة. اختر إزاي تحب تبدأ:',
+                'not_part_of_company'.tr,
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 16, color: colors.textSecondary),
               ),
@@ -248,19 +267,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ElevatedButton.icon(
                 onPressed: _loading ? null : _onCreateCompany,
                 icon: const Icon(Icons.add_business),
-                label: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.s3),
-                  child: Text('أنشئ شركتك', style: TextStyle(fontSize: 16)),
+                label: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+                  child: Text('create_your_company'.tr, style: const TextStyle(fontSize: 16)),
                 ),
               ),
               const SizedBox(height: AppSpacing.s3),
               OutlinedButton.icon(
                 onPressed: _loading ? null : _onJoinCompany,
                 icon: const Icon(Icons.group_add_outlined),
-                label: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.s3),
-                  child: Text('انضم لشركة بكود دعوة',
-                      style: TextStyle(fontSize: 16)),
+                label: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+                  child: Text('join_company_with_code'.tr,
+                      style: const TextStyle(fontSize: 16)),
                 ),
               ),
               if (_loading) ...[

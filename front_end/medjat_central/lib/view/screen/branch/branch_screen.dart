@@ -15,7 +15,7 @@ class BranchScreen extends StatelessWidget {
     final colors = AppColors.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('الفروع')),
+      appBar: AppBar(title: Text('branches'.tr)),
       body: RefreshIndicator(
         onRefresh: ctrl.loadBranches,
         child: GetBuilder<BranchController>(
@@ -31,7 +31,7 @@ class BranchScreen extends StatelessWidget {
                           Icon(Icons.account_tree_outlined,
                               size: 48, color: colors.textTertiary),
                           const SizedBox(height: AppSpacing.s3),
-                          Text('لا يوجد فروع',
+                          Text('no_branches'.tr,
                               style: AppTextStyles.bodySecondary(context)),
                         ],
                       ),
@@ -128,7 +128,7 @@ class _BranchTile extends StatelessWidget {
                 ),
               ),
               Text(
-                'موظف',
+                'employee'.tr,
                 style: TextStyle(
                   fontFamily: 'IBM Plex Sans Arabic',
                   fontSize: 11,

@@ -16,7 +16,7 @@ class LeaveScreen extends StatelessWidget {
     final colors = AppColors.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('الإجازات')),
+      appBar: AppBar(title: Text('leaves'.tr)),
       body: Column(
         children: [
           Padding(
@@ -27,19 +27,19 @@ class LeaveScreen extends StatelessWidget {
             child: Row(
               children: [
                 _FilterChip(
-                  label: 'الكل',
+                  label: 'all'.tr,
                   selected: ctrl.statusFilter == null,
                   onTap: () => ctrl.filterByStatus(null),
                 ),
                 const SizedBox(width: AppSpacing.s2),
                 _FilterChip(
-                  label: 'قيد المراجعة',
+                  label: 'under_review'.tr,
                   selected: ctrl.statusFilter == 'pending',
                   onTap: () => ctrl.filterByStatus('pending'),
                 ),
                 const SizedBox(width: AppSpacing.s2),
                 _FilterChip(
-                  label: 'مقبولة',
+                  label: 'accepted'.tr,
                   selected: ctrl.statusFilter == 'approved',
                   onTap: () => ctrl.filterByStatus('approved'),
                 ),
@@ -62,7 +62,7 @@ class LeaveScreen extends StatelessWidget {
                                 Icon(Icons.beach_access_outlined,
                                     size: 48, color: colors.textTertiary),
                                 const SizedBox(height: AppSpacing.s3),
-                                Text('لا يوجد إجازات',
+                                Text('no_leaves'.tr,
                                     style:
                                         AppTextStyles.bodySecondary(context)),
                               ],
@@ -171,7 +171,7 @@ class _LeaveTile extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  leave.employeeName ?? 'موظف',
+                  leave.employeeName ?? 'employee'.tr,
                   style: const TextStyle(
                     fontFamily: 'IBM Plex Sans Arabic',
                     fontSize: 14,
@@ -239,7 +239,7 @@ class _LeaveTile extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(40),
                     ),
-                    child: const Text('قبول'),
+                    child: Text('accept'.tr),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.s2),
@@ -250,7 +250,7 @@ class _LeaveTile extends StatelessWidget {
                       foregroundColor: colors.error,
                       minimumSize: const Size.fromHeight(40),
                     ),
-                    child: const Text('رفض'),
+                    child: Text('reject'.tr),
                   ),
                 ),
               ],

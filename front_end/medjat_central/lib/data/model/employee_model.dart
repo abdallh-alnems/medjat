@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 class EmployeeModel {
   final int id;
   final int branchId;
@@ -49,11 +51,11 @@ class EmployeeModel {
   String get statusLabel {
     switch (status) {
       case 'active':
-        return 'نشط';
+        return 'status_active'.tr;
       case 'inactive':
-        return 'غير نشط';
+        return 'status_inactive'.tr;
       case 'suspended':
-        return 'موقوف';
+        return 'status_suspended'.tr;
       default:
         return status;
     }

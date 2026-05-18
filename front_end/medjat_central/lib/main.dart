@@ -9,13 +9,20 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'core/constant/routes/app_routes.dart';
 import 'core/constant/routes/app_pages.dart';
 import 'core/constant/theme/theme.dart';
+import 'core/constant/locale/translations.dart';
+import 'core/services/locale_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load();
+
+  await GetStorage.init();
+  Get.put<GetStorage>(GetStorage(), permanent: true);
+  Get.put<LocaleService>(LocaleService(), permanent: true);
 
   await Firebase.initializeApp();
 
@@ -64,17 +71,21 @@ class MedjatCentralApp extends StatelessWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: ThemeMode.light,
-      locale: const Locale('ar'),
-      supportedLocales: const [Locale('ar')],
+      translations: AppTranslations(),
+      locale: Get.find<LocaleService>().currentLocale,
+      fallbackLocale: const Locale('ar'),
+      supportedLocales: const [Locale('ar'), Locale('en')],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      textDirection: TextDirection.rtl,
       builder: (context, child) {
+        final locale = Get.find<LocaleService>().currentLocale;
         return Directionality(
-          textDirection: TextDirection.rtl,
+          textDirection: locale.languageCode == 'ar'
+              ? TextDirection.rtl
+              : TextDirection.ltr,
           child: child ?? const SizedBox.shrink(),
         );
       },

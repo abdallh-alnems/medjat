@@ -59,7 +59,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: AppSpacing.s4),
             Text(
-              'Medjat Central',
+              'app_name'.tr,
               style: TextStyle(
                 fontFamily: 'Geist',
                 fontSize: 24,
@@ -69,7 +69,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: AppSpacing.s2),
             Text(
-              'لوحة الإدارة',
+              'admin_panel'.tr,
               style: TextStyle(
                 fontFamily: 'IBM Plex Sans Arabic',
                 fontSize: 14,

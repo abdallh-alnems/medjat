@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 class AttendanceRecordModel {
   final int id;
   final int employeeId;
@@ -42,15 +44,15 @@ class AttendanceRecordModel {
   String get statusLabel {
     switch (status) {
       case 'present':
-        return 'حاضر';
+        return 'status_present'.tr;
       case 'absent':
-        return 'غائب';
+        return 'status_absent'.tr;
       case 'late':
-        return 'متأخر';
+        return 'status_late'.tr;
       case 'leave':
-        return 'إجازة';
+        return 'status_leave'.tr;
       case 'half_day':
-        return 'نصف يوم';
+        return 'status_half_day'.tr;
       default:
         return status;
     }

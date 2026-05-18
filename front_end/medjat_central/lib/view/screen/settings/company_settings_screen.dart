@@ -17,7 +17,7 @@ class CompanySettingsScreen extends StatelessWidget {
     final ctrl = Get.put(CompanySettingsController());
 
     return Scaffold(
-      appBar: AppBar(title: const Text('بيانات الشركة')),
+      appBar: AppBar(title: Text('company_data'.tr)),
       body: GetBuilder<CompanySettingsController>(
         builder: (_) {
           return HandlingDataRequest(
@@ -30,27 +30,27 @@ class CompanySettingsScreen extends StatelessWidget {
                 children: [
                   _CompanyHeader(ctrl: ctrl),
                   const SizedBox(height: AppSpacing.s5),
-                  Text('بيانات الشركة', style: AppTextStyles.h3(context)),
+                  Text('company_data'.tr, style: AppTextStyles.h3(context)),
                   const SizedBox(height: AppSpacing.s4),
                   PrimaryInput(
-                    label: 'اسم الشركة',
+                    label: 'company_name'.tr,
                     controller: ctrl.nameController,
                   ),
                   const SizedBox(height: AppSpacing.s3),
                   PrimaryInput(
-                    label: 'العنوان',
+                    label: 'address'.tr,
                     controller: ctrl.addressController,
                     maxLines: 2,
                   ),
                   const SizedBox(height: AppSpacing.s3),
                   PrimaryInput(
-                    label: 'رقم الهاتف',
+                    label: 'phone'.tr,
                     controller: ctrl.phoneController,
                     keyboardType: TextInputType.phone,
                   ),
                   const SizedBox(height: AppSpacing.s3),
                   PrimaryInput(
-                    label: 'البريد الإلكتروني',
+                    label: 'email'.tr,
                     controller: ctrl.emailController,
                     keyboardType: TextInputType.emailAddress,
                   ),
@@ -58,7 +58,7 @@ class CompanySettingsScreen extends StatelessWidget {
                   GetBuilder<CompanySettingsController>(
                     builder: (_) {
                       return PrimaryButton(
-                        text: 'حفظ التغييرات',
+                        text: 'save_changes'.tr,
                         isLoading: ctrl.status == StatusRequest.loading,
                         onPressed: ctrl.saveSettings,
                       );
@@ -108,7 +108,7 @@ class _CompanyHeader extends StatelessWidget {
               children: [
                 Text(
                   ctrl.nameController.text.isEmpty
-                      ? 'الشركة'
+                      ? 'the_company'.tr
                       : ctrl.nameController.text,
                   style: const TextStyle(
                     fontFamily: 'IBM Plex Sans Arabic',

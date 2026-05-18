@@ -20,7 +20,7 @@ class EmployeeDetailScreen extends StatelessWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('ملف الموظف')),
+      appBar: AppBar(title: Text('employee_profile'.tr)),
       body: GetBuilder<EmployeeDetailController>(
         builder: (_) {
           return HandlingDataRequest(
@@ -174,7 +174,7 @@ class _ActivationCodeCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'كود التفعيل',
+                  'activation_code'.tr,
                   style: TextStyle(
                     fontFamily: 'IBM Plex Sans Arabic',
                     fontSize: 12,
@@ -197,7 +197,7 @@ class _ActivationCodeCard extends StatelessWidget {
           ),
           TextButton(
             onPressed: ctrl.generateActivationCode,
-            child: const Text('توليد جديد'),
+            child: Text('generate_new'.tr),
           ),
         ],
       ),
@@ -217,16 +217,16 @@ class _InfoSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('البيانات', style: AppTextStyles.h3(context)),
+        Text('info'.tr, style: AppTextStyles.h3(context)),
         const SizedBox(height: AppSpacing.s3),
-        _InfoRow(label: 'رقم الموبايل', value: e.phone ?? '—'),
-        _InfoRow(label: 'البريد', value: e.email ?? '—'),
+        _InfoRow(label: 'phone_number'.tr, value: e.phone ?? '—'),
+        _InfoRow(label: 'email'.tr, value: e.email ?? '—'),
         _InfoRow(
-            label: 'الراتب الأساسي',
+            label: 'base_salary'.tr,
             value: '${e.baseSalary.toStringAsFixed(0)} ج.م'),
-        _InfoRow(label: 'الفرع', value: e.branchName ?? '—'),
+        _InfoRow(label: 'branch'.tr, value: e.branchName ?? '—'),
         _InfoRow(
-            label: 'تاريخ التعيين',
+            label: 'hire_date'.tr,
             value: e.hireDate != null
                 ? '${e.hireDate!.year}-${e.hireDate!.month.toString().padLeft(2, '0')}-${e.hireDate!.day.toString().padLeft(2, '0')}'
                 : '—'),
@@ -287,7 +287,7 @@ class _DocumentsSection extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text('الأوراق', style: AppTextStyles.h3(context)),
+            Text('documents'.tr, style: AppTextStyles.h3(context)),
             const Spacer(),
             Text(
               '${ctrl.documents.where((d) => d.status == 'uploaded').length}/${ctrl.documents.length}',
@@ -307,7 +307,7 @@ class _DocumentsSection extends StatelessWidget {
           Center(
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.s5),
-              child: Text('لا يوجد أوراق',
+              child: Text('no_documents'.tr,
                   style: AppTextStyles.bodySecondary(context)),
             ),
           )
@@ -364,7 +364,7 @@ class _DocumentTile extends StatelessWidget {
                 if (document.expiryDate != null) ...[
                   const SizedBox(height: 2),
                   Text(
-                    'ينتهي: ${document.expiryDate!.year}-${document.expiryDate!.month.toString().padLeft(2, '0')}-${document.expiryDate!.day.toString().padLeft(2, '0')}',
+                    '${'expires'.tr} ${document.expiryDate!.year}-${document.expiryDate!.month.toString().padLeft(2, '0')}-${document.expiryDate!.day.toString().padLeft(2, '0')}',
                     style: TextStyle(
                       fontFamily: 'Geist',
                       fontSize: 12,
@@ -433,7 +433,7 @@ class _RecentAttendanceSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('سجل الحضور الأخير', style: AppTextStyles.h3(context)),
+        Text('recent_attendance'.tr, style: AppTextStyles.h3(context)),
         const SizedBox(height: AppSpacing.s3),
         if (ctrl.attendanceStatus == StatusRequest.loading)
           const Center(child: CircularProgressIndicator.adaptive())
@@ -441,7 +441,7 @@ class _RecentAttendanceSection extends StatelessWidget {
           Center(
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.s5),
-              child: Text('لا يوجد سجلات حضور',
+              child: Text('no_attendance_records'.tr,
                   style: AppTextStyles.bodySecondary(context)),
             ),
           )

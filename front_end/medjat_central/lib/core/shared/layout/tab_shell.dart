@@ -29,31 +29,31 @@ class TabShell extends StatelessWidget {
             child: BottomNavigationBar(
               currentIndex: controller.currentIndex.value,
               onTap: controller.changeTab,
-              items: const [
+              items: [
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.dashboard_outlined),
-                  activeIcon: Icon(Icons.dashboard),
-                  label: 'الرئيسية',
+                  icon: const Icon(Icons.dashboard_outlined),
+                  activeIcon: const Icon(Icons.dashboard),
+                  label: 'home'.tr,
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.groups_outlined),
-                  activeIcon: Icon(Icons.groups),
-                  label: 'الموظفين',
+                  icon: const Icon(Icons.groups_outlined),
+                  activeIcon: const Icon(Icons.groups),
+                  label: 'employees'.tr,
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.access_time_outlined),
-                  activeIcon: Icon(Icons.access_time),
-                  label: 'الحضور',
+                  icon: const Icon(Icons.access_time_outlined),
+                  activeIcon: const Icon(Icons.access_time),
+                  label: 'attendance'.tr,
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.payments_outlined),
-                  activeIcon: Icon(Icons.payments),
-                  label: 'الرواتب',
+                  icon: const Icon(Icons.payments_outlined),
+                  activeIcon: const Icon(Icons.payments),
+                  label: 'payroll'.tr,
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.menu_outlined),
-                  activeIcon: Icon(Icons.menu),
-                  label: 'المزيد',
+                  icon: const Icon(Icons.menu_outlined),
+                  activeIcon: const Icon(Icons.menu),
+                  label: 'more'.tr,
                 ),
               ],
             ),

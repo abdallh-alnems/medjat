@@ -16,7 +16,7 @@ class PayrollScreen extends StatelessWidget {
     final colors = AppColors.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('الرواتب')),
+      appBar: AppBar(title: Text('payroll'.tr)),
       body: Column(
         children: [
           _MonthPicker(ctrl: ctrl),
@@ -36,7 +36,7 @@ class PayrollScreen extends StatelessWidget {
                                 Icon(Icons.receipt_long_outlined,
                                     size: 48, color: colors.textTertiary),
                                 const SizedBox(height: AppSpacing.s3),
-                                Text('لا يوجد كشوف رواتب',
+                                Text('no_payrolls'.tr,
                                     style:
                                         AppTextStyles.bodySecondary(context)),
                               ],
@@ -75,10 +75,6 @@ class _MonthPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const months = [
-      '', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-      'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
-    ];
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.s4,
@@ -101,7 +97,7 @@ class _MonthPicker extends StatelessWidget {
           Expanded(
             child: Center(
               child: Text(
-                '${months[ctrl.selectedMonth]} ${ctrl.selectedYear}',
+                '${'month_${ctrl.selectedMonth}'.tr} ${ctrl.selectedYear}',
                 style: TextStyle(
                   fontFamily: 'IBM Plex Sans Arabic',
                   fontSize: 15,
@@ -157,7 +153,7 @@ class _PayrollTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  payroll.employeeName ?? 'موظف',
+                  payroll.employeeName ?? 'employee'.tr,
                   style: const TextStyle(
                     fontFamily: 'IBM Plex Sans Arabic',
                     fontSize: 14,
@@ -168,7 +164,7 @@ class _PayrollTile extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      'صافي: ${payroll.netSalary.toStringAsFixed(0)} ج.م',
+                      '${'net'.tr} ${payroll.netSalary.toStringAsFixed(0)} ج.م',
                       style: TextStyle(
                         fontFamily: 'IBM Plex Sans Arabic',
                         fontSize: 13,
@@ -179,7 +175,7 @@ class _PayrollTile extends StatelessWidget {
                     const SizedBox(width: AppSpacing.s3),
                     if (payroll.totalDeductions > 0)
                       Text(
-                        'خصم: ${payroll.totalDeductions.toStringAsFixed(0)}',
+                        '${'deduction'.tr} ${payroll.totalDeductions.toStringAsFixed(0)}',
                         style: TextStyle(
                           fontFamily: 'IBM Plex Sans Arabic',
                           fontSize: 12,
@@ -205,7 +201,7 @@ class _PayrollTile extends StatelessWidget {
           if (payroll.status == 'draft')
             TextButton(
               onPressed: onApprove,
-              child: const Text('اعتمد'),
+              child: Text('approve'.tr),
             )
           else
             Container(

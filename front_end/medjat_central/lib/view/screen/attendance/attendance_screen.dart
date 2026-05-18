@@ -17,7 +17,7 @@ class AttendanceScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('الحضور والانصراف'),
+        title: Text('attendance_departure'.tr),
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list_outlined),
@@ -45,7 +45,7 @@ class AttendanceScreen extends StatelessWidget {
                                     size: 48,
                                     color: colors.textTertiary),
                                 const SizedBox(height: AppSpacing.s3),
-                                Text('لا يوجد سجلات لهذا اليوم',
+                                Text('no_records_today'.tr,
                                     style:
                                         AppTextStyles.bodySecondary(context)),
                               ],
@@ -94,10 +94,10 @@ class AttendanceScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('تصفية', style: AppTextStyles.h3(context)),
+            Text('filter'.tr, style: AppTextStyles.h3(context)),
             const SizedBox(height: AppSpacing.s4),
             ListTile(
-              title: const Text('كل الفروع'),
+              title: Text('all_branches'.tr),
               onTap: () {
                 ctrl.filterByBranch(null);
                 Get.back();
@@ -123,12 +123,12 @@ class AttendanceScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('تسجيل حضور يدوي', style: AppTextStyles.h3(context)),
+            Text('manual_check_in'.tr, style: AppTextStyles.h3(context)),
             const SizedBox(height: AppSpacing.s5),
-            const TextField(
+            TextField(
               decoration: InputDecoration(
-                hintText: 'رقم الموظف',
-                labelText: 'رقم الموظف',
+                hintText: 'employee_number'.tr,
+                labelText: 'employee_number'.tr,
               ),
               keyboardType: TextInputType.number,
             ),
@@ -138,14 +138,14 @@ class AttendanceScreen extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () => Get.back(),
-                    child: const Text('تسجيل حضور'),
+                    child: Text('check_in'.tr),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.s3),
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => Get.back(),
-                    child: const Text('تسجيل انصراف'),
+                    child: Text('check_out'.tr),
                   ),
                 ),
               ],
@@ -253,7 +253,7 @@ class _AttendanceTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  record.employeeName ?? 'موظف',
+                  record.employeeName ?? 'employee'.tr,
                   style: const TextStyle(
                     fontFamily: 'IBM Plex Sans Arabic',
                     fontSize: 14,
@@ -265,7 +265,7 @@ class _AttendanceTile extends StatelessWidget {
                   children: [
                     if (record.checkIn != null)
                       Text(
-                        'حضور: ${_formatTime(record.checkIn!)}',
+                        '${'check_in_label'.tr} ${_formatTime(record.checkIn!)}',
                         style: TextStyle(
                           fontFamily: 'IBM Plex Sans Arabic',
                           fontSize: 12,
@@ -282,7 +282,7 @@ class _AttendanceTile extends StatelessWidget {
                       ),
                     if (record.checkOut != null)
                       Text(
-                        'انصراف: ${_formatTime(record.checkOut!)}',
+                        '${'check_out_label'.tr} ${_formatTime(record.checkOut!)}',
                         style: TextStyle(
                           fontFamily: 'IBM Plex Sans Arabic',
                           fontSize: 12,
@@ -291,7 +291,7 @@ class _AttendanceTile extends StatelessWidget {
                       ),
                     if (record.checkIn == null && record.checkOut == null)
                       Text(
-                        'لم يسجل',
+                        'not_recorded'.tr,
                         style: TextStyle(
                           fontFamily: 'IBM Plex Sans Arabic',
                           fontSize: 12,

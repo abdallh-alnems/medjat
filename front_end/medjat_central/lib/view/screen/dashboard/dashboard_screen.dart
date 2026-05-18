@@ -6,6 +6,7 @@ import '../../../core/constant/theme/theme.dart';
 import '../../../data/model/dashboard_model.dart';
 import '../../../logic/controller/dashboard/dashboard_controller.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
+import '../../../core/services/locale_service.dart';
 import '../../widget/dashboard/stat_card.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -20,7 +21,7 @@ class DashboardScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'مرحباً، ${auth.user?.name.split(' ').first ?? 'مدير'}',
+          '${'welcome_greeting'.tr} ${auth.user?.name.split(' ').first ?? 'admin'.tr}',
           style: AppTextStyles.h3(context),
         ),
         actions: [
@@ -54,7 +55,8 @@ class _DashboardContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final d = ctrl.dashboard;
     final colors = AppColors.of(context);
-    final now = DateFormat('EEEE، d MMMM yyyy', 'ar').format(DateTime.now());
+    final locale = Get.find<LocaleService>().currentLocale.languageCode;
+    final now = DateFormat('EEEE، d MMMM yyyy', locale).format(DateTime.now());
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -68,7 +70,7 @@ class _DashboardContent extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.s5),
           Text(
-            'ملخص اليوم',
+            'today_summary'.tr,
             style: AppTextStyles.h2(context),
           ),
           const SizedBox(height: AppSpacing.s4),
@@ -76,17 +78,17 @@ class _DashboardContent extends StatelessWidget {
             children: [
               Expanded(
                 child: StatCard(
-                  title: 'الحاضرون',
+                  title: 'present'.tr,
                   value: '${d?.presentToday ?? 0}',
                   icon: Icons.check_circle_outline,
                   color: colors.success,
-                  subtitle: 'من ${d?.totalEmployees ?? 0} موظف',
+                  subtitle: '${'of'.tr} ${d?.totalEmployees ?? 0} ${'employees_count'.tr}',
                 ),
               ),
               const SizedBox(width: AppSpacing.s3),
               Expanded(
                 child: StatCard(
-                  title: 'الغائبون',
+                  title: 'absent'.tr,
                   value: '${d?.absentToday ?? 0}',
                   icon: Icons.cancel_outlined,
                   color: colors.error,
@@ -99,7 +101,7 @@ class _DashboardContent extends StatelessWidget {
             children: [
               Expanded(
                 child: StatCard(
-                  title: 'المتأخرون',
+                  title: 'late'.tr,
                   value: '${d?.lateToday ?? 0}',
                   icon: Icons.access_time,
                   color: colors.warning,
@@ -108,7 +110,7 @@ class _DashboardContent extends StatelessWidget {
               const SizedBox(width: AppSpacing.s3),
               Expanded(
                 child: StatCard(
-                  title: 'في إجازة',
+                  title: 'on_leave'.tr,
                   value: '${d?.onLeaveToday ?? 0}',
                   icon: Icons.beach_access_outlined,
                   color: colors.accentWarm,
@@ -118,7 +120,7 @@ class _DashboardContent extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.s3),
           StatCard(
-            title: 'نسبة الحضور',
+            title: 'attendance_rate'.tr,
             value: '${d?.attendanceRate.toStringAsFixed(1) ?? '0'}%',
             icon: Icons.pie_chart_outline,
             color: colors.brand,
@@ -126,7 +128,7 @@ class _DashboardContent extends StatelessWidget {
           ),
           if (d?.branchStats.isNotEmpty == true) ...[
             const SizedBox(height: AppSpacing.s6),
-            Text('أداء الفروع', style: AppTextStyles.h2(context)),
+            Text('branch_performance'.tr, style: AppTextStyles.h2(context)),
             const SizedBox(height: AppSpacing.s4),
             ...d!.branchStats.map((b) => _BranchStatTile(stats: b)),
           ],
@@ -168,7 +170,7 @@ class _BranchStatTile extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.s1),
                 Text(
-                  '${stats.present} حاضر من ${stats.totalEmployees}',
+                  '${stats.present} ${'present_of'.tr} ${stats.totalEmployees}',
                   style: AppTextStyles.sm(context),
                 ),
               ],

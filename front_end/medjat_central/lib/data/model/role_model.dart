@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 class RoleModel {
   final int id;
   final String name;
@@ -42,9 +44,9 @@ class RoleModel {
   String get scopeLabel {
     switch (scope) {
       case 'all':
-        return 'كل الفروع';
+        return 'scope_all'.tr;
       case 'branch':
-        return branchName ?? 'فرع محدد';
+        return branchName ?? 'scope_branch'.tr;
       default:
         return scope;
     }

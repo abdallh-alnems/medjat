@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Platform;
 
+import 'package:app_links/app_links.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -41,8 +44,11 @@ class AuthController extends GetxController {
   UserModel? user;
   bool _googleInitialized = false;
   Stream<User?>? _authStateStream;
+  StreamSubscription<Uri>? _deepLinkSub;
 
   bool get isAppleSignInAvailable => Platform.isIOS || Platform.isMacOS;
+
+  static const _kDeepLinkScheme = 'medjatcentral';
 
   @override
   void onInit() {
@@ -52,6 +58,32 @@ class AuthController extends GetxController {
     _googleSignIn = _googleSignInOverride ?? GoogleSignIn.instance;
     _loadCachedUser();
     _listenToAuthState();
+    _listenToDeepLinks();
+  }
+
+  @override
+  void onClose() {
+    _deepLinkSub?.cancel();
+    super.onClose();
+  }
+
+  void _listenToDeepLinks() {
+    if (!Platform.isAndroid && !Platform.isIOS) return;
+
+    final appLinks = AppLinks();
+    appLinks.getInitialLink().then((uri) {
+      if (uri != null) _handleDeepLink(uri);
+    });
+    _deepLinkSub = appLinks.uriLinkStream.listen(
+      _handleDeepLink,
+      onError: (e) => debugPrint('deep link error: $e'),
+    );
+  }
+
+  void _handleDeepLink(Uri uri) {
+    if (uri.scheme != _kDeepLinkScheme) return;
+
+    checkEmailVerified(silent: true);
   }
 
   void _listenToAuthState() {
@@ -180,8 +212,17 @@ class AuthController extends GetxController {
 
       final firebaseUser = _auth.currentUser;
       if (firebaseUser != null && !firebaseUser.emailVerified) {
-        await _auth.setLanguageCode(Get.locale?.languageCode ?? 'ar');
-        await firebaseUser.sendEmailVerification();
+        try {
+          await _auth.setLanguageCode(Get.locale?.languageCode ?? 'ar');
+          await _sendVerificationEmail(firebaseUser);
+        } catch (e) {
+          debugPrint('⚠️ sendEmailVerification failed during signup: $e');
+          Get.snackbar(
+            'تنبيه',
+            'تم إنشاء الحساب، لكن تعذّر إرسال بريد التفعيل. استخدم زر "إعادة الإرسال".',
+            snackPosition: SnackPosition.BOTTOM,
+          );
+        }
         isEmailLoading.value = false;
         status.value = StatusRequest.success;
         isEmailVerified.value = false;
@@ -364,6 +405,7 @@ class AuthController extends GetxController {
   Future<bool> _sendTokenToBackend(String token) async {
     try {
       final response = await _authData.login(token);
+      debugPrint('📦 backend response: $response');
       if (response['status'] == StatusRequest.success) {
         var payload = response['data'];
         if (payload is Map<String, dynamic> && payload.containsKey('data')) {
@@ -379,6 +421,7 @@ class AuthController extends GetxController {
           }
         }
       }
+      debugPrint('❌ _sendTokenToBackend unexpected response: ${response['data']}');
       return false;
     } catch (e) {
       debugPrint('❌ _sendTokenToBackend error: $e');
@@ -403,6 +446,10 @@ class AuthController extends GetxController {
     update();
   }
 
+  Future<void> _sendVerificationEmail(User user) async {
+    await user.sendEmailVerification();
+  }
+
   Future<void> logout() async {
     try {
       await _googleSignIn.signOut();
@@ -421,7 +468,7 @@ class AuthController extends GetxController {
     isSendingVerification.value = true;
     try {
       await _auth.setLanguageCode(Get.locale?.languageCode ?? 'ar');
-      await firebaseUser.sendEmailVerification();
+      await _sendVerificationEmail(firebaseUser);
       Get.snackbar('تم', 'تم إرسال رابط التفعيل إلى بريدك الإلكتروني',
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
@@ -515,8 +562,12 @@ class AuthController extends GetxController {
         return 'البريد الإلكتروني أو كلمة السر غير صحيحة';
       case 'operation-not-allowed':
         return 'طريقة تسجيل الدخول غير مفعلة';
+      case 'invalid-continue-uri':
+        return 'رابط التأكيد غير صالح';
+      case 'unauthorized-continue-uri':
+        return 'رابط التأكيد غير مصرح به';
       default:
-        return 'حدث خطأ غير متوقع';
+        return 'حدث خطأ غير متوقع ($code)';
     }
   }
 

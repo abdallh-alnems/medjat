@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 class DeductionRuleModel {
   final int id;
   final String type;
@@ -37,17 +39,17 @@ class DeductionRuleModel {
   String get typeLabel {
     switch (type) {
       case 'late_proportional':
-        return 'خصم تأخير نسبي';
+        return 'type_late_proportional'.tr;
       case 'late_fixed':
-        return 'خصم تأخير ثابت';
+        return 'type_late_fixed'.tr;
       case 'absence':
-        return 'خصم غياب';
+        return 'type_absence'.tr;
       case 'custom':
-        return 'خصم مخصص';
+        return 'type_custom'.tr;
       case 'overtime_hourly':
-        return 'إضافي بالساعة';
+        return 'type_overtime_hourly'.tr;
       case 'bonus_fixed':
-        return 'مكافأة ثابتة';
+        return 'type_bonus_fixed'.tr;
       default:
         return type;
     }

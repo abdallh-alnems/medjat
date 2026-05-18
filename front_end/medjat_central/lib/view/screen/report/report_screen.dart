@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../core/constant/theme/theme.dart';
 
 class ReportScreen extends StatelessWidget {
@@ -9,38 +10,38 @@ class ReportScreen extends StatelessWidget {
     final colors = AppColors.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('التقارير')),
+      appBar: AppBar(title: Text('reports'.tr)),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.s4),
         children: [
           _ReportCard(
             icon: Icons.access_time_outlined,
-            title: 'تقرير الحضور',
-            subtitle: 'ملخص الحضور والانصراف والتأخير',
+            title: 'attendance_report'.tr,
+            subtitle: 'attendance_summary'.tr,
             color: colors.brand,
             onTap: () {},
           ),
           const SizedBox(height: AppSpacing.s3),
           _ReportCard(
             icon: Icons.payments_outlined,
-            title: 'تقرير الرواتب',
-            subtitle: 'كشوف الرواتب والخصومات',
+            title: 'payroll_report'.tr,
+            subtitle: 'payroll_statements'.tr,
             color: colors.accentWarm,
             onTap: () {},
           ),
           const SizedBox(height: AppSpacing.s3),
           _ReportCard(
             icon: Icons.group_outlined,
-            title: 'تقرير الموظفين',
-            subtitle: 'بيانات وإحصائيات الموظفين',
+            title: 'employees_report'.tr,
+            subtitle: 'employees_stats'.tr,
             color: colors.success,
             onTap: () {},
           ),
           const SizedBox(height: AppSpacing.s3),
           _ReportCard(
             icon: Icons.beach_access_outlined,
-            title: 'تقرير الإجازات',
-            subtitle: 'ملخص الإجازات والغياب المحول',
+            title: 'leaves_report'.tr,
+            subtitle: 'leaves_summary'.tr,
             color: colors.warning,
             onTap: () {},
           ),

@@ -1,3 +1,5 @@
+import 'package:get/get.dart';
+
 class PayrollModel {
   final int id;
   final int employeeId;
@@ -46,21 +48,17 @@ class PayrollModel {
   String get statusLabel {
     switch (status) {
       case 'draft':
-        return 'مسودة';
+        return 'status_draft'.tr;
       case 'approved':
-        return 'معتمد';
+        return 'status_approved'.tr;
       case 'paid':
-        return 'مدفوع';
+        return 'status_paid'.tr;
       default:
         return status;
     }
   }
 
   String get monthLabel {
-    const months = [
-      '', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-      'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
-    ];
-    return '${months[month]} $year';
+    return '${'month_$month'.tr} $year';
   }
 }
