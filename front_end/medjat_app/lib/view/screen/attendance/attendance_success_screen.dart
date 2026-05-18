@@ -20,7 +20,7 @@ class _AttendanceSuccessScreenState extends State<AttendanceSuccessScreen>
   late Animation<double> _checkAnimation;
   Timer? _autoDismissTimer;
 
-  final Map<String, dynamic>? args = Get.arguments;
+  final Map<String, dynamic>? args = Get.arguments as Map<String, dynamic>?;
   bool get isCheckOut => args?['is_check_out'] == true;
   bool get isOffline => args?['offline'] == true;
 

@@ -19,6 +19,6 @@ if ($employeeCount > 0) {
 
 BranchModel::delete($branchId, $tenantId);
 
-AuditLogModel::log($tenantId, $auth['user_id'], 'branch.delete', 'branch', $branchId);
+AuditLogModel::log($tenantId, $auth['admin_id'], 'branch.delete', 'branch', $branchId);
 
 Response::success(['message' => 'Branch deleted']);

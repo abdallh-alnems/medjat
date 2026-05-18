@@ -12,8 +12,8 @@ $input = $auth['input'];
 $payrollId = (int) ($input['payroll_id'] ?? 0);
 Validator::required($payrollId, 'payroll_id');
 
-PayrollModel::approve($payrollId, $tenantId, $auth['user_id']);
+PayrollModel::approve($payrollId, $tenantId, $auth['admin_id']);
 
-AuditLogModel::log($tenantId, $auth['user_id'], 'payroll.approve', 'payroll', $payrollId);
+AuditLogModel::log($tenantId, $auth['admin_id'], 'payroll.approve', 'payroll', $payrollId);
 
 Response::success(['message' => 'Payroll approved']);

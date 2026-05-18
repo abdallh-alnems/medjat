@@ -16,11 +16,7 @@ class ScanQrScreen extends StatefulWidget {
 }
 
 class _ScanQrScreenState extends State<ScanQrScreen> {
-  final MobileScannerController _scannerController = MobileScannerController(
-    autoStart: true,
-    detectionSpeed: DetectionSpeed.normal,
-    facing: CameraFacing.back,
-  );
+  final MobileScannerController _scannerController = MobileScannerController();
   bool _hasScanned = false;
   bool _flashOn = false;
 
@@ -46,8 +42,6 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
   void _showErrorSheet(String message) {
     showModalBottomSheet(
       context: context,
-      isDismissible: true,
-      backgroundColor: Colors.transparent,
       builder: (_) => _ErrorBottomSheet(
         message: message,
         onRetry: () {
@@ -146,10 +140,10 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
           top: scanTop + scanSize + AppSpacing.s5,
           left: 0,
           right: 0,
-          child: Text(
+          child: const Text(
             'وجّه الكاميرا لـ QR المعلق في الفرع',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: AppTextStyles.arabicFamily,
               fontSize: 16,
               color: Colors.white70,
@@ -214,7 +208,7 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
                   size: 20,
                 ),
                 const SizedBox(width: AppSpacing.s2),
-                Text(
+                const Text(
                   'Flash',
                   style: TextStyle(
                     fontFamily: AppTextStyles.latinFamily,
@@ -256,7 +250,7 @@ class _ScanFramePainter extends CustomPainter {
 
     paint.strokeWidth = 4;
     final corners = [
-      [Offset.zero, Offset(cornerLength, 0), Offset(0, cornerLength)],
+      [Offset.zero, const Offset(cornerLength, 0), const Offset(0, cornerLength)],
       [
         Offset(size.width, 0),
         Offset(size.width - cornerLength, 0),

@@ -12,8 +12,8 @@ $input = $auth['input'];
 $leaveId = (int) ($input['leave_id'] ?? 0);
 Validator::required($leaveId, 'leave_id');
 
-LeaveModel::approve($leaveId, $tenantId, $auth['user_id']);
+LeaveModel::approve($leaveId, $tenantId, $auth['admin_id']);
 
-AuditLogModel::log($tenantId, $auth['user_id'], 'leave.approve', 'leave', $leaveId);
+AuditLogModel::log($tenantId, $auth['admin_id'], 'leave.approve', 'leave', $leaveId);
 
 Response::success(['message' => 'Leave approved']);

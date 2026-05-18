@@ -12,14 +12,14 @@ class AdminUserListApi extends AdminBaseApi {
             $limit = 20;
 
             if ($tenantId) {
-                $result = UserModel::getByTenant($tenantId, $page, $limit);
+                $result = AdminModel::getByTenant($tenantId, $page, $limit);
             } else {
                 $offset = ($page - 1) * $limit;
                 $items = Database::fetchAll(
-                    "SELECT id, tenant_id, branch_id, name, phone, email, role, is_active, created_at FROM users ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                    "SELECT id, tenant_id, branch_id, name, phone, email, role, is_active, created_at FROM admins ORDER BY created_at DESC LIMIT ? OFFSET ?",
                     [$limit, $offset]
                 );
-                $total = Database::fetchOne("SELECT COUNT(*) as count FROM users")['count'];
+                $total = Database::fetchOne("SELECT COUNT(*) as count FROM admins")['count'];
                 $result = ['items' => $items, 'total' => (int) $total, 'page' => $page];
             }
 

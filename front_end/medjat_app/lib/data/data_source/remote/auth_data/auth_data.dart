@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:get/get.dart';
 import '../../../../core/class/crud.dart';
 import '../../../../core/class/status_request.dart';
-import '../../../../core/constant/app_links.dart';
+import '../../../../core/constant/id/app_links.dart';
 import '../../../../core/services/token_storage_service.dart';
 import '../../../model/user_model.dart';
 
@@ -20,11 +20,11 @@ class AuthData {
     );
 
     if (response['status'] == StatusRequest.success) {
-      final data = response['data'];
+      final data = response['data'] as Map<String, dynamic>?;
       if (data != null) {
-        await TokenStorageService.saveToken(data['token'] ?? '');
+        await TokenStorageService.saveToken((data['token'] as String?) ?? '');
         if (data['refresh_token'] != null) {
-          await TokenStorageService.saveRefreshToken(data['refresh_token']);
+          await TokenStorageService.saveRefreshToken(data['refresh_token'] as String);
         }
         if (data['user'] != null) {
           await TokenStorageService.saveUserData(jsonEncode(data['user']));
@@ -66,7 +66,7 @@ class AuthData {
     final json = await TokenStorageService.getUserData();
     if (json == null) return null;
     try {
-      return UserModel.fromJson(jsonDecode(json));
+      return UserModel.fromJson(jsonDecode(json) as Map<String, dynamic>);
     } catch (_) {
       return null;
     }

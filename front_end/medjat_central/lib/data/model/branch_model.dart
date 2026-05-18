@@ -21,14 +21,14 @@ class BranchModel {
 
   factory BranchModel.fromJson(Map<String, dynamic> json) {
     return BranchModel(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      address: json['address'],
+      id: (json['id'] as int?) ?? 0,
+      name: (json['name'] as String?) ?? '',
+      address: json['address'] as String?,
       lat: (json['lat'] as num?)?.toDouble(),
       lng: (json['lng'] as num?)?.toDouble(),
       gpsRadius: (json['gps_radius'] as num?)?.toDouble() ?? 100,
-      qrCode: json['qr_code'],
-      employeeCount: json['employee_count'] ?? 0,
+      qrCode: json['qr_code'] as String?,
+      employeeCount: (json['employee_count'] as int?) ?? 0,
     );
   }
 }

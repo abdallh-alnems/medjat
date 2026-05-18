@@ -27,18 +27,18 @@ class PayrollModel {
 
   factory PayrollModel.fromJson(Map<String, dynamic> json) {
     return PayrollModel(
-      id: json['id'] ?? 0,
-      employeeId: json['employee_id'] ?? 0,
-      employeeName: json['employee_name'],
-      month: json['month'] ?? 1,
-      year: json['year'] ?? 2026,
+      id: (json['id'] as int?) ?? 0,
+      employeeId: (json['employee_id'] as int?) ?? 0,
+      employeeName: json['employee_name'] as String?,
+      month: (json['month'] as int?) ?? 1,
+      year: (json['year'] as int?) ?? 2026,
       baseSalary: (json['base_salary'] as num?)?.toDouble() ?? 0,
       totalDeductions: (json['total_deductions'] as num?)?.toDouble() ?? 0,
       totalOvertime: (json['total_overtime'] as num?)?.toDouble() ?? 0,
       netSalary: (json['net_salary'] as num?)?.toDouble() ?? 0,
-      status: json['status'] ?? 'draft',
+      status: (json['status'] as String?) ?? 'draft',
       generatedAt: json['generated_at'] != null
-          ? DateTime.tryParse(json['generated_at'])
+          ? DateTime.tryParse(json['generated_at'] as String)
           : null,
     );
   }

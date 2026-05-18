@@ -87,7 +87,7 @@ class AttendanceController extends GetxController {
     } else {
       final statusCode = response['statusCode'];
       if (statusCode == 422) {
-        final msg = response['message'] ?? '';
+        final msg = (response['message'] as String?) ?? '';
         if (msg.contains('range') || msg.contains('بعيد') || msg.contains('نطاق')) {
           errorMessage = 'أنت خارج نطاق الفرع';
         } else if (msg.contains('QR') || msg.contains('qr') || msg.contains('غير صالح')) {
@@ -98,7 +98,7 @@ class AttendanceController extends GetxController {
       } else if (statusCode == 409) {
         errorMessage = 'تم تسجيل الحضور مسبقاً';
       } else {
-        errorMessage = response['message'] ?? 'حدث خطأ، حاول مرة أخرى';
+        errorMessage = (response['message'] as String?) ?? 'حدث خطأ، حاول مرة أخرى';
       }
       status = StatusRequest.failure;
     }

@@ -6,7 +6,7 @@ Auth::requirePost();
 $auth = Auth::authenticateUser(db());
 $tenantId = TenantMiddleware::requireTenant();
 
-$employee = EmployeeModel::findByUserId($auth['user_id'], $tenantId);
+$employee = EmployeeModel::findByAdminId($auth['admin_id'], $tenantId);
 if (!$employee) {
     Response::fail('Employee profile not found', 404);
 }

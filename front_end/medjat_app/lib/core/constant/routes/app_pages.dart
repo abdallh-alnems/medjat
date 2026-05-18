@@ -33,7 +33,7 @@ class AppBindings extends Bindings {
   }
 }
 
-List<GetPage> getPages = [
+List<GetPage<dynamic>> getPages = [
   GetPage(
     name: AppRoutes.splash,
     page: () => const SplashScreen(),
@@ -58,13 +58,13 @@ List<GetPage> getPages = [
   ),
   GetPage(
     name: AppRoutes.home,
-    page: () => AppGate(
+    page: () => const AppGate(
       child: TabShell(
         screens: [
-          const HomeScreen(),
-          const PlaceholderScreen(title: 'سجل حضوري'),
-          const PlaceholderScreen(title: 'راتبي'),
-          const PlaceholderScreen(title: 'حسابي'),
+          HomeScreen(),
+          PlaceholderScreen(title: 'سجل حضوري'),
+          PlaceholderScreen(title: 'راتبي'),
+          PlaceholderScreen(title: 'حسابي'),
         ],
       ),
     ),

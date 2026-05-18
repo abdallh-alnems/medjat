@@ -34,25 +34,25 @@ final class Auth {
         $verifiedToken = self::verifyFirebaseToken($token);
         $uid = $verifiedToken->claims()->get('sub');
 
-        $user = Database::fetchOne(
-            "SELECT u.id, u.tenant_id, u.branch_id, u.role, u.is_active
-             FROM users u WHERE u.firebase_uid = ? LIMIT 1",
+        $admin = Database::fetchOne(
+            "SELECT a.id, a.tenant_id, a.branch_id, a.role, a.is_active
+             FROM admins a WHERE a.firebase_uid = ? LIMIT 1",
             [$uid]
         );
 
-        if (!$user) {
-            Response::fail('User not found', 404);
+        if (!$admin) {
+            Response::fail('Admin not found', 404);
         }
 
-        if (!$user['is_active']) {
+        if (!$admin['is_active']) {
             Response::fail('Account is deactivated', 403);
         }
 
         return [
-            'user_id' => (int) $user['id'],
-            'tenant_id' => (int) $user['tenant_id'],
-            'branch_id' => $user['branch_id'] ? (int) $user['branch_id'] : null,
-            'role' => $user['role'],
+            'admin_id' => (int) $admin['id'],
+            'tenant_id' => (int) $admin['tenant_id'],
+            'branch_id' => $admin['branch_id'] ? (int) $admin['branch_id'] : null,
+            'role' => $admin['role'],
             'uid' => $uid,
             'input' => $input,
         ];

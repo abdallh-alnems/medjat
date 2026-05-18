@@ -17,13 +17,13 @@ class DashboardModel {
 
   factory DashboardModel.fromJson(Map<String, dynamic> json) {
     return DashboardModel(
-      totalEmployees: json['total_employees'] ?? 0,
-      presentToday: json['present_today'] ?? 0,
-      absentToday: json['absent_today'] ?? 0,
-      lateToday: json['late_today'] ?? 0,
-      onLeaveToday: json['on_leave_today'] ?? 0,
+      totalEmployees: (json['total_employees'] as int?) ?? 0,
+      presentToday: (json['present_today'] as int?) ?? 0,
+      absentToday: (json['absent_today'] as int?) ?? 0,
+      lateToday: (json['late_today'] as int?) ?? 0,
+      onLeaveToday: (json['on_leave_today'] as int?) ?? 0,
       branchStats: (json['branch_stats'] as List<dynamic>?)
-              ?.map((e) => BranchStats.fromJson(e))
+              ?.map((e) => BranchStats.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
     );
@@ -52,11 +52,11 @@ class BranchStats {
 
   factory BranchStats.fromJson(Map<String, dynamic> json) {
     return BranchStats(
-      branchId: json['branch_id'] ?? 0,
-      branchName: json['branch_name'] ?? '',
-      totalEmployees: json['total_employees'] ?? 0,
-      present: json['present'] ?? 0,
-      absent: json['absent'] ?? 0,
+      branchId: (json['branch_id'] as int?) ?? 0,
+      branchName: (json['branch_name'] as String?) ?? '',
+      totalEmployees: (json['total_employees'] as int?) ?? 0,
+      present: (json['present'] as int?) ?? 0,
+      absent: (json['absent'] as int?) ?? 0,
       attendanceRate: (json['attendance_rate'] as num?)?.toDouble() ?? 0,
     );
   }

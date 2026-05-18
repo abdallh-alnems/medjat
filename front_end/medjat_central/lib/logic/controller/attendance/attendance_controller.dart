@@ -31,11 +31,13 @@ class AttendanceController extends GetxController {
     if (response['status'] == StatusRequest.success) {
       final data = response['data'];
       if (data is List) {
-        records = data.map((e) => AttendanceRecordModel.fromJson(e)).toList();
+        records = data
+            .map((e) => AttendanceRecordModel.fromJson(e as Map<String, dynamic>))
+            .toList();
       }
       status = StatusRequest.success;
     } else {
-      status = response['status'] ?? StatusRequest.failure;
+      status = (response['status'] as StatusRequest?) ?? StatusRequest.failure;
     }
     update();
   }

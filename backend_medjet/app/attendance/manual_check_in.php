@@ -24,8 +24,8 @@ if (!$employee) {
     Response::fail('Employee not found', 404);
 }
 
-AttendanceModel::manualCheckIn($employeeId, $branchId, $tenantId, $date, $checkInTime, $checkOutTime, $auth['user_id']);
+AttendanceModel::manualCheckIn($employeeId, $branchId, $tenantId, $date, $checkInTime, $checkOutTime, $auth['admin_id']);
 
-AuditLogModel::log($tenantId, $auth['user_id'], 'attendance.manual_check_in', 'employee', $employeeId);
+AuditLogModel::log($tenantId, $auth['admin_id'], 'attendance.manual_check_in', 'employee', $employeeId);
 
 Response::success(['message' => 'Manual attendance recorded']);

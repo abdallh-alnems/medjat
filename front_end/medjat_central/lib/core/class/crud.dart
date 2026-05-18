@@ -1,22 +1,31 @@
 import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'status_request.dart';
 
 class CRUD {
-  static const _secureStorage = FlutterSecureStorage();
-
-  Future<Map<String, String>> _headers({bool auth = true}) async {
-    final headers = {
+  Map<String, String> _baseHeaders() {
+    final securityUser = dotenv.env['SECURITY_USER'] ?? '';
+    final securityKey = dotenv.env['SECURITY_KEY'] ?? '';
+    final basicAuth =
+        'Basic ${base64Encode(utf8.encode('$securityUser:$securityKey'))}';
+    return {
+      'Authorization': basicAuth,
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
-    if (auth) {
-      final token = await _secureStorage.read(key: 'auth_token');
-      if (token != null) {
-        headers['Authorization'] = 'Bearer $token';
+  }
+
+  Future<Map<String, String>> _headers() async {
+    final headers = _baseHeaders();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final idToken = await user.getIdToken();
+      if (idToken != null) {
+        headers['X-Firebase-Token'] = idToken;
       }
     }
     return headers;
@@ -57,7 +66,7 @@ class CRUD {
     }
 
     try {
-      final headers = await _headers(auth: auth);
+      final headers = auth ? await _headers() : _baseHeaders();
       final response = await http
           .post(
             Uri.parse(url),
@@ -81,7 +90,7 @@ class CRUD {
     }
 
     try {
-      final headers = await _headers(auth: auth);
+      final headers = auth ? await _headers() : _baseHeaders();
       final response = await http
           .put(
             Uri.parse(url),
@@ -105,7 +114,7 @@ class CRUD {
     }
 
     try {
-      final headers = await _headers(auth: auth);
+      final headers = auth ? await _headers() : _baseHeaders();
       final response = await http
           .delete(Uri.parse(url), headers: headers)
           .timeout(const Duration(seconds: 15));

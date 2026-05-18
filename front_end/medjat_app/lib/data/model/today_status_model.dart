@@ -55,13 +55,13 @@ class TodayStatusModel {
       checkInAt: checkIn,
       checkOutAt: checkOut,
       isLate: json['is_late'] == true || json['is_late'] == 1,
-      lateMinutes: json['late_minutes'] ?? 0,
-      branchName: branch?['name'] ?? json['branch_name'],
-      branchLat: (branch?['latitude'] ?? json['branch_lat'])?.toDouble(),
-      branchLng: (branch?['longitude'] ?? json['branch_lng'])?.toDouble(),
-      branchRadiusMeters: branch?['gps_radius_meters'] ?? json['branch_radius_meters'],
-      checkInLat: (json['check_in_lat'])?.toDouble(),
-      checkInLng: (json['check_in_lng'])?.toDouble(),
+      lateMinutes: (json['late_minutes'] as int?) ?? 0,
+      branchName: (branch?['name'] as String?) ?? json['branch_name'] as String?,
+      branchLat: (branch?['latitude'] as num? ?? json['branch_lat'] as num?)?.toDouble(),
+      branchLng: (branch?['longitude'] as num? ?? json['branch_lng'] as num?)?.toDouble(),
+      branchRadiusMeters: branch?['gps_radius_meters'] as int? ?? json['branch_radius_meters'] as int?,
+      checkInLat: (json['check_in_lat'] as num?)?.toDouble(),
+      checkInLng: (json['check_in_lng'] as num?)?.toDouble(),
     );
   }
 

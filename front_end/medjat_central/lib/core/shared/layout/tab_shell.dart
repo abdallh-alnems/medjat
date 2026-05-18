@@ -23,7 +23,6 @@ class TabShell extends StatelessWidget {
               border: Border(
                 top: BorderSide(
                   color: colors.borderHairline,
-                  width: 1,
                 ),
               ),
             ),

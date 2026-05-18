@@ -25,6 +25,6 @@ $branchId = BranchModel::create($tenantId, [
     'gps_radius' => $gpsRadius,
 ]);
 
-AuditLogModel::log($tenantId, $auth['user_id'], 'branch.create', 'branch', $branchId);
+AuditLogModel::log($tenantId, $auth['admin_id'], 'branch.create', 'branch', $branchId);
 
 Response::success(['branch_id' => $branchId], 201);

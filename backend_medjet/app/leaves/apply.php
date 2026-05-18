@@ -15,7 +15,7 @@ Validator::required($date, 'date');
 Validator::required($type, 'type');
 Validator::enum($type, ['annual', 'sick', 'personal', 'unpaid'], 'type');
 
-$employee = EmployeeModel::findByUserId($auth['user_id'], $tenantId);
+$employee = EmployeeModel::findByAdminId($auth['admin_id'], $tenantId);
 if (!$employee) {
     Response::fail('Employee profile not found', 404);
 }

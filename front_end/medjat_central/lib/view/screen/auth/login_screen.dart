@@ -1,9 +1,9 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../core/class/status_request.dart';
-import '../../../core/constant/theme/app_colors.dart';
-import '../../../core/constant/theme/app_spacing.dart';
-import '../../../core/shared/buttons/primary_button.dart';
+import '../../../core/constant/routes/app_routes.dart';
+import '../../../core/constant/theme/theme.dart';
 import '../../../core/shared/input_fields/primary_input.dart';
 import '../../../core/shared/input_fields/password_input.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
@@ -40,11 +40,8 @@ class LoginScreen extends StatelessWidget {
                         color: colors.brandSubtle,
                         borderRadius: BorderRadius.circular(AppRadius.lg),
                       ),
-                      child: Icon(
-                        Icons.shield_outlined,
-                        size: 40,
-                        color: colors.brand,
-                      ),
+                      child: Icon(Icons.shield_outlined,
+                          size: 40, color: colors.brand),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.s5),
@@ -71,6 +68,7 @@ class LoginScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.s7),
+
                   PrimaryInput(
                     label: 'البريد الإلكتروني',
                     hint: 'admin@company.com',
@@ -84,30 +82,180 @@ class LoginScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.s4),
                   PasswordInput(
-                    label: 'كلمة السر',
                     controller: _passCtrl,
                     validator: (v) {
                       if (v == null || v.isEmpty) return 'أدخل كلمة السر';
-                      if (v.length < 6) return 'كلمة السر قصيرة';
                       return null;
                     },
                   ),
-                  const SizedBox(height: AppSpacing.s6),
-                  Obx(() => PrimaryButton(
-                        text: 'تسجيل الدخول',
-                        isLoading: auth.status.value == StatusRequest.loading,
+                  const SizedBox(height: AppSpacing.s5),
+                  Obx(() => _AuthButton(
+                        label: 'تسجيل الدخول',
+                        isLoading: auth.isEmailLoading.value,
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
-                            auth.login(
+                            auth.loginWithEmail(
                               email: _emailCtrl.text.trim(),
                               password: _passCtrl.text,
                             );
                           }
                         },
+                        color: colors.brand,
+                        textColor: Colors.white,
                       )),
+
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: () => Get.toNamed(AppRoutes.signup),
+                      child: Text(
+                        'إنشاء حساب جديد',
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Sans Arabic',
+                          fontSize: 14,
+                          color: colors.brand,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: AppSpacing.s4),
+                  Row(
+                    children: [
+                      Expanded(child: Divider(color: colors.borderHairline)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.s3),
+                        child: Text('أو',
+                            style: TextStyle(
+                              fontFamily: 'IBM Plex Sans Arabic',
+                              fontSize: 13,
+                              color: colors.textTertiary,
+                            )),
+                      ),
+                      Expanded(child: Divider(color: colors.borderHairline)),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.s5),
+
+                  Obx(() => _AuthButton(
+                        label: 'المتابعة بحساب Google',
+                        isLoading: auth.isGoogleLoading.value,
+                        onPressed: auth.onGoogleSignIn,
+                        color: colors.surface,
+                        textColor: colors.textPrimary,
+                        border: colors.borderHairline,
+                        icon: _GoogleIcon(),
+                      )),
+
+                  if (Platform.isIOS) ...[
+                    const SizedBox(height: AppSpacing.s3),
+                    Obx(() => _AuthButton(
+                          label: 'المتابعة بحساب Apple',
+                          isLoading: auth.isAppleLoading.value,
+                          onPressed: auth.onAppleSignIn,
+                          color: colors.textPrimary,
+                          textColor: colors.canvas,
+                          icon: Icon(Icons.apple,
+                              size: 20, color: colors.canvas),
+                        )),
+                  ],
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AuthButton extends StatelessWidget {
+  final String label;
+  final bool isLoading;
+  final VoidCallback onPressed;
+  final Color color;
+  final Color textColor;
+  final Color? border;
+  final Widget? icon;
+
+  const _AuthButton({
+    required this.label,
+    required this.isLoading,
+    required this.onPressed,
+    required this.color,
+    required this.textColor,
+    this.border,
+    this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: ElevatedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            side: border != null
+                ? BorderSide(color: border!)
+                : BorderSide.none,
+          ),
+        ),
+        child: isLoading
+            ? SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator.adaptive(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation(textColor),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (icon != null) ...[
+                    icon!,
+                    const SizedBox(width: AppSpacing.s3),
+                  ],
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: textColor,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class _GoogleIcon extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+      ),
+      child: const Center(
+        child: Text(
+          'G',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF4285F4),
+            height: 1.1,
           ),
         ),
       ),

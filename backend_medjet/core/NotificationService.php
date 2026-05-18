@@ -1,10 +1,10 @@
 <?php
 
 final class NotificationService {
-    public static function sendToUser(int $userId, string $title, string $body, ?array $data = null): bool {
+    public static function sendToUser(int $adminId, string $title, string $body, ?array $data = null): bool {
         $tokens = Database::fetchAll(
-            "SELECT fcm_token FROM user_devices WHERE user_id = ? AND is_active = 1",
-            [$userId]
+            "SELECT fcm_token FROM admin_devices WHERE admin_id = ? AND is_active = 1",
+            [$adminId]
         );
 
         if (empty($tokens)) {
@@ -21,9 +21,9 @@ final class NotificationService {
 
     public static function sendToTenant(int $tenantId, string $title, string $body, ?array $data = null): int {
         $tokens = Database::fetchAll(
-            "SELECT ud.fcm_token FROM user_devices ud
-             JOIN users u ON u.id = ud.user_id
-             WHERE u.tenant_id = ? AND ud.is_active = 1",
+            "SELECT ud.fcm_token FROM admin_devices ud
+             JOIN admins a ON a.id = ud.admin_id
+             WHERE a.tenant_id = ? AND ud.is_active = 1",
             [$tenantId]
         );
 
@@ -43,9 +43,9 @@ final class NotificationService {
 
     public static function sendToBranch(int $branchId, int $tenantId, string $title, string $body, ?array $data = null): int {
         $tokens = Database::fetchAll(
-            "SELECT ud.fcm_token FROM user_devices ud
-             JOIN users u ON u.id = ud.user_id
-             WHERE u.branch_id = ? AND u.tenant_id = ? AND ud.is_active = 1",
+            "SELECT ud.fcm_token FROM admin_devices ud
+             JOIN admins a ON a.id = ud.admin_id
+             WHERE a.branch_id = ? AND a.tenant_id = ? AND ud.is_active = 1",
             [$branchId, $tenantId]
         );
 

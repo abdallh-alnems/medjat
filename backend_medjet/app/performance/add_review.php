@@ -24,6 +24,6 @@ if (!$employee) {
     Response::notFound('Employee');
 }
 
-$id = PerformanceModel::addReview($employeeId, $tenantId, $rating, $review, $auth['user_id']);
+$id = PerformanceModel::addReview($employeeId, $tenantId, $rating, $review, $auth['admin_id']);
 
 Response::success(['id' => $id, 'message' => 'Performance review added']);

@@ -152,7 +152,7 @@ class HomeScreen extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.s5),
       decoration: BoxDecoration(
-        border: Border.all(color: colors.borderHairline, width: 1),
+        border: Border.all(color: colors.borderHairline),
         borderRadius: BorderRadius.circular(AppRadius.md),
         color: colors.surface,
       ),

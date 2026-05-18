@@ -14,7 +14,7 @@ $branchId = ($input['branch_id'] ?? null) ? (int) $input['branch_id'] : null;
 
 $results = PayrollModel::generate($tenantId, $month, $branchId);
 
-AuditLogModel::log($tenantId, $auth['user_id'], 'payroll.generate', null, null, ['month' => $month]);
+AuditLogModel::log($tenantId, $auth['admin_id'], 'payroll.generate', null, null, ['month' => $month]);
 
 Response::success([
     'month' => $month,

@@ -21,17 +21,17 @@ class LeaveModel {
 
   factory LeaveModel.fromJson(Map<String, dynamic> json) {
     return LeaveModel(
-      id: json['id'] ?? 0,
-      employeeId: json['employee_id'] ?? 0,
-      employeeName: json['employee_name'],
-      type: json['type'] ?? 'single',
+      id: (json['id'] as int?) ?? 0,
+      employeeId: (json['employee_id'] as int?) ?? 0,
+      employeeName: json['employee_name'] as String?,
+      type: (json['type'] as String?) ?? 'single',
       startDate: json['start_date'] != null
-          ? DateTime.parse(json['start_date'])
+          ? DateTime.parse(json['start_date'] as String)
           : DateTime.now(),
       endDate:
-          json['end_date'] != null ? DateTime.tryParse(json['end_date']) : null,
-      reason: json['reason'],
-      status: json['status'] ?? 'pending',
+          json['end_date'] != null ? DateTime.tryParse(json['end_date'] as String) : null,
+      reason: json['reason'] as String?,
+      status: (json['status'] as String?) ?? 'pending',
     );
   }
 

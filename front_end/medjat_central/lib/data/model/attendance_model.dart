@@ -23,19 +23,19 @@ class AttendanceRecordModel {
 
   factory AttendanceRecordModel.fromJson(Map<String, dynamic> json) {
     return AttendanceRecordModel(
-      id: json['id'] ?? 0,
-      employeeId: json['employee_id'] ?? 0,
-      employeeName: json['employee_name'],
+      id: (json['id'] as int?) ?? 0,
+      employeeId: (json['employee_id'] as int?) ?? 0,
+      employeeName: json['employee_name'] as String?,
       checkIn: json['check_in'] != null
-          ? DateTime.tryParse(json['check_in'])
+          ? DateTime.tryParse(json['check_in'] as String)
           : null,
       checkOut: json['check_out'] != null
-          ? DateTime.tryParse(json['check_out'])
+          ? DateTime.tryParse(json['check_out'] as String)
           : null,
-      status: json['status'] ?? 'present',
+      status: (json['status'] as String?) ?? 'present',
       lateMinutes: (json['late_minutes'] as num?)?.toDouble(),
       overtimeMinutes: (json['overtime_minutes'] as num?)?.toDouble(),
-      note: json['note'],
+      note: json['note'] as String?,
     );
   }
 

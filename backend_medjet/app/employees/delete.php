@@ -19,6 +19,6 @@ if (!$employee) {
 
 EmployeeModel::delete($employeeId, $tenantId);
 
-AuditLogModel::log($tenantId, $auth['user_id'], 'employee.delete', 'employee', $employeeId);
+AuditLogModel::log($tenantId, $auth['admin_id'], 'employee.delete', 'employee', $employeeId);
 
 Response::success(['message' => 'Employee deactivated']);

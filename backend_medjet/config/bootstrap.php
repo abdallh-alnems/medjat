@@ -25,7 +25,7 @@ require_once __DIR__ . '/../core/I18n.php';
 require_once __DIR__ . '/../core/NotificationService.php';
 
 require_once __DIR__ . '/../models/TenantModel.php';
-require_once __DIR__ . '/../models/UserModel.php';
+require_once __DIR__ . '/../models/AdminModel.php';
 require_once __DIR__ . '/../models/BranchModel.php';
 require_once __DIR__ . '/../models/EmployeeModel.php';
 require_once __DIR__ . '/../models/AttendanceModel.php';

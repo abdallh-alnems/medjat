@@ -73,6 +73,7 @@ class AttendanceScreen extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'fab_attendance',
         onPressed: () => _showManualCheckInSheet(context, ctrl),
         backgroundColor: colors.brand,
         child: const Icon(Icons.add, color: Colors.white),

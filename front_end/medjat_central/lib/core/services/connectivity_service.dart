@@ -8,7 +8,7 @@ class ConnectivityService extends GetxService {
   Stream<bool> get onConnectivityChanged => _connectivityStream.stream;
 
   final _connectivityStream = StreamController<bool>.broadcast();
-  StreamSubscription? _subscription;
+  StreamSubscription<List<ConnectivityResult>>? _subscription;
 
   @override
   void onInit() {

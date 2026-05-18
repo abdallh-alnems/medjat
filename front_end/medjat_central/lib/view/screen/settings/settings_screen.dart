@@ -21,7 +21,7 @@ class SettingsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(AppSpacing.s4),
         children: [
           if (auth.user?.canManageBranches == true) ...[
-            _SectionHeader(title: 'الشركة'),
+            const _SectionHeader(title: 'الشركة'),
             _SettingTile(
               icon: Icons.tune_outlined,
               title: 'قواعد الخصم والإضافي',
@@ -42,7 +42,7 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.s5),
           ],
-          _SectionHeader(title: 'التطبيق'),
+          const _SectionHeader(title: 'التطبيق'),
           _SettingTile(
             icon: Icons.dark_mode_outlined,
             title: 'الوضع الداكن',
@@ -59,7 +59,7 @@ class SettingsScreen extends StatelessWidget {
             onTap: () {},
           ),
           const SizedBox(height: AppSpacing.s5),
-          _SectionHeader(title: 'الحساب'),
+          const _SectionHeader(title: 'الحساب'),
           Container(
             margin: const EdgeInsets.only(bottom: AppSpacing.s3),
             padding: const EdgeInsets.all(AppSpacing.s4),
@@ -74,7 +74,7 @@ class SettingsScreen extends StatelessWidget {
                   radius: 24,
                   backgroundColor: colors.brandSubtle,
                   child: Text(
-                    (auth.user?.name?.isNotEmpty ?? false)
+                    (auth.user?.name.isNotEmpty ?? false)
                         ? auth.user!.name[0]
                         : '?',
                     style: TextStyle(

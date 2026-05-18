@@ -10,7 +10,7 @@ $name = $input['name'] ?? null;
 $phone = $input['phone'] ?? null;
 
 if ($name) {
-    UserModel::update($auth['user_id'], $tenantId, ['name' => $name]);
+    AdminModel::update($auth['admin_id'], $tenantId, ['name' => $name]);
 }
 
 Response::success(['message' => 'Profile updated']);

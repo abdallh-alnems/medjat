@@ -11,8 +11,8 @@ final class PerformanceModel {
 
     public static function getByEmployee(int $employeeId, int $tenantId): array {
         return Database::fetchAll(
-            "SELECT pr.*, u.name as reviewer_name FROM performance_reviews pr
-             LEFT JOIN users u ON u.id = pr.reviewer_id
+            "SELECT pr.*, a.name as reviewer_name FROM performance_reviews pr
+             LEFT JOIN admins a ON a.id = pr.reviewer_id
              WHERE pr.employee_id = ? AND pr.tenant_id = ?
              ORDER BY pr.created_at DESC",
             [$employeeId, $tenantId]

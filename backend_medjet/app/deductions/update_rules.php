@@ -17,6 +17,6 @@ if (empty($rules)) {
 
 DeductionRuleModel::updateRules($tenantId, $rules);
 
-AuditLogModel::log($tenantId, $auth['user_id'], 'deduction_rules.update', null, null, $rules);
+AuditLogModel::log($tenantId, $auth['admin_id'], 'deduction_rules.update', null, null, $rules);
 
 Response::success(['message' => 'Deduction rules updated']);

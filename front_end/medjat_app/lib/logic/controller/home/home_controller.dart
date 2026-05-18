@@ -17,7 +17,7 @@ class HomeController extends GetxController {
   double? distanceFromBranch;
   bool isOffline = false;
 
-  StreamSubscription? _connectivitySub;
+  StreamSubscription<bool>? _connectivitySub;
 
   @override
   void onInit() {
@@ -44,7 +44,7 @@ class HomeController extends GetxController {
     update();
 
     final response = await _homeData.getTodayStatus();
-    final responseStatus = response['status'];
+    final responseStatus = response['status'] as StatusRequest?;
 
     if (responseStatus == StatusRequest.success) {
       final data = response['data'];

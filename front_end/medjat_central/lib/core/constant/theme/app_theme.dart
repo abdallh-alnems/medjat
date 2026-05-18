@@ -52,7 +52,7 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
-          side: BorderSide(color: c.borderHairline, width: 1),
+          side: BorderSide(color: c.borderHairline),
         ),
         margin: EdgeInsets.zero,
       ),
@@ -65,11 +65,11 @@ class AppTheme {
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          borderSide: BorderSide(color: c.borderHairline, width: 1),
+          borderSide: BorderSide(color: c.borderHairline),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          borderSide: BorderSide(color: c.borderHairline, width: 1),
+          borderSide: BorderSide(color: c.borderHairline),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -77,7 +77,7 @@ class AppTheme {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          borderSide: BorderSide(color: c.error, width: 1),
+          borderSide: BorderSide(color: c.error),
         ),
         hintStyle: TextStyle(
           fontFamily: 'IBM Plex Sans Arabic',
@@ -113,7 +113,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: c.brand,
           minimumSize: const Size.fromHeight(52),
-          side: BorderSide(color: c.borderHairline, width: 1),
+          side: BorderSide(color: c.borderHairline),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.sm),
           ),

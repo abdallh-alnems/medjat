@@ -32,6 +32,6 @@ if (!empty($updateData)) {
     EmployeeModel::update($employeeId, $tenantId, $updateData);
 }
 
-AuditLogModel::log($tenantId, $auth['user_id'], 'employee.update', 'employee', $employeeId, $updateData);
+AuditLogModel::log($tenantId, $auth['admin_id'], 'employee.update', 'employee', $employeeId, $updateData);
 
 Response::success(['message' => 'Employee updated']);

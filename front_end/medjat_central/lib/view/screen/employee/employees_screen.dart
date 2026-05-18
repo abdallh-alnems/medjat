@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/class/handling_data_request.dart';
+import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
@@ -25,7 +26,13 @@ class EmployeesScreen extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        heroTag: 'fab_employees',
+        onPressed: () async {
+          final result = await Get.toNamed(AppRoutes.employeeAdd);
+          if (result == true) {
+            ctrl.loadEmployees();
+          }
+        },
         backgroundColor: AppColors.of(context).brand,
         child: const Icon(Icons.person_add_outlined, color: Colors.white),
       ),
@@ -81,7 +88,11 @@ class EmployeesScreen extends StatelessWidget {
                                 const SizedBox(height: AppSpacing.s3),
                             itemBuilder: (_, i) => EmployeeCard(
                               employee: ctrl.employees[i],
-                              onTap: () {},
+                              onTap: () => Get.toNamed(
+                                AppRoutes.employeeDetail
+                                    .replaceAll(':id', '${ctrl.employees[i].id}'),
+                                arguments: {'id': ctrl.employees[i].id},
+                              ),
                             ),
                           ),
                   );

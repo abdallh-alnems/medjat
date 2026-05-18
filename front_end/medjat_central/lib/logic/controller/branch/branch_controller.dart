@@ -24,11 +24,12 @@ class BranchController extends GetxController {
     if (response['status'] == StatusRequest.success) {
       final data = response['data'];
       if (data is List) {
-        branches = data.map((e) => BranchModel.fromJson(e)).toList();
+        branches =
+            data.map((e) => BranchModel.fromJson(e as Map<String, dynamic>)).toList();
       }
       status = StatusRequest.success;
     } else {
-      status = response['status'] ?? StatusRequest.failure;
+      status = (response['status'] as StatusRequest?) ?? StatusRequest.failure;
     }
     update();
   }

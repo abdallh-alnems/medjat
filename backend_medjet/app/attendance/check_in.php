@@ -14,7 +14,7 @@ $qrCode = $input['qr_code'] ?? null;
 
 Validator::required($branchId, 'branch_id');
 
-$employee = EmployeeModel::findByUserId($auth['user_id'], $tenantId);
+$employee = EmployeeModel::findByAdminId($auth['admin_id'], $tenantId);
 if (!$employee) {
     Response::fail('Employee profile not found', 404);
 }

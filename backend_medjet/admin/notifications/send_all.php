@@ -14,7 +14,7 @@ class NotificationSendAllApi extends AdminBaseApi {
             Validator::required($title, 'title');
             Validator::required($body, 'body');
 
-            $tokens = Database::fetchAll("SELECT fcm_token FROM user_devices WHERE is_active = 1");
+            $tokens = Database::fetchAll("SELECT fcm_token FROM admin_devices WHERE is_active = 1");
             $tokenList = array_column($tokens, 'fcm_token');
 
             $sent = 0;

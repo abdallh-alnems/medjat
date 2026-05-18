@@ -9,7 +9,7 @@ class AdminDashboardApi extends AdminBaseApi {
         $this->handleRequest(function () {
             $totalTenants = Database::fetchOne("SELECT COUNT(*) as count FROM tenants")['count'];
             $activeTenants = Database::fetchOne("SELECT COUNT(*) as count FROM tenants WHERE is_active = 1")['count'];
-            $totalUsers = Database::fetchOne("SELECT COUNT(*) as count FROM users")['count'];
+            $totalUsers = Database::fetchOne("SELECT COUNT(*) as count FROM admins")['count'];
             $totalEmployees = Database::fetchOne("SELECT COUNT(*) as count FROM employees WHERE status = 'active'")['count'];
             $activeSubs = Database::fetchOne("SELECT COUNT(*) as count FROM subscriptions WHERE status = 'active'")['count'];
 

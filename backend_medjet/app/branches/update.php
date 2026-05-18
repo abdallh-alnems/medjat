@@ -28,6 +28,6 @@ if (!empty($updateData)) {
     BranchModel::update($branchId, $tenantId, $updateData);
 }
 
-AuditLogModel::log($tenantId, $auth['user_id'], 'branch.update', 'branch', $branchId);
+AuditLogModel::log($tenantId, $auth['admin_id'], 'branch.update', 'branch', $branchId);
 
 Response::success(['message' => 'Branch updated']);

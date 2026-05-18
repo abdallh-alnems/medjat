@@ -15,7 +15,7 @@ if (empty($records) || !is_array($records)) {
 
 $result = AttendanceModel::syncOffline($records, $tenantId);
 
-AuditLogModel::log($tenantId, $auth['user_id'], 'attendance.offline_sync', null, null, [
+AuditLogModel::log($tenantId, $auth['admin_id'], 'attendance.offline_sync', null, null, [
     'synced' => $result['synced'],
     'failed' => $result['failed'],
 ]);

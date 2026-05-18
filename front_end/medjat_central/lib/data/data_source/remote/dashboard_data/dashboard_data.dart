@@ -1,7 +1,6 @@
 import 'package:get/get.dart';
 import '../../../../core/class/crud.dart';
-import '../../../../core/class/status_request.dart';
-import '../../../../core/constant/app_links.dart';
+import '../../../../core/constant/id/app_links.dart';
 
 class DashboardData {
   final CRUD _crud = Get.find<CRUD>();

@@ -36,17 +36,17 @@ class AuthController extends GetxController {
     final response = await _authData.login(email: email, password: password);
 
     if (response['status'] == StatusRequest.success) {
-      final data = response['data'];
+      final data = response['data'] as Map<String, dynamic>?;
       if (data?['user'] != null) {
-        user = UserModel.fromJson(data['user']);
+        user = UserModel.fromJson(data!['user'] as Map<String, dynamic>);
       }
       isLoggedIn.value = true;
       status.value = StatusRequest.success;
       Get.offAllNamed(AppRoutes.home);
     } else {
-      status.value = response['status'] ?? StatusRequest.failure;
+      status.value = (response['status'] as StatusRequest?) ?? StatusRequest.failure;
       final statusCode = response['statusCode'];
-      String message = response['message'] ?? 'حدث خطأ، حاول مرة أخرى';
+      String message = (response['message'] as String?) ?? 'حدث خطأ، حاول مرة أخرى';
 
       if (statusCode == 401) {
         message = 'بيانات الدخول غير صحيحة';
@@ -69,7 +69,7 @@ class AuthController extends GetxController {
   Future<void> loadProfile() async {
     final response = await _authData.getProfile();
     if (response['status'] == StatusRequest.success && response['data'] != null) {
-      user = UserModel.fromJson(response['data']);
+      user = UserModel.fromJson(response['data'] as Map<String, dynamic>);
       await TokenStorageService.saveUserData(jsonEncode(response['data']));
       update();
     }

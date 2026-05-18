@@ -11,8 +11,8 @@ final class WarningModel {
 
     public static function getByEmployee(int $employeeId, int $tenantId): array {
         return Database::fetchAll(
-            "SELECT w.*, u.name as issued_by_name FROM warnings w
-             LEFT JOIN users u ON u.id = w.issued_by
+            "SELECT w.*, a.name as issued_by_name FROM warnings w
+             LEFT JOIN admins a ON a.id = w.issued_by
              WHERE w.employee_id = ? AND w.tenant_id = ?
              ORDER BY w.created_at DESC",
             [$employeeId, $tenantId]

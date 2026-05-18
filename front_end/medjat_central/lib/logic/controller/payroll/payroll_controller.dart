@@ -31,11 +31,12 @@ class PayrollController extends GetxController {
     if (response['status'] == StatusRequest.success) {
       final data = response['data'];
       if (data is List) {
-        payrolls = data.map((e) => PayrollModel.fromJson(e)).toList();
+        payrolls =
+            data.map((e) => PayrollModel.fromJson(e as Map<String, dynamic>)).toList();
       }
       status = StatusRequest.success;
     } else {
-      status = response['status'] ?? StatusRequest.failure;
+      status = (response['status'] as StatusRequest?) ?? StatusRequest.failure;
     }
     update();
   }

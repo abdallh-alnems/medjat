@@ -13,8 +13,8 @@ $leaveId = (int) ($input['leave_id'] ?? 0);
 $reason = $input['reason'] ?? null;
 Validator::required($leaveId, 'leave_id');
 
-LeaveModel::reject($leaveId, $tenantId, $auth['user_id'], $reason);
+LeaveModel::reject($leaveId, $tenantId, $auth['admin_id'], $reason);
 
-AuditLogModel::log($tenantId, $auth['user_id'], 'leave.reject', 'leave', $leaveId);
+AuditLogModel::log($tenantId, $auth['admin_id'], 'leave.reject', 'leave', $leaveId);
 
 Response::success(['message' => 'Leave rejected']);

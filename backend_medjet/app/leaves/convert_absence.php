@@ -22,8 +22,8 @@ if (!$employee) {
     Response::notFound('Employee');
 }
 
-LeaveModel::convertAbsenceToLeave($employeeId, $tenantId, $date, $type, $reason, $auth['user_id']);
+LeaveModel::convertAbsenceToLeave($employeeId, $tenantId, $date, $type, $reason, $auth['admin_id']);
 
-AuditLogModel::log($tenantId, $auth['user_id'], 'leave.convert_absence', 'employee', $employeeId, ['date' => $date]);
+AuditLogModel::log($tenantId, $auth['admin_id'], 'leave.convert_absence', 'employee', $employeeId, ['date' => $date]);
 
 Response::success(['message' => 'Absence converted to leave']);

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../core/class/handling_data_request.dart';
 import '../../../core/constant/theme/theme.dart';
+import '../../../data/model/dashboard_model.dart';
 import '../../../logic/controller/dashboard/dashboard_controller.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
 import '../../widget/dashboard/stat_card.dart';
@@ -19,7 +20,7 @@ class DashboardScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'مرحباً، ${auth.user?.name?.split(' ').first ?? 'مدير'}',
+          'مرحباً، ${auth.user?.name.split(' ').first ?? 'مدير'}',
           style: AppTextStyles.h3(context),
         ),
         actions: [
@@ -30,17 +31,17 @@ class DashboardScreen extends StatelessWidget {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: ctrl.loadDashboard,
-        child: GetBuilder<DashboardController>(
-          builder: (_) {
-            return HandlingDataRequest(
-              statusRequest: ctrl.status,
-              onRetry: ctrl.loadDashboard,
-              widget: _DashboardContent(ctrl: ctrl),
-            );
-          },
+          onRefresh: ctrl.loadDashboard,
+          child: GetBuilder<DashboardController>(
+            builder: (_) {
+              return HandlingDataRequest(
+                statusRequest: ctrl.status,
+                onRetry: ctrl.loadDashboard,
+                widget: _DashboardContent(ctrl: ctrl),
+              );
+            },
+          ),
         ),
-      ),
     );
   }
 }
@@ -137,7 +138,7 @@ class _DashboardContent extends StatelessWidget {
 }
 
 class _BranchStatTile extends StatelessWidget {
-  final dynamic stats;
+  final BranchStats stats;
   const _BranchStatTile({required this.stats});
 
   @override

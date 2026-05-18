@@ -36,9 +36,9 @@ if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
         Response::error('Failed to save file', 500);
     }
 
-    $docId = DocumentModel::upload($employeeId, $tenantId, $documentTypeId, $filePath, $file['name'], $auth['user_id']);
+    $docId = DocumentModel::upload($employeeId, $tenantId, $documentTypeId, $filePath, $file['name'], $auth['admin_id']);
 
-    AuditLogModel::log($tenantId, $auth['user_id'], 'document.upload', 'employee', $employeeId);
+    AuditLogModel::log($tenantId, $auth['admin_id'], 'document.upload', 'employee', $employeeId);
 
     Response::success(['document_id' => $docId]);
 } else {

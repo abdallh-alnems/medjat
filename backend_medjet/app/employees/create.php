@@ -30,6 +30,6 @@ $employeeId = EmployeeModel::create($tenantId, [
     'hire_date' => $hireDate,
 ]);
 
-AuditLogModel::log($tenantId, $auth['user_id'], 'employee.create', 'employee', $employeeId);
+AuditLogModel::log($tenantId, $auth['admin_id'], 'employee.create', 'employee', $employeeId);
 
 Response::success(['employee_id' => $employeeId], 201);

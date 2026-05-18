@@ -6,6 +6,7 @@ import '../../../data/data_source/remote/payroll_data/payroll_data.dart';
 import '../../../data/data_source/remote/leave_data/leave_data.dart';
 import '../../../data/data_source/remote/branch_data/branch_data.dart';
 import '../../../data/data_source/remote/report_data/report_data.dart';
+import '../../../data/data_source/remote/document_data/document_data.dart';
 import '../controller/dashboard/dashboard_controller.dart';
 import '../controller/employee/employee_controller.dart';
 import '../controller/attendance/attendance_controller.dart';
@@ -25,6 +26,7 @@ class HomeBinding extends Bindings {
     Get.lazyPut<LeaveData>(() => LeaveData());
     Get.lazyPut<BranchData>(() => BranchData());
     Get.lazyPut<ReportData>(() => ReportData());
+    Get.lazyPut<DocumentData>(() => DocumentData());
     Get.lazyPut<DashboardController>(() => DashboardController());
     Get.lazyPut<EmployeeController>(() => EmployeeController());
     Get.lazyPut<AttendanceController>(() => AttendanceController());

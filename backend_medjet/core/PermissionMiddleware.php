@@ -29,7 +29,7 @@ final class PermissionMiddleware {
             return;
         }
 
-        $rolePerms = RoleModel::getPermissions($user['user_id'], $user['tenant_id']);
+        $rolePerms = RoleModel::getPermissions($user['admin_id'], $user['tenant_id']);
         if ($rolePerms === null) {
             $rolePerms = self::ROLE_DEFAULTS[$role] ?? [];
         }

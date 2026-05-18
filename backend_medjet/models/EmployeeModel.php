@@ -8,22 +8,22 @@ final class EmployeeModel {
         );
     }
 
-    public static function findByUserId(int $userId, int $tenantId): ?array {
+    public static function findByAdminId(int $adminId, int $tenantId): ?array {
         return Database::fetchOne(
-            "SELECT * FROM employees WHERE user_id = ? AND tenant_id = ? LIMIT 1",
-            [$userId, $tenantId]
+            "SELECT * FROM employees WHERE admin_id = ? AND tenant_id = ? LIMIT 1",
+            [$adminId, $tenantId]
         );
     }
 
     public static function create(int $tenantId, array $data): int {
         Database::execute(
-            "INSERT INTO employees (tenant_id, branch_id, user_id, name, phone, email, job_title,
+            "INSERT INTO employees (tenant_id, branch_id, admin_id, name, phone, email, job_title,
              base_salary, hire_date, national_id, status)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $tenantId,
                 $data['branch_id'],
-                $data['user_id'] ?? null,
+                $data['admin_id'] ?? null,
                 $data['name'],
                 $data['phone'] ?? null,
                 $data['email'] ?? null,

@@ -22,8 +22,8 @@ if (!$employee) {
     Response::notFound('Employee');
 }
 
-$id = WarningModel::add($employeeId, $tenantId, $type, $reason, $auth['user_id']);
+$id = WarningModel::add($employeeId, $tenantId, $type, $reason, $auth['admin_id']);
 
-AuditLogModel::log($tenantId, $auth['user_id'], 'warning.add', 'employee', $employeeId, ['type' => $type]);
+AuditLogModel::log($tenantId, $auth['admin_id'], 'warning.add', 'employee', $employeeId, ['type' => $type]);
 
 Response::success(['id' => $id, 'message' => 'Warning issued']);

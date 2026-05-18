@@ -29,21 +29,21 @@ class UserModel {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'] ?? 0,
-      tenantId: json['tenant_id'] ?? 0,
-      branchId: json['branch_id'] ?? 0,
-      name: json['name'] ?? '',
-      email: json['email'] ?? '',
-      phone: json['phone'],
-      photoUrl: json['photo_url'],
-      roleKey: json['role_key'] ?? '',
+      id: (json['id'] as int?) ?? 0,
+      tenantId: (json['tenant_id'] as int?) ?? 0,
+      branchId: (json['branch_id'] as int?) ?? 0,
+      name: (json['name'] as String?) ?? '',
+      email: (json['email'] as String?) ?? '',
+      phone: json['phone'] as String?,
+      photoUrl: json['photo_url'] as String?,
+      roleKey: (json['role_key'] as String?) ?? '',
       permissions: (json['permissions'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
-      employeeCode: json['employee_code'],
-      jobTitle: json['job_title'],
-      branchName: json['branch_name'],
+      employeeCode: json['employee_code'] as String?,
+      jobTitle: json['job_title'] as String?,
+      branchName: json['branch_name'] as String?,
     );
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constant/routes/app_routes.dart';
@@ -19,14 +21,18 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _init() async {
-    await Future.delayed(const Duration(seconds: 2));
+    await Future<void>.delayed(const Duration(seconds: 2));
     if (!mounted) return;
 
     final auth = Get.find<AuthController>();
     final isAuth = await auth.checkAuth();
 
     if (!mounted) return;
-    Get.offAllNamed(isAuth ? AppRoutes.home : AppRoutes.login);
+    if (isAuth && !auth.hasTenant.value) {
+      unawaited(Get.offAllNamed(AppRoutes.onboarding));
+    } else {
+      unawaited(Get.offAllNamed(isAuth ? AppRoutes.home : AppRoutes.login));
+    }
   }
 
   @override

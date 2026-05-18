@@ -33,7 +33,7 @@ class DashboardController extends GetxController {
       }
       status = StatusRequest.success;
     } else {
-      status = response['status'] ?? StatusRequest.failure;
+      status = (response['status'] as StatusRequest?) ?? StatusRequest.failure;
     }
     update();
   }

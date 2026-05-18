@@ -17,6 +17,6 @@ if (empty($rules)) {
 
 BonusRuleModel::updateRules($tenantId, $rules);
 
-AuditLogModel::log($tenantId, $auth['user_id'], 'bonus_rules.update', null, null, $rules);
+AuditLogModel::log($tenantId, $auth['admin_id'], 'bonus_rules.update', null, null, $rules);
 
 Response::success(['message' => 'Bonus rules updated']);

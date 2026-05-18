@@ -9,15 +9,15 @@ $tenantId = TenantMiddleware::requireTenant();
 PermissionMiddleware::check($auth, 'add_managers');
 
 $input = $auth['input'];
-$userId = (int) ($input['user_id'] ?? 0);
+$adminId = (int) ($input['admin_id'] ?? 0);
 $name = $input['name'] ?? '';
 $permissions = $input['permissions'] ?? [];
 $branchId = ($input['branch_id'] ?? null) ? (int) $input['branch_id'] : null;
 
-Validator::required($userId, 'user_id');
+Validator::required($adminId, 'admin_id');
 
-$id = RoleModel::create($tenantId, $userId, $name, $permissions, $branchId);
+$id = RoleModel::create($tenantId, $adminId, $name, $permissions, $branchId);
 
-AuditLogModel::log($tenantId, $auth['user_id'], 'role.create', 'user', $userId, ['permissions' => $permissions]);
+AuditLogModel::log($tenantId, $auth['admin_id'], 'role.create', 'admin', $adminId, ['permissions' => $permissions]);
 
 Response::success(['id' => $id, 'message' => 'Role created']);

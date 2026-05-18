@@ -22,8 +22,8 @@ if (!$employee) {
     Response::notFound('Employee');
 }
 
-$id = BonusRuleModel::addManualBonus($employeeId, $tenantId, $amount, $reason, $auth['user_id']);
+$id = BonusRuleModel::addManualBonus($employeeId, $tenantId, $amount, $reason, $auth['admin_id']);
 
-AuditLogModel::log($tenantId, $auth['user_id'], 'bonus.manual', 'employee', $employeeId, ['amount' => $amount]);
+AuditLogModel::log($tenantId, $auth['admin_id'], 'bonus.manual', 'employee', $employeeId, ['amount' => $amount]);
 
 Response::success(['id' => $id, 'message' => 'Manual bonus added']);

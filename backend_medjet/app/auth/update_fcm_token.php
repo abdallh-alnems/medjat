@@ -12,7 +12,7 @@ $platform = $input['platform'] ?? 'android';
 $deviceId = $input['device_id'] ?? 'unknown';
 
 if ($fcmToken) {
-    UserModel::updateFcmToken($auth['user_id'], $fcmToken, $platform, $deviceId);
+    AdminModel::updateFcmToken($auth['admin_id'], $fcmToken, $platform, $deviceId);
 }
 
 Response::success(['message' => 'Token updated']);

@@ -29,19 +29,19 @@ class EmployeeModel {
 
   factory EmployeeModel.fromJson(Map<String, dynamic> json) {
     return EmployeeModel(
-      id: json['id'] ?? 0,
-      branchId: json['branch_id'] ?? 0,
-      name: json['name'] ?? '',
-      email: json['email'],
-      phone: json['phone'],
-      photoUrl: json['photo_url'],
-      employeeCode: json['employee_code'],
-      jobTitle: json['job_title'],
+      id: (json['id'] as int?) ?? 0,
+      branchId: (json['branch_id'] as int?) ?? 0,
+      name: (json['name'] as String?) ?? '',
+      email: json['email'] as String?,
+      phone: json['phone'] as String?,
+      photoUrl: json['photo_url'] as String?,
+      employeeCode: json['employee_code'] as String?,
+      jobTitle: json['job_title'] as String?,
       baseSalary: (json['base_salary'] as num?)?.toDouble() ?? 0,
-      status: json['status'] ?? 'active',
-      branchName: json['branch_name'],
+      status: (json['status'] as String?) ?? 'active',
+      branchName: json['branch_name'] as String?,
       hireDate: json['hire_date'] != null
-          ? DateTime.tryParse(json['hire_date'])
+          ? DateTime.tryParse(json['hire_date'] as String)
           : null,
     );
   }
