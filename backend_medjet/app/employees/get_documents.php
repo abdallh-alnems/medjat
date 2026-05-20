@@ -16,7 +16,7 @@ if (!$employee) {
 }
 
 $documents = DocumentModel::getByEmployee($employeeId, $tenantId);
-$required = DocumentModel::getRequiredByTenant($tenantId);
+$required = DocumentModel::getRequiredForEmployee($employeeId, $tenantId);
 
 Response::success([
     'documents' => $documents,

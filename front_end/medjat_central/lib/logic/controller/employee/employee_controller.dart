@@ -27,16 +27,35 @@ class EmployeeController extends GetxController {
     );
 
     if (response['status'] == StatusRequest.success) {
-      final data = response['data'];
-      if (data is List) {
-        employees =
-            data.map((e) => EmployeeModel.fromJson(e as Map<String, dynamic>)).toList();
-      }
+      employees = _extractItems(response['data']);
       status = StatusRequest.success;
     } else {
       status = (response['status'] as StatusRequest?) ?? StatusRequest.failure;
     }
     update();
+  }
+
+  List<EmployeeModel> _extractItems(dynamic raw) {
+    dynamic payload = raw;
+    if (payload is Map && payload['data'] != null) {
+      payload = payload['data'];
+    }
+    List<dynamic>? items;
+    if (payload is List) {
+      items = payload;
+    } else if (payload is Map) {
+      for (final key in const ['items', 'records', 'list', 'data']) {
+        if (payload[key] is List) {
+          items = payload[key] as List;
+          break;
+        }
+      }
+    }
+    if (items == null) return [];
+    return items
+        .whereType<Map<String, dynamic>>()
+        .map(EmployeeModel.fromJson)
+        .toList();
   }
 
   void onSearch(String query) {

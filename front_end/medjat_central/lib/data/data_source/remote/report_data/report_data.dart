@@ -6,26 +6,51 @@ class ReportData {
   final CRUD _crud = Get.find<CRUD>();
 
   Future<Map<String, dynamic>> getAttendanceReport({
-    String? startDate,
-    String? endDate,
+    required String startDate,
+    required String endDate,
     int? branchId,
   }) async {
-    final params = <String, dynamic>{};
-    if (startDate != null) params['start_date'] = startDate;
-    if (endDate != null) params['end_date'] = endDate;
+    final params = <String, dynamic>{
+      'start_date': startDate,
+      'end_date': endDate,
+    };
     if (branchId != null) params['branch_id'] = branchId;
-    return await _crud.getData(AppLinks.reportAttendance, queryParameters: params);
+    return await _crud.getData(AppLinks.reportAttendance,
+        queryParameters: params);
   }
 
   Future<Map<String, dynamic>> getPayrollReport({
-    int? month,
-    int? year,
+    required String month,
+    int? branchId,
+  }) async {
+    final params = <String, dynamic>{'month': month};
+    if (branchId != null) params['branch_id'] = branchId;
+    return await _crud.getData(AppLinks.reportPayroll,
+        queryParameters: params);
+  }
+
+  Future<Map<String, dynamic>> getEmployeesReport({
     int? branchId,
   }) async {
     final params = <String, dynamic>{};
-    if (month != null) params['month'] = month;
-    if (year != null) params['year'] = year;
     if (branchId != null) params['branch_id'] = branchId;
-    return await _crud.getData(AppLinks.reportPayroll, queryParameters: params);
+    return await _crud.getData(AppLinks.reportEmployees,
+        queryParameters: params);
+  }
+
+  Future<Map<String, dynamic>> getLeavesReport({
+    required String startDate,
+    required String endDate,
+    int? branchId,
+    String? status,
+  }) async {
+    final params = <String, dynamic>{
+      'start_date': startDate,
+      'end_date': endDate,
+    };
+    if (branchId != null) params['branch_id'] = branchId;
+    if (status != null) params['status'] = status;
+    return await _crud.getData(AppLinks.reportLeaves,
+        queryParameters: params);
   }
 }

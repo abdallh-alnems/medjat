@@ -7,6 +7,8 @@ import '../../../data/data_source/remote/leave_data/leave_data.dart';
 import '../../../data/data_source/remote/branch_data/branch_data.dart';
 import '../../../data/data_source/remote/report_data/report_data.dart';
 import '../../../data/data_source/remote/document_data/document_data.dart';
+import '../../../data/data_source/remote/shift_data/shift_data.dart';
+import '../../../data/data_source/remote/manager_data/manager_data.dart';
 import '../controller/dashboard/dashboard_controller.dart';
 import '../controller/employee/employee_controller.dart';
 import '../controller/attendance/attendance_controller.dart';
@@ -14,6 +16,7 @@ import '../controller/payroll/payroll_controller.dart';
 import '../controller/leave/leave_controller.dart';
 import '../controller/branch/branch_controller.dart';
 import '../controller/settings/settings_controller.dart';
+import '../controller/shift/shift_controller.dart';
 import '../../../core/shared/layout/tab_shell.dart';
 
 class HomeBinding extends Bindings {
@@ -27,6 +30,8 @@ class HomeBinding extends Bindings {
     Get.lazyPut<BranchData>(() => BranchData());
     Get.lazyPut<ReportData>(() => ReportData());
     Get.lazyPut<DocumentData>(() => DocumentData());
+    Get.lazyPut<ShiftData>(() => ShiftData());
+    Get.lazyPut<ManagerData>(() => ManagerData());
     Get.lazyPut<DashboardController>(() => DashboardController());
     Get.lazyPut<EmployeeController>(() => EmployeeController());
     Get.lazyPut<AttendanceController>(() => AttendanceController());
@@ -34,6 +39,7 @@ class HomeBinding extends Bindings {
     Get.lazyPut<LeaveController>(() => LeaveController());
     Get.lazyPut<BranchController>(() => BranchController());
     Get.lazyPut<SettingsController>(() => SettingsController());
+    Get.lazyPut<ShiftController>(() => ShiftController());
     Get.lazyPut<TabNavController>(() => TabNavController());
   }
 }

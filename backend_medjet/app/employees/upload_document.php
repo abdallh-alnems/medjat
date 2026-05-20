@@ -29,6 +29,11 @@ if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
         Response::fail('File type not allowed', 400);
     }
 
+    $maxSize = (int) (getenv('UPLOAD_MAX_SIZE') ?: 5242880);
+    if ($file['size'] > $maxSize) {
+        Response::fail('File size exceeds limit', 400);
+    }
+
     $fileName = uniqid() . '_' . time() . '.' . $ext;
     $filePath = $uploadDir . $fileName;
 
@@ -36,7 +41,7 @@ if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
         Response::error('Failed to save file', 500);
     }
 
-    $docId = DocumentModel::upload($employeeId, $tenantId, $documentTypeId, $filePath, $file['name'], $auth['admin_id']);
+    $docId = DocumentModel::upload($employeeId, $tenantId, $documentTypeId, $filePath, $file['name'], $auth['admin_id'], $file['size'], $file['type']);
 
     AuditLogModel::log($tenantId, $auth['admin_id'], 'document.upload', 'employee', $employeeId);
 

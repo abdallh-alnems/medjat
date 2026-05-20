@@ -72,7 +72,7 @@ $tenant = null;
 $employee = null;
 if ($admin['tenant_id']) {
     $tenant = Database::fetchOne(
-        "SELECT id, name, name_ar, plan, currency, timezone FROM tenants WHERE id = ? LIMIT 1",
+        "SELECT id, name, plan, currency, timezone FROM tenants WHERE id = ? LIMIT 1",
         [(int) $admin['tenant_id']]
     );
     $employee = EmployeeModel::findByAdminId((int) $admin['id'], (int) $admin['tenant_id']);
@@ -109,7 +109,6 @@ Response::success([
     'tenant' => $tenant ? [
         'id' => (int) $tenant['id'],
         'name' => $tenant['name'],
-        'name_ar' => $tenant['name_ar'],
         'plan' => $tenant['plan'],
         'currency' => $tenant['currency'],
         'timezone' => $tenant['timezone'],

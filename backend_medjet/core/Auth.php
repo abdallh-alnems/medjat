@@ -26,7 +26,7 @@ final class Auth {
             $input = [];
         }
 
-        $token = $input['token'] ?? null;
+        $token = $input['token'] ?? $_GET['token'] ?? $_SERVER['HTTP_X_FIREBASE_TOKEN'] ?? null;
         if (!$token) {
             Response::fail('Token is required', 400);
         }

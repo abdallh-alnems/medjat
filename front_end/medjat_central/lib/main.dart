@@ -70,7 +70,7 @@ class MedjatCentralApp extends StatelessWidget {
       initialBinding: AppBindings(),
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.light,
+      themeMode: ThemeMode.system,
       translations: AppTranslations(),
       locale: Get.find<LocaleService>().currentLocale,
       fallbackLocale: const Locale('ar'),

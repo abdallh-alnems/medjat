@@ -17,15 +17,13 @@ final class TenantModel {
 
     public static function create(array $data): int {
         Database::execute(
-            "INSERT INTO tenants (name, name_ar, domain, owner_name, owner_email, owner_phone, plan, is_active)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 1)",
+            "INSERT INTO tenants (name, domain, owner_name, owner_email, plan, is_active)
+             VALUES (?, ?, ?, ?, ?, 1)",
             [
                 $data['name'],
-                $data['name_ar'] ?? null,
                 $data['domain'] ?? null,
                 $data['owner_name'],
                 $data['owner_email'],
-                $data['owner_phone'],
                 $data['plan'] ?? 'starter',
             ]
         );
@@ -78,5 +76,27 @@ final class TenantModel {
             [$tenantId]
         );
         return (int) ($row['count'] ?? 0);
+    }
+
+    public static function updateAttendanceMethods(int $id, array $methods, ?array $adminIds): void {
+        Database::execute(
+            "UPDATE tenants SET attendance_methods = ?, manual_attendance_admin_ids = ? WHERE id = ?",
+            [json_encode($methods), $adminIds !== null ? json_encode($adminIds) : null, $id]
+        );
+    }
+
+    public static function getAttendanceConfig(int $id): array {
+        $row = Database::fetchOne(
+            "SELECT attendance_methods, manual_attendance_admin_ids FROM tenants WHERE id = ? LIMIT 1",
+            [$id]
+        );
+        if (!$row) {
+            return ['methods' => ['qr_gps'], 'admin_ids' => null];
+        }
+        $methods = json_decode($row['attendance_methods'], true) ?: ['qr_gps'];
+        $adminIds = $row['manual_attendance_admin_ids'] !== null
+            ? json_decode($row['manual_attendance_admin_ids'], true)
+            : null;
+        return ['methods' => $methods, 'admin_ids' => $adminIds];
     }
 }

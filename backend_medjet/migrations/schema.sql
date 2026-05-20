@@ -28,16 +28,16 @@ CREATE TABLE IF NOT EXISTS `plans` (
 CREATE TABLE IF NOT EXISTS `tenants` (
     `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `name` VARCHAR(100) NOT NULL,
-    `name_ar` VARCHAR(100) DEFAULT NULL,
     `domain` VARCHAR(100) DEFAULT NULL UNIQUE,
     `logo_url` VARCHAR(500) DEFAULT NULL,
     `owner_name` VARCHAR(100) NOT NULL,
     `owner_email` VARCHAR(150) NOT NULL,
-    `owner_phone` VARCHAR(20) DEFAULT NULL,
     `plan` VARCHAR(50) NOT NULL DEFAULT 'starter' COMMENT 'Denormalized current plan name for fast checks',
     `timezone` VARCHAR(50) NOT NULL DEFAULT 'Africa/Cairo',
     `currency` VARCHAR(3) NOT NULL DEFAULT 'EGP',
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `attendance_methods` JSON NOT NULL COMMENT 'Enabled methods, e.g. ["qr_gps","manual"]',
+    `manual_attendance_admin_ids` JSON DEFAULT NULL COMMENT 'NULL = all admins with manage_attendance permission; array of admin IDs = restricted set',
     `email_verified_at` TIMESTAMP NULL DEFAULT NULL,
     `trial_ends_at` TIMESTAMP NULL DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -97,15 +97,35 @@ CREATE TABLE IF NOT EXISTS `branches` (
     `address` TEXT DEFAULT NULL,
     `latitude` DECIMAL(10,7) NOT NULL DEFAULT 0,
     `longitude` DECIMAL(10,7) NOT NULL DEFAULT 0,
-    `gps_radius` INT UNSIGNED NOT NULL DEFAULT 100 COMMENT 'Radius in meters',
     `qr_code` VARCHAR(50) DEFAULT NULL UNIQUE,
-    `work_start_time` TIME DEFAULT '09:00:00',
-    `work_end_time` TIME DEFAULT '17:00:00',
+    `attendance_methods` JSON DEFAULT NULL COMMENT 'Branch-level override; NULL inherits tenants.attendance_methods',
+    `gps_radius_meters` INT UNSIGNED NOT NULL DEFAULT 100 COMMENT 'Allowed GPS radius for check-in in meters',
     `is_active` TINYINT(1) NOT NULL DEFAULT 1,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX `idx_branch_tenant` (`tenant_id`),
     FOREIGN KEY (`tenant_id`) REFERENCES `tenants`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- Shifts
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS `shifts` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `tenant_id` INT UNSIGNED NOT NULL,
+    `branch_id` INT UNSIGNED DEFAULT NULL COMMENT 'NULL = available for all branches',
+    `name` VARCHAR(100) NOT NULL COMMENT 'e.g. "Morning", "Evening", "Night"',
+    `start_time` TIME NOT NULL,
+    `end_time` TIME NOT NULL,
+    `color` VARCHAR(7) DEFAULT NULL COMMENT 'Hex color for UI badge',
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_shift_tenant` (`tenant_id`),
+    INDEX `idx_shift_branch` (`branch_id`),
+    FOREIGN KEY (`tenant_id`) REFERENCES `tenants`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`branch_id`) REFERENCES `branches`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
@@ -214,12 +234,14 @@ CREATE TABLE IF NOT EXISTS `employees` (
     `admin_id` INT UNSIGNED DEFAULT NULL,
     `name` VARCHAR(100) NOT NULL,
     `phone` VARCHAR(20) DEFAULT NULL,
-    `email` VARCHAR(150) DEFAULT NULL,
     `job_title` VARCHAR(100) DEFAULT NULL,
     `department` VARCHAR(100) DEFAULT NULL,
     `national_id` VARCHAR(20) DEFAULT NULL,
-    `base_salary` DECIMAL(12,2) NOT NULL DEFAULT 0,
+    `base_salary` INT UNSIGNED NOT NULL DEFAULT 0,
     `hire_date` DATE DEFAULT NULL,
+    `work_start_time` TIME NOT NULL DEFAULT '09:00:00',
+    `work_end_time` TIME NOT NULL DEFAULT '17:00:00',
+    `shift_id` INT UNSIGNED DEFAULT NULL,
     `status` ENUM('pending_activation','active','terminated','on_leave','suspended') NOT NULL DEFAULT 'pending_activation',
     `profile_image` VARCHAR(500) DEFAULT NULL,
     `face_embedding` BLOB DEFAULT NULL COMMENT 'For ML Kit face verification (v2)',
@@ -231,9 +253,11 @@ CREATE TABLE IF NOT EXISTS `employees` (
     INDEX `idx_emp_branch` (`branch_id`),
     INDEX `idx_emp_admin` (`admin_id`),
     INDEX `idx_emp_status` (`status`),
+    INDEX `idx_emp_shift` (`shift_id`),
     FOREIGN KEY (`tenant_id`) REFERENCES `tenants`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`branch_id`) REFERENCES `branches`(`id`) ON DELETE SET NULL,
-    FOREIGN KEY (`admin_id`) REFERENCES `admins`(`id`) ON DELETE SET NULL
+    FOREIGN KEY (`admin_id`) REFERENCES `admins`(`id`) ON DELETE SET NULL,
+    FOREIGN KEY (`shift_id`) REFERENCES `shifts`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
@@ -262,6 +286,28 @@ CREATE TABLE IF NOT EXISTS `activation_codes` (
     FOREIGN KEY (`tenant_id`) REFERENCES `tenants`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`employee_id`) REFERENCES `employees`(`id`) ON DELETE CASCADE,
     FOREIGN KEY (`generated_by`) REFERENCES `admins`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================
+-- Employee Activation Codes (Admin-generated, 30-day expiry)
+-- Simple 6-digit codes for one-time employee activation
+-- ============================================
+
+CREATE TABLE IF NOT EXISTS `employee_activation_codes` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `tenant_id` INT UNSIGNED NOT NULL,
+    `employee_id` INT UNSIGNED NOT NULL,
+    `code` VARCHAR(12) NOT NULL,
+    `expires_at` TIMESTAMP NOT NULL,
+    `used_at` TIMESTAMP NULL DEFAULT NULL,
+    `used_by_firebase_uid` VARCHAR(128) DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY `uniq_code` (`code`),
+    INDEX `idx_act_employee` (`employee_id`),
+    INDEX `idx_act_tenant` (`tenant_id`),
+    INDEX `idx_act_expires` (`expires_at`),
+    FOREIGN KEY (`tenant_id`) REFERENCES `tenants`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`employee_id`) REFERENCES `employees`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
@@ -701,5 +747,128 @@ INSERT IGNORE INTO `plans` (`name`, `name_ar`, `price`, `max_employees`, `max_br
 INSERT IGNORE INTO `super_admins` (`username`, `password_hash`, `display_name`, `role`, `is_active`) VALUES
 ('superadmin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Super Admin', 'superadmin', 1);
 -- Password: password
+
+-- ============================================
+-- Attendance Station Feature (v2)
+-- ============================================
+
+-- أ. توسعة جدول employees بالحقول البيومترية
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS face_photo_url VARCHAR(500) NULL AFTER face_embedding;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS face_enrolled_at DATETIME NULL AFTER face_photo_url;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS face_quality_score DECIMAL(4,3) NULL AFTER face_enrolled_at;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS fingerprint_template BLOB NULL AFTER face_quality_score;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS fingerprint_enrolled_at DATETIME NULL AFTER fingerprint_template;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS biometric_enrollment_status
+    ENUM('not_enrolled','face_only','fingerprint_only','both') DEFAULT 'not_enrolled' AFTER fingerprint_enrolled_at;
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS has_linked_account BOOLEAN DEFAULT FALSE AFTER biometric_enrollment_status;
+
+-- ب. توسعة جدول branches بإعدادات المحطة
+ALTER TABLE branches ADD COLUMN IF NOT EXISTS station_enabled BOOLEAN DEFAULT FALSE;
+ALTER TABLE branches ADD COLUMN IF NOT EXISTS station_methods
+    ENUM('face_only','fingerprint_only','both_available') DEFAULT 'face_only';
+ALTER TABLE branches ADD COLUMN IF NOT EXISTS station_gps_radius_meters INT DEFAULT 30;
+ALTER TABLE branches ADD COLUMN IF NOT EXISTS station_confidence_threshold DECIMAL(3,2) DEFAULT 0.85;
+ALTER TABLE branches ADD COLUMN IF NOT EXISTS station_admin_pin_hash VARCHAR(255) NULL;
+ALTER TABLE branches ADD COLUMN IF NOT EXISTS station_anti_spoofing_enabled BOOLEAN DEFAULT TRUE;
+
+-- ج. جدول attendance_stations
+CREATE TABLE IF NOT EXISTS `attendance_stations` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `tenant_id` INT UNSIGNED NOT NULL,
+    `branch_id` INT UNSIGNED NOT NULL,
+    `device_token` VARCHAR(255) UNIQUE NOT NULL,
+    `device_name` VARCHAR(100) NOT NULL,
+    `activation_qr_payload` TEXT DEFAULT NULL,
+    `activation_qr_expires_at` TIMESTAMP NULL DEFAULT NULL,
+    `is_activated` TINYINT(1) NOT NULL DEFAULT 0,
+    `activated_at` TIMESTAMP NULL DEFAULT NULL,
+    `last_sync_at` TIMESTAMP NULL DEFAULT NULL,
+    `last_heartbeat_at` TIMESTAMP NULL DEFAULT NULL,
+    `last_known_lat` DECIMAL(10,7) DEFAULT NULL,
+    `last_known_lng` DECIMAL(10,7) DEFAULT NULL,
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `is_locked` TINYINT(1) NOT NULL DEFAULT 0,
+    `locked_reason` VARCHAR(255) DEFAULT NULL,
+    `locked_at` TIMESTAMP NULL DEFAULT NULL,
+    `created_by_user_id` INT UNSIGNED DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `deactivated_at` TIMESTAMP NULL DEFAULT NULL,
+    INDEX `idx_station_tenant` (`tenant_id`),
+    INDEX `idx_station_branch` (`branch_id`),
+    INDEX `idx_station_token` (`device_token`),
+    FOREIGN KEY (`tenant_id`) REFERENCES `tenants`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`branch_id`) REFERENCES `branches`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`created_by_user_id`) REFERENCES `admins`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- د. جدول station_recognition_logs
+CREATE TABLE IF NOT EXISTS `station_recognition_logs` (
+    `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `tenant_id` INT UNSIGNED NOT NULL,
+    `branch_id` INT UNSIGNED NOT NULL,
+    `station_id` INT UNSIGNED NOT NULL,
+    `matched_employee_id` INT UNSIGNED DEFAULT NULL,
+    `verification_method` ENUM('face','fingerprint','both') NOT NULL,
+    `confidence_score` DECIMAL(4,3) DEFAULT NULL,
+    `result` ENUM('success','low_confidence','no_match','spoofing_detected','manual_fallback','too_soon') NOT NULL,
+    `failure_reason` VARCHAR(255) DEFAULT NULL,
+    `captured_image_path` VARCHAR(500) DEFAULT NULL,
+    `gps_lat` DECIMAL(10,7) DEFAULT NULL,
+    `gps_lng` DECIMAL(10,7) DEFAULT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_reclog_tenant` (`tenant_id`),
+    INDEX `idx_reclog_branch` (`branch_id`),
+    INDEX `idx_reclog_station` (`station_id`),
+    INDEX `idx_reclog_employee` (`matched_employee_id`),
+    INDEX `idx_reclog_created` (`created_at`),
+    FOREIGN KEY (`tenant_id`) REFERENCES `tenants`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`branch_id`) REFERENCES `branches`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`station_id`) REFERENCES `attendance_stations`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`matched_employee_id`) REFERENCES `employees`(`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- هـ. توسعة جدول attendance بحقول المحطة
+ALTER TABLE attendance ADD COLUMN IF NOT EXISTS recognition_method
+    ENUM('manual','qr_gps','station_face','station_fingerprint','station_both') NULL AFTER check_out_method;
+ALTER TABLE attendance ADD COLUMN IF NOT EXISTS recognition_confidence DECIMAL(4,3) NULL AFTER recognition_method;
+ALTER TABLE attendance ADD COLUMN IF NOT EXISTS station_id INT UNSIGNED NULL AFTER recognition_confidence;
+
+-- ============================================
+-- Documents — Migration: expand required_documents
+-- ============================================
+
+ALTER TABLE required_documents ADD COLUMN IF NOT EXISTS notification_days_before INT DEFAULT 30
+    COMMENT 'Days before expiry to send notification';
+ALTER TABLE required_documents ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT 'general'
+    COMMENT 'identity|contract|certificate|insurance|general';
+ALTER TABLE required_documents ADD COLUMN IF NOT EXISTS sort_order INT DEFAULT 0;
+
+-- Documents — Migration: expand employee_documents
+ALTER TABLE employee_documents ADD COLUMN IF NOT EXISTS notes TEXT NULL;
+ALTER TABLE employee_documents ADD COLUMN IF NOT EXISTS rejected_reason VARCHAR(500) NULL;
+ALTER TABLE employee_documents ADD COLUMN IF NOT EXISTS verified_at DATETIME NULL;
+ALTER TABLE employee_documents ADD COLUMN IF NOT EXISTS verified_by INT UNSIGNED NULL;
+
+-- Documents — Migration: scope (all | branch | employees)
+ALTER TABLE required_documents
+    ADD COLUMN IF NOT EXISTS scope_type ENUM('all','branch','employees') NOT NULL DEFAULT 'all'
+    COMMENT 'all=every employee, branch=single branch, employees=specific list';
+ALTER TABLE required_documents
+    ADD COLUMN IF NOT EXISTS scope_branch_id INT UNSIGNED NULL;
+ALTER TABLE required_documents
+    ADD INDEX IF NOT EXISTS idx_reqdoc_scope_branch (scope_branch_id);
+
+CREATE TABLE IF NOT EXISTS `required_document_employees` (
+    `required_document_id` INT UNSIGNED NOT NULL,
+    `employee_id` INT UNSIGNED NOT NULL,
+    `tenant_id` INT UNSIGNED NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`required_document_id`, `employee_id`),
+    INDEX `idx_rde_employee` (`employee_id`, `tenant_id`),
+    INDEX `idx_rde_tenant` (`tenant_id`),
+    FOREIGN KEY (`required_document_id`) REFERENCES `required_documents`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`employee_id`) REFERENCES `employees`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`tenant_id`) REFERENCES `tenants`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

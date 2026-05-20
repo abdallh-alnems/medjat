@@ -1,10 +1,13 @@
+import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/constant/theme/theme.dart';
+import '../../../core/services/token_storage_service.dart';
 import '../../../data/data_source/remote/tenant_data/tenant_data.dart';
+import '../../../data/model/user_model.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -38,7 +41,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _onCreateCompany() async {
     final formKey = GlobalKey<FormState>();
     final nameCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
 
     final submitted = await Get.bottomSheet<bool>(
       Padding(
@@ -64,13 +66,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 decoration: InputDecoration(labelText: 'company_name'.tr),
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? 'required'.tr : null,
-              ),
-              const SizedBox(height: AppSpacing.s3),
-              TextFormField(
-                controller: phoneCtrl,
-                decoration:
-                    InputDecoration(labelText: 'phone_optional'.tr),
-                keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: AppSpacing.s5),
               ElevatedButton(
@@ -106,7 +101,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final resp = await _tenantData.createCompany(
       firebaseToken: token,
       companyName: nameCtrl.text.trim(),
-      phone: phoneCtrl.text.trim(),
     );
     if (!mounted) return;
     setState(() => _loading = false);
@@ -114,7 +108,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (resp['status'] == StatusRequest.success) {
       final data = (resp['data'] as Map?)?['data'] as Map?;
       if (data != null && data['success'] == true) {
+        final userJson = _auth.user?.toJson() ?? {};
+        final userResp = data['user'] as Map?;
+        final tenantResp = data['tenant'] as Map?;
+        if (userResp != null) {
+          userJson['tenant_id'] = userResp['tenant_id'];
+          userJson['role_key'] = userResp['role_key'] ?? userResp['role'];
+        } else if (tenantResp != null) {
+          userJson['tenant_id'] = tenantResp['id'];
+        }
+        _auth.user = UserModel.fromJson(userJson);
+        await TokenStorageService.saveUserData(jsonEncode(_auth.user!.toJson()));
         _auth.hasTenant.value = true;
+        _auth.isLoggedIn.value = true;
         Get.snackbar('done'.tr, 'company_created_success'.tr,
             snackPosition: SnackPosition.BOTTOM);
         Get.offAllNamed(AppRoutes.home);

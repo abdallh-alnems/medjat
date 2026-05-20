@@ -10,7 +10,6 @@ class TenantCreateApi extends AdminBaseApi {
             $name = $this->getField('name');
             $ownerName = $this->getField('owner_name');
             $ownerEmail = $this->getField('owner_email');
-            $ownerPhone = $this->getField('owner_phone');
             $plan = $this->getField('plan', 'starter');
 
             Validator::required($name, 'name');
@@ -19,11 +18,9 @@ class TenantCreateApi extends AdminBaseApi {
 
             $tenantId = TenantModel::create([
                 'name' => $name,
-                'name_ar' => $this->getField('name_ar'),
                 'domain' => $this->getField('domain'),
                 'owner_name' => $ownerName,
                 'owner_email' => $ownerEmail,
-                'owner_phone' => $ownerPhone,
                 'plan' => $plan,
             ]);
 

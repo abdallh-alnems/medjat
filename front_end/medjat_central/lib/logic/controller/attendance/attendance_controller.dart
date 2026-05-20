@@ -1,20 +1,55 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/class/status_request.dart';
 import '../../../data/data_source/remote/attendance_data/attendance_data.dart';
+import '../../../data/data_source/remote/employee_data/employee_data.dart';
 import '../../../data/model/attendance_model.dart';
+import '../../../data/model/employee_model.dart';
 
 class AttendanceController extends GetxController {
   final AttendanceData _attendanceData = Get.find<AttendanceData>();
+  final EmployeeData _employeeData = Get.find<EmployeeData>();
 
   StatusRequest status = StatusRequest.none;
   List<AttendanceRecordModel> records = [];
   DateTime selectedDate = DateTime.now();
   int? branchFilter;
+  bool hasEmployees = true;
 
   @override
   void onInit() {
     super.onInit();
+    _checkEmployees();
+  }
+
+  Future<void> _checkEmployees() async {
+    try {
+      final response = await _employeeData.getEmployees();
+      if (response['status'] == StatusRequest.success) {
+        hasEmployees = _extractRawList(response['data']).isNotEmpty;
+      }
+    } catch (_) {}
+    if (!hasEmployees) {
+      status = StatusRequest.success;
+      records = [];
+      update();
+      return;
+    }
     loadAttendance();
+  }
+
+  List<dynamic> _extractRawList(dynamic raw) {
+    dynamic payload = raw;
+    if (payload is Map && payload['data'] != null) {
+      payload = payload['data'];
+    }
+    if (payload is List) return payload;
+    if (payload is Map) {
+      for (final key in const ['items', 'records', 'list', 'data']) {
+        if (payload[key] is List) return payload[key] as List;
+      }
+    }
+    return const [];
   }
 
   Future<void> loadAttendance() async {
@@ -29,17 +64,35 @@ class AttendanceController extends GetxController {
     );
 
     if (response['status'] == StatusRequest.success) {
-      final data = response['data'];
-      if (data is List) {
-        records = data
-            .map((e) => AttendanceRecordModel.fromJson(e as Map<String, dynamic>))
-            .toList();
-      }
+      records = _extractItems(response['data']);
       status = StatusRequest.success;
     } else {
       status = (response['status'] as StatusRequest?) ?? StatusRequest.failure;
     }
     update();
+  }
+
+  List<AttendanceRecordModel> _extractItems(dynamic raw) {
+    dynamic payload = raw;
+    if (payload is Map && payload['data'] != null) {
+      payload = payload['data'];
+    }
+    List<dynamic>? items;
+    if (payload is List) {
+      items = payload;
+    } else if (payload is Map) {
+      for (final key in const ['items', 'records', 'list', 'data']) {
+        if (payload[key] is List) {
+          items = payload[key] as List;
+          break;
+        }
+      }
+    }
+    if (items == null) return [];
+    return items
+        .whereType<Map<String, dynamic>>()
+        .map(AttendanceRecordModel.fromJson)
+        .toList();
   }
 
   void changeDate(DateTime date) {
@@ -52,26 +105,69 @@ class AttendanceController extends GetxController {
     loadAttendance();
   }
 
-  Future<void> manualCheckIn({
+  Future<bool> recordManualAttendance({
     required int employeeId,
-    required String type,
-    required DateTime time,
-    String? note,
+    required int branchId,
+    required DateTime date,
+    TimeOfDay? checkInTime,
+    TimeOfDay? checkOutTime,
   }) async {
-    final response = await _attendanceData.manualCheckIn({
+    if (checkInTime == null && checkOutTime == null) {
+      Get.snackbar('error'.tr, 'select_check_in_or_check_out'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return false;
+    }
+
+    String fmtDate(DateTime d) =>
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    String fmtTime(TimeOfDay t) =>
+        '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}:00';
+
+    final payload = <String, dynamic>{
       'employee_id': employeeId,
-      'type': type,
-      'time': time.toIso8601String(),
-      if (note != null) 'note': note,
-    });
+      'branch_id': branchId,
+      'date': fmtDate(date),
+    };
+    if (checkInTime != null) payload['check_in_time'] = fmtTime(checkInTime);
+    if (checkOutTime != null) payload['check_out_time'] = fmtTime(checkOutTime);
+
+    final response = await _attendanceData.manualCheckIn(payload);
 
     if (response['status'] == StatusRequest.success) {
-      Get.snackbar('تم', 'تم تسجيل الحضور بنجاح',
-          snackPosition: SnackPosition.BOTTOM);
-      loadAttendance();
-    } else {
-      Get.snackbar('خطأ', 'حدث خطأ في تسجيل الحضور',
-          snackPosition: SnackPosition.BOTTOM);
+      final isCheckOutOnly = checkInTime == null && checkOutTime != null;
+      Get.snackbar(
+        'done'.tr,
+        isCheckOutOnly
+            ? 'check_out_recorded'.tr
+            : 'check_in_recorded'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      await loadAttendance();
+      return true;
     }
+    final msg = (response['message'] as String?) ?? 'manual_attendance_failed'.tr;
+    Get.snackbar('error'.tr, msg, snackPosition: SnackPosition.BOTTOM);
+    return false;
+  }
+
+  List<EmployeeModel> getEmployeesWithoutRecord(List<EmployeeModel> allEmployees) {
+    final recordedIds = records.map((r) => r.employeeId).toSet();
+    return allEmployees.where((e) => !recordedIds.contains(e.id)).toList();
+  }
+
+  List<EmployeeModel> getEmployeesEligibleForCheckIn(List<EmployeeModel> allEmployees) {
+    final withCheckIn = records
+        .where((r) => r.checkIn != null)
+        .map((r) => r.employeeId)
+        .toSet();
+    return allEmployees.where((e) => !withCheckIn.contains(e.id)).toList();
+  }
+
+  List<EmployeeModel> getEmployeesEligibleForCheckOut(List<EmployeeModel> allEmployees) {
+    final pendingCheckOut = records
+        .where((r) => r.checkIn != null && r.checkOut == null)
+        .map((r) => r.employeeId)
+        .toSet();
+    return allEmployees.where((e) => pendingCheckOut.contains(e.id)).toList();
   }
 }

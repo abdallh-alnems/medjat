@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../constant/theme/app_colors.dart';
 import '../../constant/theme/app_spacing.dart';
 
@@ -13,6 +14,7 @@ class PrimaryInput extends StatelessWidget {
   final void Function(String)? onChanged;
   final bool enabled;
   final int maxLines;
+  final List<TextInputFormatter>? inputFormatters;
 
   const PrimaryInput({
     super.key,
@@ -26,6 +28,7 @@ class PrimaryInput extends StatelessWidget {
     this.onChanged,
     this.enabled = true,
     this.maxLines = 1,
+    this.inputFormatters,
   });
 
   @override
@@ -57,6 +60,7 @@ class PrimaryInput extends StatelessWidget {
           onChanged: onChanged,
           enabled: enabled,
           maxLines: maxLines,
+          inputFormatters: inputFormatters,
           textDirection: keyboardType == TextInputType.emailAddress ||
                   keyboardType == TextInputType.number
               ? TextDirection.ltr

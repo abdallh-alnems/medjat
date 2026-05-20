@@ -18,7 +18,7 @@ if (!$branch) {
 }
 
 $updateData = [];
-foreach (['name', 'address', 'latitude', 'longitude', 'gps_radius'] as $field) {
+foreach (['name', 'address', 'latitude', 'longitude'] as $field) {
     if (isset($input[$field])) {
         $updateData[$field] = $input[$field];
     }

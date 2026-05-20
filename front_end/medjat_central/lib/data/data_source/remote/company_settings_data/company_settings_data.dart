@@ -13,4 +13,17 @@ class CompanySettingsData {
       Map<String, dynamic> data) async {
     return await _crud.putData(AppLinks.companySettings, data);
   }
+
+  Future<Map<String, dynamic>> updateAttendanceConfig({
+    required List<String> methods,
+    List<int>? manualAdminIds,
+  }) async {
+    return await _crud.putData(
+      AppLinks.companySettings,
+      {
+        'attendance_methods': methods,
+        'manual_attendance_admin_ids': manualAdminIds,
+      },
+    );
+  }
 }

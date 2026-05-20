@@ -11,10 +11,13 @@ PermissionMiddleware::check($auth, 'manage_employees');
 $input = $auth['input'];
 $name = $input['name'] ?? null;
 $branchId = (int) ($input['branch_id'] ?? 0);
-$baseSalary = (float) ($input['base_salary'] ?? 0);
+$baseSalary = (int) ($input['base_salary'] ?? 0);
 $jobTitle = $input['job_title'] ?? null;
 $phone = $input['phone'] ?? null;
 $hireDate = $input['hire_date'] ?? date('Y-m-d');
+$workStartTime = $input['work_start_time'] ?? '09:00:00';
+$workEndTime = $input['work_end_time'] ?? '17:00:00';
+$shiftId = isset($input['shift_id']) ? (int) $input['shift_id'] : null;
 
 Validator::required($name, 'name');
 Validator::required($branchId, 'branch_id');
@@ -28,8 +31,18 @@ $employeeId = EmployeeModel::create($tenantId, [
     'job_title' => $jobTitle,
     'base_salary' => $baseSalary,
     'hire_date' => $hireDate,
+    'work_start_time' => $workStartTime,
+    'work_end_time' => $workEndTime,
+    'shift_id' => $shiftId,
+    'status' => 'pending_activation',
 ]);
+
+$activationCode = ActivationCodeModel::generate($tenantId, $employeeId);
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'employee.create', 'employee', $employeeId);
 
-Response::success(['employee_id' => $employeeId], 201);
+Response::success([
+    'employee_id' => $employeeId,
+    'activation_code' => $activationCode,
+    'activation_expires_in_hours' => 24,
+], 201);

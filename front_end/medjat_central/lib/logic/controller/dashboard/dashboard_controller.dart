@@ -9,6 +9,7 @@ class DashboardController extends GetxController {
   StatusRequest status = StatusRequest.none;
   DashboardModel? dashboard;
   int? selectedBranchId;
+  BranchMetric selectedMetric = BranchMetric.attendanceRate;
 
   @override
   void onInit() {
@@ -41,5 +42,10 @@ class DashboardController extends GetxController {
   void selectBranch(int? branchId) {
     selectedBranchId = branchId;
     loadDashboard();
+  }
+
+  void selectMetric(BranchMetric metric) {
+    selectedMetric = metric;
+    update();
   }
 }

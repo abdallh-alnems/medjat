@@ -12,12 +12,37 @@ class PayrollData {
   }
 
   Future<Map<String, dynamic>> getPayrollMonth(int month, int year, {int? branchId}) async {
-    final params = <String, dynamic>{};
+    final monthStr = '$year-${month.toString().padLeft(2, '0')}';
+    final params = <String, dynamic>{'month': monthStr};
     if (branchId != null) params['branch_id'] = branchId;
-    return await _crud.getData(AppLinks.payrollMonth(month, year), queryParameters: params);
+    return await _crud.getData(AppLinks.payroll, queryParameters: params);
   }
 
   Future<Map<String, dynamic>> approvePayroll(int id) async {
     return await _crud.postData(AppLinks.payrollApprove(id), {});
+  }
+
+  Future<Map<String, dynamic>> addManualDeduction({
+    required int employeeId,
+    required num amount,
+    required String reason,
+  }) async {
+    return await _crud.postData(AppLinks.deductionManualAdd, {
+      'employee_id': employeeId,
+      'amount': amount,
+      'reason': reason,
+    });
+  }
+
+  Future<Map<String, dynamic>> addManualBonus({
+    required int employeeId,
+    required num amount,
+    required String reason,
+  }) async {
+    return await _crud.postData(AppLinks.bonusManualAdd, {
+      'employee_id': employeeId,
+      'amount': amount,
+      'reason': reason,
+    });
   }
 }

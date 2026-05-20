@@ -37,8 +37,40 @@ class AppLinks {
       '$base/app/employees/get_documents.php?employee_id=$employeeId&doc_id=$docId';
   static String get employeeDocumentUpload =>
       '$base/app/employees/upload_document.php';
+  static String get employeeUpdateDocument =>
+      '$base/app/employees/update_document.php';
+  static String get employeeVerifyDocument =>
+      '$base/app/employees/verify_document.php';
+  static String get employeeRejectDocument =>
+      '$base/app/employees/reject_document.php';
+  static String employeeMissingDocuments(int id) =>
+      '$base/app/employees/get_missing_documents.php?employee_id=$id';
   static String employeeActivationCode(int id) =>
-      '$base/app/employees/activation_code.php?id=$id'; // TODO: backend endpoint missing
+      '$base/app/employees/activation_code.php?id=$id';
+
+  // ── Required Documents (tenant-level types) ────────────
+  static String get documentsRequired =>
+      '$base/app/documents/get_required.php';
+  static String get documentCreateRequired =>
+      '$base/app/documents/create_required.php';
+  static String get documentUpdateRequired =>
+      '$base/app/documents/update_required.php';
+  static String get documentDeleteRequired =>
+      '$base/app/documents/delete_required.php';
+  static String get documentToggleRequired =>
+      '$base/app/documents/toggle_required.php';
+  static String get documentMarkExpired =>
+      '$base/app/documents/mark_expired.php';
+
+  // ── Document Reports ───────────────────────────────────
+  static String get documentReportsExpiringSoon =>
+      '$base/app/documents/reports_expiring_soon.php';
+  static String get documentReportsExpired =>
+      '$base/app/documents/reports_expired.php';
+  static String get documentReportsMissing =>
+      '$base/app/documents/reports_missing.php';
+  static String get documentReportsStats =>
+      '$base/app/documents/reports_stats.php';
 
   // ── Branches ───────────────────────────────────────────
   static String get branches => '$base/app/branches/list.php';
@@ -52,6 +84,8 @@ class AppLinks {
   static String get branchDelete => '$base/app/branches/delete.php';
   static String branchQr(int id) => '$base/app/branches/get_qr.php?id=$id';
   static String get branchUpdateGps => '$base/app/branches/update_gps.php';
+  static String get branchUpdateAttendanceMethod =>
+      '$base/app/branches/update_attendance_method.php';
 
   // ── Attendance ─────────────────────────────────────────
   static String get attendance =>
@@ -98,14 +132,24 @@ class AppLinks {
   static String get warnings => '$base/app/warnings/list.php';
   static String get warningAdd => '$base/app/warnings/add.php';
 
+  // ── Performance Reviews ────────────────────────────────
+  static String employeeReviews(int employeeId) =>
+      '$base/app/performance/list.php?employee_id=$employeeId'; // TODO: backend endpoint missing
+  static String get performanceReviews =>
+      '$base/app/performance/create.php'; // TODO: backend endpoint missing
+  static String performanceReviewDelete(int id) =>
+      '$base/app/performance/delete.php?id=$id'; // TODO: backend endpoint missing
+
   // ── Roles / Permissions ────────────────────────────────
   static String get roles => '$base/app/roles/list_permissions.php';
   static String get permissions => '$base/app/roles/list_permissions.php';
   static String get roleCreate => '$base/app/roles/create_role.php';
 
-  // ── Reports (TODO: backend endpoints missing) ──────────
+  // ── Reports ──────────
   static String get reportAttendance => '$base/app/reports/attendance.php';
   static String get reportPayroll => '$base/app/reports/payroll.php';
+  static String get reportEmployees => '$base/app/reports/employees.php';
+  static String get reportLeaves => '$base/app/reports/leaves.php';
 
   // ── Settings (TODO: backend endpoint missing) ──────────
   static String get companySettings => '$base/app/settings/company.php';
@@ -118,4 +162,49 @@ class AppLinks {
   static String get forgotPasswordSend => '$base/app/auth/forgot_password.php';
   static String get forgotPasswordVerify => '$base/app/auth/verify_reset_code.php';
   static String get forgotPasswordReset => '$base/app/auth/reset_password.php';
+
+  // ── Shifts ──────────────────────────────────────────────
+  static String get shifts => '$base/app/shifts/list.php';
+  static String get shiftCreate => '$base/app/shifts/create.php';
+  static String shiftUpdate(int id) => '$base/app/shifts/update.php?id=$id';
+  static String shiftDelete(int id) => '$base/app/shifts/delete.php?id=$id';
+  static String get shiftAssign => '$base/app/shifts/assign.php';
+
+  // ── Manager Invitations ────────────────────────────────
+  static String get managerInvite => '$base/app/managers/invite.php';
+  static String get managerInvitations => '$base/app/managers/list_invitations.php';
+  static String managerCancelInvitation(int id) =>
+      '$base/app/managers/cancel_invitation.php?id=$id';
+  static String get adminsList => '$base/app/managers/list_admins.php';
+
+  // ── Admin Permissions ──────────────────────────────────
+  static String adminPermissions(int id) =>
+      '$base/app/managers/get_admin_permissions.php?admin_id=$id';
+  static String get adminPermissionsUpdate =>
+      '$base/app/managers/update_admin_permissions.php';
+  static String get adminPermissionsReset =>
+      '$base/app/managers/reset_admin_permissions.php';
+
+  // ── Biometric ──────────────────────────────────────────
+  static String get biometricEnrollFace =>
+      '$base/app/biometric/enroll_face.php';
+  static String get biometricEnrollFingerprint =>
+      '$base/app/biometric/enroll_fingerprint.php';
+  static String get biometricDelete => '$base/app/biometric/delete.php';
+  static String biometricStatus(int employeeId) =>
+      '$base/app/biometric/status.php?employee_id=$employeeId';
+
+  // ── Stations ───────────────────────────────────────────
+  static String get stationCreate => '$base/app/stations/create.php';
+  static String get stationList => '$base/app/stations/list.php';
+  static String stationDetail(int id) =>
+      '$base/app/stations/get.php?id=$id';
+  static String get stationUpdate => '$base/app/stations/update.php';
+  static String get stationDelete => '$base/app/stations/delete.php';
+  static String get stationRegenerateQR =>
+      '$base/app/stations/regenerate_qr.php';
+  static String get stationUnlock => '$base/app/stations/unlock.php';
+  static String get stationLogs => '$base/app/stations/logs.php';
+  static String get stationBranchSettings =>
+      '$base/app/stations/update_branch_settings.php';
 }

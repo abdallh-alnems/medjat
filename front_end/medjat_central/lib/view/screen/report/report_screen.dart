@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constant/theme/theme.dart';
+import '../../../core/constant/routes/app_routes.dart';
 
 class ReportScreen extends StatelessWidget {
   const ReportScreen({super.key});
@@ -19,7 +20,7 @@ class ReportScreen extends StatelessWidget {
             title: 'attendance_report'.tr,
             subtitle: 'attendance_summary'.tr,
             color: colors.brand,
-            onTap: () {},
+            onTap: () => Get.toNamed<void>(AppRoutes.reportAttendance),
           ),
           const SizedBox(height: AppSpacing.s3),
           _ReportCard(
@@ -27,7 +28,7 @@ class ReportScreen extends StatelessWidget {
             title: 'payroll_report'.tr,
             subtitle: 'payroll_statements'.tr,
             color: colors.accentWarm,
-            onTap: () {},
+            onTap: () => Get.toNamed<void>(AppRoutes.reportPayroll),
           ),
           const SizedBox(height: AppSpacing.s3),
           _ReportCard(
@@ -35,7 +36,7 @@ class ReportScreen extends StatelessWidget {
             title: 'employees_report'.tr,
             subtitle: 'employees_stats'.tr,
             color: colors.success,
-            onTap: () {},
+            onTap: () => Get.toNamed<void>(AppRoutes.reportEmployees),
           ),
           const SizedBox(height: AppSpacing.s3),
           _ReportCard(
@@ -43,7 +44,15 @@ class ReportScreen extends StatelessWidget {
             title: 'leaves_report'.tr,
             subtitle: 'leaves_summary'.tr,
             color: colors.warning,
-            onTap: () {},
+            onTap: () => Get.toNamed<void>(AppRoutes.reportLeaves),
+          ),
+          const SizedBox(height: AppSpacing.s3),
+          _ReportCard(
+            icon: Icons.description_outlined,
+            title: 'documents_report'.tr,
+            subtitle: 'documents_report_subtitle'.tr,
+            color: colors.error,
+            onTap: () => Get.toNamed<void>(AppRoutes.documentsReport),
           ),
         ],
       ),

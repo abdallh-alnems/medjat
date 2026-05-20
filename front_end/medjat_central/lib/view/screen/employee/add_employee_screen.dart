@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../core/class/status_request.dart';
-import '../../../core/constant/theme/app_colors.dart';
-import '../../../core/constant/theme/app_spacing.dart';
-import '../../../core/constant/theme/app_text_styles.dart';
+import '../../../core/constant/routes/app_routes.dart';
+import '../../../core/constant/theme/theme.dart';
 import '../../../core/shared/buttons/primary_button.dart';
 import '../../../core/shared/input_fields/primary_input.dart';
 import '../../../logic/controller/employee/add_employee_controller.dart';
 import '../../../data/model/branch_model.dart';
+import '../../../data/model/shift_model.dart';
 
 class AddEmployeeScreen extends StatelessWidget {
   const AddEmployeeScreen({super.key});
@@ -16,6 +16,7 @@ class AddEmployeeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ctrl = Get.put(AddEmployeeController());
+    final colors = AppColors.of(context);
 
     return Scaffold(
       appBar: AppBar(title: Text('add_employee'.tr)),
@@ -24,25 +25,50 @@ class AddEmployeeScreen extends StatelessWidget {
             ctrl.activationCode != null) {
           return _ActivationCodeView(ctrl: ctrl);
         }
-        return _AddEmployeeForm(ctrl: ctrl);
+        return GetBuilder<AddEmployeeController>(
+          builder: (_) {
+            if (ctrl.branchesLoading) {
+              return const Center(child: CircularProgressIndicator.adaptive());
+            }
+            if (ctrl.branches.isEmpty) {
+              return _NoBranchesView(colors: colors);
+            }
+            return _AddEmployeeForm(ctrl: ctrl);
+          },
+        );
       }),
     );
   }
 }
 
-class _AddEmployeeForm extends StatelessWidget {
+class _AddEmployeeForm extends StatefulWidget {
   final AddEmployeeController ctrl;
   const _AddEmployeeForm({required this.ctrl});
 
   @override
-  Widget build(BuildContext context) {
-    final nameCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
-    final jobTitleCtrl = TextEditingController();
-    final salaryCtrl = TextEditingController();
-    final emailCtrl = TextEditingController();
-    final formKey = GlobalKey<FormState>();
+  State<_AddEmployeeForm> createState() => _AddEmployeeFormState();
+}
 
+class _AddEmployeeFormState extends State<_AddEmployeeForm> {
+  final nameCtrl = TextEditingController();
+  final phoneCtrl = TextEditingController();
+  final jobTitleCtrl = TextEditingController();
+  final salaryCtrl = TextEditingController();
+  final formKey = GlobalKey<FormState>();
+
+  AddEmployeeController get ctrl => widget.ctrl;
+
+  @override
+  void dispose() {
+    nameCtrl.dispose();
+    phoneCtrl.dispose();
+    jobTitleCtrl.dispose();
+    salaryCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.s4),
       child: Form(
@@ -77,16 +103,10 @@ class _AddEmployeeForm extends StatelessWidget {
               label: 'base_salary'.tr,
               controller: salaryCtrl,
               keyboardType: TextInputType.number,
-              hint: '0.00',
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              hint: '0',
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'salary_required'.tr : null,
-            ),
-            const SizedBox(height: AppSpacing.s3),
-            PrimaryInput(
-              label: 'email'.tr,
-              controller: emailCtrl,
-              keyboardType: TextInputType.emailAddress,
-              hint: 'optional@company.com',
             ),
             const SizedBox(height: AppSpacing.s4),
             Text('branch'.tr, style: AppTextStyles.h3(context)),
@@ -103,12 +123,145 @@ class _AddEmployeeForm extends StatelessWidget {
                 );
               },
             ),
+            const SizedBox(height: AppSpacing.s4),
+            GetBuilder<AddEmployeeController>(
+              builder: (_) {
+                final hasShifts = ctrl.shifts.isNotEmpty;
+                final usingShift =
+                    hasShifts && ctrl.selectedShiftId != null;
+                return Text(
+                  hasShifts ? 'shift'.tr : 'employee_schedule'.tr,
+                  style: AppTextStyles.h3(context),
+                );
+              },
+            ),
+            const SizedBox(height: AppSpacing.s3),
+            GetBuilder<AddEmployeeController>(
+              builder: (_) {
+                final colors = AppColors.of(context);
+                if (ctrl.shifts.isEmpty) return const SizedBox.shrink();
+                final usingShift = ctrl.selectedShiftId != null;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.s3),
+                      decoration: BoxDecoration(
+                        color: colors.surface,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(color: colors.borderHairline),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<int?>(
+                          value: ctrl.selectedShiftId,
+                          hint: Text('select_shift'.tr,
+                              style: TextStyle(
+                                fontFamily: 'IBM Plex Sans Arabic',
+                                fontSize: 14,
+                                color: colors.textSecondary,
+                              )),
+                          isExpanded: true,
+                          icon: Icon(Icons.expand_more,
+                              color: colors.textTertiary),
+                          items: ctrl.shifts
+                              .map((s) => DropdownMenuItem<int?>(
+                                    value: s.id,
+                                    child: Text(
+                                      '${s.name} (${s.startTime.substring(0, 5)} - ${s.endTime.substring(0, 5)})',
+                                      style: const TextStyle(
+                                        fontFamily: 'IBM Plex Sans Arabic',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ))
+                              .toList(),
+                          onChanged: (v) {
+                            ctrl.selectedShiftId = v;
+                            ctrl.update();
+                          },
+                        ),
+                      ),
+                    ),
+                    if (usingShift) ...[
+                      const SizedBox(height: AppSpacing.s2),
+                      Row(
+                        children: [
+                          Icon(Icons.info_outline,
+                              size: 14, color: colors.textTertiary),
+                          const SizedBox(width: AppSpacing.s1),
+                          Expanded(
+                            child: Text(
+                              'shift_hint'.tr,
+                              style: TextStyle(
+                                fontFamily: 'IBM Plex Sans Arabic',
+                                fontSize: 12,
+                                color: colors.textTertiary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.s3),
+                      TextButton.icon(
+                        onPressed: () {
+                          ctrl.selectedShiftId = null;
+                          ctrl.update();
+                        },
+                        icon: const Icon(Icons.schedule_outlined, size: 18),
+                        label: Text('use_custom_hours'.tr),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: const Size(0, 32),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.s3),
+                  ],
+                );
+              },
+            ),
+            GetBuilder<AddEmployeeController>(
+              builder: (_) {
+                final usingShift =
+                    ctrl.shifts.isNotEmpty && ctrl.selectedShiftId != null;
+                if (usingShift) return const SizedBox.shrink();
+                return Column(
+                  children: [
+                    _TimePickerTile(
+                      label: 'work_start_time'.tr,
+                      time: ctrl.startTime,
+                      onTap: () async {
+                        final t = await showTimePicker(
+                          context: Get.context!,
+                          initialTime: ctrl.startTime,
+                        );
+                        if (t != null) ctrl.setStartTime(t);
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.s3),
+                    _TimePickerTile(
+                      label: 'work_end_time'.tr,
+                      time: ctrl.endTime,
+                      onTap: () async {
+                        final t = await showTimePicker(
+                          context: Get.context!,
+                          initialTime: ctrl.endTime,
+                        );
+                        if (t != null) ctrl.setEndTime(t);
+                      },
+                    ),
+                  ],
+                );
+              },
+            ),
             const SizedBox(height: AppSpacing.s6),
             Obx(() => PrimaryButton(
                   text: 'add_employee_btn'.tr,
                   isLoading: ctrl.status.value == StatusRequest.loading,
-                  onPressed: () => _submit(ctrl, nameCtrl, phoneCtrl,
-                      jobTitleCtrl, salaryCtrl, emailCtrl, formKey),
+                  onPressed: _submit,
                 )),
             const SizedBox(height: AppSpacing.s5),
           ],
@@ -117,15 +270,7 @@ class _AddEmployeeForm extends StatelessWidget {
     );
   }
 
-  void _submit(
-    AddEmployeeController ctrl,
-    TextEditingController nameCtrl,
-    TextEditingController phoneCtrl,
-    TextEditingController jobTitleCtrl,
-    TextEditingController salaryCtrl,
-    TextEditingController emailCtrl,
-    GlobalKey<FormState> formKey,
-  ) {
+  void _submit() {
     if (!formKey.currentState!.validate()) return;
     if (ctrl.selectedBranchId == null) {
       Get.snackbar('error'.tr, 'please_select_branch'.tr,
@@ -133,13 +278,21 @@ class _AddEmployeeForm extends StatelessWidget {
       return;
     }
 
+    final usingShift =
+        ctrl.shifts.isNotEmpty && ctrl.selectedShiftId != null;
+
     ctrl.createEmployee({
       'name': nameCtrl.text.trim(),
       'phone': phoneCtrl.text.trim(),
       'job_title': jobTitleCtrl.text.trim(),
-      'base_salary': double.tryParse(salaryCtrl.text.trim()) ?? 0,
-      'email': emailCtrl.text.trim(),
+      'base_salary': int.tryParse(salaryCtrl.text.trim()) ?? 0,
       'branch_id': ctrl.selectedBranchId,
+      if (usingShift)
+        'shift_id': ctrl.selectedShiftId
+      else ...{
+        'work_start_time': ctrl.workStartTimeStr,
+        'work_end_time': ctrl.workEndTimeStr,
+      },
     });
   }
 }
@@ -221,6 +374,110 @@ class _ActivationCodeView extends StatelessWidget {
   }
 }
 
+class _TimePickerTile extends StatelessWidget {
+  final String label;
+  final TimeOfDay time;
+  final VoidCallback onTap;
+
+  const _TimePickerTile({
+    required this.label,
+    required this.time,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.s3),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: colors.borderHairline),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.access_time, size: 20, color: colors.textSecondary),
+            const SizedBox(width: AppSpacing.s3),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Text(
+              '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+              style: TextStyle(
+                fontFamily: 'Geist',
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: colors.brand,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NoBranchesView extends StatelessWidget {
+  final AppColorScheme colors;
+  const _NoBranchesView({required this.colors});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.s5),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.store_outlined, size: 64, color: colors.textTertiary),
+            const SizedBox(height: AppSpacing.s4),
+            Text(
+              'add_branch_first'.tr,
+              style: AppTextStyles.h3(context),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.s2),
+            Text(
+              'add_branch_first_hint'.tr,
+              style: AppTextStyles.bodySecondary(context),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.s6),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final result = await Get.toNamed<dynamic>(AppRoutes.branchManage);
+                  if (result == true) {
+                    Get.find<AddEmployeeController>().loadBranches();
+                  }
+                },
+                icon: const Icon(Icons.add_business),
+                label: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
+                  child: Text('add_branch'.tr),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _BranchSelector extends StatelessWidget {
   final List<BranchModel> branches;
   final int? selectedId;
@@ -240,38 +497,43 @@ class _BranchSelector extends StatelessWidget {
       return Text('no_branches_available'.tr, style: AppTextStyles.sm(context));
     }
 
-    return Wrap(
-      spacing: AppSpacing.s2,
-      runSpacing: AppSpacing.s2,
-      children: branches.map((b) {
-        final selected = selectedId == b.id;
-        return InkWell(
-          onTap: () => onSelect(b.id),
-          borderRadius: BorderRadius.circular(AppRadius.full),
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.s3,
-              vertical: AppSpacing.s2,
-            ),
-            decoration: BoxDecoration(
-              color: selected ? colors.brandSubtle : colors.sunken,
-              borderRadius: BorderRadius.circular(AppRadius.full),
-              border: Border.all(
-                color: selected ? colors.brand : colors.borderHairline,
-              ),
-            ),
-            child: Text(
-              b.name,
-              style: TextStyle(
-                fontFamily: 'IBM Plex Sans Arabic',
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: selected ? colors.brand : colors.textSecondary,
-              ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s3),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int>(
+          value: selectedId,
+          hint: Text(
+            'please_select_branch'.tr,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 14,
+              color: colors.textSecondary,
             ),
           ),
-        );
-      }).toList(),
+          isExpanded: true,
+          icon: Icon(Icons.expand_more, color: colors.textTertiary),
+          items: branches.map((b) {
+            return DropdownMenuItem<int>(
+              value: b.id,
+              child: Text(
+                b.name,
+                style: TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: colors.textPrimary,
+                ),
+              ),
+            );
+          }).toList(),
+          onChanged: onSelect,
+        ),
+      ),
     );
   }
 }

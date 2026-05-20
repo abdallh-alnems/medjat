@@ -32,8 +32,6 @@ if ($admin['tenant_id']) {
 }
 
 $companyName = trim($input['company_name'] ?? '');
-$companyNameAr = trim($input['company_name_ar'] ?? '');
-$phone = trim($input['phone'] ?? '');
 
 if ($companyName === '') {
     Response::fail('Company name is required', 422);
@@ -44,15 +42,13 @@ try {
     $pdo->beginTransaction();
 
     $stmt = $pdo->prepare(
-        "INSERT INTO tenants (name, name_ar, owner_name, owner_email, owner_phone, plan, is_active, email_verified_at)
-         VALUES (?, ?, ?, ?, ?, 'starter', 1, NOW())"
+        "INSERT INTO tenants (name, owner_name, owner_email, plan, is_active, email_verified_at)
+         VALUES (?, ?, ?, 'starter', 1, NOW())"
     );
     $stmt->execute([
         $companyName,
-        $companyNameAr ?: null,
         $admin['name'],
         $admin['email'],
-        $phone ?: null,
     ]);
     $tenantId = (int) $pdo->lastInsertId();
 
@@ -69,10 +65,10 @@ try {
 
     $stmt = $pdo->prepare(
         "UPDATE admins
-         SET tenant_id = ?, role = 'owner', phone = COALESCE(NULLIF(?, ''), phone)
+         SET tenant_id = ?, role = 'general_manager'
          WHERE id = ?"
     );
-    $stmt->execute([$tenantId, $phone, $admin['id']]);
+    $stmt->execute([$tenantId, $admin['id']]);
 
     $stmt = $pdo->prepare(
         "INSERT INTO audit_log (tenant_id, admin_id, action, target_type, target_id, ip)
@@ -90,7 +86,7 @@ try {
 }
 
 $tenant = Database::fetchOne(
-    "SELECT id, name, name_ar, plan, currency, timezone FROM tenants WHERE id = ? LIMIT 1",
+    "SELECT id, name, plan, currency, timezone FROM tenants WHERE id = ? LIMIT 1",
     [$tenantId]
 );
 
@@ -99,7 +95,6 @@ Response::success([
     'tenant' => [
         'id' => (int) $tenant['id'],
         'name' => $tenant['name'],
-        'name_ar' => $tenant['name_ar'],
         'plan' => $tenant['plan'],
         'currency' => $tenant['currency'],
         'timezone' => $tenant['timezone'],
@@ -107,7 +102,7 @@ Response::success([
     'user' => [
         'id' => (int) $admin['id'],
         'tenant_id' => $tenantId,
-        'role' => 'owner',
-        'role_key' => 'owner',
+        'role' => 'general_manager',
+        'role_key' => 'general_manager',
     ],
 ]);

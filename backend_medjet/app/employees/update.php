@@ -22,7 +22,7 @@ if (isset($input['branch_id'])) {
 }
 
 $updateData = [];
-foreach (['name', 'phone', 'email', 'job_title', 'base_salary', 'branch_id', 'hire_date', 'national_id'] as $field) {
+foreach (['name', 'phone', 'email', 'job_title', 'base_salary', 'branch_id', 'hire_date', 'national_id', 'work_start_time', 'work_end_time', 'shift_id'] as $field) {
     if (isset($input[$field])) {
         $updateData[$field] = $input[$field];
     }

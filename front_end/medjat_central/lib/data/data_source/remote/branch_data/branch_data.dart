@@ -14,10 +14,25 @@ class BranchData {
   }
 
   Future<Map<String, dynamic>> createBranch(Map<String, dynamic> data) async {
-    return await _crud.postData(AppLinks.branches, data);
+    return await _crud.postData(AppLinks.branchCreate, data);
   }
 
   Future<Map<String, dynamic>> updateBranch(int id, Map<String, dynamic> data) async {
-    return await _crud.putData(AppLinks.branchDetail(id), data);
+    return await _crud.putData(AppLinks.branchUpdate, {...data, 'branch_id': id});
+  }
+
+  Future<Map<String, dynamic>> updateBranchAttendanceMethods({
+    required int branchId,
+    List<String>? methods,
+    int? gpsRadiusMeters,
+  }) async {
+    final data = <String, dynamic>{
+      'branch_id': branchId,
+      'attendance_methods': methods,
+    };
+    if (gpsRadiusMeters != null) {
+      data['gps_radius_meters'] = gpsRadiusMeters;
+    }
+    return await _crud.putData(AppLinks.branchUpdateAttendanceMethod, data);
   }
 }

@@ -4,6 +4,7 @@ class AttendanceRecordModel {
   final int id;
   final int employeeId;
   final String? employeeName;
+  final String? date;
   final DateTime? checkIn;
   final DateTime? checkOut;
   final String status;
@@ -15,6 +16,7 @@ class AttendanceRecordModel {
     required this.id,
     required this.employeeId,
     this.employeeName,
+    this.date,
     this.checkIn,
     this.checkOut,
     this.status = 'present',
@@ -28,6 +30,7 @@ class AttendanceRecordModel {
       id: (json['id'] as int?) ?? 0,
       employeeId: (json['employee_id'] as int?) ?? 0,
       employeeName: json['employee_name'] as String?,
+      date: json['date'] as String?,
       checkIn: json['check_in'] != null
           ? DateTime.tryParse(json['check_in'] as String)
           : null,

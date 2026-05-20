@@ -5,8 +5,8 @@ define('DB_USER', getenv('DB_USER') ?: 'root');
 define('DB_PASS', getenv('DB_PASS') ?: 'root');
 
 define('API_VERSION', '1.0');
-define('API_RATE_LIMIT', 100);
-define('API_RATE_WINDOW', 3600);
+define('API_RATE_LIMIT', (int) (getenv('API_RATE_LIMIT') ?: 600));
+define('API_RATE_WINDOW', (int) (getenv('API_RATE_WINDOW') ?: 60));
 
 define('CORS_ALLOWED_ORIGINS', getenv('CORS_ALLOWED_ORIGINS') ?: '');
 define('CORS_ALLOWED_METHODS', 'GET,POST,PUT,DELETE,OPTIONS');

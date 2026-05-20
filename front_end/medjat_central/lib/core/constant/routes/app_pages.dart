@@ -7,11 +7,13 @@ import '../../services/connectivity_service.dart';
 import '../../services/dark_light_service.dart';
 import '../../../data/data_source/remote/auth_data/auth_data.dart';
 import '../../../data/data_source/remote/employee_data/employee_data.dart';
+import '../../../data/data_source/remote/performance_data/performance_data.dart';
 import '../../../data/data_source/remote/branch_data/branch_data.dart';
 import '../../../data/data_source/remote/document_data/document_data.dart';
 import '../../../data/data_source/remote/deduction_rule_data/deduction_rule_data.dart';
-import '../../../data/data_source/remote/role_data/role_data.dart';
 import '../../../data/data_source/remote/company_settings_data/company_settings_data.dart';
+import '../../../data/data_source/remote/shift_data/shift_data.dart';
+import '../../../data/data_source/remote/report_data/report_data.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
 import '../../../logic/controller/settings/settings_controller.dart';
 import '../../../logic/bindings/home_binding.dart';
@@ -29,10 +31,44 @@ import '../../../view/screen/attendance/attendance_screen.dart';
 import '../../../view/screen/payroll/payroll_screen.dart';
 import '../../../view/screen/leave/leave_screen.dart';
 import '../../../view/screen/branch/branch_screen.dart';
+import '../../../view/screen/branch/branch_qr_poster_screen.dart';
 import '../../../view/screen/report/report_screen.dart';
+import '../../../view/screen/report/attendance_report_screen.dart';
+import '../../../view/screen/report/payroll_report_screen.dart';
+import '../../../view/screen/report/employees_report_screen.dart';
+import '../../../view/screen/report/leaves_report_screen.dart';
 import '../../../view/screen/settings/deduction_rules_screen.dart';
-import '../../../view/screen/settings/role_management_screen.dart';
+import '../../../view/screen/settings/attendance_method_screen.dart';
 import '../../../view/screen/settings/company_settings_screen.dart';
+import '../../../view/screen/settings/company_settings_hub_screen.dart';
+import '../../../view/screen/settings/account_settings_screen.dart';
+import '../../../view/screen/settings/app_settings_screen.dart';
+import '../../../view/screen/shift/shifts_screen.dart';
+import '../../../view/screen/shift/assign_shift_screen.dart';
+import '../../../view/screen/team/team_screen.dart';
+import '../../../view/screen/team/invite_admin_screen.dart';
+import '../../../view/screen/team/invitation_code_screen.dart';
+import '../../../view/screen/station/stations_management_screen.dart';
+import '../../../view/screen/station/recognition_logs_screen.dart';
+import '../../../view/screen/employee/biometric_enrollment_screen.dart';
+import '../../../view/screen/employee/employee_documents_screen.dart';
+import '../../../view/screen/settings/required_documents_screen.dart';
+import '../../../view/screen/report/documents_report_screen.dart';
+import '../../../data/data_source/remote/station_data/station_data.dart';
+import '../../../data/data_source/remote/biometric_data/biometric_data.dart';
+import '../../../data/data_source/remote/required_documents_data/required_documents_data.dart';
+import '../../../data/data_source/remote/document_reports_data/document_reports_data.dart';
+import '../../../logic/controller/station/stations_controller.dart';
+import '../../../logic/controller/station/station_settings_controller.dart';
+import '../../../logic/controller/station/recognition_logs_controller.dart';
+import '../../../logic/controller/biometric/face_enrollment_controller.dart';
+import '../../../logic/controller/shift/shift_controller.dart';
+import '../../../logic/controller/team/team_controller.dart';
+import '../../../data/data_source/remote/manager_data/manager_data.dart';
+import '../../../logic/controller/report/attendance_report_controller.dart';
+import '../../../logic/controller/report/payroll_report_controller.dart';
+import '../../../logic/controller/report/employees_report_controller.dart';
+import '../../../logic/controller/report/leaves_report_controller.dart';
 import '../../../core/shared/layout/tab_shell.dart';
 import '../../middleware/auth_middleware.dart';
 
@@ -104,6 +140,10 @@ List<GetPage<dynamic>> getPages = [
   GetPage(
     name: AppRoutes.employeeAdd,
     page: () => const AddEmployeeScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<BranchData>(() => BranchData());
+      Get.lazyPut<ShiftData>(() => ShiftData());
+    }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
     transitionDuration: AppMotion.transition,
@@ -115,6 +155,7 @@ List<GetPage<dynamic>> getPages = [
       Get.lazyPut<EmployeeData>(() => EmployeeData());
       Get.lazyPut<BranchData>(() => BranchData());
       Get.lazyPut<DocumentData>(() => DocumentData());
+      Get.lazyPut<PerformanceData>(() => PerformanceData());
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
@@ -123,6 +164,9 @@ List<GetPage<dynamic>> getPages = [
   GetPage(
     name: AppRoutes.leaveManage,
     page: () => const LeaveScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<EmployeeData>(() => EmployeeData());
+    }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
     transitionDuration: AppMotion.transition,
@@ -130,6 +174,19 @@ List<GetPage<dynamic>> getPages = [
   GetPage(
     name: AppRoutes.branchManage,
     page: () => const BranchScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<BranchData>(() => BranchData());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.branchQrPoster,
+    page: () => const BranchQrPosterScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<BranchData>(() => BranchData());
+    }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
     transitionDuration: AppMotion.transition,
@@ -137,6 +194,52 @@ List<GetPage<dynamic>> getPages = [
   GetPage(
     name: AppRoutes.reports,
     page: () => const ReportScreen(),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.reportAttendance,
+    page: () => const AttendanceReportScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<ReportData>(() => ReportData());
+      Get.lazyPut<AttendanceReportController>(
+          () => AttendanceReportController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.reportPayroll,
+    page: () => const PayrollReportScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<ReportData>(() => ReportData());
+      Get.lazyPut<PayrollReportController>(() => PayrollReportController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.reportEmployees,
+    page: () => const EmployeesReportScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<ReportData>(() => ReportData());
+      Get.lazyPut<EmployeesReportController>(
+          () => EmployeesReportController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.reportLeaves,
+    page: () => const LeavesReportScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<ReportData>(() => ReportData());
+      Get.lazyPut<LeavesReportController>(() => LeavesReportController());
+    }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
     transitionDuration: AppMotion.transition,
@@ -152,11 +255,12 @@ List<GetPage<dynamic>> getPages = [
     transitionDuration: AppMotion.transition,
   ),
   GetPage(
-    name: AppRoutes.rolesManage,
-    page: () => const RoleManagementScreen(),
+    name: AppRoutes.attendanceMethod,
+    page: () => const AttendanceMethodScreen(),
     binding: BindingsBuilder<void>(() {
-      Get.lazyPut<RoleData>(() => RoleData());
+      Get.lazyPut<CompanySettingsData>(() => CompanySettingsData());
       Get.lazyPut<BranchData>(() => BranchData());
+      Get.lazyPut<ManagerData>(() => ManagerData());
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
@@ -172,6 +276,157 @@ List<GetPage<dynamic>> getPages = [
     transition: Transition.fadeIn,
     transitionDuration: AppMotion.transition,
   ),
+  GetPage(
+    name: AppRoutes.shifts,
+    page: () => const ShiftsScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<ShiftData>(() => ShiftData());
+      Get.lazyPut<ShiftController>(() => ShiftController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.assignShift,
+    page: () => const AssignShiftScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<ShiftData>(() => ShiftData());
+      Get.lazyPut<ShiftController>(() => ShiftController());
+      Get.lazyPut<EmployeeData>(() => EmployeeData());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.settingsCompany,
+    page: () => const CompanySettingsHubScreen(),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.settingsAccount,
+    page: () => const AccountSettingsScreen(),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.settingsApp,
+    page: () => const AppSettingsScreen(),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.team,
+    page: () => const TeamScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<ManagerData>(() => ManagerData());
+      Get.lazyPut<TeamController>(() => TeamController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.inviteAdmin,
+    page: () => const InviteAdminScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<ManagerData>(() => ManagerData());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.invitationCode,
+    page: () => const InvitationCodeScreen(),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.stationsManagement,
+    page: () => const StationsManagementScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<StationData>(() => StationData());
+      Get.lazyPut<BranchData>(() => BranchData());
+      Get.lazyPut<StationsController>(() => StationsController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.stationSettings,
+    page: () => const _StationSettingsWrapper(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<StationData>(() => StationData());
+      Get.lazyPut<BranchData>(() => BranchData());
+      Get.lazyPut<StationSettingsController>(() => StationSettingsController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.biometricEnrollment,
+    page: () => const BiometricEnrollmentScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<BiometricData>(() => BiometricData());
+      Get.lazyPut<FaceEnrollmentController>(() => FaceEnrollmentController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.recognitionLogs,
+    page: () => const RecognitionLogsScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<StationData>(() => StationData());
+      Get.lazyPut<RecognitionLogsController>(() => RecognitionLogsController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.requiredDocuments,
+    page: () => const RequiredDocumentsScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<RequiredDocumentsData>(() => RequiredDocumentsData());
+      Get.lazyPut<BranchData>(() => BranchData());
+      Get.lazyPut<EmployeeData>(() => EmployeeData());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.employeeDocuments,
+    page: () => const EmployeeDocumentsScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<DocumentData>(() => DocumentData());
+      Get.lazyPut<RequiredDocumentsData>(() => RequiredDocumentsData());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.documentsReport,
+    page: () => const DocumentsReportScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<DocumentReportsData>(() => DocumentReportsData());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
 ];
 
 class MoreScreen extends StatelessWidget {
@@ -180,15 +435,23 @@ class MoreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = Get.find<AuthController>();
-    final settingsCtrl = Get.find<SettingsController>();
+    final isManager = auth.user?.isOwner ?? false;
 
     return Scaffold(
       appBar: AppBar(title: Text('more'.tr)),
       body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
         children: [
+          _MoreSectionHeader(title: 'management'.tr),
           if (auth.user?.canManageEmployees == true)
             _MenuTile(
-              icon: Icons.groups_outlined,
+              icon: Icons.schedule_outlined,
+              title: 'shifts'.tr,
+              onTap: () => Get.toNamed<void>(AppRoutes.shifts),
+            ),
+          if (auth.user?.canManageEmployees == true)
+            _MenuTile(
+              icon: Icons.event_note_outlined,
               title: 'leaves'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.leaveManage),
             ),
@@ -204,162 +467,55 @@ class MoreScreen extends StatelessWidget {
               title: 'reports'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.reports),
             ),
+          const SizedBox(height: AppSpacing.s4),
+          _MoreSectionHeader(title: 'settings'.tr),
+          if (isManager)
+            _MenuTile(
+              icon: Icons.business_outlined,
+              title: 'company_settings'.tr,
+              subtitle: 'company_settings_hint'.tr,
+              onTap: () => Get.toNamed<void>(AppRoutes.settingsCompany),
+            ),
+          _MenuTile(
+            icon: Icons.person_outline,
+            title: 'my_account'.tr,
+            subtitle: 'my_account_hint'.tr,
+            onTap: () => Get.toNamed<void>(AppRoutes.settingsAccount),
+          ),
           _MenuTile(
             icon: Icons.settings_outlined,
-            title: 'settings'.tr,
-            onTap: () => _navigateToSettings(context),
+            title: 'app_settings'.tr,
+            subtitle: 'app_settings_hint'.tr,
+            onTap: () => Get.toNamed<void>(AppRoutes.settingsApp),
           ),
-          const Divider(),
+          const Divider(height: AppSpacing.s5 * 2),
           _MenuTile(
             icon: Icons.logout,
             title: 'logout'.tr,
-            onTap: () => settingsCtrl.logout(),
+            onTap: () => Get.find<SettingsController>().logout(),
             isDestructive: true,
           ),
-        ],
-      ),
-    );
-  }
-
-  void _navigateToSettings(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute<void>(
-        builder: (_) => _InlineSettingsScreen(),
-      ),
-    );
-  }
-}
-
-class _InlineSettingsScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final settingsCtrl = Get.find<SettingsController>();
-    final auth = Get.find<AuthController>();
-    final colors = AppColors.of(context);
-
-    return Scaffold(
-      appBar: AppBar(title: Text('settings'.tr)),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.s4),
-        children: [
-          if (auth.user?.canManageBranches == true) ...[
-            _SettingsSectionHeader(title: 'company'.tr),
-            _SettingsTile(
-              icon: Icons.tune_outlined,
-              title: 'deduction_rules'.tr,
-              subtitle: 'set_late_absence_rules'.tr,
-              onTap: () => Get.toNamed<void>(AppRoutes.deductionRules),
-            ),
-            _SettingsTile(
-              icon: Icons.admin_panel_settings_outlined,
-              title: 'role_management'.tr,
-              subtitle: 'roles_users'.tr,
-              onTap: () => Get.toNamed<void>(AppRoutes.rolesManage),
-            ),
-            _SettingsTile(
-              icon: Icons.business_outlined,
-              title: 'company_data'.tr,
-              subtitle: 'edit_company_info'.tr,
-              onTap: () => Get.toNamed<void>(AppRoutes.companySettings),
-            ),
-            const SizedBox(height: AppSpacing.s5),
-          ],
-          _SettingsSectionHeader(title: 'app'.tr),
-          _SettingsTile(
-            icon: Icons.dark_mode_outlined,
-            title: 'dark_mode'.tr,
-            subtitle: 'enable_dark_mode'.tr,
-            trailing: Obx(() => Switch.adaptive(
-                  value: settingsCtrl.isDark,
-                  onChanged: (_) => settingsCtrl.toggleTheme(),
-                )),
-            onTap: () => settingsCtrl.toggleTheme(),
-          ),
-          _SettingsTile(
-            icon: Icons.lock_outline,
-            title: 'change_password'.tr,
-            onTap: () {},
-          ),
           const SizedBox(height: AppSpacing.s5),
-          _SettingsSectionHeader(title: 'account'.tr),
-          Container(
-            margin: const EdgeInsets.only(bottom: AppSpacing.s3),
-            padding: const EdgeInsets.all(AppSpacing.s4),
-            decoration: BoxDecoration(
-              color: colors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: colors.borderHairline),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: colors.brandSubtle,
-                  child: Text(
-                    (auth.user != null && auth.user!.name.isNotEmpty)
-                        ? auth.user!.name[0]
-                        : '?',
-                    style: TextStyle(
-                      fontFamily: 'Geist',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: colors.brand,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.s3),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        auth.user?.name ?? 'admin'.tr,
-                        style: const TextStyle(
-                          fontFamily: 'IBM Plex Sans Arabic',
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        auth.user?.email ?? '',
-                        style: AppTextStyles.sm(context),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.s3),
-          Center(
-            child: TextButton(
-              onPressed: settingsCtrl.logout,
-              style: TextButton.styleFrom(
-                foregroundColor: colors.error,
-              ),
-              child: Text('logout'.tr),
-            ),
-          ),
         ],
       ),
     );
   }
 }
 
-class _SettingsSectionHeader extends StatelessWidget {
+class _MoreSectionHeader extends StatelessWidget {
   final String title;
-  const _SettingsSectionHeader({required this.title});
+  const _MoreSectionHeader({required this.title});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.s3),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s4, AppSpacing.s3, AppSpacing.s4, AppSpacing.s2),
       child: Text(
         title,
         style: TextStyle(
           fontFamily: 'IBM Plex Sans Arabic',
-          fontSize: 13,
+          fontSize: 12,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.04,
           color: AppColors.of(context).textTertiary,
@@ -369,82 +525,17 @@ class _SettingsSectionHeader extends StatelessWidget {
   }
 }
 
-class _SettingsTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String? subtitle;
-  final VoidCallback onTap;
-  final Widget? trailing;
-
-  const _SettingsTile({
-    required this.icon,
-    required this.title,
-    this.subtitle,
-    required this.onTap,
-    this.trailing,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: AppSpacing.s2),
-        padding: const EdgeInsets.all(AppSpacing.s3),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: colors.borderHairline),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 22, color: colors.textSecondary),
-            const SizedBox(width: AppSpacing.s3),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontFamily: 'IBM Plex Sans Arabic',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle!,
-                      style: AppTextStyles.sm(context),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (trailing != null)
-              trailing!
-            else
-              Icon(Icons.chevron_left, size: 20, color: colors.textTertiary),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _MenuTile extends StatelessWidget {
   final IconData icon;
   final String title;
+  final String? subtitle;
   final VoidCallback onTap;
   final bool isDestructive;
 
   const _MenuTile({
     required this.icon,
     required this.title,
+    this.subtitle,
     required this.onTap,
     this.isDestructive = false,
   });
@@ -466,8 +557,189 @@ class _MenuTile extends StatelessWidget {
           color: isDestructive ? colors.error : colors.textPrimary,
         ),
       ),
+      subtitle: subtitle != null
+          ? Text(
+              subtitle!,
+              style: TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 12,
+                color: colors.textTertiary,
+              ),
+            )
+          : null,
       trailing: Icon(Icons.chevron_left, color: colors.textTertiary),
       onTap: onTap,
+    );
+  }
+}
+
+class _StationSettingsWrapper extends StatelessWidget {
+  const _StationSettingsWrapper();
+
+  @override
+  Widget build(BuildContext context) {
+    final branchId = (Get.arguments as Map<String, dynamic>?)?['branch_id'] as int? ?? 0;
+    final ctrl = Get.put(StationSettingsController());
+    ctrl.init(branchId);
+    return _StationSettingsScreen(ctrl: ctrl);
+  }
+}
+
+class _StationSettingsScreen extends StatelessWidget {
+  final StationSettingsController ctrl;
+  const _StationSettingsScreen({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Scaffold(
+      appBar: AppBar(title: Text('station_section_title'.tr)),
+      body: GetBuilder<StationSettingsController>(
+        builder: (_) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.s4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SwitchListTile(
+                  title: Text('station_enabled'.tr,
+                      style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 14, fontWeight: FontWeight.w500)),
+                  value: ctrl.settings.enabled,
+                  onChanged: (v) => ctrl.saveSettings(enabled: v),
+                  activeColor: colors.brand,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                const SizedBox(height: AppSpacing.s4),
+                Text('station_methods_label'.tr, style: AppTextStyles.h3(context)),
+                const SizedBox(height: AppSpacing.s2),
+                ...['face_only', 'fingerprint_only', 'both_available'].map((m) {
+                  final label = m == 'face_only'
+                      ? 'station_face_only'.tr
+                      : m == 'fingerprint_only'
+                          ? 'station_fingerprint_only'.tr
+                          : 'station_both'.tr;
+                  return RadioListTile<String>(
+                    title: Text(label, style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 13)),
+                    value: m,
+                    groupValue: ctrl.settings.methods,
+                    onChanged: (v) => ctrl.saveSettings(methods: v),
+                    activeColor: colors.brand,
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                  );
+                }),
+                const SizedBox(height: AppSpacing.s4),
+                Text('station_gps_radius'.tr, style: AppTextStyles.h3(context)),
+                const SizedBox(height: AppSpacing.s2),
+                Slider(
+                  value: ctrl.settings.gpsRadiusMeters.toDouble(),
+                  min: 10,
+                  max: 200,
+                  divisions: 19,
+                  label: '${ctrl.settings.gpsRadiusMeters}m',
+                  onChanged: (v) => ctrl.saveSettings(gpsRadius: v.toInt()),
+                  activeColor: colors.brand,
+                ),
+                const SizedBox(height: AppSpacing.s3),
+                Text('station_confidence'.tr, style: AppTextStyles.h3(context)),
+                const SizedBox(height: AppSpacing.s2),
+                Slider(
+                  value: ctrl.settings.confidenceThreshold,
+                  min: 0.5,
+                  max: 1.0,
+                  divisions: 10,
+                  label: ctrl.settings.confidenceThreshold.toStringAsFixed(2),
+                  onChanged: (v) => ctrl.saveSettings(confidence: v),
+                  activeColor: colors.brand,
+                ),
+                const SizedBox(height: AppSpacing.s3),
+                SwitchListTile(
+                  title: Text('station_anti_spoofing'.tr,
+                      style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 14)),
+                  value: ctrl.settings.antiSpoofing,
+                  onChanged: (v) => ctrl.saveSettings(antiSpoofing: v),
+                  activeColor: colors.brand,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                const SizedBox(height: AppSpacing.s4),
+                if (!ctrl.settings.hasAdminPin) ...[
+                  Text('admin_pin'.tr, style: AppTextStyles.h3(context)),
+                  const SizedBox(height: AppSpacing.s2),
+                  ElevatedButton.icon(
+                    onPressed: () => _showPinDialog(context),
+                    icon: const Icon(Icons.pin_outlined),
+                    label: Text('set_admin_pin'.tr, style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic')),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colors.brand,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.s5),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => Get.toNamed<void>(AppRoutes.stationsManagement),
+                        icon: const Icon(Icons.devices_outlined, size: 18),
+                        label: Text('manage_devices'.tr, style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontWeight: FontWeight.w500)),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: colors.brand,
+                          side: BorderSide(color: colors.brand),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.s3),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => Get.toNamed<void>(AppRoutes.recognitionLogs),
+                        icon: const Icon(Icons.history_outlined, size: 18),
+                        label: Text('view_recognition_logs'.tr, style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontWeight: FontWeight.w500)),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: colors.brand,
+                          side: BorderSide(color: colors.brand),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showPinDialog(BuildContext context) {
+    final pinCtrl = TextEditingController();
+    Get.dialog<void>(
+      AlertDialog(
+        title: Text('admin_pin'.tr),
+        content: TextField(
+          controller: pinCtrl,
+          obscureText: true,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(hintText: '******'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back<void>(), child: Text('cancel'.tr)),
+          ElevatedButton(
+            onPressed: () {
+              if (pinCtrl.text.isNotEmpty) {
+                Get.back<void>();
+                ctrl.saveSettings(adminPin: pinCtrl.text);
+              }
+            },
+            child: Text('save'.tr),
+          ),
+        ],
+      ),
     );
   }
 }

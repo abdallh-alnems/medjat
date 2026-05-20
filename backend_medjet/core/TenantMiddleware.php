@@ -2,7 +2,7 @@
 
 final class TenantMiddleware {
     public static function getTenantId(): ?int {
-        $tenantId = $_SERVER['HTTP_X_TENANT_ID'] ?? null;
+        $tenantId = $_SERVER['HTTP_X_TENANT_ID'] ?? $_GET['tenant_id'] ?? null;
         if (!$tenantId) {
             $input = Validator::getJsonBody();
             $tenantId = $input['tenant_id'] ?? null;

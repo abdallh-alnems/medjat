@@ -2,6 +2,7 @@
 
 final class GpsService {
     private const EARTH_RADIUS_KM = 6371;
+    private const DEFAULT_GPS_RADIUS = 100;
 
     public static function distanceBetween(
         float $lat1, float $lon1,
@@ -26,6 +27,13 @@ final class GpsService {
         return self::distanceBetween($lat1, $lon1, $lat2, $lon2) * 1000;
     }
 
+    public static function haversineMeters(
+        float $lat1, float $lon1,
+        float $lat2, float $lon2
+    ): float {
+        return self::distanceInMeters($lat1, $lon1, $lat2, $lon2);
+    }
+
     public static function isWithinRange(
         float $userLat, float $userLon,
         float $branchLat, float $branchLon,
@@ -45,7 +53,7 @@ final class GpsService {
             return ['valid' => false, 'message' => 'Branch not found'];
         }
 
-        $allowedRadius = (float) ($branch['gps_radius'] ?? 100);
+        $allowedRadius = self::DEFAULT_GPS_RADIUS;
         $distance = self::distanceInMeters(
             $userLat, $userLon,
             (float) $branch['latitude'], (float) $branch['longitude']

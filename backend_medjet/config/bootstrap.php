@@ -39,6 +39,13 @@ require_once __DIR__ . '/../models/PerformanceModel.php';
 require_once __DIR__ . '/../models/RoleModel.php';
 require_once __DIR__ . '/../models/SubscriptionModel.php';
 require_once __DIR__ . '/../models/AuditLogModel.php';
+require_once __DIR__ . '/../models/ShiftModel.php';
+require_once __DIR__ . '/../models/ActivationCodeModel.php';
+require_once __DIR__ . '/../models/EmployeeAuthTokenModel.php';
+require_once __DIR__ . '/../models/ManagerInvitationModel.php';
+require_once __DIR__ . '/../models/BiometricModel.php';
+require_once __DIR__ . '/../models/AttendanceStationModel.php';
+require_once __DIR__ . '/../models/StationRecognitionLogModel.php';
 
 setCorsHeaders();
 

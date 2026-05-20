@@ -26,7 +26,7 @@ final class SubscriptionModel {
             Response::fail('No active subscription found', 403);
         }
 
-        if ($sub['status'] !== 'active') {
+        if (!in_array($sub['status'], ['active', 'trial'], true)) {
             Response::fail('Subscription is not active', 403);
         }
 

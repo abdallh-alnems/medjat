@@ -16,7 +16,7 @@ class EmployeeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final isActive = employee.status == 'active';
+    final statusColor = _statusColor(employee.status, colors);
 
     return InkWell(
       onTap: onTap,
@@ -84,9 +84,7 @@ class EmployeeCard extends StatelessWidget {
                     vertical: AppSpacing.s1,
                   ),
                   decoration: BoxDecoration(
-                    color: isActive
-                        ? colors.success.withValues(alpha: 0.12)
-                        : colors.error.withValues(alpha: 0.12),
+                    color: statusColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
                   child: Text(
@@ -95,7 +93,7 @@ class EmployeeCard extends StatelessWidget {
                       fontFamily: 'IBM Plex Sans Arabic',
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
-                      color: isActive ? colors.success : colors.error,
+                      color: statusColor,
                     ),
                   ),
                 ),
@@ -116,5 +114,22 @@ class EmployeeCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Color _statusColor(String status, AppColorScheme colors) {
+    switch (status) {
+      case 'active':
+        return colors.success;
+      case 'pending_activation':
+        return colors.warning;
+      case 'on_leave':
+        return colors.accentWarm;
+      case 'suspended':
+        return colors.error;
+      case 'terminated':
+        return colors.textTertiary;
+      default:
+        return colors.textTertiary;
+    }
   }
 }

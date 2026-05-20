@@ -95,4 +95,77 @@ final class LeaveModel {
 
         return ['items' => Database::fetchAll($sql, $params), 'page' => $page];
     }
+
+    public static function getReportByRange(
+        int $tenantId,
+        string $startDate,
+        string $endDate,
+        ?int $branchId = null,
+        ?string $status = null
+    ): array {
+        $sql = "SELECT
+                    l.id,
+                    l.employee_id,
+                    e.name as employee_name,
+                    b.name as branch_name,
+                    l.type,
+                    l.start_date,
+                    l.end_date,
+                    l.reason,
+                    l.status,
+                    l.created_at
+                FROM leaves l
+                JOIN employees e ON e.id = l.employee_id
+                LEFT JOIN branches b ON b.id = e.branch_id
+                WHERE l.tenant_id = ? AND l.date BETWEEN ? AND ?";
+        $params = [$tenantId, $startDate, $endDate];
+        if ($branchId !== null) {
+            $sql .= " AND e.branch_id = ?";
+            $params[] = $branchId;
+        }
+        if ($status !== null) {
+            $sql .= " AND l.status = ?";
+            $params[] = $status;
+        }
+        $sql .= " ORDER BY l.date DESC";
+        return Database::fetchAll($sql, $params);
+    }
+
+    public static function getReportSummary(
+        int $tenantId,
+        string $startDate,
+        string $endDate,
+        ?int $branchId = null
+    ): array {
+        $sql = "SELECT
+                    COUNT(*) as total_leaves,
+                    COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
+                    COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_count,
+                    COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected_count,
+                    COUNT(CASE WHEN type = 'annual' THEN 1 END) as annual_count,
+                    COUNT(CASE WHEN type = 'sick' THEN 1 END) as sick_count,
+                    COUNT(CASE WHEN type = 'personal' THEN 1 END) as personal_count,
+                    COUNT(CASE WHEN type = 'unpaid' THEN 1 END) as unpaid_count,
+                    COUNT(CASE WHEN type = 'converted_from_absence' THEN 1 END) as converted_count,
+                    COUNT(DISTINCT employee_id) as employees_on_leave
+                FROM leaves
+                WHERE tenant_id = ? AND date BETWEEN ? AND ?";
+        $params = [$tenantId, $startDate, $endDate];
+        if ($branchId !== null) {
+            $sql .= " AND employee_id IN (SELECT id FROM employees WHERE branch_id = ?)";
+            $params[] = $branchId;
+        }
+        return Database::fetchOne($sql, $params) ?: [
+            'total_leaves' => 0,
+            'pending_count' => 0,
+            'approved_count' => 0,
+            'rejected_count' => 0,
+            'annual_count' => 0,
+            'sick_count' => 0,
+            'personal_count' => 0,
+            'unpaid_count' => 0,
+            'converted_count' => 0,
+            'employees_on_leave' => 0,
+        ];
+    }
 }

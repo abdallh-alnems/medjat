@@ -4,8 +4,12 @@ import '../../../core/class/handling_data_request.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
+import '../../../core/constant/routes/app_routes.dart';
 import '../../../logic/controller/attendance/attendance_controller.dart';
+import '../../../logic/controller/branch/branch_controller.dart';
+import '../../../logic/controller/employee/employee_controller.dart';
 import '../../../data/model/attendance_model.dart';
+import '../../../data/model/employee_model.dart';
 
 class AttendanceScreen extends StatelessWidget {
   const AttendanceScreen({super.key});
@@ -36,35 +40,69 @@ class AttendanceScreen extends StatelessWidget {
                   return HandlingDataRequest(
                     statusRequest: ctrl.status,
                     onRetry: ctrl.loadAttendance,
-                    widget: ctrl.records.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.event_available_outlined,
-                                    size: 48,
-                                    color: colors.textTertiary),
-                                const SizedBox(height: AppSpacing.s3),
-                                Text('no_records_today'.tr,
-                                    style:
-                                        AppTextStyles.bodySecondary(context)),
-                              ],
+                    widget: GetBuilder<AttendanceController>(
+                      builder: (c) {
+                        if (!c.hasEmployees) {
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(AppSpacing.s5),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.group_add_outlined,
+                                      size: 56, color: colors.textTertiary),
+                                  const SizedBox(height: AppSpacing.s4),
+                                  Text('add_employees_first'.tr,
+                                      style: AppTextStyles.h3(context),
+                                      textAlign: TextAlign.center),
+                                  const SizedBox(height: AppSpacing.s5),
+                                  ElevatedButton.icon(
+                                    onPressed: () => Get.toNamed<void>(
+                                        AppRoutes.employeeAdd),
+                                    icon: const Icon(Icons.person_add, size: 20),
+                                    label: Text('add_employee'.tr),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: colors.brand,
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.fromLTRB(
-                              AppSpacing.s4,
-                              0,
-                              AppSpacing.s4,
-                              AppSpacing.s7,
-                            ),
-                            itemCount: ctrl.records.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(height: AppSpacing.s2),
-                            itemBuilder: (_, i) => _AttendanceTile(
-                              record: ctrl.records[i],
-                            ),
-                          ),
+                          );
+                        }
+                        return c.records.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.event_available_outlined,
+                                        size: 48,
+                                        color: colors.textTertiary),
+                                    const SizedBox(height: AppSpacing.s3),
+                                    Text('no_records_today'.tr,
+                                        style:
+                                            AppTextStyles.bodySecondary(context)),
+                                  ],
+                                ),
+                              )
+                            : ListView.separated(
+                                padding: const EdgeInsets.fromLTRB(
+                                  AppSpacing.s4,
+                                  0,
+                                  AppSpacing.s4,
+                                  AppSpacing.s7,
+                                ),
+                                itemCount: c.records.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(height: AppSpacing.s2),
+                                itemBuilder: (_, i) => _AttendanceTile(
+                                  record: c.records[i],
+                                ),
+                              );
+                      },
+                    ),
                   );
                 },
               ),
@@ -109,51 +147,279 @@ class AttendanceScreen extends StatelessWidget {
     );
   }
 
-  void _showManualCheckInSheet(BuildContext context, AttendanceController ctrl) {
+  void _showManualCheckInSheet(BuildContext context, AttendanceController ctrl) async {
+    final employeeCtrl = Get.find<EmployeeController>();
+    final branchCtrl = Get.find<BranchController>();
+    if (employeeCtrl.employees.isEmpty) {
+      await employeeCtrl.loadEmployees();
+    }
+    if (branchCtrl.branches.isEmpty) {
+      await branchCtrl.loadBranches();
+    }
+
+    EmployeeModel? selectedEmployee;
+    int? selectedBranchId;
+    DateTime selectedDate = ctrl.selectedDate;
+    TimeOfDay checkIn = TimeOfDay.now();
+    TimeOfDay checkOut = TimeOfDay.now();
+    bool isCheckOutMode = false;
+
     Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.all(AppSpacing.s4),
-        decoration: BoxDecoration(
-          color: AppColors.of(context).surface,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(AppRadius.lg),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('manual_check_in'.tr, style: AppTextStyles.h3(context)),
-            const SizedBox(height: AppSpacing.s5),
-            TextField(
-              decoration: InputDecoration(
-                hintText: 'employee_number'.tr,
-                labelText: 'employee_number'.tr,
+      StatefulBuilder(
+        builder: (sheetCtx, setSheetState) {
+          final colors = AppColors.of(context);
+
+          final baseEmployees = isCheckOutMode
+              ? ctrl.getEmployeesEligibleForCheckOut(employeeCtrl.employees)
+              : ctrl.getEmployeesEligibleForCheckIn(employeeCtrl.employees);
+
+          final filteredEmployees = baseEmployees
+              .where((e) =>
+                  selectedBranchId == null || e.branchId == selectedBranchId)
+              .toList();
+
+          final branchHasEmployees = selectedBranchId == null ||
+              employeeCtrl.employees
+                  .any((e) => e.branchId == selectedBranchId);
+
+          if (selectedEmployee != null &&
+              !filteredEmployees.any((e) => e.id == selectedEmployee!.id)) {
+            selectedEmployee = null;
+          }
+
+          return Container(
+            padding: EdgeInsets.only(
+              left: AppSpacing.s4,
+              right: AppSpacing.s4,
+              top: AppSpacing.s4,
+              bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s4,
+            ),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppRadius.lg),
               ),
-              keyboardType: TextInputType.number,
             ),
-            const SizedBox(height: AppSpacing.s4),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Get.back(),
-                    child: Text('check_in'.tr),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: AppSpacing.s3),
+                      decoration: BoxDecoration(
+                        color: colors.borderHairline,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: AppSpacing.s3),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Get.back(),
-                    child: Text('check_out'.tr),
+                  Text('manual_attendance'.tr, style: AppTextStyles.h2(context)),
+                  const SizedBox(height: AppSpacing.s4),
+                  Text('attendance_mode'.tr, style: AppTextStyles.h3(context)),
+                  const SizedBox(height: AppSpacing.s2),
+                  SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<bool>(
+                      segments: [
+                        ButtonSegment<bool>(
+                          value: false,
+                          label: Text('mode_check_in'.tr),
+                          icon: const Icon(Icons.login, size: 18),
+                        ),
+                        ButtonSegment<bool>(
+                          value: true,
+                          label: Text('mode_check_out'.tr),
+                          icon: const Icon(Icons.logout, size: 18),
+                        ),
+                      ],
+                      selected: {isCheckOutMode},
+                      onSelectionChanged: (s) => setSheetState(() {
+                        isCheckOutMode = s.first;
+                        selectedEmployee = null;
+                      }),
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: AppSpacing.s4),
+                  if (branchCtrl.branches.length > 1) ...[
+                    Text('branch'.tr, style: AppTextStyles.h3(context)),
+                    const SizedBox(height: AppSpacing.s2),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s3),
+                      decoration: BoxDecoration(
+                        color: colors.sunken,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(color: colors.borderHairline),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<int?>(
+                          value: selectedBranchId,
+                          hint: Text('all_branches'.tr,
+                              style: TextStyle(
+                                fontFamily: 'IBM Plex Sans Arabic',
+                                fontSize: 14,
+                                color: colors.textSecondary,
+                              )),
+                          isExpanded: true,
+                          items: [
+                            DropdownMenuItem<int?>(
+                              value: null,
+                              child: Text('all_branches'.tr,
+                                  style: const TextStyle(
+                                    fontFamily: 'IBM Plex Sans Arabic',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  )),
+                            ),
+                            ...branchCtrl.branches.map((b) =>
+                                DropdownMenuItem<int?>(
+                                  value: b.id,
+                                  child: Text(b.name,
+                                      style: const TextStyle(
+                                        fontFamily: 'IBM Plex Sans Arabic',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      )),
+                                )),
+                          ],
+                          onChanged: (v) =>
+                              setSheetState(() => selectedBranchId = v),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.s4),
+                  ],
+                  if (filteredEmployees.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(AppSpacing.s4),
+                      child: Text(
+                        !branchHasEmployees
+                            ? 'no_employees_in_branch'.tr
+                            : isCheckOutMode
+                                ? 'no_employees_eligible_check_out'.tr
+                                : 'all_employees_have_records'.tr,
+                        style: AppTextStyles.bodySecondary(context),
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  else ...[
+                    Text('select_employee'.tr, style: AppTextStyles.h3(context)),
+                    const SizedBox(height: AppSpacing.s2),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s3),
+                      decoration: BoxDecoration(
+                        color: colors.sunken,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(color: colors.borderHairline),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<EmployeeModel>(
+                          value: selectedEmployee,
+                          hint: Text('select_employee'.tr,
+                              style: TextStyle(
+                                fontFamily: 'IBM Plex Sans Arabic',
+                                fontSize: 14,
+                                color: colors.textSecondary,
+                              )),
+                          isExpanded: true,
+                          items: filteredEmployees
+                              .map((e) => DropdownMenuItem<EmployeeModel>(
+                                    value: e,
+                                    child: Text(
+                                      e.name,
+                                      style: const TextStyle(
+                                        fontFamily: 'IBM Plex Sans Arabic',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ))
+                              .toList(),
+                          onChanged: (v) => setSheetState(() => selectedEmployee = v),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.s4),
+                    Text('date'.tr, style: AppTextStyles.h3(context)),
+                    const SizedBox(height: AppSpacing.s2),
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: sheetCtx,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2024),
+                          lastDate: DateTime.now(),
+                        );
+                        if (picked != null) setSheetState(() => selectedDate = picked);
+                      },
+                      child: _PickerTile(
+                        icon: Icons.calendar_today,
+                        value:
+                            '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}',
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.s4),
+                    Text(
+                      isCheckOutMode ? 'check_out'.tr : 'check_in'.tr,
+                      style: AppTextStyles.h3(context),
+                    ),
+                    const SizedBox(height: AppSpacing.s2),
+                    InkWell(
+                      onTap: () async {
+                        final t = await showTimePicker(
+                          context: sheetCtx,
+                          initialTime: isCheckOutMode ? checkOut : checkIn,
+                        );
+                        if (t != null) {
+                          setSheetState(() {
+                            if (isCheckOutMode) {
+                              checkOut = t;
+                            } else {
+                              checkIn = t;
+                            }
+                          });
+                        }
+                      },
+                      child: _PickerTile(
+                        icon: isCheckOutMode ? Icons.logout : Icons.login,
+                        value: isCheckOutMode
+                            ? '${checkOut.hour.toString().padLeft(2, '0')}:${checkOut.minute.toString().padLeft(2, '0')}'
+                            : '${checkIn.hour.toString().padLeft(2, '0')}:${checkIn.minute.toString().padLeft(2, '0')}',
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.s6),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: selectedEmployee == null
+                            ? null
+                            : () async {
+                                Get.back();
+                                await ctrl.recordManualAttendance(
+                                  employeeId: selectedEmployee!.id,
+                                  branchId: selectedEmployee!.branchId,
+                                  date: selectedDate,
+                                  checkInTime: isCheckOutMode ? null : checkIn,
+                                  checkOutTime: isCheckOutMode ? checkOut : null,
+                                );
+                              },
+                        icon: const Icon(Icons.save_outlined),
+                        label: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
+                          child: Text('save'.tr),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
-            const SizedBox(height: AppSpacing.s4),
-          ],
-        ),
+          );
+        },
       ),
+      isScrollControlled: true,
     );
   }
 }
@@ -344,5 +610,39 @@ class _AttendanceTile extends StatelessWidget {
 
   String _formatTime(DateTime dt) {
     return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+class _PickerTile extends StatelessWidget {
+  final IconData icon;
+  final String value;
+  const _PickerTile({required this.icon, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s3),
+      decoration: BoxDecoration(
+        color: colors.sunken,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: colors.textSecondary),
+          const SizedBox(width: AppSpacing.s2),
+          Text(
+            value,
+            style: TextStyle(
+              fontFamily: 'Geist',
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: colors.brand,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

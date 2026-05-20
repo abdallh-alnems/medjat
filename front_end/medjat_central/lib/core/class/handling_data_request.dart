@@ -5,12 +5,14 @@ class HandlingDataRequest extends StatelessWidget {
   final StatusRequest statusRequest;
   final Widget widget;
   final VoidCallback? onRetry;
+  final String? errorMessage;
 
   const HandlingDataRequest({
     super.key,
     required this.statusRequest,
     required this.widget,
     this.onRetry,
+    this.errorMessage,
   });
 
   @override
@@ -32,13 +34,13 @@ class HandlingDataRequest extends StatelessWidget {
       case StatusRequest.serverFailure:
         return _ErrorState(
           icon: Icons.error_outline,
-          message: 'حدث خطأ في الخادم',
+          message: errorMessage ?? 'حدث خطأ في الخادم',
           onRetry: onRetry,
         );
       case StatusRequest.failure:
         return _ErrorState(
           icon: Icons.error_outline,
-          message: 'حدث خطأ، حاول مرة أخرى',
+          message: errorMessage ?? 'حدث خطأ، حاول مرة أخرى',
           onRetry: onRetry,
         );
     }

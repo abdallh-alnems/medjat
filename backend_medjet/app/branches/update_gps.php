@@ -12,7 +12,6 @@ $input = $auth['input'];
 $branchId = (int) ($input['branch_id'] ?? 0);
 $latitude = (float) ($input['latitude'] ?? 0);
 $longitude = (float) ($input['longitude'] ?? 0);
-$gpsRadius = (float) ($input['gps_radius'] ?? 100);
 
 Validator::required($branchId, 'branch_id');
 
@@ -24,7 +23,6 @@ if (!$branch) {
 BranchModel::update($branchId, $tenantId, [
     'latitude' => $latitude,
     'longitude' => $longitude,
-    'gps_radius' => $gpsRadius,
 ]);
 
 Response::success(['message' => 'GPS settings updated']);

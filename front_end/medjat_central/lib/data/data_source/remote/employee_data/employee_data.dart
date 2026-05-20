@@ -17,14 +17,22 @@ class EmployeeData {
   }
 
   Future<Map<String, dynamic>> createEmployee(Map<String, dynamic> data) async {
-    return await _crud.postData(AppLinks.employees, data);
+    return await _crud.postData(AppLinks.employeeCreate, data);
   }
 
   Future<Map<String, dynamic>> updateEmployee(int id, Map<String, dynamic> data) async {
-    return await _crud.putData(AppLinks.employeeDetail(id), data);
+    return await _crud.postData(AppLinks.employeeUpdate, {...data, 'id': id});
   }
 
   Future<Map<String, dynamic>> deleteEmployee(int id) async {
-    return await _crud.deleteData(AppLinks.employeeDetail(id));
+    return await _crud.postData(AppLinks.employeeDelete, {'id': id});
+  }
+
+  Future<Map<String, dynamic>> getActivationCode(int employeeId) async {
+    return await _crud.getData(AppLinks.employeeActivationCode(employeeId));
+  }
+
+  Future<Map<String, dynamic>> regenerateActivationCode(int employeeId) async {
+    return await _crud.postData(AppLinks.employeeActivationCode(employeeId), {});
   }
 }

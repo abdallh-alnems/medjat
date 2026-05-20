@@ -62,9 +62,9 @@ class UserModel {
         'branch_name': branchName,
       };
 
-  bool get isOwner => roleKey == 'owner';
+  bool get isOwner => roleKey == 'owner' || roleKey == 'general_manager';
   bool get isHR => roleKey == 'hr';
-  bool get isManager => roleKey == 'manager';
+  bool get isManager => roleKey == 'branch_manager';
   bool get canManageEmployees =>
       isOwner || isHR || permissions.contains('manage_employees');
   bool get canManageAttendance =>
@@ -75,4 +75,6 @@ class UserModel {
       isOwner || isHR || isManager || permissions.contains('view_reports');
   bool get canManageBranches =>
       isOwner || permissions.contains('manage_company_settings');
+  bool get canManageLeaves =>
+      isOwner || isHR || permissions.contains('manage_leaves');
 }

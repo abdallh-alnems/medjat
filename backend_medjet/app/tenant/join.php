@@ -58,7 +58,7 @@ if (strtotime($invitation['expires_at']) < time()) {
     Response::fail('This invitation has expired', 410);
 }
 
-if ($invitation['email'] && $user['email'] && strcasecmp($invitation['email'], $user['email']) !== 0) {
+if ($invitation['email'] && $admin['email'] && strcasecmp($invitation['email'], $admin['email']) !== 0) {
     Response::fail('This invitation is for a different email address', 403);
 }
 
@@ -122,7 +122,7 @@ try {
 }
 
 $tenant = Database::fetchOne(
-    "SELECT id, name, name_ar, plan, currency, timezone FROM tenants WHERE id = ? LIMIT 1",
+    "SELECT id, name, plan, currency, timezone FROM tenants WHERE id = ? LIMIT 1",
     [(int) $invitation['tenant_id']]
 );
 
@@ -131,7 +131,6 @@ Response::success([
     'tenant' => $tenant ? [
         'id' => (int) $tenant['id'],
         'name' => $tenant['name'],
-        'name_ar' => $tenant['name_ar'],
         'plan' => $tenant['plan'],
         'currency' => $tenant['currency'],
         'timezone' => $tenant['timezone'],

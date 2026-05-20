@@ -13,7 +13,6 @@ $name = $input['name'] ?? null;
 $address = $input['address'] ?? null;
 $latitude = (float) ($input['latitude'] ?? 0);
 $longitude = (float) ($input['longitude'] ?? 0);
-$gpsRadius = (float) ($input['gps_radius'] ?? 100);
 
 Validator::required($name, 'name');
 
@@ -22,7 +21,6 @@ $branchId = BranchModel::create($tenantId, [
     'address' => $address,
     'latitude' => $latitude,
     'longitude' => $longitude,
-    'gps_radius' => $gpsRadius,
 ]);
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'branch.create', 'branch', $branchId);

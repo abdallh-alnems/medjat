@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:connectivity_plus/connectivity_plus.dart';
+import '../services/token_storage_service.dart';
 import 'status_request.dart';
 
 class CRUD {
@@ -28,6 +30,16 @@ class CRUD {
         headers['X-Firebase-Token'] = idToken;
       }
     }
+    final userData = await TokenStorageService.getUserData();
+    if (userData != null) {
+      try {
+        final json = jsonDecode(userData);
+        final tenantId = json['tenant_id'];
+        if (tenantId != null && tenantId != 0) {
+          headers['X-Tenant-Id'] = tenantId.toString();
+        }
+      } catch (_) {}
+    }
     return headers;
   }
 
@@ -47,9 +59,30 @@ class CRUD {
     try {
       final uri = Uri.parse(url);
       final headers = await _headers();
-      final response = await http.get(uri.replace(queryParameters: queryParameters?.map(
-        (key, value) => MapEntry(key, value.toString()),
-      )), headers: headers).timeout(const Duration(seconds: 15));
+      final params = <String, String>{};
+      if (queryParameters != null) {
+        queryParameters.forEach((k, v) => params[k] = v.toString());
+      }
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final idToken = await user.getIdToken();
+        if (idToken != null && !headers.containsKey('X-Firebase-Token')) {
+          params['token'] = idToken;
+        }
+      }
+      final userData = await TokenStorageService.getUserData();
+      if (userData != null && !headers.containsKey('X-Tenant-Id')) {
+        try {
+          final json = jsonDecode(userData);
+          final tenantId = json['tenant_id'];
+          if (tenantId != null && tenantId != 0) {
+            params['tenant_id'] = tenantId.toString();
+          }
+        } catch (_) {}
+      }
+      final response = await http
+          .get(uri.replace(queryParameters: params), headers: headers)
+          .timeout(const Duration(seconds: 15));
 
       return _handleResponse(response);
     } catch (e) {
@@ -126,6 +159,38 @@ class CRUD {
     }
   }
 
+  Future<Map<String, dynamic>> postFile(
+    String url,
+    File file, {
+    Map<String, String>? fields,
+    String fieldName = 'file',
+  }) async {
+    final connectivity = await _checkConnectivity();
+    if (connectivity == StatusRequest.offline) {
+      return {'status': StatusRequest.offline};
+    }
+
+    try {
+      final headers = await _headers();
+      headers.remove('Content-Type');
+
+      final request = http.MultipartRequest('POST', Uri.parse(url));
+      request.headers.addAll(headers);
+      request.files.add(await http.MultipartFile.fromPath(fieldName, file.path));
+
+      if (fields != null) {
+        request.fields.addAll(fields);
+      }
+
+      final streamed = await request.send().timeout(const Duration(seconds: 30));
+      final response = await http.Response.fromStream(streamed);
+      return _handleResponse(response);
+    } catch (e) {
+      debugPrint('POST FILE Error: $e');
+      return {'status': StatusRequest.failure};
+    }
+  }
+
   Map<String, dynamic> _handleResponse(http.Response response) {
     final statusCode = response.statusCode;
 
@@ -161,10 +226,17 @@ class CRUD {
     }
 
     if (statusCode == 404) {
+      String message = 'لم يتم العثور على البيانات';
+      try {
+        final body = jsonDecode(response.body);
+        if (body is Map && body['message'] is String && (body['message'] as String).isNotEmpty) {
+          message = body['message'] as String;
+        }
+      } catch (_) {}
       return {
         'status': StatusRequest.failure,
         'statusCode': 404,
-        'message': 'لم يتم العثور على البيانات',
+        'message': message,
       };
     }
 
@@ -186,10 +258,23 @@ class CRUD {
       }
     }
 
+    String message = 'حدث خطأ، حاول مرة أخرى';
+    try {
+      final body = jsonDecode(response.body);
+      if (body is Map) {
+        final msg = body['message'];
+        if (msg is String && msg.isNotEmpty) {
+          message = msg;
+        }
+      }
+    } catch (_) {}
+
+    debugPrint('HTTP $statusCode: $message');
+
     return {
       'status': StatusRequest.serverFailure,
       'statusCode': statusCode,
-      'message': 'حدث خطأ، حاول مرة أخرى',
+      'message': message,
     };
   }
 }

@@ -4,9 +4,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class DarkLightService extends GetxService {
   static const _key = 'theme_mode';
-  final _isDark = false.obs;
+  final _mode = ThemeMode.system.obs;
 
-  bool get isDark => _isDark.value;
+  ThemeMode get mode => _mode.value;
+
+  bool get isDark {
+    if (_mode.value == ThemeMode.system) {
+      return WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+          Brightness.dark;
+    }
+    return _mode.value == ThemeMode.dark;
+  }
 
   @override
   void onInit() {
@@ -16,17 +24,51 @@ class DarkLightService extends GetxService {
 
   Future<void> _loadTheme() async {
     final prefs = await SharedPreferences.getInstance();
-    final saved = prefs.getBool(_key);
+    String? saved;
+    try {
+      saved = prefs.getString(_key);
+    } catch (_) {
+      // Legacy value stored as bool (or other type) — wipe and start fresh.
+      await prefs.remove(_key);
+      saved = null;
+    }
     if (saved != null) {
-      _isDark.value = saved;
-      Get.changeThemeMode(saved ? ThemeMode.dark : ThemeMode.light);
+      _mode.value = _fromString(saved);
+      Get.changeThemeMode(_mode.value);
     }
   }
 
-  Future<void> toggleTheme() async {
-    _isDark.value = !_isDark.value;
+  Future<void> setMode(ThemeMode mode) async {
+    _mode.value = mode;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_key, _isDark.value);
-    Get.changeThemeMode(_isDark.value ? ThemeMode.dark : ThemeMode.light);
+    await prefs.setString(_key, _toString(mode));
+    Get.changeThemeMode(mode);
+  }
+
+  Future<void> toggleTheme() async {
+    final next = isDark ? ThemeMode.light : ThemeMode.dark;
+    await setMode(next);
+  }
+
+  static ThemeMode _fromString(String v) {
+    switch (v) {
+      case 'dark':
+        return ThemeMode.dark;
+      case 'light':
+        return ThemeMode.light;
+      default:
+        return ThemeMode.system;
+    }
+  }
+
+  static String _toString(ThemeMode m) {
+    switch (m) {
+      case ThemeMode.dark:
+        return 'dark';
+      case ThemeMode.light:
+        return 'light';
+      default:
+        return 'system';
+    }
   }
 }

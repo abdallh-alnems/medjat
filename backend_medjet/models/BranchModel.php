@@ -17,15 +17,14 @@ final class BranchModel {
 
     public static function create(int $tenantId, array $data): int {
         Database::execute(
-            "INSERT INTO branches (tenant_id, name, address, latitude, longitude, gps_radius, qr_code)
-             VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO branches (tenant_id, name, address, latitude, longitude, qr_code)
+             VALUES (?, ?, ?, ?, ?, ?)",
             [
                 $tenantId,
                 $data['name'],
                 $data['address'] ?? null,
                 $data['latitude'] ?? 0,
                 $data['longitude'] ?? 0,
-                $data['gps_radius'] ?? 100,
                 $data['qr_code'] ?? self::generateQrCode(),
             ]
         );
@@ -64,5 +63,31 @@ final class BranchModel {
 
     private static function generateQrCode(): string {
         return 'MED-' . strtoupper(bin2hex(random_bytes(8)));
+    }
+
+    public static function updateAttendanceMethods(int $id, int $tenantId, ?array $methods, int $gpsRadiusMeters = 100): void {
+        Database::execute(
+            "UPDATE branches SET attendance_methods = ?, gps_radius_meters = ? WHERE id = ? AND tenant_id = ?",
+            [$methods !== null ? json_encode($methods) : null, $gpsRadiusMeters, $id, $tenantId]
+        );
+    }
+
+    public static function updateStationSettings(int $id, int $tenantId, array $data): void {
+        $fields = [];
+        $values = [];
+        $allowed = ['station_enabled', 'station_methods', 'station_gps_radius_meters', 'station_confidence_threshold', 'station_admin_pin_hash', 'station_anti_spoofing_enabled'];
+        foreach ($data as $key => $value) {
+            if (in_array($key, $allowed, true)) {
+                $fields[] = "{$key} = ?";
+                $values[] = $value;
+            }
+        }
+        if (empty($fields)) return;
+        $values[] = $id;
+        $values[] = $tenantId;
+        Database::execute(
+            "UPDATE branches SET " . implode(', ', $fields) . " WHERE id = ? AND tenant_id = ?",
+            $values
+        );
     }
 }

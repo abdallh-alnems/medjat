@@ -22,8 +22,15 @@ class BranchController extends GetxController {
     final response = await _branchData.getBranches();
 
     if (response['status'] == StatusRequest.success) {
-      final data = response['data'];
-      if (data is List) {
+      var data = response['data'];
+      if (data is Map && data['data'] is Map) {
+        data = data['data'];
+      }
+      if (data is Map && data['branches'] != null) {
+        branches = (data['branches'] as List)
+            .map((e) => BranchModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } else if (data is List) {
         branches =
             data.map((e) => BranchModel.fromJson(e as Map<String, dynamic>)).toList();
       }

@@ -8,15 +8,10 @@ class TenantData {
   Future<Map<String, dynamic>> createCompany({
     required String firebaseToken,
     required String companyName,
-    String? companyNameAr,
-    String? phone,
   }) async {
     return await _crud.postData(AppLinks.tenantCreate, {
       'token': firebaseToken,
       'company_name': companyName,
-      if (companyNameAr != null && companyNameAr.isNotEmpty)
-        'company_name_ar': companyNameAr,
-      if (phone != null && phone.isNotEmpty) 'phone': phone,
     });
   }
 

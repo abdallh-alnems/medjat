@@ -24,4 +24,18 @@ class LeaveData {
   Future<Map<String, dynamic>> createLeave(Map<String, dynamic> data) async {
     return await _crud.postData(AppLinks.leaves, data);
   }
+
+  Future<Map<String, dynamic>> convertAbsenceToLeave({
+    required int employeeId,
+    required String date,
+    required String type,
+    required String reason,
+  }) async {
+    return await _crud.postData(AppLinks.leaveConvertAbsence, {
+      'employee_id': employeeId,
+      'date': date,
+      'type': type,
+      'reason': reason,
+    });
+  }
 }

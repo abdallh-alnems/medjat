@@ -94,4 +94,59 @@ final class PayrollModel {
 
         return Database::fetchOne($sql, $params) ?: [];
     }
+
+    public static function getReportByMonth(
+        int $tenantId,
+        string $month,
+        ?int $branchId = null
+    ): array {
+        $sql = "SELECT
+                    p.id,
+                    p.employee_id,
+                    e.name as employee_name,
+                    e.job_title,
+                    b.name as branch_name,
+                    p.base_salary,
+                    p.total_deductions,
+                    p.total_bonuses,
+                    p.overtime_total_minutes,
+                    p.net_salary,
+                    p.status
+                FROM payroll p
+                JOIN employees e ON e.id = p.employee_id
+                LEFT JOIN branches b ON b.id = p.branch_id
+                WHERE p.tenant_id = ? AND p.month = ?";
+        $params = [$tenantId, $month];
+        if ($branchId !== null) {
+            $sql .= " AND p.branch_id = ?";
+            $params[] = $branchId;
+        }
+        $sql .= " ORDER BY e.name ASC";
+        return Database::fetchAll($sql, $params);
+    }
+
+    public static function getReportSummary(
+        int $tenantId,
+        string $month,
+        ?int $branchId = null
+    ): array {
+        $sql = "SELECT
+                    COUNT(*) as employee_count,
+                    COUNT(CASE WHEN status = 'draft' THEN 1 END) as draft_count,
+                    COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_count,
+                    COUNT(CASE WHEN status = 'paid' THEN 1 END) as paid_count,
+                    COALESCE(SUM(base_salary), 0) as total_base,
+                    COALESCE(SUM(total_deductions), 0) as total_deductions,
+                    COALESCE(SUM(total_bonuses), 0) as total_bonuses,
+                    COALESCE(SUM(overtime_total_minutes), 0) as total_overtime_minutes,
+                    COALESCE(SUM(net_salary), 0) as total_net
+                FROM payroll
+                WHERE tenant_id = ? AND month = ?";
+        $params = [$tenantId, $month];
+        if ($branchId !== null) {
+            $sql .= " AND branch_id = ?";
+            $params[] = $branchId;
+        }
+        return Database::fetchOne($sql, $params) ?: [];
+    }
 }
