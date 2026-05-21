@@ -16,4 +16,20 @@ LeaveModel::approve($leaveId, $tenantId, $auth['admin_id']);
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'leave.approve', 'leave', $leaveId);
 
+try {
+    $leave = Database::fetchOne(
+        "SELECT employee_id FROM leaves WHERE id = ? AND tenant_id = ?",
+        [$leaveId, $tenantId]
+    );
+    if ($leave) {
+        Database::execute(
+            "INSERT INTO notifications (tenant_id, employee_id, type, title, title_ar, body, body_ar, data, sent_via, created_at)
+             VALUES (?, ?, 'leave', 'Leave Approved', 'تم قبول الإجازة', 'Your leave request has been approved.', 'تم قبول طلب الإجازة الخاص بك.', ?, 'in_app', NOW())",
+            [$tenantId, $leave['employee_id'], json_encode(['leave_id' => $leaveId, 'action' => 'approve'])]
+        );
+    }
+} catch (Exception $e) {
+    error_log('Notification insert error: ' . $e->getMessage());
+}
+
 Response::success(['message' => 'Leave approved']);

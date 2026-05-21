@@ -40,6 +40,7 @@ final class RoleModel {
             'documents_view_reports',
             'manage_payroll',
             'manage_leaves',
+            'manage_assets',
             'add_managers',
             'manage_company_settings',
         ];
@@ -48,8 +49,8 @@ final class RoleModel {
     public static function getRoleDefaults(string $role): array|string {
         $defaults = [
             'general_manager' => '*',
-            'hr' => ['manage_employees', 'manage_deduction_rules', 'manage_attendance', 'view_reports', 'manage_documents', 'manage_payroll', 'manage_leaves'],
-            'branch_manager' => ['manage_employees', 'manage_attendance', 'manage_documents', 'view_reports'],
+            'hr' => ['manage_employees', 'manage_deduction_rules', 'manage_attendance', 'view_reports', 'manage_documents', 'manage_payroll', 'manage_leaves', 'manage_assets'],
+            'branch_manager' => ['manage_employees', 'manage_attendance', 'manage_documents', 'view_reports', 'manage_assets'],
             'attendance' => ['manage_attendance'],
             'viewer' => ['view_reports'],
             'employee' => [],

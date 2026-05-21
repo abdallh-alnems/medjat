@@ -5,7 +5,13 @@ RateLimiter::enforceIpLimit();
 $auth = Auth::authenticateUser(db());
 $tenantId = TenantMiddleware::requireTenant();
 
-$employee = EmployeeModel::findByAdminId($auth['admin_id'], $tenantId);
+$employeeIdParam = (int) ($_GET['employee_id'] ?? 0);
+if ($employeeIdParam > 0) {
+    PermissionMiddleware::check($auth, 'manage_leaves');
+    $employee = EmployeeModel::findById($employeeIdParam, $tenantId);
+} else {
+    $employee = EmployeeModel::findByAdminId($auth['admin_id'], $tenantId);
+}
 if (!$employee) {
     Response::fail('Employee profile not found', 404);
 }

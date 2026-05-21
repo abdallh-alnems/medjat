@@ -40,7 +40,20 @@ if ($gpsRadiusMeters < 10 || $gpsRadiusMeters > 5000) {
     Response::fail('gps_radius_meters must be between 10 and 5000', 422);
 }
 
-BranchModel::updateAttendanceMethods($branchId, $tenantId, $attendanceMethods, $gpsRadiusMeters);
+$allowOffline = null;
+if (array_key_exists('allow_offline_attendance', $input)) {
+    $val = $input['allow_offline_attendance'];
+    if ($val === null) {
+        $allowOffline = null;
+    } else {
+        $allowOffline = filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        if ($allowOffline === null) {
+            Response::fail('allow_offline_attendance must be true, false, or null', 422);
+        }
+    }
+}
+
+BranchModel::updateAttendanceMethods($branchId, $tenantId, $attendanceMethods, $gpsRadiusMeters, $allowOffline);
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'branch.update_attendance_method', 'branch', $branchId);
 

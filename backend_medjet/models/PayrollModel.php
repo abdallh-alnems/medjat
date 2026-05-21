@@ -149,4 +149,22 @@ final class PayrollModel {
         }
         return Database::fetchOne($sql, $params) ?: [];
     }
+
+    public static function getApprovedForBankFile(int $tenantId, string $month, ?int $branchId = null): array {
+        $sql = "SELECT e.name AS employee_name, e.id AS employee_id,
+                       e.bank_name, e.bank_account_number, e.bank_iban,
+                       p.net_salary, p.branch_id,
+                       b.name AS branch_name
+                FROM payroll p
+                JOIN employees e ON e.id = p.employee_id
+                LEFT JOIN branches b ON b.id = p.branch_id
+                WHERE p.tenant_id = ? AND p.month = ? AND p.status = 'approved'";
+        $params = [$tenantId, $month];
+        if ($branchId) {
+            $sql .= " AND p.branch_id = ?";
+            $params[] = $branchId;
+        }
+        $sql .= " ORDER BY e.name ASC";
+        return Database::fetchAll($sql, $params);
+    }
 }

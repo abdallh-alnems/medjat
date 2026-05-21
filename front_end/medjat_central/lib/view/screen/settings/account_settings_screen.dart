@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constant/theme/theme.dart';
+import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/shared/input_fields/password_input.dart';
 import '../../../logic/controller/settings/settings_controller.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
@@ -77,6 +78,12 @@ class AccountSettingsScreen extends StatelessWidget {
             icon: Icons.lock_outline,
             title: 'change_password'.tr,
             onTap: () => _showChangePasswordSheet(context),
+          ),
+          const SizedBox(height: AppSpacing.s2),
+          _AccountTile(
+            icon: Icons.notifications_outlined,
+            title: 'notification_settings'.tr,
+            onTap: () => Get.toNamed<void>(AppRoutes.notificationPrefs),
           ),
           const SizedBox(height: AppSpacing.s2),
           _AccountTile(

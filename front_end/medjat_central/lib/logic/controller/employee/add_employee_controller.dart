@@ -4,23 +4,28 @@ import '../../../core/class/status_request.dart';
 import '../../../data/data_source/remote/employee_data/employee_data.dart';
 import '../../../data/data_source/remote/branch_data/branch_data.dart';
 import '../../../data/data_source/remote/shift_data/shift_data.dart';
+import '../../../data/data_source/remote/category_data/category_data.dart';
 import '../../../data/model/branch_model.dart';
 import '../../../data/model/shift_model.dart';
+import '../../../data/model/employee_category_model.dart';
 
 class AddEmployeeController extends GetxController {
   final EmployeeData _employeeData = Get.find<EmployeeData>();
   final BranchData _branchData = Get.find<BranchData>();
   final ShiftData _shiftData = Get.find<ShiftData>();
+  final CategoryData _categoryData = Get.find<CategoryData>();
 
   final status = StatusRequest.none.obs;
   bool branchesLoading = true;
   List<BranchModel> branches = [];
   List<ShiftModel> shifts = [];
+  List<EmployeeCategoryModel> categories = [];
 
   String? activationCode;
   int? createdEmployeeId;
   int? selectedBranchId;
   int? selectedShiftId;
+  final Set<int> selectedCategoryIds = {};
   TimeOfDay startTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay endTime = const TimeOfDay(hour: 17, minute: 0);
 
@@ -45,6 +50,7 @@ class AddEmployeeController extends GetxController {
     super.onInit();
     loadBranches();
     loadShifts();
+    loadCategories();
   }
 
   Future<void> loadBranches() async {
@@ -90,6 +96,26 @@ class AddEmployeeController extends GetxController {
         shifts = items
             .whereType<Map<String, dynamic>>()
             .map(ShiftModel.fromJson)
+            .toList();
+      }
+      update();
+    }
+  }
+
+  Future<void> loadCategories() async {
+    final response = await _categoryData.getCategories();
+    if (response['status'] == StatusRequest.success) {
+      dynamic body = response['data'];
+      if (body is Map && body['data'] is Map) body = body['data'];
+      if (body is Map && body['categories'] is List) {
+        categories = (body['categories'] as List)
+            .map((e) =>
+                EmployeeCategoryModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } else if (body is List) {
+        categories = body
+            .map((e) =>
+                EmployeeCategoryModel.fromJson(e as Map<String, dynamic>))
             .toList();
       }
       update();

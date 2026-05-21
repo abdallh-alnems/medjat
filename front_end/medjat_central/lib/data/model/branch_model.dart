@@ -14,6 +14,7 @@ class BranchModel {
   final double stationConfidenceThreshold;
   final bool stationAntiSpoofing;
   final bool hasStationPin;
+  final bool? allowOfflineAttendance;
 
   BranchModel({
     required this.id,
@@ -31,6 +32,7 @@ class BranchModel {
     this.stationConfidenceThreshold = 0.85,
     this.stationAntiSpoofing = true,
     this.hasStationPin = false,
+    this.allowOfflineAttendance,
   });
 
   factory BranchModel.fromJson(Map<String, dynamic> json) {
@@ -39,6 +41,15 @@ class BranchModel {
       methods = (json['attendance_methods'] as List)
           .map((e) => e.toString())
           .toList();
+    }
+    bool? allowOffline;
+    final rawAllowOffline = json['allow_offline_attendance'];
+    if (rawAllowOffline == null) {
+      allowOffline = null;
+    } else if (rawAllowOffline is bool) {
+      allowOffline = rawAllowOffline;
+    } else {
+      allowOffline = (rawAllowOffline as int) == 1;
     }
     return BranchModel(
       id: (json['id'] as int?) ?? 0,
@@ -56,6 +67,7 @@ class BranchModel {
       stationConfidenceThreshold: (json['station_confidence_threshold'] as num?)?.toDouble() ?? 0.85,
       stationAntiSpoofing: (json['station_anti_spoofing_enabled'] as int?) == 1,
       hasStationPin: (json['station_admin_pin_hash'] as String?) != null,
+      allowOfflineAttendance: allowOffline,
     );
   }
 
@@ -75,6 +87,7 @@ class BranchModel {
     double? stationConfidenceThreshold,
     bool? stationAntiSpoofing,
     bool? hasStationPin,
+    bool? allowOfflineAttendance,
   }) {
     return BranchModel(
       id: id ?? this.id,
@@ -92,6 +105,7 @@ class BranchModel {
       stationConfidenceThreshold: stationConfidenceThreshold ?? this.stationConfidenceThreshold,
       stationAntiSpoofing: stationAntiSpoofing ?? this.stationAntiSpoofing,
       hasStationPin: hasStationPin ?? this.hasStationPin,
+      allowOfflineAttendance: allowOfflineAttendance ?? this.allowOfflineAttendance,
     );
   }
 }

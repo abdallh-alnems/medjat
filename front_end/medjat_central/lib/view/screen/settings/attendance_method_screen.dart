@@ -34,6 +34,8 @@ class AttendanceMethodScreen extends StatelessWidget {
                       style: AppTextStyles.h3(context)),
                   const SizedBox(height: AppSpacing.s3),
                   _TenantMethodCards(ctrl: ctrl),
+                  const SizedBox(height: AppSpacing.s3),
+                  _OfflineModeCard(ctrl: ctrl),
                   if (ctrl.branches.length > 1) ...[
                     const SizedBox(height: AppSpacing.s6),
                     _BranchOverridesSection(ctrl: ctrl),
@@ -985,6 +987,14 @@ class _BranchTile extends StatelessWidget {
     bool inheritCompany = branch.attendanceMethods == null;
     final radiusCtrl = TextEditingController(
         text: branch.gpsRadiusMeters.toString());
+    int? offlineOverride;
+    if (branch.allowOfflineAttendance == null) {
+      offlineOverride = null;
+    } else if (branch.allowOfflineAttendance == true) {
+      offlineOverride = 1;
+    } else {
+      offlineOverride = 0;
+    }
 
     Get.bottomSheet<void>(
       Container(
@@ -1136,6 +1146,68 @@ class _BranchTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.s5),
+                  Text(
+                    'allow_offline_branch_label'.tr,
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.of(context).textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s2),
+                  StatefulBuilder(
+                    builder: (context, sbSetState) {
+                      return DropdownButtonFormField<int?>(
+                        value: offlineOverride,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.s3,
+                            vertical: AppSpacing.s2,
+                          ),
+                        ),
+                        items: [
+                          DropdownMenuItem<int?>(
+                            value: null,
+                            child: Text(
+                              'inherit_company_default'.tr,
+                              style: const TextStyle(
+                                fontFamily: 'IBM Plex Sans Arabic',
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          DropdownMenuItem<int?>(
+                            value: 1,
+                            child: Text(
+                              'offline_enabled'.tr,
+                              style: const TextStyle(
+                                fontFamily: 'IBM Plex Sans Arabic',
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          DropdownMenuItem<int?>(
+                            value: 0,
+                            child: Text(
+                              'offline_disabled'.tr,
+                              style: const TextStyle(
+                                fontFamily: 'IBM Plex Sans Arabic',
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                        onChanged: (v) {
+                          sbSetState(() => offlineOverride = v);
+                        },
+                      );
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.s5),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -1149,11 +1221,18 @@ class _BranchTile extends StatelessWidget {
                         ),
                       ),
                       onPressed: () async {
+                        bool? branchAllowOffline;
+                        if (offlineOverride == null) {
+                          branchAllowOffline = null;
+                        } else {
+                          branchAllowOffline = offlineOverride == 1;
+                        }
                         final ok = await ctrl.saveBranchMethods(
                           branchId: branch.id,
                           methods: inheritCompany ? null : selectedMethods,
                           radius:
                               int.tryParse(radiusCtrl.text.trim()) ?? 100,
+                          allowOfflineAttendance: branchAllowOffline,
                         );
                         Get.back<void>();
                         _showResultSnackbar(ok);
@@ -1237,6 +1316,75 @@ class _BranchMethodSwitch extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _OfflineModeCard extends StatelessWidget {
+  final AttendanceMethodController ctrl;
+  const _OfflineModeCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<AttendanceMethodController>(
+      builder: (_) {
+        final colors = AppColors.of(context);
+        final enabled = ctrl.allowOffline;
+
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.s3),
+          decoration: BoxDecoration(
+            color: enabled ? colors.brandSubtle : colors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: enabled ? colors.brand : colors.borderHairline,
+              width: enabled ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.cloud_off_outlined,
+                  size: 22,
+                  color: enabled ? colors.brand : colors.textSecondary),
+              const SizedBox(width: AppSpacing.s3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'allow_offline'.tr,
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: enabled ? colors.brand : colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'allow_offline_hint'.tr,
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 11,
+                        color: colors.textTertiary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: enabled,
+                onChanged: (v) async {
+                  final ok = await ctrl.toggleAllowOffline(v);
+                  _showResultSnackbar(ok);
+                },
+                activeThumbColor: colors.brand,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

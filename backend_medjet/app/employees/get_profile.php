@@ -22,6 +22,8 @@ if ($employee['status'] === 'pending_activation') {
     $activationExpiresAt = $codeRow['expires_at'] ?? null;
 }
 
+$categories = EmployeeCategoryModel::getEmployeeCategories((int) $employee['id'], $tenantId);
+
 Response::success([
     'employee' => $employee,
     'documents' => $documents,
@@ -29,4 +31,5 @@ Response::success([
     'leave_balance' => $leavesBalance,
     'activation_code' => $activationCode,
     'activation_expires_at' => $activationExpiresAt,
+    'categories' => $categories,
 ]);

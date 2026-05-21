@@ -91,6 +91,53 @@ class CRUD {
     }
   }
 
+  /// Fetches raw binary content (e.g. a generated PDF) with auth headers.
+  /// Returns {status, bytes} on success.
+  Future<Map<String, dynamic>> getBytes(String url,
+      {Map<String, dynamic>? queryParameters}) async {
+    final connectivity = await _checkConnectivity();
+    if (connectivity == StatusRequest.offline) {
+      return {'status': StatusRequest.offline};
+    }
+
+    try {
+      final uri = Uri.parse(url);
+      final headers = await _headers();
+      final params = <String, String>{};
+      if (queryParameters != null) {
+        queryParameters.forEach((k, v) => params[k] = v.toString());
+      }
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final idToken = await user.getIdToken();
+        if (idToken != null && !headers.containsKey('X-Firebase-Token')) {
+          params['token'] = idToken;
+        }
+      }
+      final userData = await TokenStorageService.getUserData();
+      if (userData != null && !headers.containsKey('X-Tenant-Id')) {
+        try {
+          final json = jsonDecode(userData);
+          final tenantId = json['tenant_id'];
+          if (tenantId != null && tenantId != 0) {
+            params['tenant_id'] = tenantId.toString();
+          }
+        } catch (_) {}
+      }
+      final response = await http
+          .get(uri.replace(queryParameters: params), headers: headers)
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return {'status': StatusRequest.success, 'bytes': response.bodyBytes};
+      }
+      return {'status': StatusRequest.failure, 'statusCode': response.statusCode};
+    } catch (e) {
+      debugPrint('GET BYTES Error: $e');
+      return {'status': StatusRequest.failure};
+    }
+  }
+
   Future<Map<String, dynamic>> postData(String url, Map<String, dynamic> data,
       {bool auth = true}) async {
     final connectivity = await _checkConnectivity();

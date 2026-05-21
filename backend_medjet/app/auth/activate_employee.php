@@ -47,6 +47,23 @@ $employee = Database::fetchOne(
     [$codeRow['employee_id']]
 );
 
+try {
+    $empTenantId = (int) $employee['tenant_id'];
+    $empBranchId = $employee['branch_id'] ? (int) $employee['branch_id'] : null;
+    $recipients = SmartAlertService::recipientsForBranch($empTenantId, $empBranchId, 'manage_employees');
+    foreach ($recipients as $rid) {
+        SmartAlertService::dispatch(
+            $rid, 'payroll_events', 'general',
+            'موظف جديد مفعّل', "تم تفعيل حساب {$employee['name']}",
+            'Employee Activated', "{$employee['name']} has been activated",
+            ['employee_id' => (int) $employee['id'], 'employee_name' => $employee['name']],
+            "emp_activate:{$codeRow['employee_id']}"
+        );
+    }
+} catch (Throwable $e) {
+    error_log('SmartAlert activate employee: ' . $e->getMessage());
+}
+
 Response::success([
     'success' => true,
     'employee' => [

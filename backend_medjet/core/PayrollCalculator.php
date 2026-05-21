@@ -13,9 +13,13 @@ final class PayrollCalculator {
 
         $totalDeductions = array_sum(array_column($deductions, 'amount'));
         $totalBonuses = array_sum(array_column($bonuses, 'amount'));
+
+        $statutory = self::applyStatutory($baseSalary, $deductions, $tenantId);
+
+        $totalDeductions = array_sum(array_column($deductions, 'amount'));
         $netSalary = $baseSalary - $totalDeductions + $totalBonuses;
 
-        return [
+        $result = [
             'employee_id' => $employeeId,
             'month' => $month,
             'base_salary' => $baseSalary,
@@ -25,6 +29,12 @@ final class PayrollCalculator {
             'deductions_breakdown' => $deductions,
             'bonuses_breakdown' => $bonuses,
         ];
+
+        if (!empty($statutory)) {
+            $result['statutory_breakdown'] = $statutory;
+        }
+
+        return $result;
     }
 
     private static function calculateDeductions(int $employeeId, string $month, int $tenantId, float $baseSalary): array {
@@ -80,6 +90,18 @@ final class PayrollCalculator {
             ];
         }
 
+        // Loan / advance installments due this month are deducted automatically.
+        $loanInstallments = LoanModel::dueInstallmentsForMonth($employeeId, $month, $tenantId);
+        foreach ($loanInstallments as $inst) {
+            $label = $inst['loan_type'] === 'advance' ? 'سلفة' : 'قسط قرض';
+            $deductions[] = [
+                'type' => 'loan',
+                'date' => $month,
+                'amount' => (float) $inst['amount'],
+                'description' => "{$label} (قسط {$inst['seq']})",
+            ];
+        }
+
         return $deductions;
     }
 
@@ -115,6 +137,112 @@ final class PayrollCalculator {
         }
 
         return $bonuses;
+    }
+
+    private static function applyStatutory(float $baseSalary, array &$deductions, int $tenantId): array {
+        $settings = PayrollStatutoryModel::get($tenantId);
+        if (!$settings) {
+            return [];
+        }
+
+        $anyEnabled = (
+            ($settings['social_insurance_enabled'] ?? 0) ||
+            ($settings['income_tax_enabled'] ?? 0)
+        );
+
+        if (!$anyEnabled) {
+            return [];
+        }
+
+        $statutory = [
+            'insurance_employee' => 0,
+            'insurance_employer' => 0,
+            'income_tax' => 0,
+            'taxable_income' => 0,
+        ];
+
+        $insuranceEmployee = 0.0;
+
+        if ($settings['social_insurance_enabled'] ?? 0) {
+            $minWage = $settings['si_min_wage'] !== null ? (float) $settings['si_min_wage'] : 0;
+            $maxWage = $settings['si_max_wage'] !== null ? (float) $settings['si_max_wage'] : PHP_FLOAT_MAX;
+            $employeeRate = (float) ($settings['si_employee_rate'] ?? 0);
+            $employerRate = (float) ($settings['si_employer_rate'] ?? 0);
+
+            $insurableWage = max($minWage, min($baseSalary, $maxWage));
+
+            $insuranceEmployee = round($insurableWage * ($employeeRate / 100), 2);
+            $insuranceEmployer = round($insurableWage * ($employerRate / 100), 2);
+
+            $deductions[] = [
+                'type' => 'social_insurance',
+                'date' => null,
+                'amount' => $insuranceEmployee,
+                'description' => "تأمينات اجتماعية (حصة الموظف {$employeeRate}%)",
+            ];
+
+            $statutory['insurance_employee'] = $insuranceEmployee;
+            $statutory['insurance_employer'] = $insuranceEmployer;
+        }
+
+        if ($settings['income_tax_enabled'] ?? 0) {
+            $exemption = $settings['tax_personal_exemption'] !== null ? (float) $settings['tax_personal_exemption'] : 0;
+            $taxableIncome = $baseSalary - $insuranceEmployee - $exemption;
+            $taxableIncome = max(0, $taxableIncome);
+            $statutory['taxable_income'] = round($taxableIncome, 2);
+
+            $brackets = $settings['income_tax_brackets'];
+            if (is_string($brackets)) {
+                $brackets = json_decode($brackets, true);
+            }
+
+            $taxAmount = 0.0;
+            if (is_array($brackets) && $taxableIncome > 0) {
+                $taxAmount = self::calculateProgressiveTax($taxableIncome, $brackets);
+            }
+
+            $taxAmount = round($taxAmount, 2);
+            $statutory['income_tax'] = $taxAmount;
+
+            if ($taxAmount > 0) {
+                $deductions[] = [
+                    'type' => 'income_tax',
+                    'date' => null,
+                    'amount' => $taxAmount,
+                    'description' => "ضريبة دخل",
+                ];
+            }
+        }
+
+        return $statutory;
+    }
+
+    private static function calculateProgressiveTax(float $monthlyTaxableIncome, array $brackets): float {
+        $annualTaxable = $monthlyTaxableIncome * 12;
+        $tax = 0.0;
+        $prevLimit = 0.0;
+
+        foreach ($brackets as $bracket) {
+            $upTo = $bracket['up_to'] !== null ? (float) $bracket['up_to'] : PHP_FLOAT_MAX;
+            $rate = (float) ($bracket['rate'] ?? 0);
+
+            if ($annualTaxable <= $prevLimit) {
+                break;
+            }
+
+            $taxableInThisBracket = min($annualTaxable, $upTo) - $prevLimit;
+            if ($taxableInThisBracket > 0) {
+                $tax += $taxableInThisBracket * ($rate / 100);
+            }
+
+            $prevLimit = $upTo;
+
+            if ($annualTaxable <= $upTo) {
+                break;
+            }
+        }
+
+        return round($tax / 12, 2);
     }
 
     private static function getRuleValue(array $rules, string $key, $default = null) {

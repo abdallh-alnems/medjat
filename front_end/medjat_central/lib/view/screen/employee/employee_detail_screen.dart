@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../core/class/handling_data_request.dart';
 import '../../../core/class/status_request.dart';
@@ -673,6 +674,101 @@ class _InfoSection extends StatelessWidget {
             value: e.hireDate != null
                 ? '${e.hireDate!.year}-${e.hireDate!.month.toString().padLeft(2, '0')}-${e.hireDate!.day.toString().padLeft(2, '0')}'
                 : '—'),
+        if (e.bankName != null && e.bankName!.isNotEmpty ||
+            e.bankAccountNumber != null && e.bankAccountNumber!.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.s3),
+          Text('bank_info'.tr, style: AppTextStyles.h3(context)),
+          const SizedBox(height: AppSpacing.s2),
+          _InfoRow(label: 'bank_name'.tr, value: e.bankName ?? '—'),
+          _InfoRow(label: 'bank_account_number'.tr, value: e.bankAccountNumber ?? '—'),
+          _InfoRow(label: 'bank_iban'.tr, value: e.bankIban ?? '—'),
+          if (e.bankSwift != null && e.bankSwift!.isNotEmpty)
+            _InfoRow(label: 'bank_swift'.tr, value: e.bankSwift!),
+        ],
+        if (e.hasComplianceInfo) ...[
+          const SizedBox(height: AppSpacing.s3),
+          Text('compliance_info'.tr, style: AppTextStyles.h3(context)),
+          const SizedBox(height: AppSpacing.s2),
+          if (e.nationalId != null && e.nationalId!.isNotEmpty)
+            _InfoRow(label: 'national_id'.tr, value: e.nationalId!),
+          if (e.nationality != null && e.nationality!.isNotEmpty)
+            _InfoRow(label: 'nationality'.tr, value: e.nationality!),
+          if ((e.iqamaNumber != null && e.iqamaNumber!.isNotEmpty) ||
+              e.iqamaExpiry != null)
+            _ComplianceRow(
+                label: 'iqama_number'.tr,
+                value: e.iqamaNumber,
+                expiry: e.iqamaExpiry),
+          if ((e.passportNumber != null && e.passportNumber!.isNotEmpty) ||
+              e.passportExpiry != null)
+            _ComplianceRow(
+                label: 'passport_number'.tr,
+                value: e.passportNumber,
+                expiry: e.passportExpiry),
+          if ((e.workPermitNumber != null &&
+                  e.workPermitNumber!.isNotEmpty) ||
+              e.workPermitExpiry != null)
+            _ComplianceRow(
+                label: 'work_permit_number'.tr,
+                value: e.workPermitNumber,
+                expiry: e.workPermitExpiry),
+          if (e.contractType != null)
+            _InfoRow(
+                label: 'contract_type'.tr,
+                value: 'contract_${e.contractType}'.tr),
+          if (e.contractEnd != null)
+            _ComplianceRow(label: 'contract_end'.tr, expiry: e.contractEnd),
+          if (e.healthInsuranceExpiry != null)
+            _ComplianceRow(
+                label: 'health_insurance_expiry'.tr,
+                expiry: e.healthInsuranceExpiry),
+        ],
+        if (ctrl.categories.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.s2),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 120,
+                child: Text(
+                  'employee_categories'.tr,
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 13,
+                    color: AppColors.of(context).textTertiary,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Wrap(
+                  spacing: AppSpacing.s1,
+                  runSpacing: AppSpacing.s1,
+                  children: ctrl.categories.map((cat) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.s2,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.of(context).brandSubtle,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      child: Text(
+                        (cat['name'] as String?) ?? '',
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Sans Arabic',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.of(context).brand,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }
@@ -712,6 +808,103 @@ class _InfoRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Info row for a compliance credential: optional number + colored expiry badge.
+class _ComplianceRow extends StatelessWidget {
+  final String label;
+  final String? value;
+  final DateTime? expiry;
+  const _ComplianceRow({required this.label, this.value, this.expiry});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 13,
+                color: colors.textTertiary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (value != null && value!.isNotEmpty)
+                  Text(
+                    value!,
+                    style: const TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                if (expiry != null) _ExpiryBadge(expiry: expiry!),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Small chip showing an expiry date, colored by how close it is.
+class _ExpiryBadge extends StatelessWidget {
+  final DateTime expiry;
+  const _ExpiryBadge({required this.expiry});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final today = DateTime.now();
+    final dayOnly = DateTime(today.year, today.month, today.day);
+    final expiryDay = DateTime(expiry.year, expiry.month, expiry.day);
+    final daysLeft = expiryDay.difference(dayOnly).inDays;
+    final dateStr =
+        '${expiry.year}-${expiry.month.toString().padLeft(2, '0')}-${expiry.day.toString().padLeft(2, '0')}';
+
+    Color color;
+    String text;
+    if (daysLeft < 0) {
+      color = colors.error;
+      text = '$dateStr · ${'expired'.tr}';
+    } else if (daysLeft <= 30) {
+      color = colors.warning;
+      text = '$dateStr · ${'expires_in_days'.trParams({'days': '$daysLeft'})}';
+    } else {
+      color = colors.textSecondary;
+      text = dateStr;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(top: 2),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s2, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontFamily: 'IBM Plex Sans Arabic',
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
       ),
     );
   }
@@ -1548,6 +1741,14 @@ class _LeaveBalanceSection extends StatelessWidget {
                 color: colors.textTertiary,
               ),
             ),
+            if (ctrl.canManageEmployees)
+              IconButton(
+                onPressed: () => _showEditAnnualLeaveSheet(context),
+                icon: Icon(Icons.edit_outlined,
+                    size: 18, color: colors.textSecondary),
+                tooltip: 'employee_annual_leave_label'.tr,
+                visualDensity: VisualDensity.compact,
+              ),
           ],
         ),
         const SizedBox(height: AppSpacing.s3),
@@ -1571,6 +1772,27 @@ class _LeaveBalanceSection extends StatelessWidget {
                   ),
                 ),
               ),
+              if (ctrl.leaveCarriedOver > 0) ...[
+                const SizedBox(height: AppSpacing.s3),
+                Row(
+                  children: [
+                    Icon(Icons.sync_alt, size: 14, color: colors.textTertiary),
+                    const SizedBox(width: AppSpacing.s2),
+                    Expanded(
+                      child: Text(
+                        'leave_carried_over_note'.trParams({
+                          'days': ctrl.leaveCarriedOver.toString(),
+                        }),
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Sans Arabic',
+                          fontSize: 12,
+                          color: colors.textTertiary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: AppSpacing.s4),
               Row(
                 children: [
@@ -1652,6 +1874,81 @@ class _LeaveBalanceSection extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _showEditAnnualLeaveSheet(BuildContext context) {
+    final colors = AppColors.of(context);
+    final fieldCtrl = TextEditingController(
+      text: ctrl.employee?.annualLeaveDays?.toString() ?? '',
+    );
+
+    Get.bottomSheet<void>(
+      Container(
+        padding: EdgeInsets.only(
+          left: AppSpacing.s4,
+          right: AppSpacing.s4,
+          top: AppSpacing.s4,
+          bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s4,
+        ),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: AppSpacing.s3),
+                decoration: BoxDecoration(
+                  color: colors.borderHairline,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Text('employee_annual_leave_label'.tr,
+                style: AppTextStyles.h2(context)),
+            const SizedBox(height: AppSpacing.s2),
+            Text('employee_annual_leave_hint'.tr,
+                style: AppTextStyles.sm(context)),
+            const SizedBox(height: AppSpacing.s4),
+            TextField(
+              controller: fieldCtrl,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: InputDecoration(
+                labelText: 'employee_annual_leave_label'.tr,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s5),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  final text = fieldCtrl.text.trim();
+                  Get.back<void>();
+                  ctrl.updateAnnualLeaveDays(
+                      text.isEmpty ? null : int.tryParse(text));
+                },
+                icon: const Icon(Icons.save_outlined),
+                label: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
+                  child: Text('save'.tr),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      isScrollControlled: true,
     );
   }
 }

@@ -15,6 +15,7 @@ class AttendanceMethodController extends GetxController {
   StatusRequest status = StatusRequest.none;
   Set<String> tenantMethods = {'qr_gps', 'manual'};
   List<int>? manualAdminIds;
+  bool allowOffline = true;
   List<BranchModel> branches = [];
   List<AdminModel> eligibleAdmins = [];
 
@@ -50,6 +51,11 @@ class AttendanceMethodController extends GetxController {
         } else {
           manualAdminIds = null;
         }
+        if (data['allow_offline_attendance'] is bool) {
+          allowOffline = data['allow_offline_attendance'] as bool;
+        } else {
+          allowOffline = true;
+        }
         if (data['branches'] is List) {
           branches = (data['branches'] as List)
               .map(
@@ -79,6 +85,7 @@ class AttendanceMethodController extends GetxController {
     final response = await _companySettingsData.updateAttendanceConfig(
       methods: tenantMethods.toList(),
       manualAdminIds: manualAdminIds,
+      allowOfflineAttendance: allowOffline,
     );
     if (response['status'] == StatusRequest.success) {
       update();
@@ -93,6 +100,24 @@ class AttendanceMethodController extends GetxController {
     return false;
   }
 
+  Future<bool> toggleAllowOffline(bool enabled) async {
+    final previous = allowOffline;
+    allowOffline = enabled;
+
+    final response = await _companySettingsData.updateAttendanceConfig(
+      methods: tenantMethods.toList(),
+      manualAdminIds: manualAdminIds,
+      allowOfflineAttendance: enabled,
+    );
+    if (response['status'] == StatusRequest.success) {
+      update();
+      return true;
+    }
+    allowOffline = previous;
+    update();
+    return false;
+  }
+
   Future<bool> saveManualAdminIds(List<int>? ids) async {
     final previousIds = manualAdminIds;
     manualAdminIds = ids;
@@ -100,6 +125,7 @@ class AttendanceMethodController extends GetxController {
     final response = await _companySettingsData.updateAttendanceConfig(
       methods: tenantMethods.toList(),
       manualAdminIds: ids,
+      allowOfflineAttendance: allowOffline,
     );
     if (response['status'] == StatusRequest.success) {
       update();
@@ -113,11 +139,13 @@ class AttendanceMethodController extends GetxController {
     required int branchId,
     List<String>? methods,
     int? radius,
+    bool? allowOfflineAttendance,
   }) async {
     final response = await _branchData.updateBranchAttendanceMethods(
       branchId: branchId,
       methods: methods,
       gpsRadiusMeters: radius,
+      allowOfflineAttendance: allowOfflineAttendance,
     );
     if (response['status'] == StatusRequest.success) {
       final idx = branches.indexWhere((b) => b.id == branchId);
@@ -125,6 +153,7 @@ class AttendanceMethodController extends GetxController {
         branches[idx] = branches[idx].copyWith(
           attendanceMethods: methods,
           gpsRadiusMeters: radius ?? branches[idx].gpsRadiusMeters,
+          allowOfflineAttendance: allowOfflineAttendance,
         );
       }
       update();

@@ -8,7 +8,7 @@ import '../../../core/shared/buttons/primary_button.dart';
 import '../../../core/shared/input_fields/primary_input.dart';
 import '../../../logic/controller/employee/add_employee_controller.dart';
 import '../../../data/model/branch_model.dart';
-import '../../../data/model/shift_model.dart';
+import '../../../data/model/employee_category_model.dart';
 
 class AddEmployeeScreen extends StatelessWidget {
   const AddEmployeeScreen({super.key});
@@ -54,7 +54,45 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
   final phoneCtrl = TextEditingController();
   final jobTitleCtrl = TextEditingController();
   final salaryCtrl = TextEditingController();
+  final bankNameCtrl = TextEditingController();
+  final bankAccountCtrl = TextEditingController();
+  final bankIbanCtrl = TextEditingController();
+  final bankSwiftCtrl = TextEditingController();
+  final annualLeaveCtrl = TextEditingController();
+  // Compliance / legal credentials
+  final nationalIdCtrl = TextEditingController();
+  final nationalityCtrl = TextEditingController();
+  final iqamaNumberCtrl = TextEditingController();
+  final passportNumberCtrl = TextEditingController();
+  final workPermitNumberCtrl = TextEditingController();
+  DateTime? iqamaExpiry;
+  DateTime? passportExpiry;
+  DateTime? workPermitExpiry;
+  DateTime? contractStart;
+  DateTime? contractEnd;
+  DateTime? healthInsuranceExpiry;
+  String? contractType;
+  static const _contractTypes = [
+    'permanent',
+    'fixed_term',
+    'part_time',
+    'temporary',
+  ];
   final formKey = GlobalKey<FormState>();
+
+  String _fmtDate(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  Future<void> _pickDate(DateTime? current, ValueChanged<DateTime> onPicked) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current ?? now,
+      firstDate: DateTime(now.year - 30),
+      lastDate: DateTime(now.year + 30),
+    );
+    if (picked != null) setState(() => onPicked(picked));
+  }
 
   AddEmployeeController get ctrl => widget.ctrl;
 
@@ -64,6 +102,16 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
     phoneCtrl.dispose();
     jobTitleCtrl.dispose();
     salaryCtrl.dispose();
+    bankNameCtrl.dispose();
+    bankAccountCtrl.dispose();
+    bankIbanCtrl.dispose();
+    bankSwiftCtrl.dispose();
+    annualLeaveCtrl.dispose();
+    nationalIdCtrl.dispose();
+    nationalityCtrl.dispose();
+    iqamaNumberCtrl.dispose();
+    passportNumberCtrl.dispose();
+    workPermitNumberCtrl.dispose();
     super.dispose();
   }
 
@@ -109,6 +157,117 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
                   v == null || v.trim().isEmpty ? 'salary_required'.tr : null,
             ),
             const SizedBox(height: AppSpacing.s4),
+            Text('bank_info'.tr, style: AppTextStyles.h3(context)),
+            const SizedBox(height: AppSpacing.s3),
+            PrimaryInput(
+              label: 'bank_name'.tr,
+              controller: bankNameCtrl,
+              hint: 'bank_name'.tr,
+            ),
+            const SizedBox(height: AppSpacing.s3),
+            PrimaryInput(
+              label: 'bank_account_number'.tr,
+              controller: bankAccountCtrl,
+              keyboardType: TextInputType.text,
+              hint: 'bank_account_number'.tr,
+            ),
+            const SizedBox(height: AppSpacing.s3),
+            PrimaryInput(
+              label: 'bank_iban'.tr,
+              controller: bankIbanCtrl,
+              keyboardType: TextInputType.text,
+              hint: 'bank_iban'.tr,
+            ),
+            const SizedBox(height: AppSpacing.s3),
+            PrimaryInput(
+              label: 'bank_swift'.tr,
+              controller: bankSwiftCtrl,
+              keyboardType: TextInputType.text,
+              hint: 'bank_swift'.tr,
+            ),
+            const SizedBox(height: AppSpacing.s4),
+            Text('compliance_info'.tr, style: AppTextStyles.h3(context)),
+            const SizedBox(height: AppSpacing.s3),
+            PrimaryInput(
+              label: 'national_id'.tr,
+              controller: nationalIdCtrl,
+              hint: 'optional'.tr,
+            ),
+            const SizedBox(height: AppSpacing.s3),
+            PrimaryInput(
+              label: 'nationality'.tr,
+              controller: nationalityCtrl,
+              hint: 'optional'.tr,
+            ),
+            const SizedBox(height: AppSpacing.s3),
+            PrimaryInput(
+              label: 'iqama_number'.tr,
+              controller: iqamaNumberCtrl,
+              hint: 'optional'.tr,
+            ),
+            const SizedBox(height: AppSpacing.s3),
+            _DateFieldTile(
+              label: 'iqama_expiry'.tr,
+              date: iqamaExpiry,
+              onTap: () => _pickDate(iqamaExpiry, (d) => iqamaExpiry = d),
+              onClear: () => setState(() => iqamaExpiry = null),
+            ),
+            const SizedBox(height: AppSpacing.s3),
+            PrimaryInput(
+              label: 'passport_number'.tr,
+              controller: passportNumberCtrl,
+              hint: 'optional'.tr,
+            ),
+            const SizedBox(height: AppSpacing.s3),
+            _DateFieldTile(
+              label: 'passport_expiry'.tr,
+              date: passportExpiry,
+              onTap: () => _pickDate(passportExpiry, (d) => passportExpiry = d),
+              onClear: () => setState(() => passportExpiry = null),
+            ),
+            const SizedBox(height: AppSpacing.s3),
+            PrimaryInput(
+              label: 'work_permit_number'.tr,
+              controller: workPermitNumberCtrl,
+              hint: 'optional'.tr,
+            ),
+            const SizedBox(height: AppSpacing.s3),
+            _DateFieldTile(
+              label: 'work_permit_expiry'.tr,
+              date: workPermitExpiry,
+              onTap: () =>
+                  _pickDate(workPermitExpiry, (d) => workPermitExpiry = d),
+              onClear: () => setState(() => workPermitExpiry = null),
+            ),
+            const SizedBox(height: AppSpacing.s3),
+            _ContractTypeDropdown(
+              value: contractType,
+              types: _contractTypes,
+              onChanged: (v) => setState(() => contractType = v),
+            ),
+            const SizedBox(height: AppSpacing.s3),
+            _DateFieldTile(
+              label: 'contract_start'.tr,
+              date: contractStart,
+              onTap: () => _pickDate(contractStart, (d) => contractStart = d),
+              onClear: () => setState(() => contractStart = null),
+            ),
+            const SizedBox(height: AppSpacing.s3),
+            _DateFieldTile(
+              label: 'contract_end'.tr,
+              date: contractEnd,
+              onTap: () => _pickDate(contractEnd, (d) => contractEnd = d),
+              onClear: () => setState(() => contractEnd = null),
+            ),
+            const SizedBox(height: AppSpacing.s3),
+            _DateFieldTile(
+              label: 'health_insurance_expiry'.tr,
+              date: healthInsuranceExpiry,
+              onTap: () => _pickDate(
+                  healthInsuranceExpiry, (d) => healthInsuranceExpiry = d),
+              onClear: () => setState(() => healthInsuranceExpiry = null),
+            ),
+            const SizedBox(height: AppSpacing.s4),
             Text('branch'.tr, style: AppTextStyles.h3(context)),
             const SizedBox(height: AppSpacing.s3),
             GetBuilder<AddEmployeeController>(
@@ -123,6 +282,27 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
                 );
               },
             ),
+            if (ctrl.categories.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.s4),
+              Text('employee_categories'.tr, style: AppTextStyles.h3(context)),
+              const SizedBox(height: AppSpacing.s3),
+              GetBuilder<AddEmployeeController>(
+                builder: (_) {
+                  return _CategoryChips(
+                    categories: ctrl.categories,
+                    selectedIds: ctrl.selectedCategoryIds,
+                    onToggle: (id) {
+                      if (ctrl.selectedCategoryIds.contains(id)) {
+                        ctrl.selectedCategoryIds.remove(id);
+                      } else {
+                        ctrl.selectedCategoryIds.add(id);
+                      }
+                      ctrl.update();
+                    },
+                  );
+                },
+              ),
+            ],
             const SizedBox(height: AppSpacing.s4),
             GetBuilder<AddEmployeeController>(
               builder: (_) {
@@ -257,6 +437,16 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
                 );
               },
             ),
+            const SizedBox(height: AppSpacing.s4),
+            Text('leave_settings_title'.tr, style: AppTextStyles.h3(context)),
+            const SizedBox(height: AppSpacing.s3),
+            PrimaryInput(
+              label: 'employee_annual_leave_label'.tr,
+              controller: annualLeaveCtrl,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              hint: 'employee_annual_leave_hint'.tr,
+            ),
             const SizedBox(height: AppSpacing.s6),
             Obx(() => PrimaryButton(
                   text: 'add_employee_btn'.tr,
@@ -287,12 +477,43 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
       'job_title': jobTitleCtrl.text.trim(),
       'base_salary': int.tryParse(salaryCtrl.text.trim()) ?? 0,
       'branch_id': ctrl.selectedBranchId,
+      if (ctrl.selectedCategoryIds.isNotEmpty)
+        'category_ids': ctrl.selectedCategoryIds.toList(),
       if (usingShift)
         'shift_id': ctrl.selectedShiftId
       else ...{
         'work_start_time': ctrl.workStartTimeStr,
         'work_end_time': ctrl.workEndTimeStr,
       },
+      if (bankNameCtrl.text.trim().isNotEmpty)
+        'bank_name': bankNameCtrl.text.trim(),
+      if (bankAccountCtrl.text.trim().isNotEmpty)
+        'bank_account_number': bankAccountCtrl.text.trim(),
+      if (bankIbanCtrl.text.trim().isNotEmpty)
+        'bank_iban': bankIbanCtrl.text.trim(),
+      if (bankSwiftCtrl.text.trim().isNotEmpty)
+        'bank_swift': bankSwiftCtrl.text.trim(),
+      if (annualLeaveCtrl.text.trim().isNotEmpty)
+        'annual_leave_days': int.tryParse(annualLeaveCtrl.text.trim()),
+      if (nationalIdCtrl.text.trim().isNotEmpty)
+        'national_id': nationalIdCtrl.text.trim(),
+      if (nationalityCtrl.text.trim().isNotEmpty)
+        'nationality': nationalityCtrl.text.trim(),
+      if (iqamaNumberCtrl.text.trim().isNotEmpty)
+        'iqama_number': iqamaNumberCtrl.text.trim(),
+      if (iqamaExpiry != null) 'iqama_expiry': _fmtDate(iqamaExpiry!),
+      if (passportNumberCtrl.text.trim().isNotEmpty)
+        'passport_number': passportNumberCtrl.text.trim(),
+      if (passportExpiry != null) 'passport_expiry': _fmtDate(passportExpiry!),
+      if (workPermitNumberCtrl.text.trim().isNotEmpty)
+        'work_permit_number': workPermitNumberCtrl.text.trim(),
+      if (workPermitExpiry != null)
+        'work_permit_expiry': _fmtDate(workPermitExpiry!),
+      if (contractType != null) 'contract_type': contractType,
+      if (contractStart != null) 'contract_start': _fmtDate(contractStart!),
+      if (contractEnd != null) 'contract_end': _fmtDate(contractEnd!),
+      if (healthInsuranceExpiry != null)
+        'health_insurance_expiry': _fmtDate(healthInsuranceExpiry!),
     });
   }
 }
@@ -370,6 +591,121 @@ class _ActivationCodeView extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DateFieldTile extends StatelessWidget {
+  final String label;
+  final DateTime? date;
+  final VoidCallback onTap;
+  final VoidCallback onClear;
+
+  const _DateFieldTile({
+    required this.label,
+    required this.date,
+    required this.onTap,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final hasDate = date != null;
+    final text = hasDate
+        ? '${date!.year}-${date!.month.toString().padLeft(2, '0')}-${date!.day.toString().padLeft(2, '0')}'
+        : 'select_date'.tr;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.s3),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: colors.borderHairline),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.event_outlined, size: 20, color: colors.textSecondary),
+            const SizedBox(width: AppSpacing.s3),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Text(
+              text,
+              style: TextStyle(
+                fontFamily: 'Geist',
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: hasDate ? colors.brand : colors.textTertiary,
+              ),
+            ),
+            if (hasDate)
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Icon(Icons.close, size: 18, color: colors.textTertiary),
+                onPressed: onClear,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ContractTypeDropdown extends StatelessWidget {
+  final String? value;
+  final List<String> types;
+  final ValueChanged<String?> onChanged;
+
+  const _ContractTypeDropdown({
+    required this.value,
+    required this.types,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+          child: Text(
+            'contract_type'.tr,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: colors.textSecondary,
+            ),
+          ),
+        ),
+        DropdownButtonFormField<String>(
+          initialValue: value,
+          isExpanded: true,
+          decoration: InputDecoration(hintText: 'optional'.tr),
+          items: types
+              .map((t) => DropdownMenuItem(
+                    value: t,
+                    child: Text('contract_$t'.tr),
+                  ))
+              .toList(),
+          onChanged: onChanged,
+        ),
+      ],
     );
   }
 }
@@ -474,6 +810,48 @@ class _NoBranchesView extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CategoryChips extends StatelessWidget {
+  final List<EmployeeCategoryModel> categories;
+  final Set<int> selectedIds;
+  final ValueChanged<int> onToggle;
+
+  const _CategoryChips({
+    required this.categories,
+    required this.selectedIds,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Wrap(
+      spacing: AppSpacing.s2,
+      runSpacing: AppSpacing.s2,
+      children: categories.map((cat) {
+        final selected = selectedIds.contains(cat.id);
+        return FilterChip(
+          label: Text(
+            cat.name,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 13,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              color: selected ? colors.brand : colors.textPrimary,
+            ),
+          ),
+          selected: selected,
+          onSelected: (_) => onToggle(cat.id),
+          selectedColor: colors.brandSubtle,
+          checkmarkColor: colors.brand,
+          side: BorderSide(
+            color: selected ? colors.brand : colors.borderHairline,
+          ),
+        );
+      }).toList(),
     );
   }
 }

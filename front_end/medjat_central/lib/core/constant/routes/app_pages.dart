@@ -5,6 +5,9 @@ import 'app_routes.dart';
 import '../theme/theme.dart';
 import '../../services/connectivity_service.dart';
 import '../../services/dark_light_service.dart';
+import '../../services/update_service.dart';
+import '../../widget/maintenance_gate.dart';
+import '../../widget/update_gate.dart';
 import '../../../data/data_source/remote/auth_data/auth_data.dart';
 import '../../../data/data_source/remote/employee_data/employee_data.dart';
 import '../../../data/data_source/remote/performance_data/performance_data.dart';
@@ -30,6 +33,12 @@ import '../../../view/screen/employee/employee_detail_screen.dart';
 import '../../../view/screen/attendance/attendance_screen.dart';
 import '../../../view/screen/payroll/payroll_screen.dart';
 import '../../../view/screen/leave/leave_screen.dart';
+import '../../../view/screen/expense/expenses_screen.dart';
+import '../../../view/screen/loan/loans_screen.dart';
+import '../../../data/data_source/remote/expense_data/expense_data.dart';
+import '../../../data/data_source/remote/loan_data/loan_data.dart';
+import '../../../view/screen/asset/assets_screen.dart';
+import '../../../data/data_source/remote/asset_data/asset_data.dart';
 import '../../../view/screen/branch/branch_screen.dart';
 import '../../../view/screen/branch/branch_qr_poster_screen.dart';
 import '../../../view/screen/report/report_screen.dart';
@@ -41,6 +50,8 @@ import '../../../view/screen/settings/deduction_rules_screen.dart';
 import '../../../view/screen/settings/attendance_method_screen.dart';
 import '../../../view/screen/settings/company_settings_screen.dart';
 import '../../../view/screen/settings/company_settings_hub_screen.dart';
+import '../../../view/screen/settings/leave_settings_screen.dart';
+import '../../../logic/controller/settings/leave_settings_controller.dart';
 import '../../../view/screen/settings/account_settings_screen.dart';
 import '../../../view/screen/settings/app_settings_screen.dart';
 import '../../../view/screen/shift/shifts_screen.dart';
@@ -54,15 +65,32 @@ import '../../../view/screen/employee/biometric_enrollment_screen.dart';
 import '../../../view/screen/employee/employee_documents_screen.dart';
 import '../../../view/screen/settings/required_documents_screen.dart';
 import '../../../view/screen/report/documents_report_screen.dart';
+import '../../../view/screen/category/categories_screen.dart';
+import '../../../view/screen/notification/notifications_screen.dart';
+import '../../../view/screen/notification/notification_prefs_screen.dart';
+// TODO: statutory payroll settings screen not yet implemented; route disabled below.
+// import '../../../view/screen/settings/statutory_payroll_settings_screen.dart';
+import '../../../view/screen/live_attendance/live_attendance_screen.dart';
+import '../../../data/data_source/remote/live_attendance_data/live_attendance_data.dart';
+import '../../../logic/controller/live_attendance/live_attendance_controller.dart';
+import '../../../view/screen/letter/letters_hub_screen.dart';
+import '../../../view/screen/letter/letter_template_edit_screen.dart';
+import '../../../data/data_source/remote/letter_data/letter_data.dart';
+import '../../../logic/controller/letter/letter_request_controller.dart';
+import '../../../logic/controller/letter/letter_template_controller.dart';
+import '../../../logic/controller/notification/notification_controller.dart';
+// import '../../../logic/controller/settings/statutory_payroll_settings_controller.dart';
 import '../../../data/data_source/remote/station_data/station_data.dart';
 import '../../../data/data_source/remote/biometric_data/biometric_data.dart';
 import '../../../data/data_source/remote/required_documents_data/required_documents_data.dart';
 import '../../../data/data_source/remote/document_reports_data/document_reports_data.dart';
+import '../../../data/data_source/remote/category_data/category_data.dart';
 import '../../../logic/controller/station/stations_controller.dart';
 import '../../../logic/controller/station/station_settings_controller.dart';
 import '../../../logic/controller/station/recognition_logs_controller.dart';
 import '../../../logic/controller/biometric/face_enrollment_controller.dart';
 import '../../../logic/controller/shift/shift_controller.dart';
+import '../../../logic/controller/category/category_controller.dart';
 import '../../../logic/controller/team/team_controller.dart';
 import '../../../data/data_source/remote/manager_data/manager_data.dart';
 import '../../../logic/controller/report/attendance_report_controller.dart';
@@ -80,6 +108,7 @@ class AppBindings extends Bindings {
     Get.put<ConnectivityService>(ConnectivityService(), permanent: true);
     Get.put<DarkLightService>(DarkLightService(), permanent: true);
     Get.put<AuthController>(AuthController(), permanent: true);
+    Get.put<UpdateService>(UpdateService(), permanent: true);
   }
 }
 
@@ -123,14 +152,18 @@ List<GetPage<dynamic>> getPages = [
   ),
   GetPage(
     name: AppRoutes.home,
-    page: () => const TabShell(
-      screens: [
-        DashboardScreen(),
-        EmployeesScreen(),
-        AttendanceScreen(),
-        PayrollScreen(),
-        MoreScreen(),
-      ],
+    page: () => const MaintenanceGate(
+      child: UpdateGate(
+        child: TabShell(
+          screens: [
+            DashboardScreen(),
+            EmployeesScreen(),
+            AttendanceScreen(),
+            PayrollScreen(),
+            MoreScreen(),
+          ],
+        ),
+      ),
     ),
     binding: HomeBinding(),
     middlewares: [AuthMiddleware()],
@@ -143,6 +176,7 @@ List<GetPage<dynamic>> getPages = [
     binding: BindingsBuilder<void>(() {
       Get.lazyPut<BranchData>(() => BranchData());
       Get.lazyPut<ShiftData>(() => ShiftData());
+      Get.lazyPut<CategoryData>(() => CategoryData());
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
@@ -165,6 +199,39 @@ List<GetPage<dynamic>> getPages = [
     name: AppRoutes.leaveManage,
     page: () => const LeaveScreen(),
     binding: BindingsBuilder<void>(() {
+      Get.lazyPut<EmployeeData>(() => EmployeeData());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.assets,
+    page: () => const AssetsScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<AssetData>(() => AssetData());
+      Get.lazyPut<EmployeeData>(() => EmployeeData());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.expenses,
+    page: () => const ExpensesScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<ExpenseData>(() => ExpenseData());
+      Get.lazyPut<EmployeeData>(() => EmployeeData());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.loans,
+    page: () => const LoansScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<LoanData>(() => LoanData());
       Get.lazyPut<EmployeeData>(() => EmployeeData());
     }),
     middlewares: [AuthMiddleware()],
@@ -271,6 +338,17 @@ List<GetPage<dynamic>> getPages = [
     page: () => const CompanySettingsScreen(),
     binding: BindingsBuilder<void>(() {
       Get.lazyPut<CompanySettingsData>(() => CompanySettingsData());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.leaveSettings,
+    page: () => const LeaveSettingsScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<CompanySettingsData>(() => CompanySettingsData());
+      Get.lazyPut<LeaveSettingsController>(() => LeaveSettingsController());
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
@@ -401,6 +479,7 @@ List<GetPage<dynamic>> getPages = [
       Get.lazyPut<RequiredDocumentsData>(() => RequiredDocumentsData());
       Get.lazyPut<BranchData>(() => BranchData());
       Get.lazyPut<EmployeeData>(() => EmployeeData());
+      Get.lazyPut<CategoryData>(() => CategoryData());
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
@@ -427,6 +506,85 @@ List<GetPage<dynamic>> getPages = [
     transition: Transition.fadeIn,
     transitionDuration: AppMotion.transition,
   ),
+  GetPage(
+    name: AppRoutes.categories,
+    page: () => const CategoriesScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<CategoryData>(() => CategoryData());
+      Get.lazyPut<CategoryController>(() => CategoryController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.notifications,
+    page: () => const NotificationsScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<NotificationController>(() => NotificationController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.notificationPrefs,
+    page: () => const NotificationPrefsScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<NotificationController>(() => NotificationController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.liveAttendance,
+    page: () => const LiveAttendanceScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<LiveAttendanceData>(() => LiveAttendanceData());
+      Get.lazyPut<BranchData>(() => BranchData());
+      Get.lazyPut<LiveAttendanceController>(() => LiveAttendanceController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.letters,
+    page: () => const LettersHubScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<LetterData>(() => LetterData());
+      Get.lazyPut<EmployeeData>(() => EmployeeData());
+      Get.lazyPut<LetterTemplateController>(() => LetterTemplateController());
+      Get.lazyPut<LetterRequestController>(() => LetterRequestController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.letterTemplateEdit,
+    page: () => const LetterTemplateEditScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<LetterData>(() => LetterData());
+      Get.lazyPut<LetterTemplateController>(() => LetterTemplateController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  // TODO: statutory payroll settings screen/controller not yet implemented.
+  // GetPage(
+  //   name: AppRoutes.statutoryPayrollSettings,
+  //   page: () => const StatutoryPayrollSettingsScreen(),
+  //   binding: BindingsBuilder<void>(() {
+  //     Get.lazyPut<StatutoryPayrollSettingsController>(
+  //         () => StatutoryPayrollSettingsController());
+  //   }),
+  //   middlewares: [AuthMiddleware()],
+  //   transition: Transition.fadeIn,
+  //   transitionDuration: AppMotion.transition,
+  // ),
 ];
 
 class MoreScreen extends StatelessWidget {
@@ -455,11 +613,45 @@ class MoreScreen extends StatelessWidget {
               title: 'leaves'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.leaveManage),
             ),
+          if (auth.user?.canManageDocuments == true)
+            _MenuTile(
+              icon: Icons.description_outlined,
+              title: 'letters'.tr,
+              subtitle: 'letters_hint'.tr,
+              onTap: () => Get.toNamed<void>(AppRoutes.letters),
+            ),
+          if (auth.user?.canManagePayroll == true)
+            _MenuTile(
+              icon: Icons.receipt_long_outlined,
+              title: 'expenses'.tr,
+              subtitle: 'expenses_hint'.tr,
+              onTap: () => Get.toNamed<void>(AppRoutes.expenses),
+            ),
+          if (auth.user?.canManagePayroll == true)
+            _MenuTile(
+              icon: Icons.account_balance_wallet_outlined,
+              title: 'loans'.tr,
+              subtitle: 'loans_hint'.tr,
+              onTap: () => Get.toNamed<void>(AppRoutes.loans),
+            ),
+          if (auth.user?.canManageAssets == true)
+            _MenuTile(
+              icon: Icons.inventory_2_outlined,
+              title: 'assets'.tr,
+              subtitle: 'assets_hint'.tr,
+              onTap: () => Get.toNamed<void>(AppRoutes.assets),
+            ),
           if (auth.user?.canManageBranches == true)
             _MenuTile(
               icon: Icons.account_tree_outlined,
               title: 'branches'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.branchManage),
+            ),
+          if (auth.user?.canViewReports == true)
+            _MenuTile(
+              icon: Icons.sensors,
+              title: 'live_attendance'.tr,
+              onTap: () => Get.toNamed<void>(AppRoutes.liveAttendance),
             ),
           if (auth.user?.canViewReports == true)
             _MenuTile(

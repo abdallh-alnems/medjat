@@ -18,4 +18,9 @@ if ($branchId) {
 
 $result = EmployeeModel::getByTenant($tenantId, $page, $limit, $branchId, $search);
 
+foreach ($result['items'] as &$emp) {
+    $emp['category_ids'] = EmployeeCategoryModel::getEmployeeCategoryIds((int) $emp['id'], $tenantId);
+}
+unset($emp);
+
 Response::success($result);

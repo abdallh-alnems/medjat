@@ -2,24 +2,31 @@ import 'dart:async';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../constant/strings/update_strings.dart';
 import '../constant/theme/app_colors.dart';
 import '../constant/theme/app_spacing.dart';
 
-class AppGate extends StatefulWidget {
+/// يقرأ `medjat_central_maintenance_enabled` من Remote Config ويعرض شاشة
+/// الصيانة عند تفعيلها. يستمع للتحديثات الحيّة عبر onConfigUpdated ويعيد
+/// الفحص عند عودة التطبيق للمقدمة.
+class MaintenanceGate extends StatefulWidget {
   final Widget child;
-  const AppGate({super.key, required this.child});
+  const MaintenanceGate({super.key, required this.child});
 
-  static _AppGateState? _instance;
+  static const String _key = 'medjat_central_maintenance_enabled';
+
+  static _MaintenanceGateState? _instance;
 
   static void trigger(bool enabled) {
     _instance?._setMaintenance(enabled);
   }
 
   @override
-  State<AppGate> createState() => _AppGateState();
+  State<MaintenanceGate> createState() => _MaintenanceGateState();
 }
 
-class _AppGateState extends State<AppGate> with WidgetsBindingObserver {
+class _MaintenanceGateState extends State<MaintenanceGate>
+    with WidgetsBindingObserver {
   bool _isMaintenance = false;
   bool _isChecking = true;
   StreamSubscription<RemoteConfigUpdate>? _rcSubscription;
@@ -28,7 +35,7 @@ class _AppGateState extends State<AppGate> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    AppGate._instance = this;
+    MaintenanceGate._instance = this;
     _init();
   }
 
@@ -36,7 +43,7 @@ class _AppGateState extends State<AppGate> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _rcSubscription?.cancel();
-    AppGate._instance = null;
+    MaintenanceGate._instance = null;
     super.dispose();
   }
 
@@ -49,12 +56,11 @@ class _AppGateState extends State<AppGate> with WidgetsBindingObserver {
             kDebugMode ? Duration.zero : const Duration(hours: 1),
       ));
       await rc.fetchAndActivate();
-      _isMaintenance = rc.getBool('maintenance_enabled');
+      _isMaintenance = rc.getBool(MaintenanceGate._key);
       _rcSubscription = rc.onConfigUpdated.listen((_) async {
         await rc.activate();
         if (!mounted) return;
-        final m = rc.getBool('maintenance_enabled');
-        _setMaintenance(m);
+        _setMaintenance(rc.getBool(MaintenanceGate._key));
       });
     } catch (_) {}
 
@@ -77,8 +83,7 @@ class _AppGateState extends State<AppGate> with WidgetsBindingObserver {
     try {
       final rc = FirebaseRemoteConfig.instance;
       await rc.fetchAndActivate();
-      final m = rc.getBool('maintenance_enabled');
-      _setMaintenance(m);
+      _setMaintenance(rc.getBool(MaintenanceGate._key));
     } catch (_) {}
   }
 
@@ -113,8 +118,7 @@ class _MaintenanceScreen extends StatelessWidget {
         body: SafeArea(
           child: Center(
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: AppSpacing.s5),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s5),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -130,7 +134,7 @@ class _MaintenanceScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.s6),
                   Text(
-                    'تحت الصيانة',
+                    UpdateStrings.maintenanceTitle,
                     style: TextStyle(
                       fontFamily: 'IBM Plex Sans Arabic',
                       fontSize: 22,
@@ -140,7 +144,7 @@ class _MaintenanceScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.s3),
                   Text(
-                    'التطبيق تحت الصيانة حالياً، سنعود قريباً',
+                    UpdateStrings.maintenanceMessage,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontFamily: 'IBM Plex Sans Arabic',

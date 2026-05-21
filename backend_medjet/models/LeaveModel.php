@@ -63,17 +63,126 @@ final class LeaveModel {
         return $row !== null;
     }
 
+    public static function hasOverlap(int $employeeId, int $tenantId, string $start, string $end, ?int $excludeId = null): bool {
+        $sql = "SELECT id FROM leaves
+                WHERE employee_id = ? AND tenant_id = ?
+                  AND status IN ('approved','pending')
+                  AND start_date <= ? AND end_date >= ?";
+        $params = [$employeeId, $tenantId, $end, $start];
+        if ($excludeId !== null) {
+            $sql .= ' AND id != ?';
+            $params[] = $excludeId;
+        }
+        $sql .= ' LIMIT 1';
+        return Database::fetchOne($sql, $params) !== null;
+    }
+
+    /**
+     * Dynamic annual leave balance for an employee in a given year.
+     * entitlement = employees.annual_leave_days ?? tenants.default_annual_leave_days (default 21).
+     * carried     = leave_year_balances.carried_over_days for that year (0 when no row).
+     * total       = entitlement + carried; remaining = max(0, total - used).
+     */
     public static function getBalance(int $employeeId, int $tenantId, int $year): array {
-        $used = Database::fetchOne(
-            "SELECT COUNT(*) as count FROM leaves WHERE employee_id = ? AND tenant_id = ? AND status = 'approved' AND YEAR(date) = ?",
+        $entRow = Database::fetchOne(
+            "SELECT COALESCE(e.annual_leave_days, t.default_annual_leave_days, 21) AS entitlement_days
+             FROM employees e
+             JOIN tenants t ON t.id = e.tenant_id
+             WHERE e.id = ? AND e.tenant_id = ? LIMIT 1",
+            [$employeeId, $tenantId]
+        );
+        $entitlementDays = (int) ($entRow['entitlement_days'] ?? 21);
+
+        $carryRow = Database::fetchOne(
+            "SELECT carried_over_days FROM leave_year_balances
+             WHERE employee_id = ? AND tenant_id = ? AND year = ? LIMIT 1",
             [$employeeId, $tenantId, $year]
         );
+        $carriedOverDays = (int) ($carryRow['carried_over_days'] ?? 0);
+
+        $row = Database::fetchOne(
+            "SELECT COALESCE(SUM(DATEDIFF(end_date, start_date) + 1), 0) as used_days
+             FROM leaves
+             WHERE employee_id = ? AND tenant_id = ? AND type = 'annual'
+               AND status = 'approved' AND YEAR(date) = ?",
+            [$employeeId, $tenantId, $year]
+        );
+        $usedDays = (int) ($row['used_days'] ?? 0);
+        $totalDays = $entitlementDays + $carriedOverDays;
 
         return [
             'year' => $year,
-            'used' => (int) ($used['count'] ?? 0),
-            'remaining' => max(0, 21 - (int) ($used['count'] ?? 0)),
-            'total_annual' => 21,
+            'entitlement_days' => $entitlementDays,
+            'carried_over_days' => $carriedOverDays,
+            'total_days' => $totalDays,
+            'used_days' => $usedDays,
+            'remaining_days' => max(0, $totalDays - $usedDays),
+        ];
+    }
+
+    /**
+     * Carry remaining annual balance from $fromYear into $fromYear + 1 for every active employee.
+     * carried = min(remaining, tenants.leave_carryover_max_days); 0 when carryover is disabled (NULL).
+     * Upserts one leave_year_balances row per employee for the target year, inside a transaction.
+     *
+     * @return array{from_year:int, to_year:int, processed:int, carryover_max:?int}
+     */
+    public static function rolloverYear(int $tenantId, int $fromYear): array {
+        $tenant = Database::fetchOne(
+            "SELECT default_annual_leave_days, leave_carryover_max_days FROM tenants WHERE id = ? LIMIT 1",
+            [$tenantId]
+        );
+        if (!$tenant) {
+            throw new RuntimeException('Tenant not found');
+        }
+        $carryoverMax = $tenant['leave_carryover_max_days'] !== null
+            ? (int) $tenant['leave_carryover_max_days']
+            : null;
+        $toYear = $fromYear + 1;
+
+        $employees = Database::fetchAll(
+            "SELECT id FROM employees WHERE tenant_id = ? AND status != 'terminated'",
+            [$tenantId]
+        );
+
+        $con = Database::getInstance();
+        $con->beginTransaction();
+        try {
+            $processed = 0;
+            foreach ($employees as $emp) {
+                $employeeId = (int) $emp['id'];
+                $balance = self::getBalance($employeeId, $tenantId, $fromYear);
+                $remaining = (int) $balance['remaining_days'];
+                $carried = $carryoverMax === null ? 0 : min($remaining, $carryoverMax);
+
+                // Entitlement for the new year (per-employee override else tenant default).
+                $entRow = Database::fetchOne(
+                    "SELECT COALESCE(annual_leave_days, ?) AS entitlement_days
+                     FROM employees WHERE id = ? AND tenant_id = ? LIMIT 1",
+                    [(int) $tenant['default_annual_leave_days'], $employeeId, $tenantId]
+                );
+                $entitlement = (int) ($entRow['entitlement_days'] ?? $tenant['default_annual_leave_days']);
+
+                Database::execute(
+                    "INSERT INTO leave_year_balances (tenant_id, employee_id, year, entitlement_days, carried_over_days)
+                     VALUES (?, ?, ?, ?, ?)
+                     ON DUPLICATE KEY UPDATE entitlement_days = VALUES(entitlement_days),
+                                             carried_over_days = VALUES(carried_over_days)",
+                    [$tenantId, $employeeId, $toYear, $entitlement, $carried]
+                );
+                $processed++;
+            }
+            $con->commit();
+        } catch (Exception $e) {
+            $con->rollBack();
+            throw $e;
+        }
+
+        return [
+            'from_year' => $fromYear,
+            'to_year' => $toYear,
+            'processed' => $processed,
+            'carryover_max' => $carryoverMax,
         ];
     }
 

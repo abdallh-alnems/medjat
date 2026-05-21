@@ -25,6 +25,7 @@ class BranchData {
     required int branchId,
     List<String>? methods,
     int? gpsRadiusMeters,
+    bool? allowOfflineAttendance,
   }) async {
     final data = <String, dynamic>{
       'branch_id': branchId,
@@ -32,6 +33,11 @@ class BranchData {
     };
     if (gpsRadiusMeters != null) {
       data['gps_radius_meters'] = gpsRadiusMeters;
+    }
+    if (allowOfflineAttendance != null) {
+      data['allow_offline_attendance'] = allowOfflineAttendance;
+    } else {
+      data['allow_offline_attendance'] = null;
     }
     return await _crud.putData(AppLinks.branchUpdateAttendanceMethod, data);
   }

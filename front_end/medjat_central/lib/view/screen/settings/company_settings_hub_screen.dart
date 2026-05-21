@@ -36,10 +36,24 @@ class CompanySettingsHubScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.s2),
           _HubTile(
+            icon: Icons.event_available_outlined,
+            title: 'leave_settings_title'.tr,
+            subtitle: 'leave_settings_subtitle'.tr,
+            onTap: () => Get.toNamed<void>(AppRoutes.leaveSettings),
+          ),
+          const SizedBox(height: AppSpacing.s2),
+          _HubTile(
             icon: Icons.description_outlined,
             title: 'document_required_types'.tr,
             subtitle: 'document_required_types_subtitle'.tr,
             onTap: () => Get.toNamed<void>(AppRoutes.requiredDocuments),
+          ),
+          const SizedBox(height: AppSpacing.s2),
+          _HubTile(
+            icon: Icons.category_outlined,
+            title: 'employee_categories'.tr,
+            subtitle: 'employee_categories_subtitle'.tr,
+            onTap: () => Get.toNamed<void>(AppRoutes.categories),
           ),
           const SizedBox(height: AppSpacing.s2),
           _HubTile(

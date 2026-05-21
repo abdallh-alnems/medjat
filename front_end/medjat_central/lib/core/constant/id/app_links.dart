@@ -19,6 +19,8 @@ class AppLinks {
   // ── Dashboard ──────────────────────────────────────────
   static String get dashboard => '$base/app/dashboard/overview.php';
   static String get branchComparison => '$base/app/dashboard/branch_comparison.php';
+  static String get liveAttendance =>
+      '$base/app/dashboard/live_attendance.php';
 
   // ── Employees ──────────────────────────────────────────
   static String get employees => '$base/app/employees/list.php';
@@ -104,10 +106,40 @@ class AppLinks {
       '$base/app/payroll/approve.php?id=$id';
   static String payrollMonth(int month, int year) =>
       '$base/app/payroll/get_slip.php?month=$month&year=$year';
+  static String get payrollBankFile =>
+      '$base/app/payroll/export_bank_file.php';
+  static String get payrollBankPreview =>
+      '$base/app/payroll/bank_file_preview.php';
+  static String get payrollStatutorySettings =>
+      '$base/app/settings/statutory_settings.php';
+  static String payrollStatutoryTemplate(String country) =>
+      '$base/app/payroll/load_template.php?country=$country';
+  static String get eosbCalculate => '$base/app/payroll/eosb_calculate.php';
+
+  // ── Letters & Certificates (document requests + templates) ──
+  static String get letterTemplates => '$base/app/letters/templates_list.php';
+  static String get letterTemplateCreate =>
+      '$base/app/letters/template_create.php';
+  static String get letterTemplateUpdate =>
+      '$base/app/letters/template_update.php';
+  static String letterTemplateDelete(int id) =>
+      '$base/app/letters/template_delete.php?id=$id';
+  static String get letterRequests => '$base/app/letters/requests_list.php';
+  static String get letterRequestCreate =>
+      '$base/app/letters/request_create.php';
+  static String letterRequestApprove(int id) =>
+      '$base/app/letters/request_approve.php?id=$id';
+  static String letterRequestReject(int id) =>
+      '$base/app/letters/request_reject.php?id=$id';
+  static String letterRequestPdf(int id) =>
+      '$base/app/letters/request_pdf.php?id=$id';
+  static String get companyUploadBranding =>
+      '$base/app/settings/upload_branding.php';
 
   // ── Leaves ─────────────────────────────────────────────
   static String get leaves => '$base/app/leaves/list.php';
   static String get leaveApply => '$base/app/leaves/apply.php';
+  static String get leaveCreate => '$base/app/leaves/create.php';
   static String leaveApprove(int id) =>
       '$base/app/leaves/approve.php?id=$id';
   static String leaveReject(int id) =>
@@ -117,6 +149,8 @@ class AppLinks {
   static String get leaveCreateRecurring =>
       '$base/app/leaves/create_recurring.php';
   static String get leaveBalance => '$base/app/leaves/get_balance.php';
+  static String get leaveSettings => '$base/app/settings/leave_settings.php';
+  static String get leaveRollover => '$base/app/leaves/rollover.php';
 
   // ── Deductions / Bonuses ───────────────────────────────
   static String get deductionRules => '$base/app/deductions/get_rules.php';
@@ -127,6 +161,26 @@ class AppLinks {
   static String get bonusRules => '$base/app/bonuses/get_rules.php';
   static String get bonusRulesUpdate => '$base/app/bonuses/update_rules.php';
   static String get bonusManualAdd => '$base/app/bonuses/add_manual.php';
+
+  // ── Expenses (claims with receipts) ────────────────────
+  static String get expenses => '$base/app/expenses/list.php';
+  static String get expenseCreate => '$base/app/expenses/create.php';
+  static String get expenseApprove => '$base/app/expenses/approve.php';
+  static String get expenseReject => '$base/app/expenses/reject.php';
+  static String get expenseReimburse => '$base/app/expenses/reimburse.php';
+
+  // ── Assets & Custody (items handed to employees) ───────
+  static String get assets => '$base/app/assets/list.php';
+  static String get assetCreate => '$base/app/assets/create.php';
+  static String get assetApproveReturn => '$base/app/assets/approve_return.php';
+  static String get assetRejectReturn => '$base/app/assets/reject_return.php';
+
+  // ── Loans / Advances (auto-deducted installments) ──────
+  static String get loans => '$base/app/loans/list.php';
+  static String get loanCreate => '$base/app/loans/create.php';
+  static String loanDetail(int id) => '$base/app/loans/get.php?id=$id';
+  static String get loanApprove => '$base/app/loans/approve.php';
+  static String get loanCancel => '$base/app/loans/cancel.php';
 
   // ── Warnings ───────────────────────────────────────────
   static String get warnings => '$base/app/warnings/list.php';
@@ -157,6 +211,8 @@ class AppLinks {
   static String notificationRead(int id) =>
       '$base/app/notifications/read.php?id=$id';
   static String get registerFcm => '$base/app/auth/update_fcm_token.php';
+  static String get notificationPrefs =>
+      '$base/app/auth/notification_prefs.php';
 
   // ── Forgot Password (OTP via email) ───────────────────
   static String get forgotPasswordSend => '$base/app/auth/forgot_password.php';
@@ -207,4 +263,11 @@ class AppLinks {
   static String get stationLogs => '$base/app/stations/logs.php';
   static String get stationBranchSettings =>
       '$base/app/stations/update_branch_settings.php';
+
+  // ── Categories ─────────────────────────────────────────
+  static String get categories => '$base/app/categories/list.php';
+  static String get categoryCreate => '$base/app/categories/create.php';
+  static String get categoryUpdate => '$base/app/categories/update.php';
+  static String get categoryDelete => '$base/app/categories/delete.php';
+  static String get categoryAssign => '$base/app/categories/assign.php';
 }

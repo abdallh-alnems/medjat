@@ -172,6 +172,37 @@ final class AttendanceModel {
         return Database::fetchAll($sql, $params);
     }
 
+    public static function getLiveBoard(int $tenantId, string $date, ?int $branchId = null): array {
+        // Start from active employees so those with no attendance row today
+        // still appear (derived as "not_in" by the caller).
+        $sql = "SELECT
+                    e.id AS employee_id,
+                    e.name,
+                    e.job_title,
+                    e.branch_id,
+                    b.name AS branch_name,
+                    a.check_in_time,
+                    a.check_out_time,
+                    a.status AS attendance_status,
+                    a.late_minutes,
+                    a.check_in_method,
+                    a.is_offline
+                FROM employees e
+                LEFT JOIN branches b ON b.id = e.branch_id
+                LEFT JOIN attendance a
+                    ON a.employee_id = e.id AND a.date = ? AND a.tenant_id = e.tenant_id
+                WHERE e.tenant_id = ? AND e.status = 'active'";
+        $params = [$date, $tenantId];
+
+        if ($branchId) {
+            $sql .= " AND e.branch_id = ?";
+            $params[] = $branchId;
+        }
+
+        $sql .= " ORDER BY e.name ASC";
+        return Database::fetchAll($sql, $params);
+    }
+
     public static function markAbsent(int $tenantId, string $date): int {
         $presentIds = Database::fetchAll(
             "SELECT employee_id FROM attendance WHERE tenant_id = ? AND date = ?",
@@ -202,32 +233,142 @@ final class AttendanceModel {
         return $count;
     }
 
-    public static function syncOffline(array $records, int $tenantId): array {
+    public static function syncOffline(array $records, int $employeeId, int $tenantId): array {
         $synced = 0;
         $failed = 0;
+        $results = [];
+        $now = time();
+
         foreach ($records as $rec) {
+            $clientRecordId = $rec['client_record_id'] ?? 'unknown';
+
             try {
+                $branchId = (int) ($rec['branch_id'] ?? 0);
+                if ($branchId <= 0) {
+                    $results[] = ['client_record_id' => $clientRecordId, 'status' => 'rejected', 'reason' => 'INVALID_BRANCH'];
+                    $failed++;
+                    continue;
+                }
+
+                $branch = BranchModel::findById($branchId, $tenantId);
+                if (!$branch) {
+                    $results[] = ['client_record_id' => $clientRecordId, 'status' => 'rejected', 'reason' => 'INVALID_BRANCH'];
+                    $failed++;
+                    continue;
+                }
+
+                $qrCode = $rec['qr_code'] ?? null;
+                if ($qrCode !== null && $branch['qr_code'] !== $qrCode) {
+                    $results[] = ['client_record_id' => $clientRecordId, 'status' => 'rejected', 'reason' => 'INVALID_QR'];
+                    $failed++;
+                    continue;
+                }
+
+                $capturedAt = $rec['captured_at'] ?? null;
+                if ($capturedAt === null) {
+                    $results[] = ['client_record_id' => $clientRecordId, 'status' => 'rejected', 'reason' => 'EXPIRED'];
+                    $failed++;
+                    continue;
+                }
+                $capturedTs = strtotime($capturedAt);
+                if ($capturedTs === false) {
+                    $results[] = ['client_record_id' => $clientRecordId, 'status' => 'rejected', 'reason' => 'EXPIRED'];
+                    $failed++;
+                    continue;
+                }
+                if ($capturedTs > $now) {
+                    $results[] = ['client_record_id' => $clientRecordId, 'status' => 'rejected', 'reason' => 'FUTURE_DATE'];
+                    $failed++;
+                    continue;
+                }
+                if (($now - $capturedTs) > 86400) {
+                    $results[] = ['client_record_id' => $clientRecordId, 'status' => 'rejected', 'reason' => 'EXPIRED'];
+                    $failed++;
+                    continue;
+                }
+
+                $lat = (float) ($rec['check_in_latitude'] ?? 0);
+                $lng = (float) ($rec['check_in_longitude'] ?? 0);
+                $gpsResult = GpsService::validateCheckIn($lat, $lng, $branchId, $tenantId);
+                if (!$gpsResult['valid']) {
+                    $results[] = ['client_record_id' => $clientRecordId, 'status' => 'rejected', 'reason' => 'GPS_OUT_OF_RANGE'];
+                    $failed++;
+                    continue;
+                }
+
+                $date = $rec['date'] ?? null;
+                if ($date === null) {
+                    $results[] = ['client_record_id' => $clientRecordId, 'status' => 'rejected', 'reason' => 'INVALID_DATA'];
+                    $failed++;
+                    continue;
+                }
+
+                $existingOnline = Database::fetchOne(
+                    "SELECT id FROM attendance WHERE employee_id = ? AND date = ? AND tenant_id = ? AND (is_offline = 0 OR is_offline IS NULL) LIMIT 1",
+                    [$employeeId, $date, $tenantId]
+                );
+                if ($existingOnline) {
+                    $results[] = ['client_record_id' => $clientRecordId, 'status' => 'rejected', 'reason' => 'ONLINE_EXISTS'];
+                    $failed++;
+                    continue;
+                }
+
+                $checkInTime = $rec['check_in_time'] ?? null;
+                $checkOutTime = $rec['check_out_time'] ?? null;
+
+                $employee = EmployeeModel::findById($employeeId, $tenantId);
+                $workStartTime = $employee['shift_start'] ?? $employee['work_start_time'] ?? '09:00:00';
+                $workEndTime = $employee['shift_end'] ?? $employee['work_end_time'] ?? '17:00:00';
+
+                $lateMinutes = 0;
+                $workedMinutes = 0;
+                $overtimeMinutes = 0;
+
+                if ($checkInTime) {
+                    $lateMinutes = max(0, (strtotime($checkInTime) - strtotime($workStartTime)) / 60);
+                }
+                if ($checkInTime && $checkOutTime) {
+                    $workedMinutes = max(0, (strtotime($checkOutTime) - strtotime($checkInTime)) / 60);
+                    $overtimeMinutes = max(0, (strtotime($checkOutTime) - strtotime($workEndTime)) / 60);
+                }
+
                 Database::execute(
-                    "INSERT INTO attendance (tenant_id, branch_id, employee_id, date, check_in_time, check_out_time, check_in_method, status, is_offline)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, 'present', 1)
-                     ON DUPLICATE KEY UPDATE check_out_time = COALESCE(VALUES(check_out_time), check_out_time)",
+                    "INSERT INTO attendance (tenant_id, branch_id, employee_id, date, check_in_time, check_out_time,
+                        check_in_latitude, check_in_longitude, check_in_method, status, is_offline, synced_at, late_minutes, worked_minutes, overtime_minutes)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'offline', 'present', 1, NOW(), ?, ?, ?)
+                     ON DUPLICATE KEY UPDATE
+                        check_out_time = COALESCE(VALUES(check_out_time), check_out_time),
+                        check_out_latitude = COALESCE(VALUES(check_in_latitude), check_out_latitude),
+                        check_out_longitude = COALESCE(VALUES(check_in_longitude), check_out_longitude),
+                        check_out_method = 'offline',
+                        synced_at = NOW(),
+                        worked_minutes = CASE WHEN VALUES(check_out_time) IS NOT NULL THEN VALUES(worked_minutes) ELSE worked_minutes END,
+                        overtime_minutes = CASE WHEN VALUES(check_out_time) IS NOT NULL THEN VALUES(overtime_minutes) ELSE overtime_minutes END",
                     [
                         $tenantId,
-                        $rec['branch_id'],
-                        $rec['employee_id'],
-                        $rec['date'],
-                        $rec['check_in_time'] ?? null,
-                        $rec['check_out_time'] ?? null,
-                        $rec['check_in_method'] ?? 'qr_gps',
+                        $branchId,
+                        $employeeId,
+                        $date,
+                        $checkInTime,
+                        $checkOutTime,
+                        $lat ?: null,
+                        $lng ?: null,
+                        (int) $lateMinutes,
+                        (int) $workedMinutes,
+                        (int) $overtimeMinutes,
                     ]
                 );
+
+                $results[] = ['client_record_id' => $clientRecordId, 'status' => 'synced'];
                 $synced++;
             } catch (Exception $e) {
-                error_log("Offline sync failed: " . $e->getMessage());
+                error_log("Offline sync failed for record {$clientRecordId}: " . $e->getMessage());
+                $results[] = ['client_record_id' => $clientRecordId, 'status' => 'rejected', 'reason' => 'SERVER_ERROR'];
                 $failed++;
             }
         }
-        return ['synced' => $synced, 'failed' => $failed];
+
+        return ['synced' => $synced, 'failed' => $failed, 'results' => $results];
     }
 
     public static function getReportByRange(

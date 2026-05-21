@@ -26,9 +26,14 @@ final class DocumentModel {
                     SELECT 1 FROM required_document_employees rde
                     WHERE rde.required_document_id = rd.id AND rde.employee_id = e.id
                 ))
+                OR (rd.scope_type = 'category' AND EXISTS (
+                    SELECT 1 FROM required_document_categories rdc
+                    JOIN employee_category_assignments eca ON eca.category_id = rdc.category_id AND eca.tenant_id = rdc.tenant_id
+                    WHERE rdc.required_document_id = rd.id AND eca.employee_id = e.id AND rdc.tenant_id = ?
+                ))
              )
              ORDER BY rd.sort_order ASC, rd.name ASC",
-            [$employeeId, $tenantId, $tenantId]
+            [$employeeId, $tenantId, $tenantId, $tenantId]
         );
     }
 
@@ -107,6 +112,29 @@ final class DocumentModel {
             [$requiredDocumentId, $tenantId]
         );
         return array_map(fn($r) => (int) $r['employee_id'], $rows);
+    }
+
+    public static function setCategoryScope(int $requiredDocumentId, int $tenantId, array $categoryIds): void {
+        Database::execute(
+            "DELETE FROM required_document_categories WHERE required_document_id = ? AND tenant_id = ?",
+            [$requiredDocumentId, $tenantId]
+        );
+        foreach ($categoryIds as $catId) {
+            $catId = (int) $catId;
+            if ($catId <= 0) continue;
+            Database::execute(
+                "INSERT IGNORE INTO required_document_categories (required_document_id, category_id, tenant_id) VALUES (?, ?, ?)",
+                [$requiredDocumentId, $catId, $tenantId]
+            );
+        }
+    }
+
+    public static function getCategoryScope(int $requiredDocumentId, int $tenantId): array {
+        $rows = Database::fetchAll(
+            "SELECT category_id FROM required_document_categories WHERE required_document_id = ? AND tenant_id = ?",
+            [$requiredDocumentId, $tenantId]
+        );
+        return array_map(fn($r) => (int) $r['category_id'], $rows);
     }
 
     public static function deleteRequired(int $id, int $tenantId): bool {
@@ -235,11 +263,16 @@ final class DocumentModel {
                         SELECT 1 FROM required_document_employees rde
                         WHERE rde.required_document_id = rd.id AND rde.employee_id = e.id
                     ))
+                    OR (rd.scope_type = 'category' AND EXISTS (
+                        SELECT 1 FROM required_document_categories rdc
+                        JOIN employee_category_assignments eca ON eca.category_id = rdc.category_id AND eca.tenant_id = rdc.tenant_id
+                        WHERE rdc.required_document_id = rd.id AND eca.employee_id = e.id AND rdc.tenant_id = ?
+                    ))
                 )
                 LEFT JOIN employee_documents ed ON ed.employee_id = e.id AND ed.required_document_id = rd.id
                 LEFT JOIN branches b ON b.id = e.branch_id
                 WHERE e.tenant_id = ? AND e.status = 'active' AND rd.is_active = 1 AND rd.is_required = 1 AND ed.id IS NULL";
-        $params = [$tenantId];
+        $params = [$tenantId, $tenantId];
 
         if ($employeeId) {
             $sql .= " AND e.id = ?";
@@ -259,11 +292,16 @@ final class DocumentModel {
                         SELECT 1 FROM required_document_employees rde
                         WHERE rde.required_document_id = rd.id AND rde.employee_id = e.id
                     ))
+                    OR (rd.scope_type = 'category' AND EXISTS (
+                        SELECT 1 FROM required_document_categories rdc
+                        JOIN employee_category_assignments eca ON eca.category_id = rdc.category_id AND eca.tenant_id = rdc.tenant_id
+                        WHERE rdc.required_document_id = rd.id AND eca.employee_id = e.id AND rdc.tenant_id = ?
+                    ))
                 )
                 LEFT JOIN employee_documents ed ON ed.employee_id = e.id AND ed.required_document_id = rd.id
                 LEFT JOIN branches b ON b.id = e.branch_id
                 WHERE e.tenant_id = ? AND e.status = 'active' AND rd.is_active = 1 AND rd.is_required = 1 AND ed.id IS NULL";
-        $params = [$tenantId];
+        $params = [$tenantId, $tenantId];
 
         if ($branchId) {
             $sql .= " AND e.branch_id = ?";
@@ -333,12 +371,17 @@ final class DocumentModel {
                                    SELECT 1 FROM required_document_employees rde
                                    WHERE rde.required_document_id = rd.id AND rde.employee_id = e.id
                                ))
+                               OR (rd.scope_type = 'category' AND EXISTS (
+                                   SELECT 1 FROM required_document_categories rdc
+                                   JOIN employee_category_assignments eca ON eca.category_id = rdc.category_id AND eca.tenant_id = rdc.tenant_id
+                                   WHERE rdc.required_document_id = rd.id AND eca.employee_id = e.id AND rdc.tenant_id = ?
+                               ))
                            )
                            WHERE e.tenant_id = ? AND e.status = 'active' AND rd.is_active = 1 AND rd.is_required = 1";
 
         $totalRequired = Database::fetchOne(
             "SELECT COUNT(*) as cnt FROM ({$scopedPairsSql}) t",
-            [$tenantId]
+            [$tenantId, $tenantId]
         )['cnt'] ?? 0;
 
         $uploaded = Database::fetchOne(
@@ -360,7 +403,7 @@ final class DocumentModel {
             "SELECT COUNT(*) as cnt FROM ({$scopedPairsSql}) t
              LEFT JOIN employee_documents ed ON ed.employee_id = t.employee_id AND ed.required_document_id = t.required_document_id
              WHERE ed.id IS NULL",
-            [$tenantId]
+            [$tenantId, $tenantId]
         )['cnt'] ?? 0;
 
         return [

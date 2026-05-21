@@ -65,11 +65,29 @@ final class BranchModel {
         return 'MED-' . strtoupper(bin2hex(random_bytes(8)));
     }
 
-    public static function updateAttendanceMethods(int $id, int $tenantId, ?array $methods, int $gpsRadiusMeters = 100): void {
-        Database::execute(
-            "UPDATE branches SET attendance_methods = ?, gps_radius_meters = ? WHERE id = ? AND tenant_id = ?",
-            [$methods !== null ? json_encode($methods) : null, $gpsRadiusMeters, $id, $tenantId]
-        );
+    public static function updateAttendanceMethods(int $id, int $tenantId, ?array $methods, int $gpsRadiusMeters = 100, ?bool $allowOffline = null): void {
+        $sql = "UPDATE branches SET attendance_methods = ?, gps_radius_meters = ?";
+        $params = [$methods !== null ? json_encode($methods) : null, $gpsRadiusMeters];
+
+        if ($allowOffline !== null) {
+            $sql .= ", allow_offline_attendance = ?";
+            $params[] = (int) $allowOffline;
+        }
+
+        $sql .= " WHERE id = ? AND tenant_id = ?";
+        $params[] = $id;
+        $params[] = $tenantId;
+
+        Database::execute($sql, $params);
+    }
+
+    public static function effectiveAllowOffline(int $branchId, int $tenantId): bool {
+        $branch = self::findById($branchId, $tenantId);
+        if ($branch && $branch['allow_offline_attendance'] !== null) {
+            return (bool) $branch['allow_offline_attendance'];
+        }
+        $tenant = TenantModel::findById($tenantId);
+        return (bool) ($tenant['allow_offline_attendance'] ?? true);
     }
 
     public static function updateStationSettings(int $id, int $tenantId, array $data): void {

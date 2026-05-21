@@ -90,6 +90,12 @@ Database::execute(
     ]
 );
 
+LoginAlertService::handle(
+    $admin,
+    $_SERVER['REMOTE_ADDR'] ?? '',
+    substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255)
+);
+
 Response::success([
     'success' => true,
     'has_tenant' => $admin['tenant_id'] !== null,

@@ -11,6 +11,7 @@ class RequiredDocumentModel {
   final String scopeType;
   final int? scopeBranchId;
   final List<int> scopeEmployeeIds;
+  final List<int> scopeCategoryIds;
 
   RequiredDocumentModel({
     required this.id,
@@ -25,12 +26,17 @@ class RequiredDocumentModel {
     this.scopeType = 'all',
     this.scopeBranchId,
     this.scopeEmployeeIds = const [],
+    this.scopeCategoryIds = const [],
   });
 
   factory RequiredDocumentModel.fromJson(Map<String, dynamic> json) {
     final raw = json['scope_employee_ids'];
     final empIds = raw is List
         ? raw.map((e) => e is int ? e : int.tryParse(e.toString()) ?? 0).where((v) => v > 0).toList()
+        : <int>[];
+    final rawCats = json['scope_category_ids'];
+    final catIds = rawCats is List
+        ? rawCats.map((e) => e is int ? e : int.tryParse(e.toString()) ?? 0).where((v) => v > 0).toList()
         : <int>[];
     return RequiredDocumentModel(
       id: (json['id'] as int?) ?? 0,
@@ -45,6 +51,7 @@ class RequiredDocumentModel {
       scopeType: (json['scope_type'] as String?) ?? 'all',
       scopeBranchId: json['scope_branch_id'] as int?,
       scopeEmployeeIds: empIds,
+      scopeCategoryIds: catIds,
     );
   }
 
@@ -64,6 +71,9 @@ class RequiredDocumentModel {
     }
     if (scopeType == 'employees') {
       map['scope_employee_ids'] = scopeEmployeeIds;
+    }
+    if (scopeType == 'category') {
+      map['scope_category_ids'] = scopeCategoryIds;
     }
     return map;
   }
@@ -86,6 +96,9 @@ class RequiredDocumentModel {
     if (scopeType == 'employees') {
       map['scope_employee_ids'] = scopeEmployeeIds;
     }
+    if (scopeType == 'category') {
+      map['scope_category_ids'] = scopeCategoryIds;
+    }
     return map;
   }
 
@@ -102,6 +115,7 @@ class RequiredDocumentModel {
     String? scopeType,
     int? scopeBranchId,
     List<int>? scopeEmployeeIds,
+    List<int>? scopeCategoryIds,
   }) {
     return RequiredDocumentModel(
       id: id ?? this.id,
@@ -116,6 +130,7 @@ class RequiredDocumentModel {
       scopeType: scopeType ?? this.scopeType,
       scopeBranchId: scopeBranchId ?? this.scopeBranchId,
       scopeEmployeeIds: scopeEmployeeIds ?? this.scopeEmployeeIds,
+      scopeCategoryIds: scopeCategoryIds ?? this.scopeCategoryIds,
     );
   }
 }

@@ -1,6 +1,30 @@
 <?php
 
 final class EmployeeModel {
+    /** Compliance / legal credential columns, used for create, update and expiry alerts. */
+    public const COMPLIANCE_FIELDS = [
+        'nationality',
+        'iqama_number',
+        'iqama_expiry',
+        'passport_number',
+        'passport_expiry',
+        'work_permit_number',
+        'work_permit_expiry',
+        'contract_type',
+        'contract_start',
+        'contract_end',
+        'health_insurance_expiry',
+    ];
+
+    /** Credential => [number column (or null), expiry column]; drives expiry alerts. */
+    public const COMPLIANCE_CREDENTIALS = [
+        'iqama'            => ['iqama_number', 'iqama_expiry'],
+        'passport'         => ['passport_number', 'passport_expiry'],
+        'work_permit'      => ['work_permit_number', 'work_permit_expiry'],
+        'contract'         => [null, 'contract_end'],
+        'health_insurance' => [null, 'health_insurance_expiry'],
+    ];
+
     public static function findById(int $id, int $tenantId): ?array {
         return Database::fetchOne(
             "SELECT e.*, s.start_time AS shift_start, s.end_time AS shift_end,
@@ -20,27 +44,119 @@ final class EmployeeModel {
     }
 
     public static function create(int $tenantId, array $data): int {
+        $columns = [
+            'tenant_id', 'branch_id', 'admin_id', 'name', 'phone', 'job_title',
+            'base_salary', 'hire_date', 'work_start_time', 'work_end_time',
+            'annual_leave_days', 'shift_id', 'national_id', 'status',
+            'bank_name', 'bank_account_number', 'bank_iban', 'bank_swift',
+        ];
+        $values = [
+            $tenantId,
+            $data['branch_id'],
+            $data['admin_id'] ?? null,
+            $data['name'],
+            $data['phone'] ?? null,
+            $data['job_title'] ?? null,
+            $data['base_salary'] ?? 0,
+            $data['hire_date'] ?? date('Y-m-d'),
+            $data['work_start_time'] ?? '09:00:00',
+            $data['work_end_time'] ?? '17:00:00',
+            $data['annual_leave_days'] ?? null,
+            $data['shift_id'] ?? null,
+            $data['national_id'] ?? null,
+            $data['status'] ?? 'active',
+            $data['bank_name'] ?? null,
+            $data['bank_account_number'] ?? null,
+            $data['bank_iban'] ?? null,
+            $data['bank_swift'] ?? null,
+        ];
+
+        // Optional compliance / legal credential fields.
+        foreach (self::COMPLIANCE_FIELDS as $field) {
+            if (array_key_exists($field, $data)) {
+                $columns[] = $field;
+                $values[] = $data[$field] !== '' ? $data[$field] : null;
+            }
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($columns), '?'));
         Database::execute(
-            "INSERT INTO employees (tenant_id, branch_id, admin_id, name, phone, job_title,
-             base_salary, hire_date, work_start_time, work_end_time, shift_id, national_id, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            [
-                $tenantId,
-                $data['branch_id'],
-                $data['admin_id'] ?? null,
-                $data['name'],
-                $data['phone'] ?? null,
-                $data['job_title'] ?? null,
-                $data['base_salary'] ?? 0,
-                $data['hire_date'] ?? date('Y-m-d'),
-                $data['work_start_time'] ?? '09:00:00',
-                $data['work_end_time'] ?? '17:00:00',
-                $data['shift_id'] ?? null,
-                $data['national_id'] ?? null,
-                $data['status'] ?? 'active',
-            ]
+            'INSERT INTO employees (' . implode(', ', $columns) . ") VALUES ($placeholders)",
+            $values
         );
         return (int) Database::lastInsertId();
+    }
+
+    /**
+     * Employees with a compliance credential expiring within $daysAhead days
+     * (or already expired when $includeExpired is true). One row per credential.
+     */
+    public static function getExpiringCompliance(int $tenantId, int $daysAhead = 30, ?int $branchId = null, bool $includeExpired = true): array {
+        $employees = self::expiringComplianceRows($tenantId, $daysAhead, $branchId, $includeExpired);
+
+        $today = new DateTime('today');
+        $results = [];
+        foreach ($employees as $e) {
+            foreach (self::COMPLIANCE_CREDENTIALS as $credential => [$numberCol, $expiryCol]) {
+                $expiry = $e[$expiryCol] ?? null;
+                if (!$expiry) {
+                    continue;
+                }
+                $expiryDate = DateTime::createFromFormat('Y-m-d', $expiry);
+                if (!$expiryDate) {
+                    continue;
+                }
+                $daysLeft = (int) $today->diff($expiryDate)->format('%r%a');
+                if ($daysLeft > $daysAhead) {
+                    continue;
+                }
+                if ($daysLeft < 0 && !$includeExpired) {
+                    continue;
+                }
+                $results[] = [
+                    'employee_id'   => (int) $e['id'],
+                    'employee_name' => $e['name'],
+                    'branch_id'     => $e['branch_id'] !== null ? (int) $e['branch_id'] : null,
+                    'branch_name'   => $e['branch_name'] ?? null,
+                    'credential'    => $credential,
+                    'number'        => $numberCol ? ($e[$numberCol] ?? null) : null,
+                    'expires_at'    => $expiry,
+                    'days_left'     => $daysLeft,
+                    'is_expired'    => $daysLeft < 0,
+                ];
+            }
+        }
+
+        usort($results, static fn($a, $b) => $a['days_left'] <=> $b['days_left']);
+        return $results;
+    }
+
+    private static function expiringComplianceRows(int $tenantId, int $daysAhead, ?int $branchId, bool $includeExpired): array {
+        $expiryCols = array_column(self::COMPLIANCE_CREDENTIALS, 1);
+        $lower = $includeExpired ? null : 'CURDATE()';
+        $upper = 'DATE_ADD(CURDATE(), INTERVAL ? DAY)';
+
+        $conditions = [];
+        $params = [$tenantId];
+        foreach ($expiryCols as $col) {
+            if ($lower === null) {
+                $conditions[] = "(e.`$col` IS NOT NULL AND e.`$col` <= $upper)";
+            } else {
+                $conditions[] = "(e.`$col` IS NOT NULL AND e.`$col` BETWEEN $lower AND $upper)";
+            }
+            $params[] = $daysAhead;
+        }
+
+        $sql = "SELECT e.*, b.name AS branch_name
+                FROM employees e
+                LEFT JOIN branches b ON b.id = e.branch_id
+                WHERE e.tenant_id = ? AND e.status != 'terminated'
+                  AND (" . implode(' OR ', $conditions) . ')';
+        if ($branchId) {
+            $sql .= ' AND e.branch_id = ?';
+            $params[] = $branchId;
+        }
+        return Database::fetchAll($sql, $params);
     }
 
     public static function update(int $id, int $tenantId, array $data): void {

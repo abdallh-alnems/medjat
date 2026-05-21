@@ -15,6 +15,11 @@ foreach ($documents as &$doc) {
     } else {
         $doc['scope_employee_ids'] = [];
     }
+    if (($doc['scope_type'] ?? 'all') === 'category') {
+        $doc['scope_category_ids'] = DocumentModel::getCategoryScope((int) $doc['id'], $tenantId);
+    } else {
+        $doc['scope_category_ids'] = [];
+    }
 }
 unset($doc);
 

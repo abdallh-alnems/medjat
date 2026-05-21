@@ -43,8 +43,8 @@ void main() async {
     minimumFetchInterval: kDebugMode ? Duration.zero : const Duration(hours: 1),
   ));
   await remoteConfig.setDefaults(const {
-    'min_required_version': '0.0.0',
-    'maintenance_enabled': false,
+    'medjat_app_min_version': '0.0.0',
+    'medjat_app_maintenance_enabled': false,
   });
 
   SystemChrome.setPreferredOrientations([

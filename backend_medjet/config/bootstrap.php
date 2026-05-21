@@ -20,9 +20,13 @@ require_once __DIR__ . '/../core/Validator.php';
 require_once __DIR__ . '/../core/TenantMiddleware.php';
 require_once __DIR__ . '/../core/PermissionMiddleware.php';
 require_once __DIR__ . '/../core/PayrollCalculator.php';
+require_once __DIR__ . '/../core/LetterPdfService.php';
 require_once __DIR__ . '/../core/GpsService.php';
 require_once __DIR__ . '/../core/I18n.php';
 require_once __DIR__ . '/../core/NotificationService.php';
+require_once __DIR__ . '/../core/SmartAlertService.php';
+require_once __DIR__ . '/../core/EmailService.php';
+require_once __DIR__ . '/../core/LoginAlertService.php';
 
 require_once __DIR__ . '/../models/TenantModel.php';
 require_once __DIR__ . '/../models/AdminModel.php';
@@ -46,6 +50,13 @@ require_once __DIR__ . '/../models/ManagerInvitationModel.php';
 require_once __DIR__ . '/../models/BiometricModel.php';
 require_once __DIR__ . '/../models/AttendanceStationModel.php';
 require_once __DIR__ . '/../models/StationRecognitionLogModel.php';
+require_once __DIR__ . '/../models/EmployeeCategoryModel.php';
+require_once __DIR__ . '/../models/PayrollStatutoryModel.php';
+require_once __DIR__ . '/../models/ExpenseModel.php';
+require_once __DIR__ . '/../models/LoanModel.php';
+require_once __DIR__ . '/../models/DocumentTemplateModel.php';
+require_once __DIR__ . '/../models/DocumentRequestModel.php';
+require_once __DIR__ . '/../models/AssetModel.php';
 
 setCorsHeaders();
 

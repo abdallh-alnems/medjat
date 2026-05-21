@@ -40,10 +40,13 @@ class EmployeeDetailController extends GetxController {
   List<DocumentModel> documents = [];
   List<WarningModel> warnings = [];
   List<PerformanceReviewModel> reviews = [];
+  List<Map<String, dynamic>> categories = [];
 
   int leaveUsed = 0;
   int leaveRemaining = 0;
   int leaveTotal = 0;
+  int leaveCarriedOver = 0;
+  int leaveEntitlement = 0;
   int leaveYear = 0;
   bool get hasLeaveBalance => leaveTotal > 0;
 
@@ -90,10 +93,17 @@ class EmployeeDetailController extends GetxController {
         }
         if (data['leave_balance'] is Map<String, dynamic>) {
           final lb = data['leave_balance'] as Map<String, dynamic>;
-          leaveYear = (lb['year'] as int?) ?? 0;
-          leaveUsed = (lb['used'] as int?) ?? 0;
-          leaveRemaining = (lb['remaining'] as int?) ?? 0;
-          leaveTotal = (lb['total_annual'] as int?) ?? 0;
+          leaveYear = (lb['year'] as num?)?.toInt() ?? 0;
+          leaveUsed = (lb['used_days'] as num?)?.toInt() ?? 0;
+          leaveRemaining = (lb['remaining_days'] as num?)?.toInt() ?? 0;
+          leaveTotal = (lb['total_days'] as num?)?.toInt() ?? 0;
+          leaveCarriedOver = (lb['carried_over_days'] as num?)?.toInt() ?? 0;
+          leaveEntitlement = (lb['entitlement_days'] as num?)?.toInt() ?? 0;
+        }
+        if (data['categories'] is List) {
+          categories = (data['categories'] as List)
+              .whereType<Map<String, dynamic>>()
+              .toList();
         }
       }
       status = StatusRequest.success;
@@ -306,6 +316,24 @@ class EmployeeDetailController extends GetxController {
       return auth.user?.canManageEmployees ?? false;
     } catch (_) {
       return false;
+    }
+  }
+
+  /// Updates the per-employee annual leave override.
+  /// Pass [days] = null to clear it (employee inherits the company default).
+  Future<void> updateAnnualLeaveDays(int? days) async {
+    final response = await _employeeData.updateEmployee(employeeId, {
+      'annual_leave_days': days,
+    });
+
+    if (response['status'] == StatusRequest.success) {
+      Get.snackbar('done'.tr, 'leave_settings_saved'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      await loadEmployee();
+    } else {
+      Get.snackbar('error'.tr,
+          (response['message'] as String?) ?? 'error'.tr,
+          snackPosition: SnackPosition.BOTTOM);
     }
   }
 

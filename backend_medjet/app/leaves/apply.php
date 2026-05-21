@@ -20,6 +20,28 @@ if (!$employee) {
     Response::fail('Employee profile not found', 404);
 }
 
-$leaveId = LeaveModel::apply($employee['id'], $tenantId, $date, $type, $reason);
+$startDateInput = $input['start_date'] ?? $date;
+$endDateInput = $input['end_date'] ?? $startDateInput;
+
+if (LeaveModel::hasOverlap($employee['id'], $tenantId, $startDateInput, $endDateInput)) {
+    Response::fail('يوجد تداخل مع إجازة قائمة في هذه الفترة', 409, 'leave_overlap');
+}
+
+$leaveId = LeaveModel::apply($employee['id'], $tenantId, $date, $type, $reason, $startDateInput, $endDateInput);
+
+try {
+    $recipients = SmartAlertService::recipientsForBranch($tenantId, $employee['branch_id'], 'manage_leaves');
+    foreach ($recipients as $rid) {
+        SmartAlertService::dispatch(
+            $rid, 'leave_events', 'leave',
+            'طلب إجازة جديد', "طلب إجازة جديد من {$employee['name']} ({$type})",
+            'New Leave Request', "New leave request from {$employee['name']} ({$type})",
+            ['leave_id' => $leaveId, 'employee_id' => $employee['id'], 'type' => $type],
+            "leave:{$leaveId}"
+        );
+    }
+} catch (Throwable $e) {
+    error_log('SmartAlert leave apply: ' . $e->getMessage());
+}
 
 Response::success(['leave_id' => $leaveId, 'message' => 'Leave request submitted']);

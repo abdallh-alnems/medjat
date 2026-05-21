@@ -14,6 +14,7 @@ class EmployeeModel {
   final DateTime? hireDate;
   final String workStartTime;
   final String workEndTime;
+  final int? annualLeaveDays;
   final int? shiftId;
   final String? shiftName;
   final String? shiftStart;
@@ -22,6 +23,23 @@ class EmployeeModel {
   final String? activationCode;
   final String? activationExpiresAt;
   final String biometricEnrollmentStatus;
+  final String? bankName;
+  final String? bankAccountNumber;
+  final String? bankIban;
+  final String? bankSwift;
+  // Compliance / legal credentials
+  final String? nationalId;
+  final String? nationality;
+  final String? iqamaNumber;
+  final DateTime? iqamaExpiry;
+  final String? passportNumber;
+  final DateTime? passportExpiry;
+  final String? workPermitNumber;
+  final DateTime? workPermitExpiry;
+  final String? contractType;
+  final DateTime? contractStart;
+  final DateTime? contractEnd;
+  final DateTime? healthInsuranceExpiry;
 
   EmployeeModel({
     required this.id,
@@ -37,6 +55,7 @@ class EmployeeModel {
     this.hireDate,
     this.workStartTime = '09:00:00',
     this.workEndTime = '17:00:00',
+    this.annualLeaveDays,
     this.shiftId,
     this.shiftName,
     this.shiftStart,
@@ -45,7 +64,26 @@ class EmployeeModel {
     this.activationCode,
     this.activationExpiresAt,
     this.biometricEnrollmentStatus = 'not_enrolled',
+    this.bankName,
+    this.bankAccountNumber,
+    this.bankIban,
+    this.bankSwift,
+    this.nationalId,
+    this.nationality,
+    this.iqamaNumber,
+    this.iqamaExpiry,
+    this.passportNumber,
+    this.passportExpiry,
+    this.workPermitNumber,
+    this.workPermitExpiry,
+    this.contractType,
+    this.contractStart,
+    this.contractEnd,
+    this.healthInsuranceExpiry,
   });
+
+  static DateTime? _parseDate(dynamic value) =>
+      value is String && value.isNotEmpty ? DateTime.tryParse(value) : null;
 
   factory EmployeeModel.fromJson(Map<String, dynamic> json) {
     return EmployeeModel(
@@ -64,6 +102,7 @@ class EmployeeModel {
           : null,
       workStartTime: (json['work_start_time'] as String?) ?? '09:00:00',
       workEndTime: (json['work_end_time'] as String?) ?? '17:00:00',
+      annualLeaveDays: (json['annual_leave_days'] as num?)?.toInt(),
       shiftId: (json['shift_id'] as num?)?.toInt(),
       shiftName: json['shift_name'] as String?,
       shiftStart: json['shift_start'] as String?,
@@ -72,8 +111,38 @@ class EmployeeModel {
       activationCode: json['activation_code'] as String?,
       activationExpiresAt: json['activation_expires_at'] as String?,
       biometricEnrollmentStatus: (json['biometric_enrollment_status'] as String?) ?? 'not_enrolled',
+      bankName: json['bank_name'] as String?,
+      bankAccountNumber: json['bank_account_number'] as String?,
+      bankIban: json['bank_iban'] as String?,
+      bankSwift: json['bank_swift'] as String?,
+      nationalId: json['national_id'] as String?,
+      nationality: json['nationality'] as String?,
+      iqamaNumber: json['iqama_number'] as String?,
+      iqamaExpiry: _parseDate(json['iqama_expiry']),
+      passportNumber: json['passport_number'] as String?,
+      passportExpiry: _parseDate(json['passport_expiry']),
+      workPermitNumber: json['work_permit_number'] as String?,
+      workPermitExpiry: _parseDate(json['work_permit_expiry']),
+      contractType: json['contract_type'] as String?,
+      contractStart: _parseDate(json['contract_start']),
+      contractEnd: _parseDate(json['contract_end']),
+      healthInsuranceExpiry: _parseDate(json['health_insurance_expiry']),
     );
   }
+
+  bool get hasComplianceInfo =>
+      (nationalId?.isNotEmpty ?? false) ||
+      (nationality?.isNotEmpty ?? false) ||
+      (iqamaNumber?.isNotEmpty ?? false) ||
+      iqamaExpiry != null ||
+      (passportNumber?.isNotEmpty ?? false) ||
+      passportExpiry != null ||
+      (workPermitNumber?.isNotEmpty ?? false) ||
+      workPermitExpiry != null ||
+      contractType != null ||
+      contractStart != null ||
+      contractEnd != null ||
+      healthInsuranceExpiry != null;
 
   String get statusLabel {
     switch (status) {

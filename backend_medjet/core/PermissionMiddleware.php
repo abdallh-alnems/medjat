@@ -12,14 +12,15 @@ final class PermissionMiddleware {
         'documents_view_reports',
         'manage_payroll',
         'manage_leaves',
+        'manage_assets',
         'add_managers',
         'manage_company_settings',
     ];
 
     private const ROLE_DEFAULTS = [
         'general_manager' => '*',
-        'hr' => ['manage_employees', 'manage_deduction_rules', 'manage_attendance', 'view_reports', 'manage_documents', 'manage_payroll', 'manage_leaves', 'biometric_enroll', 'biometric_delete', 'station_manage', 'station_view_logs'],
-        'branch_manager' => ['manage_employees', 'manage_attendance', 'manage_documents', 'view_reports', 'biometric_enroll', 'station_view_logs'],
+        'hr' => ['manage_employees', 'manage_deduction_rules', 'manage_attendance', 'view_reports', 'manage_documents', 'manage_payroll', 'manage_leaves', 'manage_assets', 'biometric_enroll', 'biometric_delete', 'station_manage', 'station_view_logs'],
+        'branch_manager' => ['manage_employees', 'manage_attendance', 'manage_documents', 'view_reports', 'manage_assets', 'biometric_enroll', 'station_view_logs'],
         'attendance' => ['manage_attendance', 'biometric_enroll', 'station_view_logs'],
         'viewer' => ['view_reports'],
         'employee' => [],

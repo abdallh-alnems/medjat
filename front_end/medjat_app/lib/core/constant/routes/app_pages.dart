@@ -2,9 +2,10 @@ import 'package:get/get.dart';
 import '../../class/crud.dart';
 import 'app_routes.dart';
 import '../theme/app_spacing.dart';
-import '../../services/remote_config_service.dart';
+import '../../services/update_service.dart';
 import '../../package/rating_app.dart';
-import '../../widget/app_gate.dart';
+import '../../widget/maintenance_gate.dart';
+import '../../widget/update_gate.dart';
 import '../../../data/data_source/remote/auth_data/auth_data.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
 import '../../../logic/bindings/home_binding.dart';
@@ -28,7 +29,7 @@ class AppBindings extends Bindings {
     Get.put<ConnectivityService>(ConnectivityService(), permanent: true);
     Get.put<LocationService>(LocationService(), permanent: true);
     Get.put<AuthController>(AuthController(), permanent: true);
-    Get.put<RemoteConfigService>(RemoteConfigService(), permanent: true);
+    Get.put<UpdateService>(UpdateService(), permanent: true);
     Get.put<RateMyAppController>(RateMyAppController(), permanent: true);
   }
 }
@@ -58,14 +59,16 @@ List<GetPage<dynamic>> getPages = [
   ),
   GetPage(
     name: AppRoutes.home,
-    page: () => const AppGate(
-      child: TabShell(
-        screens: [
-          HomeScreen(),
-          PlaceholderScreen(title: 'سجل حضوري'),
-          PlaceholderScreen(title: 'راتبي'),
-          PlaceholderScreen(title: 'حسابي'),
-        ],
+    page: () => const MaintenanceGate(
+      child: UpdateGate(
+        child: TabShell(
+          screens: [
+            HomeScreen(),
+            PlaceholderScreen(title: 'سجل حضوري'),
+            PlaceholderScreen(title: 'راتبي'),
+            PlaceholderScreen(title: 'حسابي'),
+          ],
+        ),
       ),
     ),
     binding: HomeBinding(),

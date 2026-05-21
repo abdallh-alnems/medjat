@@ -21,7 +21,7 @@ class EmployeeData {
   }
 
   Future<Map<String, dynamic>> updateEmployee(int id, Map<String, dynamic> data) async {
-    return await _crud.postData(AppLinks.employeeUpdate, {...data, 'id': id});
+    return await _crud.postData(AppLinks.employeeUpdate, {...data, 'employee_id': id});
   }
 
   Future<Map<String, dynamic>> deleteEmployee(int id) async {

@@ -13,7 +13,14 @@ if (empty($records) || !is_array($records)) {
     Response::fail('Records array is required', 400);
 }
 
-$result = AttendanceModel::syncOffline($records, $tenantId);
+$employee = EmployeeModel::findByAdminId($auth['admin_id'], $tenantId);
+if (!$employee) {
+    Response::fail('Employee profile not found', 404);
+}
+
+$employeeId = $employee['id'];
+
+$result = AttendanceModel::syncOffline($records, $employeeId, $tenantId);
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'attendance.offline_sync', null, null, [
     'synced' => $result['synced'],

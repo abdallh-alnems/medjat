@@ -77,4 +77,8 @@ class UserModel {
       isOwner || permissions.contains('manage_company_settings');
   bool get canManageLeaves =>
       isOwner || isHR || permissions.contains('manage_leaves');
+  bool get canManageAssets =>
+      isOwner || isHR || isManager || permissions.contains('manage_assets');
+  bool get canManageDocuments =>
+      isOwner || isHR || isManager || permissions.contains('manage_documents');
 }

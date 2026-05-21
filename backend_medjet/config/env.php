@@ -29,6 +29,13 @@ $envKeys = [
     'S3_SECRET',
     'S3_BUCKET',
     'S3_REGION',
+    'SMTP_HOST',
+    'SMTP_PORT',
+    'SMTP_USER',
+    'SMTP_PASS',
+    'SMTP_FROM',
+    'SMTP_SECURE',
+    'CRON_SECRET',
 ];
 
 $defaults = [
@@ -48,6 +55,13 @@ $defaults = [
     'S3_SECRET' => '',
     'S3_BUCKET' => 'medjat-documents',
     'S3_REGION' => 'me-south-1',
+    'SMTP_HOST' => '',
+    'SMTP_PORT' => '587',
+    'SMTP_USER' => '',
+    'SMTP_PASS' => '',
+    'SMTP_FROM' => 'noreply@medjat.com',
+    'SMTP_SECURE' => 'tls',
+    'CRON_SECRET' => 'change_this_to_a_random_secret',
 ];
 
 foreach ($envKeys as $key) {

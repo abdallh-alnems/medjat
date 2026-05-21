@@ -85,6 +85,13 @@ final class TenantModel {
         );
     }
 
+    public static function updateAllowOffline(int $id, bool $allow): void {
+        Database::execute(
+            "UPDATE tenants SET allow_offline_attendance = ? WHERE id = ?",
+            [(int) $allow, $id]
+        );
+    }
+
     public static function getAttendanceConfig(int $id): array {
         $row = Database::fetchOne(
             "SELECT attendance_methods, manual_attendance_admin_ids FROM tenants WHERE id = ? LIMIT 1",

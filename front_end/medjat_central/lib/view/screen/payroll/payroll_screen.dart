@@ -20,6 +20,29 @@ class PayrollScreen extends StatelessWidget {
       body: Column(
         children: [
           _MonthPicker(ctrl: ctrl),
+          if (ctrl.canManagePayroll && ctrl.hasApprovedPayrolls)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.s4,
+                vertical: AppSpacing.s1,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => ctrl.showBankFileDialog(context),
+                  icon: const Icon(Icons.download_outlined, size: 18),
+                  label: Text('export_bank_file'.tr),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: colors.brand,
+                    side: BorderSide(color: colors.brand),
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           Expanded(
             child: RefreshIndicator(
               onRefresh: ctrl.loadPayrolls,

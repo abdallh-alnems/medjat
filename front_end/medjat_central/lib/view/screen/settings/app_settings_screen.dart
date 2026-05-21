@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constant/theme/theme.dart';
+import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/services/locale_service.dart';
 import '../../../core/services/dark_light_service.dart';
 
@@ -58,19 +59,8 @@ class AppSettingsScreen extends StatelessWidget {
           _AppSettingTile(
             icon: Icons.notifications_outlined,
             title: 'notifications'.tr,
-            trailing: Text(
-              'coming_soon'.tr,
-              style: TextStyle(
-                fontFamily: 'IBM Plex Sans Arabic',
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: AppColors.of(context).textTertiary,
-              ),
-            ),
-            onTap: () {
-              Get.snackbar('coming_soon'.tr, '',
-                  snackPosition: SnackPosition.BOTTOM);
-            },
+            trailing: Icon(Icons.chevron_left, size: 20, color: AppColors.of(context).textTertiary),
+            onTap: () => Get.toNamed<void>(AppRoutes.notificationPrefs),
           ),
         ],
       ),

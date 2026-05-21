@@ -12,6 +12,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/services/token_storage_service.dart';
+import '../../../core/services/push_notification_service.dart';
 import '../../../data/data_source/remote/auth_data/auth_data.dart';
 import '../../../data/model/user_model.dart';
 
@@ -432,6 +433,7 @@ class AuthController extends GetxController {
   void _onSuccess() {
     isLoggedIn.value = true;
     status.value = StatusRequest.success;
+    PushNotificationService.init();
     if (hasTenant.value) {
       Get.offAllNamed(AppRoutes.home);
     } else {

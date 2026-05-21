@@ -3,9 +3,11 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../../core/class/handling_data_request.dart';
 import '../../../core/constant/theme/theme.dart';
+import '../../../core/constant/routes/app_routes.dart';
 import '../../../data/model/dashboard_model.dart';
 import '../../../logic/controller/dashboard/dashboard_controller.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
+import '../../../logic/controller/notification/notification_controller.dart';
 import '../../../core/services/locale_service.dart';
 import '../../widget/dashboard/stat_card.dart';
 
@@ -18,6 +20,11 @@ class DashboardScreen extends StatelessWidget {
     final auth = Get.find<AuthController>();
     final colors = AppColors.of(context);
 
+    try {
+      final notifCtrl = Get.find<NotificationController>();
+      notifCtrl.loadNotifications();
+    } catch (_) {}
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -25,9 +32,9 @@ class DashboardScreen extends StatelessWidget {
           style: AppTextStyles.h3(context),
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.notifications_outlined, color: colors.textSecondary),
-            onPressed: () {},
+          Padding(
+            padding: const EdgeInsets.only(left: 8, right: 8),
+            child: _NotificationBadge(colors: colors),
           ),
         ],
       ),
@@ -43,6 +50,52 @@ class DashboardScreen extends StatelessWidget {
             },
           ),
         ),
+    );
+  }
+}
+
+class _NotificationBadge extends StatelessWidget {
+  final AppColorScheme colors;
+  const _NotificationBadge({required this.colors});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Get.toNamed<void>(AppRoutes.notifications),
+      child: Obx(() {
+        int count = 0;
+        try {
+          count = Get.find<NotificationController>().unreadCount.value;
+        } catch (_) {}
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Icon(Icons.notifications_outlined, size: 26, color: colors.textSecondary),
+            if (count > 0)
+              Positioned(
+                right: -4,
+                top: -4,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: colors.error,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                  child: Text(
+                    count > 99 ? '99+' : '$count',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        );
+      }),
     );
   }
 }
@@ -129,6 +182,10 @@ class _DashboardContent extends StatelessWidget {
             color: colors.brand,
             isFullWidth: true,
           ),
+          if (auth.user?.isOwner == true || auth.user?.canViewReports == true) ...[
+            const SizedBox(height: AppSpacing.s3),
+            _LiveAttendanceCard(colors: colors),
+          ],
           if (d?.branchStats.isNotEmpty == true) ...[
             const SizedBox(height: AppSpacing.s6),
             Text('branch_performance'.tr, style: AppTextStyles.h2(context)),
@@ -141,6 +198,55 @@ class _DashboardContent extends StatelessWidget {
           ],
           const SizedBox(height: AppSpacing.s7),
         ],
+      ),
+    );
+  }
+}
+
+class _LiveAttendanceCard extends StatelessWidget {
+  final AppColorScheme colors;
+  const _LiveAttendanceCard({required this.colors});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        onTap: () => Get.toNamed<void>(AppRoutes.liveAttendance),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.s4),
+          decoration: BoxDecoration(
+            color: colors.brandSubtle,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: colors.brand.withValues(alpha: 0.4)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.sensors, color: colors.brand),
+              const SizedBox(width: AppSpacing.s3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'live_attendance'.tr,
+                      style: const TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text('live_attendance_hint'.tr,
+                        style: AppTextStyles.sm(context)),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_left, color: colors.textTertiary),
+            ],
+          ),
+        ),
       ),
     );
   }

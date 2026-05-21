@@ -42,7 +42,15 @@ if ($method === 'GET') {
         'email' => $tenant['owner_email'] ?? '',
         'attendance_methods' => $tenantMethods,
         'manual_attendance_admin_ids' => $manualAdminIds,
+        'allow_offline_attendance' => (bool) ($tenant['allow_offline_attendance'] ?? true),
         'branches' => $branchList,
+        // Letter/certificate branding & company text data
+        'commercial_register' => $tenant['commercial_register'] ?? '',
+        'company_address' => $tenant['company_address'] ?? '',
+        'company_phone' => $tenant['company_phone'] ?? '',
+        'has_logo' => !empty($tenant['logo_url']),
+        'has_stamp' => !empty($tenant['stamp_url']),
+        'has_signature' => !empty($tenant['signature_url']),
     ]);
 }
 
@@ -114,8 +122,27 @@ if ($method === 'PUT' || $method === 'POST') {
         TenantModel::updateAttendanceMethods($tenantId, $currentMethods, $manualAdminIdsVal);
     }
 
+    if (isset($input['allow_offline_attendance'])) {
+        $allowOffline = filter_var($input['allow_offline_attendance'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        if ($allowOffline === null) {
+            Response::fail('allow_offline_attendance must be true or false', 422);
+        }
+        TenantModel::updateAllowOffline($tenantId, $allowOffline);
+    }
+
     if (!empty($updateData)) {
         TenantModel::update($tenantId, $updateData);
+    }
+
+    // Letter/certificate company text data (columns guaranteed to exist).
+    $brandingData = [];
+    foreach (['commercial_register', 'company_address', 'company_phone'] as $field) {
+        if (isset($input[$field])) {
+            $brandingData[$field] = trim((string) $input[$field]);
+        }
+    }
+    if (!empty($brandingData)) {
+        TenantModel::update($tenantId, $brandingData);
     }
 
     AuditLogModel::log($tenantId, $auth['admin_id'], 'tenant.update_settings', 'tenant', $tenantId);

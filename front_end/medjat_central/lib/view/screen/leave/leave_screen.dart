@@ -92,9 +92,8 @@ class LeaveScreen extends StatelessWidget {
                               leave: ctrl.leaves[i],
                               onApprove: () =>
                                   ctrl.approveLeave(ctrl.leaves[i].id),
-                              onReject: () => ctrl.rejectLeave(
-                                ctrl.leaves[i].id,
-                              ),
+                              onReject: () => _showRejectDialog(
+                                  context, ctrl, ctrl.leaves[i].id),
                             ),
                           ),
                   );
@@ -107,22 +106,98 @@ class LeaveScreen extends StatelessWidget {
     );
   }
 
+  void _showRejectDialog(
+      BuildContext context, LeaveController ctrl, int leaveId) {
+    final reasonCtrl = TextEditingController();
+    final colors = AppColors.of(context);
+
+    Get.dialog<void>(
+      Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: Text('reject_leave'.tr,
+              style: const TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              )),
+          content: TextField(
+            controller: reasonCtrl,
+            autofocus: true,
+            maxLines: 3,
+            decoration: InputDecoration(
+              hintText: 'rejection_reason'.tr,
+              hintStyle: TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 14,
+                color: colors.textTertiary,
+              ),
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back<void>(),
+              child: Text('cancel'.tr),
+            ),
+            TextButton(
+              onPressed: () {
+                Get.back<void>();
+                ctrl.rejectLeave(leaveId,
+                    reason: reasonCtrl.text.trim().isNotEmpty
+                        ? reasonCtrl.text.trim()
+                        : null);
+              },
+              style: TextButton.styleFrom(foregroundColor: colors.error),
+              child: Text('reject'.tr),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showCreateLeaveSheet(BuildContext context, LeaveController ctrl) {
     final reasonCtrl = TextEditingController();
     int? selectedEmployeeId;
-    String selectedType = 'single';
+    String selectedDuration = 'single';
+    String selectedLeaveType = 'annual';
+    String selectedDayOfWeek = 'saturday';
     DateTime? startDate;
     DateTime? endDate;
 
     final employeeData = Get.find<EmployeeData>();
 
-    Get.bottomSheet(
+    const leaveTypes = [
+      ('annual', 'سنوية'),
+      ('sick', 'مرضية'),
+      ('personal', 'شخصية'),
+      ('unpaid', 'بدون أجر'),
+    ];
+
+    const daysOfWeek = [
+      ('saturday', 'السبت'),
+      ('sunday', 'الأحد'),
+      ('monday', 'الاثنين'),
+      ('tuesday', 'الثلاثاء'),
+      ('wednesday', 'الأربعاء'),
+      ('thursday', 'الخميس'),
+      ('friday', 'الجمعة'),
+    ];
+
+    Get.bottomSheet<void>(
       StatefulBuilder(
         builder: (context, setSheetState) {
+          final colors = AppColors.of(context);
+
+          if (selectedLeaveType == 'annual' && selectedEmployeeId != null) {
+            ctrl.loadBalance(selectedEmployeeId!);
+          }
+
           return Container(
             padding: const EdgeInsets.all(AppSpacing.s4),
             decoration: BoxDecoration(
-              color: AppColors.of(context).surface,
+              color: colors.surface,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(AppRadius.lg),
               ),
@@ -134,13 +209,7 @@ class LeaveScreen extends StatelessWidget {
                 children: [
                   Text('add_leave'.tr, style: AppTextStyles.h3(context)),
                   const SizedBox(height: AppSpacing.s4),
-                  Text('select_employee'.tr,
-                      style: TextStyle(
-                        fontFamily: 'IBM Plex Sans Arabic',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.of(context).textSecondary,
-                      )),
+                  _sectionLabel('select_employee'.tr, colors),
                   const SizedBox(height: AppSpacing.s2),
                   FutureBuilder<List<EmployeeModel>>(
                     future: employeeData.getEmployees().then((response) {
@@ -175,53 +244,112 @@ class LeaveScreen extends StatelessWidget {
                         ));
                       }
                       final list = snapshot.data ?? [];
-                      return Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.s4),
-                        decoration: BoxDecoration(
-                          color: AppColors.of(context).sunken,
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                          border: Border.all(
-                              color: AppColors.of(context).borderHairline),
+                      return _dropdownField<int>(
+                        hint: 'select_employee'.tr,
+                        value: selectedEmployeeId,
+                        items: list,
+                        colors: colors,
+                        itemBuilder: (e) => DropdownMenuItem<int>(
+                          value: (e as EmployeeModel).id,
+                          child: Text(e.name,
+                              style: const TextStyle(
+                                fontFamily: 'IBM Plex Sans Arabic',
+                                fontSize: 14,
+                              )),
                         ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<int>(
-                            isExpanded: true,
-                            hint: Text('select_employee'.tr,
-                                style: TextStyle(
-                                  fontFamily: 'IBM Plex Sans Arabic',
-                                  fontSize: 14,
-                                  color:
-                                      AppColors.of(context).textTertiary,
-                                )),
-                            value: selectedEmployeeId,
-                            items: list
-                                .map((e) => DropdownMenuItem<int>(
-                                      value: e.id,
-                                      child: Text(e.name,
-                                          style: const TextStyle(
-                                            fontFamily:
-                                                'IBM Plex Sans Arabic',
-                                            fontSize: 14,
-                                          )),
-                                    ))
-                                .toList(),
-                            onChanged: (v) {
-                              setSheetState(() => selectedEmployeeId = v);
-                            },
-                          ),
-                        ),
+                        onChanged: (v) {
+                          setSheetState(() => selectedEmployeeId = v);
+                        },
                       );
                     },
                   ),
                   const SizedBox(height: AppSpacing.s3),
-                  Text('leave_type'.tr,
-                      style: TextStyle(
-                        fontFamily: 'IBM Plex Sans Arabic',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.of(context).textSecondary,
-                      )),
+                  _sectionLabel('leave_type'.tr, colors),
+                  const SizedBox(height: AppSpacing.s2),
+                  Wrap(
+                    spacing: AppSpacing.s2,
+                    runSpacing: AppSpacing.s2,
+                    children: leaveTypes
+                        .map((t) => _TypeChip(
+                              label: t.$2,
+                              selected: selectedLeaveType == t.$1,
+                              onTap: () => setSheetState(
+                                  () => selectedLeaveType = t.$1),
+                              colors: colors,
+                            ))
+                        .toList(),
+                  ),
+                  if (selectedLeaveType == 'annual' &&
+                      selectedEmployeeId != null) ...[
+                    const SizedBox(height: AppSpacing.s3),
+                    GetBuilder<LeaveController>(
+                      builder: (_) {
+                        if (ctrl.balanceLoading) {
+                          return const Center(
+                              child: Padding(
+                            padding: EdgeInsets.all(AppSpacing.s2),
+                            child: CircularProgressIndicator.adaptive(
+                                strokeWidth: 2),
+                          ));
+                        }
+                        if (ctrl.balanceInfo != null) {
+                          final remaining =
+                              (ctrl.balanceInfo!['remaining_days'] as num?)?.toInt() ?? 0;
+                          final used = (ctrl.balanceInfo!['used_days'] as num?)?.toInt() ?? 0;
+                          final total =
+                              (ctrl.balanceInfo!['total_days'] as num?)?.toInt() ?? (used + remaining);
+                          return Container(
+                            padding: const EdgeInsets.all(AppSpacing.s3),
+                            decoration: BoxDecoration(
+                              color: remaining > 0
+                                  ? colors.brandSubtle
+                                  : colors.error.withValues(alpha: 0.08),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.sm),
+                              border: Border.all(
+                                color: remaining > 0
+                                    ? colors.brand
+                                    : colors.error,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                    remaining > 0
+                                        ? Icons.info_outline
+                                        : Icons.warning_amber_rounded,
+                                    size: 18,
+                                    color: remaining > 0
+                                        ? colors.brand
+                                        : colors.error),
+                                const SizedBox(width: AppSpacing.s2),
+                                Expanded(
+                                  child: Text(
+                                    'leave_balance_summary'.trParams({
+                                      'remaining': remaining.toString(),
+                                      'used': used.toString(),
+                                      'total': total.toString(),
+                                    }),
+                                    style: TextStyle(
+                                      fontFamily: 'IBM Plex Sans Arabic',
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color: remaining > 0
+                                          ? colors.brand
+                                          : colors.error,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.s3),
+                  _sectionLabel('المدة', colors),
                   const SizedBox(height: AppSpacing.s2),
                   Wrap(
                     spacing: AppSpacing.s2,
@@ -229,51 +357,101 @@ class LeaveScreen extends StatelessWidget {
                     children: [
                       _TypeChip(
                         label: 'leave_single'.tr,
-                        selected: selectedType == 'single',
+                        selected: selectedDuration == 'single',
                         onTap: () =>
-                            setSheetState(() => selectedType = 'single'),
+                            setSheetState(() => selectedDuration = 'single'),
+                        colors: colors,
                       ),
                       _TypeChip(
                         label: 'leave_recurring'.tr,
-                        selected: selectedType == 'recurring',
+                        selected: selectedDuration == 'recurring',
                         onTap: () => setSheetState(
-                            () => selectedType = 'recurring'),
+                            () => selectedDuration = 'recurring'),
+                        colors: colors,
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppSpacing.s3),
-                  _DatePickerField(
-                    label: 'leave_start_date'.tr,
-                    value: startDate,
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: startDate ?? DateTime.now(),
-                        firstDate: DateTime(2024, 1, 1),
-                        lastDate: DateTime(2030, 12, 31),
-                      );
-                      if (picked != null) {
-                        setSheetState(() => startDate = picked);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.s3),
-                  _DatePickerField(
-                    label: 'leave_end_date'.tr,
-                    value: endDate,
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate:
-                            endDate ?? startDate ?? DateTime.now(),
-                        firstDate: startDate ?? DateTime(2024, 1, 1),
-                        lastDate: DateTime(2030, 12, 31),
-                      );
-                      if (picked != null) {
-                        setSheetState(() => endDate = picked);
-                      }
-                    },
-                  ),
+                  if (selectedDuration == 'single') ...[
+                    const SizedBox(height: AppSpacing.s3),
+                    _DatePickerField(
+                      label: 'leave_start_date'.tr,
+                      value: startDate,
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: startDate ?? DateTime.now(),
+                          firstDate: DateTime(2024, 1, 1),
+                          lastDate: DateTime(2030, 12, 31),
+                        );
+                        if (picked != null) {
+                          setSheetState(() => startDate = picked);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.s3),
+                    _DatePickerField(
+                      label: 'leave_end_date'.tr,
+                      value: endDate,
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate:
+                              endDate ?? startDate ?? DateTime.now(),
+                          firstDate: startDate ?? DateTime(2024, 1, 1),
+                          lastDate: DateTime(2030, 12, 31),
+                        );
+                        if (picked != null) {
+                          setSheetState(() => endDate = picked);
+                        }
+                      },
+                    ),
+                    if (selectedLeaveType == 'annual' &&
+                        startDate != null &&
+                        ctrl.balanceInfo != null) ...[
+                      const SizedBox(height: AppSpacing.s3),
+                      _BalanceWarning(
+                        startDate: startDate!,
+                        endDate: endDate ?? startDate!,
+                        remaining: (ctrl.balanceInfo!['remaining_days'] as int?) ?? 0,
+                        colors: colors,
+                      ),
+                    ],
+                  ],
+                  if (selectedDuration == 'recurring') ...[
+                    const SizedBox(height: AppSpacing.s3),
+                    _sectionLabel('يوم الأسبوع', colors),
+                    const SizedBox(height: AppSpacing.s2),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.s4),
+                      decoration: BoxDecoration(
+                        color: colors.sunken,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        border: Border.all(color: colors.borderHairline),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          value: selectedDayOfWeek,
+                          items: daysOfWeek
+                              .map((d) => DropdownMenuItem<String>(
+                                    value: d.$1,
+                                    child: Text(d.$2,
+                                        style: const TextStyle(
+                                          fontFamily: 'IBM Plex Sans Arabic',
+                                          fontSize: 14,
+                                        )),
+                                  ))
+                              .toList(),
+                          onChanged: (v) {
+                            if (v != null) {
+                              setSheetState(() => selectedDayOfWeek = v);
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: AppSpacing.s3),
                   PrimaryInput(
                     label: 'leave_reason'.tr,
@@ -286,26 +464,39 @@ class LeaveScreen extends StatelessWidget {
                     text: 'save'.tr,
                     onPressed: () async {
                       if (selectedEmployeeId == null) {
-                        Get.snackbar('error'.tr, 'select_employee'.tr,
+                        Get.snackbar('خطأ', 'يرجى اختيار الموظف',
                             snackPosition: SnackPosition.BOTTOM);
                         return;
                       }
-                      if (startDate == null) {
-                        Get.snackbar('error'.tr, 'leave_start_date'.tr,
+                      if (selectedDuration == 'single' && startDate == null) {
+                        Get.snackbar('خطأ', 'يرجى اختيار تاريخ البداية',
                             snackPosition: SnackPosition.BOTTOM);
                         return;
                       }
-                      final success = await ctrl.createLeave(
-                        employeeId: selectedEmployeeId!,
-                        type: selectedType,
-                        startDate: startDate!,
-                        endDate: endDate,
-                        reason: reasonCtrl.text.trim().isNotEmpty
-                            ? reasonCtrl.text.trim()
-                            : null,
-                      );
+
+                      bool success;
+                      if (selectedDuration == 'recurring') {
+                        success = await ctrl.createRecurringLeave(
+                          employeeId: selectedEmployeeId!,
+                          dayOfWeek: selectedDayOfWeek,
+                          type: selectedLeaveType,
+                          reason: reasonCtrl.text.trim().isNotEmpty
+                              ? reasonCtrl.text.trim()
+                              : null,
+                        );
+                      } else {
+                        success = await ctrl.createLeave(
+                          employeeId: selectedEmployeeId!,
+                          type: selectedLeaveType,
+                          startDate: startDate!,
+                          endDate: endDate,
+                          reason: reasonCtrl.text.trim().isNotEmpty
+                              ? reasonCtrl.text.trim()
+                              : null,
+                        );
+                      }
                       if (success) {
-                        Get.back();
+                        Get.back<void>();
                       }
                     },
                   ),
@@ -315,6 +506,99 @@ class LeaveScreen extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _sectionLabel(String text, AppColorScheme colors) {
+    return Text(text,
+        style: TextStyle(
+          fontFamily: 'IBM Plex Sans Arabic',
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: colors.textSecondary,
+        ));
+  }
+
+  Widget _dropdownField<T>({
+    required String hint,
+    required T? value,
+    required List<dynamic> items,
+    required AppColorScheme colors,
+    required DropdownMenuItem<T> Function(dynamic) itemBuilder,
+    required void Function(T?) onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
+      decoration: BoxDecoration(
+        color: colors.sunken,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          isExpanded: true,
+          hint: Text(hint,
+              style: TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 14,
+                color: colors.textTertiary,
+              )),
+          value: value,
+          items: items.map(itemBuilder).toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+}
+
+class _BalanceWarning extends StatelessWidget {
+  final DateTime startDate;
+  final DateTime endDate;
+  final int remaining;
+  final AppColorScheme colors;
+
+  const _BalanceWarning({
+    required this.startDate,
+    required this.endDate,
+    required this.remaining,
+    required this.colors,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final requestedDays =
+        endDate.difference(startDate).inDays + 1;
+    if (requestedDays <= remaining) return const SizedBox.shrink();
+
+    final paidDays = remaining;
+    final unpaidDays = requestedDays - remaining;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s3),
+      decoration: BoxDecoration(
+        color: colors.warning.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: colors.warning),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded,
+              size: 18, color: colors.warning),
+          const SizedBox(width: AppSpacing.s2),
+          Expanded(
+            child: Text(
+              'سيُحتسب $paidDays يوم بأجر و $unpaidDays يوم بدون أجر',
+              style: TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: colors.warning,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -390,16 +674,17 @@ class _TypeChip extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final AppColorScheme colors;
 
   const _TypeChip({
     required this.label,
     required this.selected,
     required this.onTap,
+    required this.colors,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.full),
@@ -488,6 +773,13 @@ class _LeaveTile extends StatelessWidget {
     final colors = AppColors.of(context);
     final statusColor = _statusColor(leave.status, colors);
 
+    String dateLabel =
+        '${leave.startDate.day}/${leave.startDate.month}/${leave.startDate.year}';
+    if (leave.endDate != null && leave.endDate != leave.startDate) {
+      dateLabel =
+          '$dateLabel - ${leave.endDate!.day}/${leave.endDate!.month}/${leave.endDate!.year}';
+    }
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.s4),
       decoration: BoxDecoration(
@@ -544,7 +836,7 @@ class _LeaveTile extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.s3),
               Text(
-                '${leave.startDate.day}/${leave.startDate.month}/${leave.startDate.year}',
+                dateLabel,
                 style: TextStyle(
                   fontFamily: 'Geist',
                   fontSize: 13,
@@ -558,6 +850,27 @@ class _LeaveTile extends StatelessWidget {
             Text(
               leave.reason!,
               style: AppTextStyles.sm(context),
+            ),
+          ],
+          if (leave.status == 'rejected' &&
+              leave.rejectionReason != null &&
+              leave.rejectionReason!.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.s2),
+            Row(
+              children: [
+                Icon(Icons.block, size: 14, color: colors.error),
+                const SizedBox(width: AppSpacing.s4),
+                Expanded(
+                  child: Text(
+                    leave.rejectionReason!,
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 12,
+                      color: colors.error,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
           if (leave.status == 'pending') ...[

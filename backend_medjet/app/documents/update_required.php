@@ -44,7 +44,7 @@ if (array_key_exists('is_required', $input)) {
 
 $scopeType = $input['scope_type'] ?? null;
 if ($scopeType !== null) {
-    Validator::enum($scopeType, ['all', 'branch', 'employees'], 'scope_type');
+    Validator::enum($scopeType, ['all', 'branch', 'employees', 'category'], 'scope_type');
     $fields['scope_type'] = $scopeType;
 
     if ($scopeType === 'branch') {
@@ -65,6 +65,15 @@ if ($scopeType === 'employees' || ($scopeType === null && array_key_exists('scop
     DocumentModel::setEmployeeScope($id, $tenantId, $employeeIds);
 } elseif ($scopeType !== null && $scopeType !== 'employees') {
     DocumentModel::setEmployeeScope($id, $tenantId, []);
+}
+
+if ($scopeType === 'category' || ($scopeType === null && array_key_exists('scope_category_ids', $input))) {
+    $categoryIds = is_array($input['scope_category_ids'] ?? null)
+        ? $input['scope_category_ids']
+        : [];
+    DocumentModel::setCategoryScope($id, $tenantId, $categoryIds);
+} elseif ($scopeType !== null && $scopeType !== 'category') {
+    DocumentModel::setCategoryScope($id, $tenantId, []);
 }
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'document_type.update', 'required_document', $id);

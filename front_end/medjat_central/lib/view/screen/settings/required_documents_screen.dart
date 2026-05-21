@@ -78,6 +78,7 @@ class RequiredDocumentsScreen extends StatelessWidget {
     String scopeType = existing?.scopeType ?? 'all';
     int? scopeBranchId = existing?.scopeBranchId;
     final Set<int> scopeEmployeeIds = {...(existing?.scopeEmployeeIds ?? const <int>[])};
+    final Set<int> scopeCategoryIds = {...(existing?.scopeCategoryIds ?? const <int>[])};
 
     Get.dialog<void>(
       Dialog(
@@ -260,7 +261,7 @@ class RequiredDocumentsScreen extends StatelessWidget {
                                           dense: true,
                                           contentPadding:
                                               const EdgeInsets.symmetric(
-                                                  horizontal: AppSpacing.s2),
+                                                    horizontal: AppSpacing.s2),
                                           value: checked,
                                           onChanged: (v) =>
                                               setDialogState(() {
@@ -295,6 +296,74 @@ class RequiredDocumentsScreen extends StatelessWidget {
                               style: AppTextStyles.sm(dialogCtx),
                             ),
                           ],
+                          _ScopeOption(
+                            label: 'doc_scope_category'.tr,
+                            subtitle: 'doc_scope_category_hint'.tr,
+                            value: 'category',
+                            groupValue: scopeType,
+                            onChanged: (v) =>
+                                setDialogState(() => scopeType = v),
+                            colors: colors,
+                          ),
+                          if (scopeType == 'category') ...[
+                            const SizedBox(height: AppSpacing.s2),
+                            Container(
+                              constraints:
+                                  const BoxConstraints(maxHeight: 220),
+                              decoration: BoxDecoration(
+                                border: Border.all(color: colors.borderHairline),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.md),
+                              ),
+                              child: ctrl.categories.isEmpty
+                                  ? Padding(
+                                      padding: const EdgeInsets.all(
+                                          AppSpacing.s3),
+                                      child: Text(
+                                        'no_categories'.tr,
+                                        style: AppTextStyles.bodySecondary(
+                                            dialogCtx),
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      shrinkWrap: true,
+                                      itemCount: ctrl.categories.length,
+                                      itemBuilder: (_, i) {
+                                        final cat = ctrl.categories[i];
+                                        final checked =
+                                            scopeCategoryIds.contains(cat.id);
+                                        return CheckboxListTile(
+                                          dense: true,
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                    horizontal: AppSpacing.s2),
+                                          value: checked,
+                                          onChanged: (v) =>
+                                              setDialogState(() {
+                                            if (v == true) {
+                                              scopeCategoryIds.add(cat.id);
+                                            } else {
+                                              scopeCategoryIds.remove(cat.id);
+                                            }
+                                          }),
+                                          title: Text(
+                                            cat.name,
+                                            style: const TextStyle(
+                                              fontFamily:
+                                                  'IBM Plex Sans Arabic',
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                            ),
+                            const SizedBox(height: AppSpacing.s1),
+                            Text(
+                              '${scopeCategoryIds.length} ${'selected_count'.tr}',
+                              style: AppTextStyles.sm(dialogCtx),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -325,6 +394,13 @@ class RequiredDocumentsScreen extends StatelessWidget {
                                   snackPosition: SnackPosition.BOTTOM);
                               return;
                             }
+                            if (scopeType == 'category' &&
+                                scopeCategoryIds.isEmpty) {
+                              Get.snackbar(
+                                  'error'.tr, 'select_categories'.tr,
+                                  snackPosition: SnackPosition.BOTTOM);
+                              return;
+                            }
                             final doc = RequiredDocumentModel(
                               id: existing?.id ?? 0,
                               name: nameCtl.text.trim(),
@@ -344,6 +420,9 @@ class RequiredDocumentsScreen extends StatelessWidget {
                                   : null,
                               scopeEmployeeIds: scopeType == 'employees'
                                   ? scopeEmployeeIds.toList()
+                                  : const [],
+                              scopeCategoryIds: scopeType == 'category'
+                                  ? scopeCategoryIds.toList()
                                   : const [],
                             );
                             if (isEdit) {
@@ -521,6 +600,8 @@ class _DocumentTypeTile extends StatelessWidget {
         return Icons.account_tree_outlined;
       case 'employees':
         return Icons.people_outline;
+      case 'category':
+        return Icons.category_outlined;
       default:
         return Icons.public;
     }
@@ -532,6 +613,8 @@ class _DocumentTypeTile extends StatelessWidget {
         return 'doc_scope_branch'.tr;
       case 'employees':
         return '${'doc_scope_employees'.tr} (${d.scopeEmployeeIds.length})';
+      case 'category':
+        return '${'doc_scope_category'.tr} (${d.scopeCategoryIds.length})';
       default:
         return 'doc_scope_all'.tr;
     }
