@@ -7,6 +7,10 @@ import '../../../../core/constant/theme/app_spacing.dart';
 import '../../../../core/shared/buttons/primary_button.dart';
 import '../../../../logic/controller/leave/leave_controller.dart';
 
+// TODO: Leave history list requires a new backend endpoint (leaves/my_list.php).
+// The existing leaves/list.php requires manage_leaves permission (admin-only).
+// For now this screen shows leave balance + apply form only.
+
 class LeaveScreen extends StatelessWidget {
   const LeaveScreen({super.key});
 

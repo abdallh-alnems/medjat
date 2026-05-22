@@ -97,7 +97,7 @@ class LoginScreen extends StatelessWidget {
 
                   PrimaryInput(
                     label: 'email'.tr,
-                    hint: 'admin@company.com',
+                    hint: '',
                     controller: _emailCtrl,
                     keyboardType: TextInputType.emailAddress,
                     validator: (v) {

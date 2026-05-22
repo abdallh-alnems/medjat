@@ -188,9 +188,25 @@ class AttendanceController extends GetxController {
     final response = await _attendanceData.syncOffline(records);
     if (response['status'] == StatusRequest.success) {
       final data = response['data'] as Map<String, dynamic>?;
-      final synced = data?['synced'] as int? ?? 0;
-      if (synced > 0) {
-        await box.clear();
+      final results = (data?['results'] as List<dynamic>?) ?? [];
+      final syncedIds = <String>{};
+      for (final r in results) {
+        if (r is Map<String, dynamic> && r['status'] == 'synced') {
+          final id = r['client_record_id']?.toString();
+          if (id != null) syncedIds.add(id);
+        }
+      }
+      if (syncedIds.isNotEmpty) {
+        final keysToDelete = <dynamic>[];
+        for (int i = 0; i < box.length; i++) {
+          final record = box.getAt(i);
+          if (record is Map && syncedIds.contains(record['client_record_id']?.toString())) {
+            keysToDelete.add(box.keyAt(i));
+          }
+        }
+        for (final key in keysToDelete) {
+          await box.delete(key);
+        }
       }
     }
   }

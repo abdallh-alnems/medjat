@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
+import '../../../core/services/push_notification_service.dart';
 import '../../../core/services/token_storage_service.dart';
 import '../../../data/data_source/remote/auth_data/auth_data.dart';
 import '../../../data/model/user_model.dart';
@@ -56,6 +57,7 @@ class AuthController extends GetxController {
         isLoggedIn.value = true;
         isActivated.value = true;
         status.value = StatusRequest.success;
+        PushNotificationService.registerTokenNow();
         Get.offAllNamed<void>(AppRoutes.home);
       } else {
         isLoggedIn.value = true;
@@ -106,6 +108,7 @@ class AuthController extends GetxController {
         isLoggedIn.value = true;
         isActivated.value = true;
         status.value = StatusRequest.success;
+        PushNotificationService.registerTokenNow();
         Get.offAllNamed<void>(AppRoutes.home);
       } else {
         isLoggedIn.value = true;
@@ -150,6 +153,7 @@ class AuthController extends GetxController {
         isActivated.value = true;
         isLoggedIn.value = true;
         status.value = StatusRequest.success;
+        PushNotificationService.registerTokenNow();
         Get.offAllNamed<void>(AppRoutes.home);
       }
     } else {

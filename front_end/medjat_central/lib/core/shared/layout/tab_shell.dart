@@ -1,11 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../constant/theme/app_colors.dart';
+import '../../services/push_notification_service.dart';
 
-class TabShell extends StatelessWidget {
+class TabShell extends StatefulWidget {
   final List<Widget> screens;
 
   const TabShell({super.key, required this.screens});
+
+  @override
+  State<TabShell> createState() => _TabShellState();
+}
+
+class _TabShellState extends State<TabShell> {
+  @override
+  void initState() {
+    super.initState();
+    // Request notification permission only once the user reaches the home page
+    // (i.e. after login and creating/joining a company).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      PushNotificationService.init();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +32,7 @@ class TabShell extends StatelessWidget {
     return Obx(() => Scaffold(
           body: IndexedStack(
             index: controller.currentIndex.value,
-            children: screens,
+            children: widget.screens,
           ),
           bottomNavigationBar: Container(
             decoration: BoxDecoration(

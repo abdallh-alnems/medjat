@@ -1,12 +1,16 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:medjat_app/core/class/crud.dart';
 import 'package:medjat_app/data/model/user_model.dart';
 
 class MockHttpClient extends Mock implements http.Client {}
+
+class MockCRUD extends Mock implements CRUD {}
 
 http.Response fakeResponse({
   int statusCode = 200,
@@ -22,6 +26,14 @@ http.Response fakeResponse({
 void setupGetTestBindings() {
   TestWidgetsFlutterBinding.ensureInitialized();
   Get.testMode = true;
+}
+
+void setupDotenvForTest() {
+  dotenv.testLoad(mergeWith: {
+    'API_HOST': 'http://test-api.example.com',
+    'SECURITY_USER': 'testuser',
+    'SECURITY_KEY': 'testkey',
+  });
 }
 
 UserModel createTestUser({
@@ -49,4 +61,7 @@ UserModel createTestUser({
 void registerFallbacks() {
   registerFallbackValue(Uri.parse('http://test.com'));
   registerFallbackValue(http.Request('GET', Uri.parse('http://test.com')));
+  registerFallbackValue('');
+  registerFallbackValue(<String, dynamic>{});
+  registerFallbackValue(<String, String>{});
 }

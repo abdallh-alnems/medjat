@@ -12,7 +12,6 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/services/token_storage_service.dart';
-import '../../../core/services/push_notification_service.dart';
 import '../../../data/data_source/remote/auth_data/auth_data.dart';
 import '../../../data/model/user_model.dart';
 
@@ -393,12 +392,14 @@ class AuthController extends GetxController {
     } on FirebaseAuthException catch (e) {
       isAppleLoading.value = false;
       status.value = StatusRequest.failure;
+      debugPrint('🍎 Apple FirebaseAuthException code=${e.code} message=${e.message}');
       if (e.code == 'canceled' || e.code == 'web-context-canceled') return;
       Get.snackbar('خطأ', _getFirebaseErrorMessage(e.code),
           snackPosition: SnackPosition.BOTTOM);
       update();
     } catch (e) {
       isAppleLoading.value = false;
+      debugPrint('🍎 Apple sign-in unexpected error: $e');
       _onError('حدث خطأ أثناء تسجيل الدخول');
     }
   }
@@ -433,7 +434,8 @@ class AuthController extends GetxController {
   void _onSuccess() {
     isLoggedIn.value = true;
     status.value = StatusRequest.success;
-    PushNotificationService.init();
+    // Notification permission is requested from the home page (TabShell),
+    // not here — so it only appears after the user has a company/tenant.
     if (hasTenant.value) {
       Get.offAllNamed(AppRoutes.home);
     } else {

@@ -9,7 +9,6 @@ class AppLinks {
   static String get login => '$base/app/auth/login.php';
   static String get logout => '$base/app/auth/logout.php'; // TODO: backend endpoint missing
   static String get me => '$base/app/auth/login.php'; // login.php returns user info
-  static String get updateProfile => '$base/app/auth/update_profile.php';
   static String get updateFcmToken => '$base/app/auth/update_fcm_token.php';
 
   // ── Tenant onboarding (Create / Join company) ──────────
@@ -18,7 +17,6 @@ class AppLinks {
 
   // ── Dashboard ──────────────────────────────────────────
   static String get dashboard => '$base/app/dashboard/overview.php';
-  static String get branchComparison => '$base/app/dashboard/branch_comparison.php';
   static String get liveAttendance =>
       '$base/app/dashboard/live_attendance.php';
 
@@ -83,9 +81,6 @@ class AppLinks {
 
   static String get branchCreate => '$base/app/branches/create.php';
   static String get branchUpdate => '$base/app/branches/update.php';
-  static String get branchDelete => '$base/app/branches/delete.php';
-  static String branchQr(int id) => '$base/app/branches/get_qr.php?id=$id';
-  static String get branchUpdateGps => '$base/app/branches/update_gps.php';
   static String get branchUpdateAttendanceMethod =>
       '$base/app/branches/update_attendance_method.php';
 
@@ -94,27 +89,15 @@ class AppLinks {
       '$base/app/attendance/get_branch_attendance.php';
   static String get attendanceManual =>
       '$base/app/attendance/manual_check_in.php';
-  static String get attendanceCheckIn => '$base/app/attendance/check_in.php';
-  static String get attendanceCheckOut => '$base/app/attendance/check_out.php';
-  static String get attendanceSync => '$base/app/attendance/sync_offline.php';
 
   // ── Payroll ────────────────────────────────────────────
   static String get payroll => '$base/app/payroll/list_slips.php';
-  static String get payrollGenerate => '$base/app/payroll/generate.php';
-  static String get payrollCalculate => '$base/app/payroll/calculate.php';
   static String payrollApprove(int id) =>
       '$base/app/payroll/approve.php?id=$id';
-  static String payrollMonth(int month, int year) =>
-      '$base/app/payroll/get_slip.php?month=$month&year=$year';
   static String get payrollBankFile =>
       '$base/app/payroll/export_bank_file.php';
   static String get payrollBankPreview =>
       '$base/app/payroll/bank_file_preview.php';
-  static String get payrollStatutorySettings =>
-      '$base/app/settings/statutory_settings.php';
-  static String payrollStatutoryTemplate(String country) =>
-      '$base/app/payroll/load_template.php?country=$country';
-  static String get eosbCalculate => '$base/app/payroll/eosb_calculate.php';
 
   // ── Letters & Certificates (document requests + templates) ──
   static String get letterTemplates => '$base/app/letters/templates_list.php';
@@ -138,7 +121,6 @@ class AppLinks {
 
   // ── Leaves ─────────────────────────────────────────────
   static String get leaves => '$base/app/leaves/list.php';
-  static String get leaveApply => '$base/app/leaves/apply.php';
   static String get leaveCreate => '$base/app/leaves/create.php';
   static String leaveApprove(int id) =>
       '$base/app/leaves/approve.php?id=$id';
@@ -154,12 +136,8 @@ class AppLinks {
 
   // ── Deductions / Bonuses ───────────────────────────────
   static String get deductionRules => '$base/app/deductions/get_rules.php';
-  static String get deductionRulesUpdate =>
-      '$base/app/deductions/update_rules.php';
   static String get deductionManualAdd =>
       '$base/app/deductions/add_manual.php';
-  static String get bonusRules => '$base/app/bonuses/get_rules.php';
-  static String get bonusRulesUpdate => '$base/app/bonuses/update_rules.php';
   static String get bonusManualAdd => '$base/app/bonuses/add_manual.php';
 
   // ── Expenses (claims with receipts) ────────────────────
@@ -183,7 +161,6 @@ class AppLinks {
   static String get loanCancel => '$base/app/loans/cancel.php';
 
   // ── Warnings ───────────────────────────────────────────
-  static String get warnings => '$base/app/warnings/list.php';
   static String get warningAdd => '$base/app/warnings/add.php';
 
   // ── Performance Reviews ────────────────────────────────
@@ -196,8 +173,6 @@ class AppLinks {
 
   // ── Roles / Permissions ────────────────────────────────
   static String get roles => '$base/app/roles/list_permissions.php';
-  static String get permissions => '$base/app/roles/list_permissions.php';
-  static String get roleCreate => '$base/app/roles/create_role.php';
 
   // ── Reports ──────────
   static String get reportAttendance => '$base/app/reports/attendance.php';
@@ -210,7 +185,6 @@ class AppLinks {
   static String get notifications => '$base/app/notifications/list.php';
   static String notificationRead(int id) =>
       '$base/app/notifications/read.php?id=$id';
-  static String get registerFcm => '$base/app/auth/update_fcm_token.php';
   static String get notificationPrefs =>
       '$base/app/auth/notification_prefs.php';
 

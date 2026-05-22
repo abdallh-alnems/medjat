@@ -18,7 +18,6 @@ class AppLinks {
   static String attendanceMonth(String month) =>
       '$base/app/attendance/get_my_attendance.php?month=$month';
 
-  static String get payrollSlip => '$base/app/payroll/get_slip.php';
   static String payrollSlipMonth(String month) =>
       '$base/app/payroll/get_slip.php?month=$month';
   static String payrollPdf(String month) =>

@@ -114,6 +114,118 @@ void main() {
 
         expect(result['status'], StatusRequest.success);
       });
+
+      test('returns success on 202', () {
+        final response = fakeResponse(
+          statusCode: 202,
+          body: jsonEncode({'accepted': true}),
+        );
+        final result = crud.handleResponse(response);
+
+        expect(result['status'], StatusRequest.success);
+        expect((result['data'] as Map)['accepted'], true);
+      });
+
+      test('returns success on 200 with list body', () {
+        final response = fakeResponse(
+          statusCode: 200,
+          body: jsonEncode([1, 2, 3]),
+        );
+        final result = crud.handleResponse(response);
+
+        expect(result['status'], StatusRequest.success);
+        expect(result['data'], isA<List>());
+      });
+
+      test('returns serverFailure on 503 with message', () {
+        final response = fakeResponse(
+          statusCode: 503,
+          body: jsonEncode({'message': 'Service unavailable'}),
+        );
+        final result = crud.handleResponse(response);
+
+        expect(result['status'], StatusRequest.serverFailure);
+        expect(result['statusCode'], 503);
+        expect(result['message'], 'Service unavailable');
+      });
+
+      test('returns serverFailure on 502 default message', () {
+        final response = fakeResponse(statusCode: 502, body: 'bad gateway');
+        final result = crud.handleResponse(response);
+
+        expect(result['status'], StatusRequest.serverFailure);
+        expect(result['statusCode'], 502);
+      });
+
+      test('401 returns Arabic session expired message', () {
+        final response = fakeResponse(statusCode: 401);
+        final result = crud.handleResponse(response);
+
+        expect(result['message'], 'جلستك انتهت، يرجى تسجيل الدخول مجدداً');
+      });
+
+      test('403 returns Arabic permission denied message', () {
+        final response = fakeResponse(statusCode: 403);
+        final result = crud.handleResponse(response);
+
+        expect(result['message'], 'ليس لديك صلاحية');
+      });
+
+      test('404 returns Arabic default message', () {
+        final response = fakeResponse(statusCode: 404, body: 'not json');
+        final result = crud.handleResponse(response);
+
+        expect(result['message'], 'لم يتم العثور على البيانات');
+      });
+
+      test('404 with empty message uses default', () {
+        final response = fakeResponse(
+          statusCode: 404,
+          body: jsonEncode({'message': ''}),
+        );
+        final result = crud.handleResponse(response);
+
+        expect(result['message'], 'لم يتم العثور على البيانات');
+      });
+
+      test('422 with non-json body uses default message', () {
+        final response = fakeResponse(statusCode: 422, body: 'bad');
+        final result = crud.handleResponse(response);
+
+        expect(result['status'], StatusRequest.failure);
+        expect(result['message'], 'البيانات غير صحيحة');
+      });
+
+      test('422 with null message uses default', () {
+        final response = fakeResponse(
+          statusCode: 422,
+          body: jsonEncode({'errors': {'field': ['required']}}),
+        );
+        final result = crud.handleResponse(response);
+
+        expect(result['message'], 'البيانات غير صحيحة');
+      });
+
+      test('500 with non-map body returns serverFailure', () {
+        final response = fakeResponse(
+          statusCode: 500,
+          body: jsonEncode('just a string'),
+        );
+        final result = crud.handleResponse(response);
+
+        expect(result['status'], StatusRequest.serverFailure);
+        expect(result['message'], 'حدث خطأ، حاول مرة أخرى');
+      });
+
+      test('500 with empty message returns default', () {
+        final response = fakeResponse(
+          statusCode: 500,
+          body: jsonEncode({'message': ''}),
+        );
+        final result = crud.handleResponse(response);
+
+        expect(result['message'], 'حدث خطأ، حاول مرة أخرى');
+      });
     });
   });
 }

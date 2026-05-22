@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -6,7 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../constant/id/app_links.dart';
+import '../constant/routes/app_routes.dart';
 import '../class/crud.dart';
+import '../services/token_storage_service.dart';
 
 class PushNotificationService {
   PushNotificationService._();
@@ -28,24 +31,43 @@ class PushNotificationService {
 
       FirebaseMessaging.onMessage.listen(_onForegroundMessage);
 
-      await _registerToken();
+      FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageTap);
+
+      messaging.getInitialMessage().then((message) {
+        if (message != null) {
+          _handleMessageTap(message);
+        }
+      });
 
       messaging.onTokenRefresh.listen((token) {
-        _sendTokenToBackend(token);
+        _sendTokenIfReady(token);
       });
     } catch (e) {
       debugPrint('PushNotificationService init error: $e');
     }
   }
 
-  static Future<void> _registerToken() async {
+  static Future<void> registerTokenNow() async {
     try {
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null) {
         await _sendTokenToBackend(token);
       }
     } catch (e) {
-      debugPrint('PushNotificationService registerToken error: $e');
+      debugPrint('PushNotificationService registerTokenNow error: $e');
+    }
+  }
+
+  static Future<void> _sendTokenIfReady(String token) async {
+    try {
+      final userData = await TokenStorageService.getUserData();
+      if (userData == null) return;
+      final json = jsonDecode(userData) as Map<String, dynamic>;
+      final tenantId = json['tenant_id'];
+      if (tenantId == null || tenantId == 0) return;
+      await _sendTokenToBackend(token);
+    } catch (e) {
+      debugPrint('PushNotificationService sendTokenIfReady error: $e');
     }
   }
 
@@ -76,5 +98,29 @@ class PushNotificationService {
       duration: const Duration(seconds: 5),
       margin: const EdgeInsets.all(12),
     );
+  }
+
+  static void _handleMessageTap(RemoteMessage message) {
+    final data = message.data;
+    final type = data['type']?.toString() ?? '';
+
+    switch (type) {
+      case 'leave':
+      case 'leave_approved':
+      case 'leave_rejected':
+        Get.toNamed<void>(AppRoutes.leaves);
+        break;
+      case 'payroll':
+      case 'payroll_approved':
+        Get.toNamed<void>(AppRoutes.payroll);
+        break;
+      case 'document':
+      case 'document_expiry':
+        Get.toNamed<void>(AppRoutes.myDocuments);
+        break;
+      default:
+        Get.toNamed<void>(AppRoutes.notifications);
+        break;
+    }
   }
 }

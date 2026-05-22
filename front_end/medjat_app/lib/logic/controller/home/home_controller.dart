@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:intl/intl.dart';
+import 'package:hive/hive.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/services/connectivity_service.dart';
 import '../../../core/services/location_service.dart';
 import '../../../data/data_source/remote/home_data/home_data.dart';
 import '../../../data/model/today_status_model.dart';
+import '../attendance/attendance_controller.dart';
 
 class HomeController extends GetxController {
   final HomeData _homeData = Get.find<HomeData>();
@@ -26,6 +28,31 @@ class HomeController extends GetxController {
     super.onInit();
     loadTodayStatus();
     _listenToConnectivity();
+    _tryInitialSync();
+  }
+
+  Future<void> _tryInitialSync() async {
+    try {
+      final box = await Hive.openBox<dynamic>('offline_attendance');
+      if (box.isEmpty) return;
+      final online = await ConnectivityService.checkOnline();
+      if (!online) return;
+      _doSyncOffline();
+    } catch (_) {}
+  }
+
+  void _doSyncOffline() {
+    try {
+      AttendanceController attendanceController;
+      try {
+        attendanceController = Get.find<AttendanceController>();
+      } catch (_) {
+        attendanceController = Get.put(AttendanceController());
+      }
+      attendanceController.syncOfflineRecords().then((_) {
+        loadTodayStatus();
+      });
+    } catch (_) {}
   }
 
   void _listenToConnectivity() {
@@ -35,6 +62,7 @@ class HomeController extends GetxController {
       final wasOffline = isOffline;
       isOffline = !online;
       if (online && wasOffline) {
+        _doSyncOffline();
         loadTodayStatus();
       }
       update();

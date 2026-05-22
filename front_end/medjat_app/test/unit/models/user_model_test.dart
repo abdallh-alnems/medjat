@@ -75,5 +75,94 @@ void main() {
       expect(roundTripped.tenantId, original.tenantId);
       expect(roundTripped.branchId, original.branchId);
     });
+
+    test('fromJson with null integer fields defaults to 0', () {
+      final user = UserModel.fromJson({
+        'id': null,
+        'tenant_id': null,
+        'branch_id': null,
+      });
+
+      expect(user.id, 0);
+      expect(user.tenantId, 0);
+      expect(user.branchId, 0);
+    });
+
+    test('fromJson with wrong int type throws cast error', () {
+      expect(
+        () => UserModel.fromJson({'id': 'not a number'}),
+        throwsA(isA<TypeError>()),
+      );
+    });
+
+    test('toJson includes all fields with null values', () {
+      final user = UserModel(
+        id: 1,
+        tenantId: 0,
+        branchId: 0,
+        name: 'test',
+        email: 'test@test.com',
+        roleKey: 'emp',
+      );
+
+      final result = user.toJson();
+
+      expect(result['phone'], isNull);
+      expect(result['photo_url'], isNull);
+      expect(result['tenant_name'], isNull);
+      expect(result['employee_code'], isNull);
+      expect(result['job_title'], isNull);
+      expect(result['branch_name'], isNull);
+      expect(result['permissions'], []);
+    });
+
+    test('fromJson handles permissions with mixed types', () {
+      final user = UserModel.fromJson({
+        'permissions': [1, 'admin', true],
+      });
+
+      expect(user.permissions, ['1', 'admin', 'true']);
+    });
+
+    test('fromJson with empty permissions list', () {
+      final user = UserModel.fromJson({'permissions': []});
+
+      expect(user.permissions, isEmpty);
+    });
+
+    test('toJson round-trip preserves permissions', () {
+      final user = UserModel.fromJson(json);
+      final roundTripped = UserModel.fromJson(user.toJson());
+
+      expect(roundTripped.permissions, user.permissions);
+    });
+
+    test('constructor defaults work correctly', () {
+      final user = UserModel(
+        id: 5,
+        tenantId: 1,
+        branchId: 2,
+        name: 'خالد',
+        email: 'khaled@test.com',
+        roleKey: 'admin',
+      );
+
+      expect(user.permissions, isEmpty);
+      expect(user.phone, isNull);
+      expect(user.photoUrl, isNull);
+      expect(user.employeeCode, isNull);
+      expect(user.jobTitle, isNull);
+      expect(user.branchName, isNull);
+      expect(user.tenantName, isNull);
+    });
+
+    test('equality by value (same data)', () {
+      final user1 = UserModel.fromJson(json);
+      final user2 = UserModel.fromJson(json);
+
+      expect(user1.id, user2.id);
+      expect(user1.name, user2.name);
+      expect(user1.email, user2.email);
+    });
   });
 }
