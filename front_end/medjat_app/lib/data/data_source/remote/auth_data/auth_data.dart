@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import '../../../../core/class/crud.dart';
 import '../../../../core/class/status_request.dart';
@@ -9,28 +10,43 @@ import '../../../model/user_model.dart';
 class AuthData {
   final CRUD _crud = Get.find<CRUD>();
 
-  Future<Map<String, dynamic>> login({
-    required String email,
-    required String password,
+  Future<Map<String, dynamic>> activateEmployee({
+    required String activationCode,
   }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return {'status': StatusRequest.failure, 'message': 'غير مسجل الدخول'};
+    }
+
+    final idToken = await user.getIdToken();
+
     final response = await _crud.postData(
-      AppLinks.login,
-      {'email': email, 'password': password},
+      AppLinks.activateEmployee,
+      {
+        'token': idToken,
+        'activation_code': activationCode,
+      },
       auth: false,
     );
 
     if (response['status'] == StatusRequest.success) {
       final data = response['data'] as Map<String, dynamic>?;
-      if (data != null) {
-        await TokenStorageService.saveToken((data['token'] as String?) ?? '');
-        if (data['refresh_token'] != null) {
-          await TokenStorageService.saveRefreshToken(data['refresh_token'] as String);
-        }
-        if (data['user'] != null) {
-          await TokenStorageService.saveUserData(jsonEncode(data['user']));
-        }
+      if (data?['employee'] != null) {
+        final employee = data!['employee'] as Map<String, dynamic>;
+        final Map<String, dynamic> userData = {
+          'id': employee['id'],
+          'name': employee['name'],
+          'tenant_id': employee['tenant_id'],
+          'tenant_name': employee['tenant_name'],
+          'branch_id': employee['branch_id'],
+          'branch_name': employee['branch_name'],
+          'job_title': employee['job_title'],
+          'email': user.email,
+        };
+        await TokenStorageService.saveUserData(jsonEncode(userData));
       }
     }
+
     return response;
   }
 
@@ -38,28 +54,9 @@ class AuthData {
     return await _crud.getData(AppLinks.me);
   }
 
-  Future<Map<String, dynamic>> logout() async {
-    final response = await _crud.postData(AppLinks.logout, {});
+  Future<void> logout() async {
+    await FirebaseAuth.instance.signOut();
     await TokenStorageService.clearAll();
-    return response;
-  }
-
-  Future<Map<String, dynamic>> forgotPassword(String email) async {
-    return await _crud.postData(
-      AppLinks.forgotPassword,
-      {'email': email},
-      auth: false,
-    );
-  }
-
-  Future<Map<String, dynamic>> changePassword({
-    required String currentPassword,
-    required String newPassword,
-  }) async {
-    return await _crud.postData(AppLinks.changePassword, {
-      'current_password': currentPassword,
-      'new_password': newPassword,
-    });
   }
 
   Future<UserModel?> getCachedUser() async {

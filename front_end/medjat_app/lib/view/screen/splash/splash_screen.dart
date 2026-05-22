@@ -1,6 +1,11 @@
+import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/constant/theme/app_colors.dart';
+import '../../../core/services/token_storage_service.dart';
+import '../../../logic/controller/auth/auth_controller.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -17,9 +22,30 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _init() async {
-    await Future.delayed(const Duration(milliseconds: 1500));
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
     if (!mounted) return;
-    Get.offAllNamed('/home');
+
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (firebaseUser == null) {
+      Get.offAllNamed<void>(AppRoutes.login);
+      return;
+    }
+
+    final userData = await TokenStorageService.getUserData();
+    if (userData != null) {
+      try {
+        final json = jsonDecode(userData) as Map<String, dynamic>;
+        final tenantId = json['tenant_id'];
+        if (tenantId != null && tenantId != 0) {
+          final authController = Get.find<AuthController>();
+          await authController.checkAuth();
+          Get.offAllNamed<void>(AppRoutes.home);
+          return;
+        }
+      } catch (_) {}
+    }
+
+    Get.offAllNamed<void>(AppRoutes.login);
   }
 
   @override

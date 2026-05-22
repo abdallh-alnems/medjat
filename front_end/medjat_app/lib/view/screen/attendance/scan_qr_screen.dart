@@ -40,7 +40,7 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
   }
 
   void _showErrorSheet(String message) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       builder: (_) => _ErrorBottomSheet(
         message: message,
@@ -328,7 +328,7 @@ class _ErrorBottomSheet extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    Get.back();
+                    Get.back<void>();
                   },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: colors.textSecondary,

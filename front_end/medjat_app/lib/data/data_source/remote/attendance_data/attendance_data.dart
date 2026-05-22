@@ -6,32 +6,26 @@ class AttendanceData {
   final CRUD _crud = Get.find<CRUD>();
 
   Future<Map<String, dynamic>> checkIn({
-    required String qrToken,
-    required double lat,
-    required double lng,
+    required int branchId,
+    required double latitude,
+    required double longitude,
+    required String qrCode,
   }) async {
     return await _crud.postData(AppLinks.checkIn, {
-      'qr_token': qrToken,
-      'lat': lat,
-      'lng': lng,
+      'branch_id': branchId,
+      'latitude': latitude,
+      'longitude': longitude,
+      'qr_code': qrCode,
     });
   }
 
-  Future<Map<String, dynamic>> checkOut({
-    required String qrToken,
-    required double lat,
-    required double lng,
-  }) async {
-    return await _crud.postData(AppLinks.checkOut, {
-      'qr_token': qrToken,
-      'lat': lat,
-      'lng': lng,
-    });
+  Future<Map<String, dynamic>> checkOut() async {
+    return await _crud.postData(AppLinks.checkOut, {});
   }
 
-  Future<Map<String, dynamic>> syncOffline(List<Map<String, dynamic>> items) async {
+  Future<Map<String, dynamic>> syncOffline(List<Map<String, dynamic>> records) async {
     return await _crud.postData(AppLinks.attendanceSync, {
-      'items': items,
+      'records': records,
     });
   }
 }

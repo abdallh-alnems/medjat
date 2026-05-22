@@ -10,6 +10,7 @@ class TodayStatusModel {
   final DateTime? checkOutAt;
   final bool isLate;
   final int lateMinutes;
+  final int? branchId;
   final String? branchName;
   final double? branchLat;
   final double? branchLng;
@@ -23,6 +24,7 @@ class TodayStatusModel {
     this.checkOutAt,
     this.isLate = false,
     this.lateMinutes = 0,
+    this.branchId,
     this.branchName,
     this.branchLat,
     this.branchLng,
@@ -31,13 +33,24 @@ class TodayStatusModel {
     this.checkInLng,
   });
 
+  static DateTime? _parseTime(dynamic value, String? dateStr) {
+    if (value == null) return null;
+    final s = value.toString();
+    final dt = DateTime.tryParse(s);
+    if (dt != null) return dt;
+    if (s.contains(':') && s.length <= 8) {
+      final base = dateStr ?? DateTime.now().toIso8601String().substring(0, 10);
+      return DateTime.tryParse('$base $s');
+    }
+    return null;
+  }
+
   factory TodayStatusModel.fromJson(Map<String, dynamic> json) {
-    final checkIn = json['check_in_at'] != null
-        ? DateTime.tryParse(json['check_in_at'].toString())
-        : null;
-    final checkOut = json['check_out_at'] != null
-        ? DateTime.tryParse(json['check_out_at'].toString())
-        : null;
+    final dateStr = json['date']?.toString();
+    final checkInTime = json['check_in_time'] ?? json['check_in_at'];
+    final checkOutTime = json['check_out_time'] ?? json['check_out_at'];
+    final checkIn = _parseTime(checkInTime, dateStr);
+    final checkOut = _parseTime(checkOutTime, dateStr);
 
     AttendanceStatus status;
     if (checkIn != null && checkOut != null) {
@@ -56,12 +69,13 @@ class TodayStatusModel {
       checkOutAt: checkOut,
       isLate: json['is_late'] == true || json['is_late'] == 1,
       lateMinutes: (json['late_minutes'] as int?) ?? 0,
+      branchId: (json['branch_id'] as int?) ?? (branch?['id'] as int?),
       branchName: (branch?['name'] as String?) ?? json['branch_name'] as String?,
       branchLat: (branch?['latitude'] as num? ?? json['branch_lat'] as num?)?.toDouble(),
       branchLng: (branch?['longitude'] as num? ?? json['branch_lng'] as num?)?.toDouble(),
       branchRadiusMeters: branch?['gps_radius_meters'] as int? ?? json['branch_radius_meters'] as int?,
-      checkInLat: (json['check_in_lat'] as num?)?.toDouble(),
-      checkInLng: (json['check_in_lng'] as num?)?.toDouble(),
+      checkInLat: (json['check_in_latitude'] as num? ?? json['check_in_lat'] as num?)?.toDouble(),
+      checkInLng: (json['check_in_longitude'] as num? ?? json['check_in_lng'] as num?)?.toDouble(),
     );
   }
 
@@ -70,6 +84,7 @@ class TodayStatusModel {
         'check_out_at': checkOutAt?.toIso8601String(),
         'is_late': isLate,
         'late_minutes': lateMinutes,
+        'branch_id': branchId,
         'branch_name': branchName,
         'branch_lat': branchLat,
         'branch_lng': branchLng,

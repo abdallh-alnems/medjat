@@ -1,6 +1,7 @@
 class UserModel {
   final int id;
   final int tenantId;
+  final String? tenantName;
   final int branchId;
   final String name;
   final String email;
@@ -18,6 +19,7 @@ class UserModel {
     required this.branchId,
     required this.name,
     required this.email,
+    this.tenantName,
     this.phone,
     this.photoUrl,
     required this.roleKey,
@@ -31,6 +33,7 @@ class UserModel {
     return UserModel(
       id: (json['id'] as int?) ?? 0,
       tenantId: (json['tenant_id'] as int?) ?? 0,
+      tenantName: json['tenant_name'] as String?,
       branchId: (json['branch_id'] as int?) ?? 0,
       name: (json['name'] as String?) ?? '',
       email: (json['email'] as String?) ?? '',
@@ -50,6 +53,7 @@ class UserModel {
   Map<String, dynamic> toJson() => {
         'id': id,
         'tenant_id': tenantId,
+        'tenant_name': tenantName,
         'branch_id': branchId,
         'name': name,
         'email': email,

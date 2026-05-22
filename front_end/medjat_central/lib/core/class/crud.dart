@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -9,6 +10,10 @@ import '../services/token_storage_service.dart';
 import 'status_request.dart';
 
 class CRUD {
+  final http.Client _client;
+
+  CRUD({http.Client? client}) : _client = client ?? http.Client();
+
   Map<String, String> _baseHeaders() {
     final securityUser = dotenv.env['SECURITY_USER'] ?? '';
     final securityKey = dotenv.env['SECURITY_KEY'] ?? '';
@@ -80,11 +85,11 @@ class CRUD {
           }
         } catch (_) {}
       }
-      final response = await http
+      final response = await _client
           .get(uri.replace(queryParameters: params), headers: headers)
           .timeout(const Duration(seconds: 15));
 
-      return _handleResponse(response);
+      return handleResponse(response);
     } catch (e) {
       debugPrint('GET Error: $e');
       return {'status': StatusRequest.failure};
@@ -124,7 +129,7 @@ class CRUD {
           }
         } catch (_) {}
       }
-      final response = await http
+      final response = await _client
           .get(uri.replace(queryParameters: params), headers: headers)
           .timeout(const Duration(seconds: 30));
 
@@ -147,7 +152,7 @@ class CRUD {
 
     try {
       final headers = auth ? await _headers() : _baseHeaders();
-      final response = await http
+      final response = await _client
           .post(
             Uri.parse(url),
             headers: headers,
@@ -155,7 +160,7 @@ class CRUD {
           )
           .timeout(const Duration(seconds: 15));
 
-      return _handleResponse(response);
+      return handleResponse(response);
     } catch (e) {
       debugPrint('POST Error: $e');
       return {'status': StatusRequest.failure};
@@ -171,7 +176,7 @@ class CRUD {
 
     try {
       final headers = auth ? await _headers() : _baseHeaders();
-      final response = await http
+      final response = await _client
           .put(
             Uri.parse(url),
             headers: headers,
@@ -179,7 +184,7 @@ class CRUD {
           )
           .timeout(const Duration(seconds: 15));
 
-      return _handleResponse(response);
+      return handleResponse(response);
     } catch (e) {
       debugPrint('PUT Error: $e');
       return {'status': StatusRequest.failure};
@@ -195,11 +200,11 @@ class CRUD {
 
     try {
       final headers = auth ? await _headers() : _baseHeaders();
-      final response = await http
+      final response = await _client
           .delete(Uri.parse(url), headers: headers)
           .timeout(const Duration(seconds: 15));
 
-      return _handleResponse(response);
+      return handleResponse(response);
     } catch (e) {
       debugPrint('DELETE Error: $e');
       return {'status': StatusRequest.failure};
@@ -231,14 +236,15 @@ class CRUD {
 
       final streamed = await request.send().timeout(const Duration(seconds: 30));
       final response = await http.Response.fromStream(streamed);
-      return _handleResponse(response);
+      return handleResponse(response);
     } catch (e) {
       debugPrint('POST FILE Error: $e');
       return {'status': StatusRequest.failure};
     }
   }
 
-  Map<String, dynamic> _handleResponse(http.Response response) {
+  @visibleForTesting
+  Map<String, dynamic> handleResponse(http.Response response) {
     final statusCode = response.statusCode;
 
     if (statusCode >= 200 && statusCode < 300) {

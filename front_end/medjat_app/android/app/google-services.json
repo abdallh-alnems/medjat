@@ -12,7 +12,12 @@
           "package_name": "com.khawarizmie.medjat"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "510933674549-otcm2dholnti3pnq8iuoo2qo2jrh7amj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAmOmpXWHxt7bkW4wRt7T94Mz1ycXDYNXI"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "510933674549-otcm2dholnti3pnq8iuoo2qo2jrh7amj.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "510933674549-bftc3lo3g97e3n04vh5jn5d7bii4shpu.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.khawarizmie.medjat"
+              }
+            }
+          ]
         }
       }
     }

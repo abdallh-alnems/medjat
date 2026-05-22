@@ -59,7 +59,7 @@ class _AttendanceSuccessScreenState extends State<AttendanceSuccessScreen>
 
   void _goHome() {
     if (mounted) {
-      Get.offAllNamed('/home');
+      Get.offAllNamed<void>('/home');
     }
   }
 

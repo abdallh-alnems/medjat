@@ -43,6 +43,11 @@ class AppColors {
     return Theme.of(context).brightness == Brightness.light ? light : dark;
   }
 
+  static Color brand(BuildContext context) => of(context).brand;
+  static Color textPrimary(BuildContext context) => of(context).textPrimary;
+  static Color textSecondary(BuildContext context) => of(context).textSecondary;
+  static Color textTertiary(BuildContext context) => of(context).textTertiary;
+
   static const light = AppColorScheme(
     canvas: Color(0xFFF9FCFC),
     surface: Color(0xFFF2F7F7),

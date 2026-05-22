@@ -1,12 +1,13 @@
-import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
+import 'package:hive/hive.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/services/connectivity_service.dart';
 import '../../../core/services/location_service.dart';
 import '../../../data/data_source/remote/attendance_data/attendance_data.dart';
 import '../../../data/model/today_status_model.dart';
+import '../../../logic/controller/auth/auth_controller.dart';
 import '../home/home_controller.dart';
 
 class AttendanceController extends GetxController {
@@ -16,7 +17,7 @@ class AttendanceController extends GetxController {
   bool isProcessing = false;
   String? errorMessage;
 
-  Future<void> processQrScan(String qrToken) async {
+  Future<void> processQrScan(String qrCode) async {
     if (isProcessing) return;
     isProcessing = true;
     status = StatusRequest.loading;
@@ -32,18 +33,9 @@ class AttendanceController extends GetxController {
       final isOnline = await ConnectivityService.checkOnline();
 
       if (isOnline) {
-        await _processOnline(qrToken, position, isCheckOut);
+        await _processOnline(qrCode, position, isCheckOut);
       } else {
-        await _processOffline(qrToken, position, isCheckOut);
-      }
-    } on PlatformException catch (e) {
-      if (e.code == 'LOCATION_PERMISSION_DENIED' ||
-          e.code == 'LOCATION_PERMISSION_PERMANENTLY_DENIED') {
-        errorMessage = 'صلاحية الموقع مرفوضة، افتح الإعدادات';
-        status = StatusRequest.failure;
-      } else {
-        errorMessage = 'حدث خطأ في تحديد الموقع';
-        status = StatusRequest.failure;
+        await _processOffline(qrCode, position, isCheckOut);
       }
     } catch (e) {
       errorMessage = 'حدث خطأ، حاول مرة أخرى';
@@ -55,26 +47,26 @@ class AttendanceController extends GetxController {
   }
 
   Future<void> _processOnline(
-      String qrToken, Position position, bool isCheckOut) async {
+      String qrCode, Position position, bool isCheckOut) async {
+    final homeController = Get.find<HomeController>();
+
     final response = isCheckOut
-        ? await _attendanceData.checkOut(
-            qrToken: qrToken,
-            lat: position.latitude,
-            lng: position.longitude,
-          )
+        ? await _attendanceData.checkOut()
         : await _attendanceData.checkIn(
-            qrToken: qrToken,
-            lat: position.latitude,
-            lng: position.longitude,
+            branchId: homeController.todayStatus?.branchId ??
+                _getBranchId() ??
+                0,
+            latitude: position.latitude,
+            longitude: position.longitude,
+            qrCode: qrCode,
           );
 
     final responseStatus = response['status'];
 
     if (responseStatus == StatusRequest.success) {
       status = StatusRequest.success;
-      final homeController = Get.find<HomeController>();
       await homeController.loadTodayStatus();
-      Get.offNamed(
+      Get.offNamed<void>(
         AppRoutes.attendanceSuccess,
         arguments: {
           'is_check_out': isCheckOut,
@@ -83,22 +75,31 @@ class AttendanceController extends GetxController {
         },
       );
     } else if (responseStatus == StatusRequest.offline) {
-      await _processOffline(qrToken, position, isCheckOut);
+      await _processOffline(qrCode, position, isCheckOut);
     } else {
       final statusCode = response['statusCode'];
-      if (statusCode == 422) {
+      if (statusCode == 422 || statusCode == 400) {
         final msg = (response['message'] as String?) ?? '';
-        if (msg.contains('range') || msg.contains('بعيد') || msg.contains('نطاق')) {
+        final errorCode = response['error_code'];
+        if (msg.contains('range') ||
+            msg.contains('بعيد') ||
+            msg.contains('نطاق') ||
+            errorCode == 'GPS_OUT_OF_RANGE') {
           errorMessage = 'أنت خارج نطاق الفرع';
-        } else if (msg.contains('QR') || msg.contains('qr') || msg.contains('غير صالح')) {
+        } else if (msg.contains('QR') ||
+            msg.contains('qr') ||
+            msg.contains('غير صالح')) {
           errorMessage = 'QR Code غير صالح';
+        } else if (msg.contains('Already') || msg.contains('مسبقاً')) {
+          errorMessage = 'تم تسجيل الحضور مسبقاً';
         } else {
           errorMessage = msg;
         }
       } else if (statusCode == 409) {
         errorMessage = 'تم تسجيل الحضور مسبقاً';
       } else {
-        errorMessage = (response['message'] as String?) ?? 'حدث خطأ، حاول مرة أخرى';
+        errorMessage =
+            (response['message'] as String?) ?? 'حدث خطأ، حاول مرة أخرى';
       }
       status = StatusRequest.failure;
     }
@@ -106,7 +107,7 @@ class AttendanceController extends GetxController {
   }
 
   Future<void> _processOffline(
-      String qrToken, Position position, bool isCheckOut) async {
+      String qrCode, Position position, bool isCheckOut) async {
     final homeController = Get.find<HomeController>();
     final branch = homeController.todayStatus;
 
@@ -128,7 +129,13 @@ class AttendanceController extends GetxController {
       }
     }
 
-    Get.offNamed(
+    await _saveOfflineRecord(
+      qrCode: qrCode,
+      position: position,
+      isCheckOut: isCheckOut,
+    );
+
+      Get.offNamed<void>(
       AppRoutes.attendanceSuccess,
       arguments: {
         'is_check_out': isCheckOut,
@@ -137,6 +144,64 @@ class AttendanceController extends GetxController {
     );
     status = StatusRequest.success;
     update();
+  }
+
+  Future<void> _saveOfflineRecord({
+    required String qrCode,
+    required Position position,
+    required bool isCheckOut,
+  }) async {
+    final box = await Hive.openBox<dynamic>('offline_attendance');
+    final branchId = _getBranchId() ?? 0;
+    final now = DateTime.now();
+
+    final existingIndex = box.values.toList().indexWhere((r) {
+      final recordDate = (r as Map)['date'] as String?;
+      return recordDate == now.toIso8601String().substring(0, 10);
+    });
+
+    final record = {
+      'client_record_id': now.millisecondsSinceEpoch.toString(),
+      'branch_id': branchId,
+      'date': now.toIso8601String().substring(0, 10),
+      'captured_at': now.toIso8601String(),
+      'qr_code': qrCode,
+      'check_in_latitude': position.latitude,
+      'check_in_longitude': position.longitude,
+      if (!isCheckOut) 'check_in_time': '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}',
+      if (isCheckOut) 'check_out_time': '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}',
+    };
+
+    if (existingIndex >= 0) {
+      await box.putAt(existingIndex, record);
+    } else {
+      await box.add(record);
+    }
+  }
+
+  Future<void> syncOfflineRecords() async {
+    final box = await Hive.openBox<dynamic>('offline_attendance');
+    if (box.isEmpty) return;
+
+    final records = box.values.map((r) => Map<String, dynamic>.from(r as Map)).toList();
+
+    final response = await _attendanceData.syncOffline(records);
+    if (response['status'] == StatusRequest.success) {
+      final data = response['data'] as Map<String, dynamic>?;
+      final synced = data?['synced'] as int? ?? 0;
+      if (synced > 0) {
+        await box.clear();
+      }
+    }
+  }
+
+  int? _getBranchId() {
+    try {
+      final authController = Get.find<AuthController>();
+      return authController.user?.branchId;
+    } catch (_) {
+      return null;
+    }
   }
 
   void showError(String message) {

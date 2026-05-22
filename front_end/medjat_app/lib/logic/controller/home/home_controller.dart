@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:intl/intl.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/services/connectivity_service.dart';
@@ -16,6 +17,7 @@ class HomeController extends GetxController {
   TodayStatusModel? todayStatus;
   double? distanceFromBranch;
   bool isOffline = false;
+  List<Map<String, dynamic>> monthRecords = [];
 
   StreamSubscription<bool>? _connectivitySub;
 
@@ -43,15 +45,35 @@ class HomeController extends GetxController {
     status = StatusRequest.loading;
     update();
 
-    final response = await _homeData.getTodayStatus();
+    final now = DateTime.now();
+    final month = DateFormat('yyyy-MM').format(now);
+
+    final response = await _homeData.getAttendanceMonth(month);
     final responseStatus = response['status'] as StatusRequest?;
 
     if (responseStatus == StatusRequest.success) {
-      final data = response['data'];
+      final data = response['data'] as Map<String, dynamic>?;
       if (data != null) {
-        todayStatus = TodayStatusModel.fromJson(
-          data is Map<String, dynamic> ? data : {},
-        );
+        final records = (data['records'] as List<dynamic>?)
+                ?.map((e) => e as Map<String, dynamic>)
+                .toList() ??
+            [];
+        monthRecords = records;
+
+        final todayStr = DateFormat('yyyy-MM-dd').format(now);
+        final todayRecord = records.where((r) {
+          final recordDate = r['date']?.toString();
+          return recordDate == todayStr;
+        }).toList();
+
+        if (todayRecord.isNotEmpty) {
+          final rec = todayRecord.first;
+          todayStatus = TodayStatusModel.fromJson(rec);
+        } else {
+          todayStatus = TodayStatusModel(
+            status: AttendanceStatus.notCheckedIn,
+          );
+        }
         _calculateDistance();
       }
       status = StatusRequest.success;
@@ -131,7 +153,7 @@ class HomeController extends GetxController {
       }
     }
 
-    Get.toNamed(AppRoutes.scanQr);
+    Get.toNamed<void>(AppRoutes.scanQr);
   }
 
   void _showPermissionDialog(String message) {
@@ -141,12 +163,12 @@ class HomeController extends GetxController {
         content: Text(message),
         actions: [
           TextButton(
-            onPressed: () => Get.back(),
+            onPressed: () => Get.back<void>(),
             child: const Text('إلغاء'),
           ),
           TextButton(
             onPressed: () {
-              Get.back();
+              Get.back<void>();
               openAppSettings();
             },
             child: const Text('فتح الإعدادات'),
@@ -157,7 +179,7 @@ class HomeController extends GetxController {
   }
 
   void goToNotifications() {
-    Get.toNamed(AppRoutes.notifications);
+    Get.toNamed<void>(AppRoutes.notifications);
   }
 
   @override
