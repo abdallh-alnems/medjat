@@ -1,3 +1,4 @@
+import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -65,6 +66,7 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
   final iqamaNumberCtrl = TextEditingController();
   final passportNumberCtrl = TextEditingController();
   final workPermitNumberCtrl = TextEditingController();
+  DateTime? hireDate;
   DateTime? iqamaExpiry;
   DateTime? passportExpiry;
   DateTime? workPermitExpiry;
@@ -78,10 +80,85 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
     'part_time',
     'temporary',
   ];
+  static const _daysOfWeek = [
+    'saturday',
+    'sunday',
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+  ];
+  bool showBankInfo = false;
+  bool showCompliance = false;
+  final Set<String> weeklyOffDays = {};
+  Country? selectedCountry;
+  // Fixed-term (temporary) employment.
+  bool isTemporary = false;
+  DateTime? tempStart;
+  final tempDurationCtrl = TextEditingController();
+  String tempUnit = 'weeks';
+  static const _durationUnits = ['days', 'weeks', 'months'];
   final formKey = GlobalKey<FormState>();
+
+  /// End date computed from the temporary start + duration, or null if invalid.
+  DateTime? get _tempEndDate {
+    final start = tempStart ?? _today;
+    final n = int.tryParse(tempDurationCtrl.text.trim());
+    if (n == null || n <= 0) return null;
+    switch (tempUnit) {
+      case 'days':
+        return start.add(Duration(days: n));
+      case 'weeks':
+        return start.add(Duration(days: n * 7));
+      case 'months':
+        return DateTime(start.year, start.month + n, start.day);
+      default:
+        return null;
+    }
+  }
+
+  void _pickCountry() {
+    showCountryPicker(
+      context: context,
+      showPhoneCode: true,
+      onSelect: (country) => setState(() => selectedCountry = country),
+    );
+  }
 
   String _fmtDate(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  /// Localized weekday name for [d] (DateTime.weekday: Mon=1 … Sun=7).
+  String _weekdayName(DateTime d) {
+    const keys = [
+      'day_monday',
+      'day_tuesday',
+      'day_wednesday',
+      'day_thursday',
+      'day_friday',
+      'day_saturday',
+      'day_sunday',
+    ];
+    return keys[d.weekday - 1].tr;
+  }
+
+  DateTime get _today {
+    final n = DateTime.now();
+    return DateTime(n.year, n.month, n.day);
+  }
+
+  bool _isPast(DateTime d) =>
+      DateTime(d.year, d.month, d.day).isBefore(_today);
+
+  /// Contract end must be strictly after the start date.
+  bool get _contractEndInvalid =>
+      contractStart != null &&
+      contractEnd != null &&
+      !contractEnd!.isAfter(contractStart!);
+
+  String? _expiryWarning(DateTime? date) =>
+      date != null && _isPast(date) ? 'date_in_past_warning'.tr : null;
 
   Future<void> _pickDate(DateTime? current, ValueChanged<DateTime> onPicked) async {
     final now = DateTime.now();
@@ -107,6 +184,7 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
     bankIbanCtrl.dispose();
     bankSwiftCtrl.dispose();
     annualLeaveCtrl.dispose();
+    tempDurationCtrl.dispose();
     nationalIdCtrl.dispose();
     nationalityCtrl.dispose();
     iqamaNumberCtrl.dispose();
@@ -133,140 +211,301 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
                   v == null || v.trim().isEmpty ? 'name_required'.tr : null,
             ),
             const SizedBox(height: AppSpacing.s3),
-            PrimaryInput(
-              label: 'phone_number'.tr,
+            _PhoneField(
               controller: phoneCtrl,
-              keyboardType: TextInputType.phone,
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'phone_required'.tr : null,
+              country: selectedCountry,
+              onPickCountry: _pickCountry,
             ),
             const SizedBox(height: AppSpacing.s3),
             PrimaryInput(
               label: 'job_title'.tr,
               controller: jobTitleCtrl,
-              hint: 'job_title'.tr,
             ),
+            if (ctrl.categories.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.s3),
+              GetBuilder<AddEmployeeController>(
+                builder: (_) {
+                  final colors = AppColors.of(context);
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+                        child: Text(
+                          'employee_categories'.tr,
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.s3),
+                        decoration: BoxDecoration(
+                          color: colors.surface,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          border: Border.all(color: colors.borderHairline),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<int?>(
+                            value: ctrl.selectedCategoryId,
+                            hint: Text('optional'.tr,
+                                style: TextStyle(
+                                  fontFamily: 'IBM Plex Sans Arabic',
+                                  fontSize: 14,
+                                  color: colors.textSecondary,
+                                )),
+                            isExpanded: true,
+                            icon: Icon(Icons.expand_more,
+                                color: colors.textTertiary),
+                            items: [
+                              DropdownMenuItem<int?>(
+                                value: null,
+                                child: Text('none'.tr,
+                                    style: TextStyle(
+                                      fontFamily: 'IBM Plex Sans Arabic',
+                                      fontSize: 14,
+                                      color: colors.textTertiary,
+                                    )),
+                              ),
+                              ...ctrl.categories.map((cat) =>
+                                  DropdownMenuItem<int?>(
+                                    value: cat.id,
+                                    child: Text(
+                                      cat.name,
+                                      style: const TextStyle(
+                                        fontFamily: 'IBM Plex Sans Arabic',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  )),
+                            ],
+                            onChanged: (v) {
+                              ctrl.selectedCategoryId = v;
+                              ctrl.update();
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
             const SizedBox(height: AppSpacing.s3),
             PrimaryInput(
               label: 'base_salary'.tr,
               controller: salaryCtrl,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              hint: '0',
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'salary_required'.tr : null,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+              ],
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'salary_required'.tr;
+                final parsed = double.tryParse(v.trim());
+                if (parsed == null || parsed < 0) return 'salary_required'.tr;
+                return null;
+              },
+            ),
+            const SizedBox(height: AppSpacing.s3),
+            _DateFieldTile(
+              label: 'hire_date'.tr,
+              date: hireDate,
+              onTap: () => _pickDate(hireDate, (d) => hireDate = d),
+              onClear: () => setState(() => hireDate = null),
             ),
             const SizedBox(height: AppSpacing.s4),
-            Text('bank_info'.tr, style: AppTextStyles.h3(context)),
-            const SizedBox(height: AppSpacing.s3),
-            PrimaryInput(
-              label: 'bank_name'.tr,
-              controller: bankNameCtrl,
-              hint: 'bank_name'.tr,
+            _SectionToggle(
+              title: 'bank_info'.tr,
+              enabled: showBankInfo,
+              onToggle: (v) => setState(() => showBankInfo = v),
             ),
-            const SizedBox(height: AppSpacing.s3),
-            PrimaryInput(
-              label: 'bank_account_number'.tr,
-              controller: bankAccountCtrl,
-              keyboardType: TextInputType.text,
-              hint: 'bank_account_number'.tr,
-            ),
-            const SizedBox(height: AppSpacing.s3),
-            PrimaryInput(
-              label: 'bank_iban'.tr,
-              controller: bankIbanCtrl,
-              keyboardType: TextInputType.text,
-              hint: 'bank_iban'.tr,
-            ),
-            const SizedBox(height: AppSpacing.s3),
-            PrimaryInput(
-              label: 'bank_swift'.tr,
-              controller: bankSwiftCtrl,
-              keyboardType: TextInputType.text,
-              hint: 'bank_swift'.tr,
-            ),
+            if (showBankInfo) ...[
+              const SizedBox(height: AppSpacing.s3),
+              PrimaryInput(
+                label: 'bank_name'.tr,
+                controller: bankNameCtrl,
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              PrimaryInput(
+                label: 'bank_account_number'.tr,
+                controller: bankAccountCtrl,
+                keyboardType: TextInputType.text,
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              PrimaryInput(
+                label: 'bank_iban'.tr,
+                controller: bankIbanCtrl,
+                keyboardType: TextInputType.text,
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              PrimaryInput(
+                label: 'bank_swift'.tr,
+                controller: bankSwiftCtrl,
+                keyboardType: TextInputType.text,
+              ),
+            ],
             const SizedBox(height: AppSpacing.s4),
-            Text('compliance_info'.tr, style: AppTextStyles.h3(context)),
-            const SizedBox(height: AppSpacing.s3),
-            PrimaryInput(
-              label: 'national_id'.tr,
-              controller: nationalIdCtrl,
-              hint: 'optional'.tr,
+            _SectionToggle(
+              title: 'compliance_info'.tr,
+              enabled: showCompliance,
+              onToggle: (v) => setState(() => showCompliance = v),
             ),
-            const SizedBox(height: AppSpacing.s3),
-            PrimaryInput(
-              label: 'nationality'.tr,
-              controller: nationalityCtrl,
-              hint: 'optional'.tr,
+            if (showCompliance) ...[
+              const SizedBox(height: AppSpacing.s3),
+              PrimaryInput(
+                label: 'national_id'.tr,
+                controller: nationalIdCtrl,
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              PrimaryInput(
+                label: 'nationality'.tr,
+                controller: nationalityCtrl,
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              PrimaryInput(
+                label: 'iqama_number'.tr,
+                controller: iqamaNumberCtrl,
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              _DateFieldTile(
+                label: 'iqama_expiry'.tr,
+                date: iqamaExpiry,
+                warning: _expiryWarning(iqamaExpiry),
+                onTap: () => _pickDate(iqamaExpiry, (d) => iqamaExpiry = d),
+                onClear: () => setState(() => iqamaExpiry = null),
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              PrimaryInput(
+                label: 'passport_number'.tr,
+                controller: passportNumberCtrl,
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              _DateFieldTile(
+                label: 'passport_expiry'.tr,
+                date: passportExpiry,
+                warning: _expiryWarning(passportExpiry),
+                onTap: () => _pickDate(passportExpiry, (d) => passportExpiry = d),
+                onClear: () => setState(() => passportExpiry = null),
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              PrimaryInput(
+                label: 'work_permit_number'.tr,
+                controller: workPermitNumberCtrl,
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              _DateFieldTile(
+                label: 'work_permit_expiry'.tr,
+                date: workPermitExpiry,
+                warning: _expiryWarning(workPermitExpiry),
+                onTap: () =>
+                    _pickDate(workPermitExpiry, (d) => workPermitExpiry = d),
+                onClear: () => setState(() => workPermitExpiry = null),
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              _ContractTypeDropdown(
+                value: contractType,
+                types: _contractTypes,
+                onChanged: (v) => setState(() => contractType = v),
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              _DateFieldTile(
+                label: 'contract_start'.tr,
+                date: contractStart,
+                onTap: () => _pickDate(contractStart, (d) => contractStart = d),
+                onClear: () => setState(() => contractStart = null),
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              _DateFieldTile(
+                label: 'contract_end'.tr,
+                date: contractEnd,
+                warning: _contractEndInvalid
+                    ? 'contract_end_before_start'.tr
+                    : _expiryWarning(contractEnd),
+                warningIsError: _contractEndInvalid,
+                onTap: () => _pickDate(contractEnd, (d) => contractEnd = d),
+                onClear: () => setState(() => contractEnd = null),
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              _DateFieldTile(
+                label: 'health_insurance_expiry'.tr,
+                date: healthInsuranceExpiry,
+                warning: _expiryWarning(healthInsuranceExpiry),
+                onTap: () => _pickDate(
+                    healthInsuranceExpiry, (d) => healthInsuranceExpiry = d),
+                onClear: () => setState(() => healthInsuranceExpiry = null),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.s4),
+            _SectionToggle(
+              title: 'temporary_employment'.tr,
+              enabled: isTemporary,
+              onToggle: (v) => setState(() => isTemporary = v),
             ),
-            const SizedBox(height: AppSpacing.s3),
-            PrimaryInput(
-              label: 'iqama_number'.tr,
-              controller: iqamaNumberCtrl,
-              hint: 'optional'.tr,
-            ),
-            const SizedBox(height: AppSpacing.s3),
-            _DateFieldTile(
-              label: 'iqama_expiry'.tr,
-              date: iqamaExpiry,
-              onTap: () => _pickDate(iqamaExpiry, (d) => iqamaExpiry = d),
-              onClear: () => setState(() => iqamaExpiry = null),
-            ),
-            const SizedBox(height: AppSpacing.s3),
-            PrimaryInput(
-              label: 'passport_number'.tr,
-              controller: passportNumberCtrl,
-              hint: 'optional'.tr,
-            ),
-            const SizedBox(height: AppSpacing.s3),
-            _DateFieldTile(
-              label: 'passport_expiry'.tr,
-              date: passportExpiry,
-              onTap: () => _pickDate(passportExpiry, (d) => passportExpiry = d),
-              onClear: () => setState(() => passportExpiry = null),
-            ),
-            const SizedBox(height: AppSpacing.s3),
-            PrimaryInput(
-              label: 'work_permit_number'.tr,
-              controller: workPermitNumberCtrl,
-              hint: 'optional'.tr,
-            ),
-            const SizedBox(height: AppSpacing.s3),
-            _DateFieldTile(
-              label: 'work_permit_expiry'.tr,
-              date: workPermitExpiry,
-              onTap: () =>
-                  _pickDate(workPermitExpiry, (d) => workPermitExpiry = d),
-              onClear: () => setState(() => workPermitExpiry = null),
-            ),
-            const SizedBox(height: AppSpacing.s3),
-            _ContractTypeDropdown(
-              value: contractType,
-              types: _contractTypes,
-              onChanged: (v) => setState(() => contractType = v),
-            ),
-            const SizedBox(height: AppSpacing.s3),
-            _DateFieldTile(
-              label: 'contract_start'.tr,
-              date: contractStart,
-              onTap: () => _pickDate(contractStart, (d) => contractStart = d),
-              onClear: () => setState(() => contractStart = null),
-            ),
-            const SizedBox(height: AppSpacing.s3),
-            _DateFieldTile(
-              label: 'contract_end'.tr,
-              date: contractEnd,
-              onTap: () => _pickDate(contractEnd, (d) => contractEnd = d),
-              onClear: () => setState(() => contractEnd = null),
-            ),
-            const SizedBox(height: AppSpacing.s3),
-            _DateFieldTile(
-              label: 'health_insurance_expiry'.tr,
-              date: healthInsuranceExpiry,
-              onTap: () => _pickDate(
-                  healthInsuranceExpiry, (d) => healthInsuranceExpiry = d),
-              onClear: () => setState(() => healthInsuranceExpiry = null),
-            ),
+            if (isTemporary) ...[
+              const SizedBox(height: AppSpacing.s2),
+              Text(
+                'temporary_employment_hint'.tr,
+                style: AppTextStyles.sm(context),
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              _DateFieldTile(
+                label: 'employment_start'.tr,
+                date: tempStart ?? _today,
+                onTap: () => _pickDate(tempStart ?? _today, (d) => tempStart = d),
+                onClear: () => setState(() => tempStart = null),
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: PrimaryInput(
+                      label: 'employment_duration'.tr,
+                      controller: tempDurationCtrl,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.s2),
+                  Expanded(
+                    child: _DurationUnitDropdown(
+                      value: tempUnit,
+                      units: _durationUnits,
+                      onChanged: (v) =>
+                          setState(() => tempUnit = v ?? tempUnit),
+                    ),
+                  ),
+                ],
+              ),
+              if (_tempEndDate != null) ...[
+                const SizedBox(height: AppSpacing.s2),
+                Row(
+                  children: [
+                    Icon(Icons.event_available,
+                        size: 16, color: AppColors.of(context).brand),
+                    const SizedBox(width: AppSpacing.s1),
+                    Text(
+                      '${'employment_ends_on'.tr}: ${_fmtDate(_tempEndDate!)} — ${_weekdayName(_tempEndDate!)}',
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.of(context).brand,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
             const SizedBox(height: AppSpacing.s4),
             Text('branch'.tr, style: AppTextStyles.h3(context)),
             const SizedBox(height: AppSpacing.s3),
@@ -282,27 +521,6 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
                 );
               },
             ),
-            if (ctrl.categories.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.s4),
-              Text('employee_categories'.tr, style: AppTextStyles.h3(context)),
-              const SizedBox(height: AppSpacing.s3),
-              GetBuilder<AddEmployeeController>(
-                builder: (_) {
-                  return _CategoryChips(
-                    categories: ctrl.categories,
-                    selectedIds: ctrl.selectedCategoryIds,
-                    onToggle: (id) {
-                      if (ctrl.selectedCategoryIds.contains(id)) {
-                        ctrl.selectedCategoryIds.remove(id);
-                      } else {
-                        ctrl.selectedCategoryIds.add(id);
-                      }
-                      ctrl.update();
-                    },
-                  );
-                },
-              ),
-            ],
             const SizedBox(height: AppSpacing.s4),
             GetBuilder<AddEmployeeController>(
               builder: (_) {
@@ -447,6 +665,20 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               hint: 'employee_annual_leave_hint'.tr,
             ),
+            const SizedBox(height: AppSpacing.s3),
+            _WeeklyDayOffSelector(
+              selectedDays: weeklyOffDays,
+              daysOfWeek: _daysOfWeek,
+              onToggle: (day) {
+                setState(() {
+                  if (weeklyOffDays.contains(day)) {
+                    weeklyOffDays.remove(day);
+                  } else {
+                    weeklyOffDays.add(day);
+                  }
+                });
+              },
+            ),
             const SizedBox(height: AppSpacing.s6),
             Obx(() => PrimaryButton(
                   text: 'add_employee_btn'.tr,
@@ -467,53 +699,74 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
+    if (_contractEndInvalid) {
+      Get.snackbar('error'.tr, 'contract_end_before_start'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    if (isTemporary && _tempEndDate == null) {
+      Get.snackbar('error'.tr, 'duration_required'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
 
     final usingShift =
         ctrl.shifts.isNotEmpty && ctrl.selectedShiftId != null;
 
+    final phoneE164 = '+${selectedCountry!.phoneCode}${phoneCtrl.text.trim()}';
+
     ctrl.createEmployee({
       'name': nameCtrl.text.trim(),
-      'phone': phoneCtrl.text.trim(),
+      'phone': phoneE164,
       'job_title': jobTitleCtrl.text.trim(),
-      'base_salary': int.tryParse(salaryCtrl.text.trim()) ?? 0,
+      'base_salary': double.tryParse(salaryCtrl.text.trim()) ?? 0,
+      if (hireDate != null) 'hire_date': _fmtDate(hireDate!),
+      if (isTemporary && _tempEndDate != null)
+        'auto_terminate_at': _fmtDate(_tempEndDate!),
       'branch_id': ctrl.selectedBranchId,
-      if (ctrl.selectedCategoryIds.isNotEmpty)
-        'category_ids': ctrl.selectedCategoryIds.toList(),
+      if (ctrl.selectedCategoryId != null)
+        'category_ids': [ctrl.selectedCategoryId],
       if (usingShift)
         'shift_id': ctrl.selectedShiftId
       else ...{
         'work_start_time': ctrl.workStartTimeStr,
         'work_end_time': ctrl.workEndTimeStr,
       },
-      if (bankNameCtrl.text.trim().isNotEmpty)
-        'bank_name': bankNameCtrl.text.trim(),
-      if (bankAccountCtrl.text.trim().isNotEmpty)
-        'bank_account_number': bankAccountCtrl.text.trim(),
-      if (bankIbanCtrl.text.trim().isNotEmpty)
-        'bank_iban': bankIbanCtrl.text.trim(),
-      if (bankSwiftCtrl.text.trim().isNotEmpty)
-        'bank_swift': bankSwiftCtrl.text.trim(),
+      if (showBankInfo) ...{
+        if (bankNameCtrl.text.trim().isNotEmpty)
+          'bank_name': bankNameCtrl.text.trim(),
+        if (bankAccountCtrl.text.trim().isNotEmpty)
+          'bank_account_number': bankAccountCtrl.text.trim(),
+        if (bankIbanCtrl.text.trim().isNotEmpty)
+          'bank_iban': bankIbanCtrl.text.trim(),
+        if (bankSwiftCtrl.text.trim().isNotEmpty)
+          'bank_swift': bankSwiftCtrl.text.trim(),
+      },
       if (annualLeaveCtrl.text.trim().isNotEmpty)
         'annual_leave_days': int.tryParse(annualLeaveCtrl.text.trim()),
-      if (nationalIdCtrl.text.trim().isNotEmpty)
-        'national_id': nationalIdCtrl.text.trim(),
-      if (nationalityCtrl.text.trim().isNotEmpty)
-        'nationality': nationalityCtrl.text.trim(),
-      if (iqamaNumberCtrl.text.trim().isNotEmpty)
-        'iqama_number': iqamaNumberCtrl.text.trim(),
-      if (iqamaExpiry != null) 'iqama_expiry': _fmtDate(iqamaExpiry!),
-      if (passportNumberCtrl.text.trim().isNotEmpty)
-        'passport_number': passportNumberCtrl.text.trim(),
-      if (passportExpiry != null) 'passport_expiry': _fmtDate(passportExpiry!),
-      if (workPermitNumberCtrl.text.trim().isNotEmpty)
-        'work_permit_number': workPermitNumberCtrl.text.trim(),
-      if (workPermitExpiry != null)
-        'work_permit_expiry': _fmtDate(workPermitExpiry!),
-      if (contractType != null) 'contract_type': contractType,
-      if (contractStart != null) 'contract_start': _fmtDate(contractStart!),
-      if (contractEnd != null) 'contract_end': _fmtDate(contractEnd!),
-      if (healthInsuranceExpiry != null)
-        'health_insurance_expiry': _fmtDate(healthInsuranceExpiry!),
+      if (weeklyOffDays.isNotEmpty)
+        'weekly_off_days': weeklyOffDays.toList(),
+      if (showCompliance) ...{
+        if (nationalIdCtrl.text.trim().isNotEmpty)
+          'national_id': nationalIdCtrl.text.trim(),
+        if (nationalityCtrl.text.trim().isNotEmpty)
+          'nationality': nationalityCtrl.text.trim(),
+        if (iqamaNumberCtrl.text.trim().isNotEmpty)
+          'iqama_number': iqamaNumberCtrl.text.trim(),
+        if (iqamaExpiry != null) 'iqama_expiry': _fmtDate(iqamaExpiry!),
+        if (passportNumberCtrl.text.trim().isNotEmpty)
+          'passport_number': passportNumberCtrl.text.trim(),
+        if (passportExpiry != null) 'passport_expiry': _fmtDate(passportExpiry!),
+        if (workPermitNumberCtrl.text.trim().isNotEmpty)
+          'work_permit_number': workPermitNumberCtrl.text.trim(),
+        if (workPermitExpiry != null)
+          'work_permit_expiry': _fmtDate(workPermitExpiry!),
+        if (contractType != null) 'contract_type': contractType,
+        if (contractStart != null) 'contract_start': _fmtDate(contractStart!),
+        if (contractEnd != null) 'contract_end': _fmtDate(contractEnd!),
+        if (healthInsuranceExpiry != null)
+          'health_insurance_expiry': _fmtDate(healthInsuranceExpiry!),
+      },
     });
   }
 }
@@ -595,17 +848,190 @@ class _ActivationCodeView extends StatelessWidget {
   }
 }
 
+class _PhoneField extends StatelessWidget {
+  final TextEditingController controller;
+  final Country? country;
+  final VoidCallback onPickCountry;
+
+  const _PhoneField({
+    required this.controller,
+    required this.country,
+    required this.onPickCountry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final hasCountry = country != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+          child: Text(
+            'phone_number'.tr,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: colors.textSecondary,
+            ),
+          ),
+        ),
+        Row(
+          textDirection: TextDirection.ltr,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            InkWell(
+              onTap: onPickCountry,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              child: Container(
+                height: 56,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: AppSpacing.s3),
+                decoration: BoxDecoration(
+                  color: colors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: colors.borderHairline),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      hasCountry
+                          ? '${country!.flagEmoji}  +${country!.phoneCode}'
+                          : 'select_country'.tr,
+                      style: TextStyle(
+                        fontFamily: 'Geist',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color:
+                            hasCountry ? colors.textPrimary : colors.textTertiary,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.s1),
+                    Icon(Icons.expand_more, size: 18, color: colors.textTertiary),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.s2),
+            Expanded(
+              child: TextFormField(
+                controller: controller,
+                keyboardType: TextInputType.phone,
+                textDirection: TextDirection.ltr,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(14),
+                ],
+                style: TextStyle(
+                  fontFamily: 'Geist',
+                  fontSize: 16,
+                  color: colors.textPrimary,
+                ),
+                decoration: InputDecoration(hintText: 'phone_number_hint'.tr),
+                validator: (v) {
+                  if (country == null) return 'country_required'.tr;
+                  final n = (v ?? '').trim();
+                  if (n.isEmpty) return 'phone_required'.tr;
+                  // National number digits + country code must form a valid
+                  // E.164 number (8–15 digits total).
+                  final full = '${country!.phoneCode}$n';
+                  if (!RegExp(r'^[1-9]\d{7,14}$').hasMatch(full)) {
+                    return 'phone_invalid'.tr;
+                  }
+                  return null;
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SectionToggle extends StatelessWidget {
+  final String title;
+  final bool enabled;
+  final ValueChanged<bool> onToggle;
+
+  const _SectionToggle({
+    required this.title,
+    required this.enabled,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return InkWell(
+      onTap: () => onToggle(!enabled),
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s3,
+          vertical: AppSpacing.s2,
+        ),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+            color: enabled ? colors.brand : colors.borderHairline,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              enabled ? Icons.check_circle : Icons.radio_button_unchecked,
+              size: 22,
+              color: enabled ? colors.brand : colors.textTertiary,
+            ),
+            const SizedBox(width: AppSpacing.s3),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: enabled ? colors.textPrimary : colors.textSecondary,
+                ),
+              ),
+            ),
+            Switch(
+              value: enabled,
+              onChanged: onToggle,
+              activeThumbColor: colors.brand,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _DateFieldTile extends StatelessWidget {
   final String label;
   final DateTime? date;
   final VoidCallback onTap;
   final VoidCallback onClear;
 
+  /// Optional message shown below the tile. When [warningIsError] is true it is
+  /// rendered in the error color (a hard problem); otherwise in the warning
+  /// color (a non-blocking heads-up, e.g. an expiry date in the past).
+  final String? warning;
+  final bool warningIsError;
+
   const _DateFieldTile({
     required this.label,
     required this.date,
     required this.onTap,
     required this.onClear,
+    this.warning,
+    this.warningIsError = false,
   });
 
   @override
@@ -615,51 +1041,136 @@ class _DateFieldTile extends StatelessWidget {
     final text = hasDate
         ? '${date!.year}-${date!.month.toString().padLeft(2, '0')}-${date!.day.toString().padLeft(2, '0')}'
         : 'select_date'.tr;
+    final messageColor = warningIsError ? colors.error : colors.warning;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.s3),
-        decoration: BoxDecoration(
-          color: colors.surface,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: colors.borderHairline),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.event_outlined, size: 20, color: colors.textSecondary),
-            const SizedBox(width: AppSpacing.s3),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  fontFamily: 'IBM Plex Sans Arabic',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.s3),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(
+                color: warning != null ? messageColor : colors.borderHairline,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.event_outlined,
+                    size: 20, color: colors.textSecondary),
+                const SizedBox(width: AppSpacing.s3),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
-              ),
+                Text(
+                  text,
+                  style: TextStyle(
+                    fontFamily: 'Geist',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: hasDate ? colors.brand : colors.textTertiary,
+                  ),
+                ),
+                if (hasDate)
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: Icon(Icons.close,
+                        size: 18, color: colors.textTertiary),
+                    onPressed: onClear,
+                  ),
+              ],
             ),
-            Text(
-              text,
-              style: TextStyle(
-                fontFamily: 'Geist',
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: hasDate ? colors.brand : colors.textTertiary,
-              ),
-            ),
-            if (hasDate)
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: Icon(Icons.close, size: 18, color: colors.textTertiary),
-                onPressed: onClear,
-              ),
-          ],
+          ),
         ),
-      ),
+        if (warning != null)
+          Padding(
+            padding: const EdgeInsets.only(
+              top: AppSpacing.s1,
+              left: AppSpacing.s1,
+              right: AppSpacing.s1,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  warningIsError
+                      ? Icons.error_outline
+                      : Icons.warning_amber_rounded,
+                  size: 14,
+                  color: messageColor,
+                ),
+                const SizedBox(width: AppSpacing.s1),
+                Expanded(
+                  child: Text(
+                    warning!,
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 12,
+                      color: messageColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _DurationUnitDropdown extends StatelessWidget {
+  final String value;
+  final List<String> units;
+  final ValueChanged<String?> onChanged;
+
+  const _DurationUnitDropdown({
+    required this.value,
+    required this.units,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Non-breaking space keeps this field's top aligned with the labelled
+        // duration input beside it.
+        const Padding(
+          padding: EdgeInsets.only(bottom: AppSpacing.s2),
+          child: Text(
+            ' ',
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        DropdownButtonFormField<String>(
+          initialValue: value,
+          isExpanded: true,
+          items: units
+              .map((u) => DropdownMenuItem(
+                    value: u,
+                    child: Text('unit_$u'.tr),
+                  ))
+              .toList(),
+          onChanged: onChanged,
+        ),
+      ],
     );
   }
 }
@@ -814,48 +1325,6 @@ class _NoBranchesView extends StatelessWidget {
   }
 }
 
-class _CategoryChips extends StatelessWidget {
-  final List<EmployeeCategoryModel> categories;
-  final Set<int> selectedIds;
-  final ValueChanged<int> onToggle;
-
-  const _CategoryChips({
-    required this.categories,
-    required this.selectedIds,
-    required this.onToggle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return Wrap(
-      spacing: AppSpacing.s2,
-      runSpacing: AppSpacing.s2,
-      children: categories.map((cat) {
-        final selected = selectedIds.contains(cat.id);
-        return FilterChip(
-          label: Text(
-            cat.name,
-            style: TextStyle(
-              fontFamily: 'IBM Plex Sans Arabic',
-              fontSize: 13,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              color: selected ? colors.brand : colors.textPrimary,
-            ),
-          ),
-          selected: selected,
-          onSelected: (_) => onToggle(cat.id),
-          selectedColor: colors.brandSubtle,
-          checkmarkColor: colors.brand,
-          side: BorderSide(
-            color: selected ? colors.brand : colors.borderHairline,
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
-
 class _BranchSelector extends StatelessWidget {
   final List<BranchModel> branches;
   final int? selectedId;
@@ -912,6 +1381,90 @@ class _BranchSelector extends StatelessWidget {
           onChanged: onSelect,
         ),
       ),
+    );
+  }
+}
+
+class _WeeklyDayOffSelector extends StatelessWidget {
+  final Set<String> selectedDays;
+  final List<String> daysOfWeek;
+  final ValueChanged<String> onToggle;
+
+  const _WeeklyDayOffSelector({
+    required this.selectedDays,
+    required this.daysOfWeek,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+          child: Text(
+            'weekly_day_off'.tr,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: colors.textSecondary,
+            ),
+          ),
+        ),
+        Wrap(
+          spacing: AppSpacing.s2,
+          runSpacing: AppSpacing.s2,
+          children: daysOfWeek.map((d) {
+            final selected = selectedDays.contains(d);
+            return GestureDetector(
+              onTap: () => onToggle(d),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s3,
+                  vertical: AppSpacing.s2,
+                ),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? colors.brand.withValues(alpha: 0.12)
+                      : colors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(
+                    color: selected ? colors.brand : colors.borderHairline,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      selected
+                          ? Icons.check_circle
+                          : Icons.radio_button_unchecked,
+                      size: 16,
+                      color: selected ? colors.brand : colors.textTertiary,
+                    ),
+                    const SizedBox(width: AppSpacing.s1),
+                    Text(
+                      'day_$d'.tr,
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 13,
+                        fontWeight:
+                            selected ? FontWeight.w600 : FontWeight.w500,
+                        color: selected ? colors.brand : colors.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 }

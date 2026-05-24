@@ -16,6 +16,30 @@ final class EmployeeModel {
         'health_insurance_expiry',
     ];
 
+    /** Valid recurring weekly off days; matches the `weekly_off_days` SET column. */
+    public const WEEKLY_OFF_DAYS = [
+        'saturday', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday',
+    ];
+
+    /**
+     * Normalize a caller-supplied weekly-off value (array or comma string) into a
+     * comma-joined string of valid, de-duplicated days for the SET column.
+     * Returns null when nothing valid is supplied (clears the value).
+     */
+    public static function normalizeWeeklyOffDays(mixed $value): ?string {
+        if (is_string($value)) {
+            $value = $value === '' ? [] : explode(',', $value);
+        }
+        if (!is_array($value)) {
+            return null;
+        }
+        $days = array_values(array_unique(array_intersect(
+            self::WEEKLY_OFF_DAYS,
+            array_map(static fn($d) => is_string($d) ? trim($d) : $d, $value)
+        )));
+        return $days ? implode(',', $days) : null;
+    }
+
     /** Credential => [number column (or null), expiry column]; drives expiry alerts. */
     public const COMPLIANCE_CREDENTIALS = [
         'iqama'            => ['iqama_number', 'iqama_expiry'],
@@ -70,6 +94,16 @@ final class EmployeeModel {
             $data['bank_iban'] ?? null,
             $data['bank_swift'] ?? null,
         ];
+
+        if (array_key_exists('weekly_off_days', $data)) {
+            $columns[] = 'weekly_off_days';
+            $values[] = self::normalizeWeeklyOffDays($data['weekly_off_days']);
+        }
+
+        if (array_key_exists('auto_terminate_at', $data)) {
+            $columns[] = 'auto_terminate_at';
+            $values[] = $data['auto_terminate_at'] !== '' ? $data['auto_terminate_at'] : null;
+        }
 
         // Optional compliance / legal credential fields.
         foreach (self::COMPLIANCE_FIELDS as $field) {
@@ -179,6 +213,51 @@ final class EmployeeModel {
             "UPDATE employees SET status = 'terminated', deleted_at = NOW() WHERE id = ? AND tenant_id = ?",
             [$id, $tenantId]
         ) > 0;
+    }
+
+    /**
+     * Fixed-term employees whose end date has passed and who are still active.
+     * Used by the daily cron to auto-terminate them.
+     */
+    public static function dueForAutoTermination(int $tenantId, string $today): array {
+        return Database::fetchAll(
+            "SELECT id, name, branch_id, auto_terminate_at
+             FROM employees
+             WHERE tenant_id = ?
+               AND auto_terminate_at IS NOT NULL
+               AND auto_terminate_at < ?
+               AND status NOT IN ('terminated')
+               AND deleted_at IS NULL",
+            [$tenantId, $today]
+        );
+    }
+
+    /**
+     * Fixed-term employees ending within the next $daysAhead days (today inclusive),
+     * still active. Used by the cron to warn admins before the end date.
+     */
+    public static function upcomingAutoTermination(int $tenantId, string $today, int $daysAhead): array {
+        return Database::fetchAll(
+            "SELECT id, name, branch_id, auto_terminate_at,
+                    DATEDIFF(auto_terminate_at, ?) AS days_left
+             FROM employees
+             WHERE tenant_id = ?
+               AND auto_terminate_at IS NOT NULL
+               AND auto_terminate_at >= ?
+               AND auto_terminate_at <= DATE_ADD(?, INTERVAL ? DAY)
+               AND status NOT IN ('terminated')
+               AND deleted_at IS NULL",
+            [$today, $tenantId, $today, $today, $daysAhead]
+        );
+    }
+
+    /** Flip an employee to 'terminated' because their fixed term ended. */
+    public static function autoTerminate(int $id, int $tenantId): void {
+        Database::execute(
+            "UPDATE employees SET status = 'terminated', updated_at = NOW()
+             WHERE id = ? AND tenant_id = ? AND status NOT IN ('terminated')",
+            [$id, $tenantId]
+        );
     }
 
     public static function getByTenant(int $tenantId, int $page = 1, int $limit = 20, ?int $branchId = null, ?string $search = null): array {

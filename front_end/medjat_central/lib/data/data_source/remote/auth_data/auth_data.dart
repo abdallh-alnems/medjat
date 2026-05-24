@@ -19,8 +19,36 @@ class AuthData {
     return await _crud.getData(AppLinks.me);
   }
 
+  /// Asks the backend to send our own branded verification email.
+  /// The link inside opens Firebase's default verification page.
+  /// The firebase id token is attached automatically by CRUD as a header.
+  Future<Map<String, dynamic>> sendVerification(String lang) async {
+    return await _crud.postData(
+      AppLinks.sendVerification,
+      {'lang': lang},
+    );
+  }
+
+  /// Asks the backend to send our own branded password-reset email.
+  /// The link inside opens Firebase's default reset page.
+  /// Unauthenticated; the backend always returns success (enumeration safe).
+  Future<Map<String, dynamic>> sendPasswordReset(
+      String email, String lang) async {
+    return await _crud.postData(
+      AppLinks.sendPasswordReset,
+      {'email': email, 'lang': lang},
+      auth: false,
+    );
+  }
+
   Future<Map<String, dynamic>> logout() async {
     return await _crud.postData(AppLinks.logout, {});
+  }
+
+  /// Permanently deletes the account (and the company, if the caller is the
+  /// last general_manager) from the backend DB and Firebase.
+  Future<Map<String, dynamic>> deleteAccount() async {
+    return await _crud.postData(AppLinks.deleteAccount, {});
   }
 
   Future<Map<String, dynamic>> forgotPasswordSend(String email) async {

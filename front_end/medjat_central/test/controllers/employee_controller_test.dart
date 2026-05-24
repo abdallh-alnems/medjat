@@ -127,7 +127,7 @@ void main() {
       expect(controller.searchQuery, 'أحمد');
     });
 
-    test('filterByBranch يضبط branchFilter', () async {
+    test('applyFilters يضبط branchFilter', () async {
       when(() => mockData.getEmployees(
             branchId: any(named: 'branchId'),
             search: any(named: 'search'),
@@ -139,7 +139,7 @@ void main() {
       controller = EmployeeController();
       await controller.loadEmployees();
 
-      controller.filterByBranch(5);
+      controller.applyFilters(branchId: 5);
 
       expect(controller.branchFilter, 5);
     });

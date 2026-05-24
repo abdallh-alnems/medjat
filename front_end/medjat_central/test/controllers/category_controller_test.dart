@@ -64,7 +64,8 @@ void main() {
       expect(controller.status, StatusRequest.failure);
     });
 
-    test('deleteCategory — نجاح يحذف من القائمة', () async {
+    testWidgets('deleteCategory — نجاح يحذف من القائمة', (tester) async {
+      await pumpSnackbarHost(tester);
       when(() => mockData.getCategories()).thenAnswer((_) async => {
             'status': StatusRequest.success,
             'data': [
@@ -83,9 +84,11 @@ void main() {
 
       expect(result, isTrue);
       expect(controller.categories.length, 1);
+      await settleSnackbars(tester);
     });
 
-    test('deleteCategory — فشل يعيد false', () async {
+    testWidgets('deleteCategory — فشل يعيد false', (tester) async {
+      await pumpSnackbarHost(tester);
       when(() => mockData.getCategories()).thenAnswer((_) async => {
             'status': StatusRequest.success,
             'data': [
@@ -102,6 +105,7 @@ void main() {
 
       expect(result, isFalse);
       expect(controller.categories.length, 1);
+      await settleSnackbars(tester);
     });
   });
 }

@@ -19,6 +19,8 @@ class LiveAttendanceController extends GetxController {
 
   // Branch filter (server-side scope).
   int? selectedBranchId;
+  int? selectedShiftId;
+  int? selectedCategoryId;
   final List<Map<String, dynamic>> branches = [];
 
   // Client-side filters.
@@ -74,7 +76,11 @@ class LiveAttendanceController extends GetxController {
       update();
     }
 
-    final response = await _data.getLiveBoard(branchId: selectedBranchId);
+    final response = await _data.getLiveBoard(
+      branchId: selectedBranchId,
+      shiftId: selectedShiftId,
+      categoryId: selectedCategoryId,
+    );
 
     if (response['status'] == StatusRequest.success) {
       final payload = _unwrap(response['data']);
@@ -115,6 +121,13 @@ class LiveAttendanceController extends GetxController {
 
   void selectBranch(int? branchId) {
     selectedBranchId = branchId;
+    loadBoard();
+  }
+
+  void syncFilters({int? branchId, int? shiftId, int? categoryId}) {
+    selectedBranchId = branchId;
+    selectedShiftId = shiftId;
+    selectedCategoryId = categoryId;
     loadBoard();
   }
 

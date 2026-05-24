@@ -1,28 +1,20 @@
+import 'package:get/get.dart';
 import 'package:upgrader/upgrader.dart';
 
-/// رسائل عربية لنافذة التحديث على iOS (حزمة upgrader).
 class UpgradeMessages extends UpgraderMessages {
   @override
   String? message(UpgraderMessage messageKey) {
     switch (messageKey) {
       case UpgraderMessage.body:
-        return '''
-
-نسخة جديدة من تطبيق مدجات للإدارة متوفرة الآن 📱
-
- مميزات جديدة وتحسينات ✨
- إصلاح الأخطاء وتحسين الأداء 🔧
- أمان محسن وحماية أفضل 🛡️
-
-ننصح بتحديث التطبيق للحصول على أفضل تجربة! 💪''';
+        return 'upgrade_body'.tr;
       case UpgraderMessage.buttonTitleLater:
-        return 'لاحقاً';
+        return 'later'.tr;
       case UpgraderMessage.buttonTitleUpdate:
-        return 'تحديث الآن';
+        return 'update_now_btn'.tr;
       case UpgraderMessage.prompt:
-        return 'تحديث التطبيق مطلوب لضمان أفضل أداء وتجربة مستخدم';
+        return 'upgrade_prompt'.tr;
       case UpgraderMessage.title:
-        return 'تحديث متاح';
+        return 'upgrade_title'.tr;
       default:
     }
 

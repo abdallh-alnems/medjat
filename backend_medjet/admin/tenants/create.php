@@ -8,19 +8,13 @@ class TenantCreateApi extends AdminBaseApi {
         parent::__construct();
         $this->handleRequest(function () {
             $name = $this->getField('name');
-            $ownerName = $this->getField('owner_name');
-            $ownerEmail = $this->getField('owner_email');
             $plan = $this->getField('plan', 'starter');
 
             Validator::required($name, 'name');
-            Validator::required($ownerName, 'owner_name');
-            Validator::required($ownerEmail, 'owner_email');
 
             $tenantId = TenantModel::create([
                 'name' => $name,
                 'domain' => $this->getField('domain'),
-                'owner_name' => $ownerName,
-                'owner_email' => $ownerEmail,
                 'plan' => $plan,
             ]);
 

@@ -35,22 +35,31 @@ final class Validator {
         return $value;
     }
 
+    /**
+     * Normalize an international phone number to E.164 (e.g. +966501234567).
+     * The number must carry a country code: it has to start with "+" (or the
+     * "00" international prefix). Returns null when it is not a valid E.164
+     * number. Used as the login identity, so the format must be unambiguous.
+     */
     public static function phone(string $phone): ?string {
         $arabic = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
         $english = ['0','1','2','3','4','5','6','7','8','9'];
-        $cleaned = str_replace($arabic, $english, $phone);
-        $cleaned = preg_replace('/[^0-9+]/', '', $cleaned);
+        $value = trim(str_replace($arabic, $english, $phone));
 
-        if (preg_match('/^01[0-9]{9}$/', $cleaned)) {
-            return '+20' . substr($cleaned, 1);
+        // "00<cc>..." is an alias for "+<cc>...".
+        if (str_starts_with($value, '00')) {
+            $value = '+' . substr($value, 2);
         }
-        if (preg_match('/^\+201[0-9]{9}$/', $cleaned)) {
-            return $cleaned;
+
+        // A country code is mandatory; bare national numbers are ambiguous.
+        if (!str_starts_with($value, '+')) {
+            return null;
         }
-        if (preg_match('/^201[0-9]{9}$/', $cleaned)) {
-            return '+' . $cleaned;
-        }
-        return null;
+
+        $normalized = '+' . preg_replace('/\D/', '', $value);
+
+        // E.164: leading country digit 1-9, then 7-14 more digits (8-15 total).
+        return preg_match('/^\+[1-9]\d{7,14}$/', $normalized) ? $normalized : null;
     }
 
     public static function date(string $value, string $fieldName): string {

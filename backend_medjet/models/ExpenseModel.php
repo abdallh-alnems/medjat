@@ -4,6 +4,23 @@ final class ExpenseModel {
     public const CATEGORIES = ['travel', 'meals', 'accommodation', 'supplies', 'medical', 'communication', 'other'];
     public const STATUSES = ['pending', 'approved', 'rejected', 'reimbursed'];
 
+    public static function countPending(int $tenantId): int {
+        return (int) (Database::fetchOne(
+            "SELECT COUNT(*) AS c FROM expense_claims WHERE tenant_id = ? AND status = 'pending'",
+            [$tenantId]
+        )['c'] ?? 0);
+    }
+
+    /** Total expense amount for a month (YYYY-MM), excluding rejected claims. */
+    public static function totalForMonth(int $tenantId, string $month): float {
+        return (float) (Database::fetchOne(
+            "SELECT COALESCE(SUM(amount), 0) AS t FROM expense_claims
+             WHERE tenant_id = ? AND status != 'rejected'
+               AND DATE_FORMAT(expense_date, '%Y-%m') = ?",
+            [$tenantId, $month]
+        )['t'] ?? 0);
+    }
+
     public static function create(
         int $tenantId,
         int $employeeId,

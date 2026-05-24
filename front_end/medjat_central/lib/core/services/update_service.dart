@@ -146,7 +146,7 @@ class UpdateService extends GetxService {
     if (ctx == null) return;
     ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(
-        content: const Text(UpdateStrings.updateReady),
+        content: Text(UpdateStrings.updateReady),
         action: SnackBarAction(
           label: UpdateStrings.installNow,
           onPressed: () => completeFlexibleUpdate(),

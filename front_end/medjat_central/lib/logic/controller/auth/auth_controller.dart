@@ -40,6 +40,7 @@ class AuthController extends GetxController {
   final isAppleLoading = false.obs;
   final isSendingVerification = false.obs;
   final isEmailVerified = false.obs;
+  final isDeletingAccount = false.obs;
 
   UserModel? user;
   bool _googleInitialized = false;
@@ -146,7 +147,7 @@ class AuthController extends GetxController {
 
       if (userCredential.user == null) {
         isEmailLoading.value = false;
-        _onError('فشل تسجيل الدخول');
+        _onError('login_failed'.tr);
         return;
       }
 
@@ -162,7 +163,7 @@ class AuthController extends GetxController {
       final firebaseToken = await userCredential.user!.getIdToken();
       if (firebaseToken == null) {
         isEmailLoading.value = false;
-        _onError('فشل الحصول على رمز الدخول');
+        _onError('token_failed'.tr);
         return;
       }
 
@@ -172,17 +173,17 @@ class AuthController extends GetxController {
       if (success) {
         _onSuccess();
       } else {
-        _onError('فشل الاتصال بالخادم');
+        _onError('server_failed'.tr);
       }
     } on FirebaseAuthException catch (e) {
       isEmailLoading.value = false;
       status.value = StatusRequest.failure;
-      Get.snackbar('خطأ', _getFirebaseErrorMessage(e.code),
+      Get.snackbar('error'.tr, _getFirebaseErrorMessage(e.code),
           snackPosition: SnackPosition.BOTTOM);
       update();
     } catch (e) {
       isEmailLoading.value = false;
-      _onError('حدث خطأ أثناء تسجيل الدخول');
+      _onError('login_error'.tr);
     }
   }
 
@@ -203,7 +204,7 @@ class AuthController extends GetxController {
 
       if (userCredential.user == null) {
         isEmailLoading.value = false;
-        _onError('فشل إنشاء الحساب');
+        _onError('signup_failed'.tr);
         return;
       }
 
@@ -213,13 +214,12 @@ class AuthController extends GetxController {
       final firebaseUser = _auth.currentUser;
       if (firebaseUser != null && !firebaseUser.emailVerified) {
         try {
-          await _auth.setLanguageCode(Get.locale?.languageCode ?? 'ar');
-          await _sendVerificationEmail(firebaseUser);
+          await _sendVerificationEmail();
         } catch (e) {
           debugPrint('⚠️ sendEmailVerification failed during signup: $e');
           Get.snackbar(
-            'تنبيه',
-            'تم إنشاء الحساب، لكن تعذّر إرسال بريد التفعيل. استخدم زر "إعادة الإرسال".',
+            'alert'.tr,
+            'signup_verification_failed'.tr,
             snackPosition: SnackPosition.BOTTOM,
           );
         }
@@ -234,7 +234,7 @@ class AuthController extends GetxController {
       final firebaseToken = await _auth.currentUser?.getIdToken();
       if (firebaseToken == null) {
         isEmailLoading.value = false;
-        _onError('فشل الحصول على رمز الدخول');
+        _onError('token_failed'.tr);
         return;
       }
 
@@ -244,17 +244,17 @@ class AuthController extends GetxController {
       if (success) {
         _onSuccess();
       } else {
-        _onError('فشل الاتصال بالخادم');
+        _onError('server_failed'.tr);
       }
     } on FirebaseAuthException catch (e) {
       isEmailLoading.value = false;
       status.value = StatusRequest.failure;
-      Get.snackbar('خطأ', _getFirebaseErrorMessage(e.code),
+      Get.snackbar('error'.tr, _getFirebaseErrorMessage(e.code),
           snackPosition: SnackPosition.BOTTOM);
       update();
     } catch (e) {
       isEmailLoading.value = false;
-      _onError('حدث خطأ أثناء إنشاء الحساب');
+      _onError('signup_error'.tr);
     }
   }
 
@@ -287,14 +287,14 @@ class AuthController extends GetxController {
 
       if (userCredential.user == null) {
         isGoogleLoading.value = false;
-        _onError('فشل تسجيل الدخول');
+        _onError('login_failed'.tr);
         return;
       }
 
       final firebaseToken = await userCredential.user!.getIdToken();
       if (firebaseToken == null) {
         isGoogleLoading.value = false;
-        _onError('فشل الحصول على رمز الدخول');
+        _onError('token_failed'.tr);
         return;
       }
 
@@ -304,30 +304,30 @@ class AuthController extends GetxController {
       if (success) {
         _onSuccess();
       } else {
-        _onError('فشل الاتصال بالخادم');
+        _onError('server_failed'.tr);
       }
     } on GoogleSignInException catch (e) {
       isGoogleLoading.value = false;
       status.value = StatusRequest.failure;
       if (e.code == GoogleSignInExceptionCode.canceled) return;
-      Get.snackbar('خطأ', _getGoogleErrorMessage(e.code),
+      Get.snackbar('error'.tr, _getGoogleErrorMessage(e.code),
           snackPosition: SnackPosition.BOTTOM);
       update();
     } on FirebaseAuthException catch (e) {
       isGoogleLoading.value = false;
       status.value = StatusRequest.failure;
-      Get.snackbar('خطأ', _getFirebaseErrorMessage(e.code),
+      Get.snackbar('error'.tr, _getFirebaseErrorMessage(e.code),
           snackPosition: SnackPosition.BOTTOM);
       update();
     } catch (e) {
       isGoogleLoading.value = false;
-      _onError('حدث خطأ أثناء تسجيل الدخول');
+      _onError('login_error'.tr);
     }
   }
 
   Future<void> onAppleSignIn() async {
     if (!isAppleSignInAvailable) {
-      Get.snackbar('خطأ', 'تسجيل الدخول بـ Apple متاح فقط على iOS',
+      Get.snackbar('error'.tr, 'apple_ios_only'.tr,
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
@@ -345,7 +345,7 @@ class AuthController extends GetxController {
 
       if (userCredential.user == null) {
         isAppleLoading.value = false;
-        _onError('فشل تسجيل الدخول');
+        _onError('login_failed'.tr);
         return;
       }
 
@@ -377,7 +377,7 @@ class AuthController extends GetxController {
       final firebaseToken = await _auth.currentUser?.getIdToken(true);
       if (firebaseToken == null) {
         isAppleLoading.value = false;
-        _onError('فشل الحصول على رمز الدخول');
+        _onError('token_failed'.tr);
         return;
       }
 
@@ -387,20 +387,20 @@ class AuthController extends GetxController {
       if (success) {
         _onSuccess();
       } else {
-        _onError('فشل الاتصال بالخادم');
+        _onError('server_failed'.tr);
       }
     } on FirebaseAuthException catch (e) {
       isAppleLoading.value = false;
       status.value = StatusRequest.failure;
       debugPrint('🍎 Apple FirebaseAuthException code=${e.code} message=${e.message}');
       if (e.code == 'canceled' || e.code == 'web-context-canceled') return;
-      Get.snackbar('خطأ', _getFirebaseErrorMessage(e.code),
+      Get.snackbar('error'.tr, _getFirebaseErrorMessage(e.code),
           snackPosition: SnackPosition.BOTTOM);
       update();
     } catch (e) {
       isAppleLoading.value = false;
       debugPrint('🍎 Apple sign-in unexpected error: $e');
-      _onError('حدث خطأ أثناء تسجيل الدخول');
+      _onError('login_error'.tr);
     }
   }
 
@@ -446,12 +446,18 @@ class AuthController extends GetxController {
 
   void _onError(String message) {
     status.value = StatusRequest.failure;
-    Get.snackbar('خطأ', message, snackPosition: SnackPosition.BOTTOM);
+    Get.snackbar('error'.tr, message, snackPosition: SnackPosition.BOTTOM);
     update();
   }
 
-  Future<void> _sendVerificationEmail(User user) async {
-    await user.sendEmailVerification();
+  /// Sends our own branded verification email via the backend. The link inside
+  /// opens Firebase's default verification page.
+  Future<void> _sendVerificationEmail() async {
+    final lang = Get.locale?.languageCode ?? 'ar';
+    final response = await _authData.sendVerification(lang);
+    if (response['status'] != StatusRequest.success) {
+      throw Exception('send_verification_failed');
+    }
   }
 
   Future<void> logout() async {
@@ -465,19 +471,55 @@ class AuthController extends GetxController {
     Get.offAllNamed(AppRoutes.login);
   }
 
+  /// Permanently deletes the account from the backend (DB + Firebase) and then
+  /// clears the local session. If the caller is the last general_manager, the
+  /// backend deletes the whole company too.
+  Future<void> deleteAccount() async {
+    if (isDeletingAccount.value) return;
+    isDeletingAccount.value = true;
+    try {
+      final response = await _authData.deleteAccount();
+      if (response['status'] != StatusRequest.success) {
+        isDeletingAccount.value = false;
+        Get.snackbar('error'.tr, 'delete_account_failed'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+
+      // Backend already removed the Firebase user; sign out locally to clear
+      // any cached credentials/state.
+      try {
+        await _googleSignIn.signOut();
+        await _auth.signOut();
+      } catch (_) {}
+
+      await _authData.logout();
+      user = null;
+      isLoggedIn.value = false;
+      isDeletingAccount.value = false;
+      Get.offAllNamed(AppRoutes.login);
+      Get.snackbar('done'.tr, 'delete_account_success'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      isDeletingAccount.value = false;
+      debugPrint('❌ deleteAccount error: $e');
+      Get.snackbar('error'.tr, 'delete_account_failed'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
   Future<void> resendVerificationEmail() async {
     final firebaseUser = _auth.currentUser;
     if (firebaseUser == null) return;
 
     isSendingVerification.value = true;
     try {
-      await _auth.setLanguageCode(Get.locale?.languageCode ?? 'ar');
-      await _sendVerificationEmail(firebaseUser);
-      Get.snackbar('تم', 'تم إرسال رابط التفعيل إلى بريدك الإلكتروني',
+      await _sendVerificationEmail();
+      Get.snackbar('done'.tr, 'activation_link_resent'.tr,
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
       debugPrint('❌ sendEmailVerification error: $e');
-      Get.snackbar('خطأ', e.toString(),
+      Get.snackbar('error'.tr, e.toString(),
           snackPosition: SnackPosition.BOTTOM);
     }
     isSendingVerification.value = false;
@@ -497,11 +539,11 @@ class AuthController extends GetxController {
         if (success) {
           _onSuccess();
         } else {
-          _onError('فشل الاتصال بالخادم');
+          _onError('server_failed'.tr);
         }
       }
     } else if (!silent) {
-      Get.snackbar('تنبيه', 'لم يتم تفعيل البريد بعد، تحقق من بريدك الإلكتروني',
+      Get.snackbar('alert'.tr, 'email_not_verified'.tr,
           snackPosition: SnackPosition.BOTTOM);
     }
   }
@@ -545,52 +587,52 @@ class AuthController extends GetxController {
   String _getFirebaseErrorMessage(String code) {
     switch (code) {
       case 'invalid-email':
-        return 'البريد الإلكتروني غير صحيح';
+        return 'firebase_invalid_email'.tr;
       case 'user-disabled':
-        return 'تم تعطيل هذا الحساب';
+        return 'firebase_user_disabled'.tr;
       case 'user-not-found':
-        return 'لم يتم العثور على حساب بهذا البريد';
+        return 'firebase_user_not_found'.tr;
       case 'wrong-password':
-        return 'كلمة السر غير صحيحة';
+        return 'firebase_wrong_password'.tr;
       case 'email-already-in-use':
-        return 'البريد الإلكتروني مستخدم بالفعل';
+        return 'firebase_email_in_use'.tr;
       case 'weak-password':
-        return 'كلمة السر ضعيفة';
+        return 'firebase_weak_password'.tr;
       case 'too-many-requests':
-        return 'محاولات كثيرة، حاول لاحقاً';
+        return 'firebase_too_many_requests'.tr;
       case 'network-request-failed':
-        return 'فشل الاتصال بالشبكة';
+        return 'firebase_network_failed'.tr;
       case 'account-exists-with-different-credential':
-        return 'يوجد حساب مسجل بهذا البريد بطريقة أخرى';
+        return 'firebase_account_exists'.tr;
       case 'invalid-credential':
-        return 'البريد الإلكتروني أو كلمة السر غير صحيحة';
+        return 'firebase_invalid_credential'.tr;
       case 'operation-not-allowed':
-        return 'طريقة تسجيل الدخول غير مفعلة';
+        return 'firebase_operation_not_allowed'.tr;
       case 'invalid-continue-uri':
-        return 'رابط التأكيد غير صالح';
+        return 'firebase_invalid_continue_uri'.tr;
       case 'unauthorized-continue-uri':
-        return 'رابط التأكيد غير مصرح به';
+        return 'firebase_unauthorized_uri'.tr;
       default:
-        return 'حدث خطأ غير متوقع ($code)';
+        return 'firebase_unknown_error'.tr;
     }
   }
 
   String _getGoogleErrorMessage(GoogleSignInExceptionCode code) {
     switch (code) {
       case GoogleSignInExceptionCode.canceled:
-        return 'تم إلغاء تسجيل الدخول';
+        return 'google_canceled'.tr;
       case GoogleSignInExceptionCode.interrupted:
-        return 'تم مقاطعة عملية تسجيل الدخول';
+        return 'google_interrupted'.tr;
       case GoogleSignInExceptionCode.uiUnavailable:
-        return 'واجهة تسجيل الدخول غير متاحة';
+        return 'google_ui_unavailable'.tr;
       case GoogleSignInExceptionCode.clientConfigurationError:
-        return 'خطأ في إعدادات التطبيق';
+        return 'google_client_error'.tr;
       case GoogleSignInExceptionCode.providerConfigurationError:
-        return 'خطأ في إعدادات Google';
+        return 'google_provider_error'.tr;
       case GoogleSignInExceptionCode.userMismatch:
-        return 'عدم تطابق المستخدم';
+        return 'google_user_mismatch'.tr;
       case GoogleSignInExceptionCode.unknownError:
-        return 'حدث خطأ غير متوقع';
+        return 'google_unknown_error'.tr;
     }
   }
 }

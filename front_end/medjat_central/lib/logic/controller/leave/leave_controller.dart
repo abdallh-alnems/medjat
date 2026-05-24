@@ -85,7 +85,7 @@ class LeaveController extends GetxController {
   Future<void> approveLeave(int id) async {
     final response = await _leaveData.approveLeave(id);
     if (response['status'] == StatusRequest.success) {
-      Get.snackbar('تم', 'تم قبول الإجازة', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('done'.tr, 'leave_approved'.tr, snackPosition: SnackPosition.BOTTOM);
       loadLeaves();
     }
   }
@@ -93,7 +93,7 @@ class LeaveController extends GetxController {
   Future<void> rejectLeave(int id, {String? reason}) async {
     final response = await _leaveData.rejectLeave(id, reason: reason);
     if (response['status'] == StatusRequest.success) {
-      Get.snackbar('تم', 'تم رفض الإجازة', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('done'.tr, 'leave_rejected_msg'.tr, snackPosition: SnackPosition.BOTTOM);
       loadLeaves();
     }
   }
@@ -128,13 +128,16 @@ class LeaveController extends GetxController {
 
       if (inner != null && inner['warning'] == 'balance_exceeded') {
         Get.snackbar(
-          'تنبيه',
-          'سيتم احتساب ${inner['paid_days']} يوم بأجر و ${inner['unpaid_days']} يوم بدون أجر',
+          'alert'.tr,
+          'leave_balance_exceeded_warning'.trParams({
+            'paid': '${inner['paid_days']}',
+            'unpaid': '${inner['unpaid_days']}',
+          }),
           snackPosition: SnackPosition.BOTTOM,
           duration: const Duration(seconds: 4),
         );
       } else {
-        Get.snackbar('تم', 'تم إنشاء الإجازة بنجاح',
+        Get.snackbar('done'.tr, 'leave_created_success'.tr,
             snackPosition: SnackPosition.BOTTOM);
       }
       loadLeaves();
@@ -144,18 +147,18 @@ class LeaveController extends GetxController {
     if (response['statusCode'] == 409) {
       final msg = response['message'];
       Get.snackbar(
-          'خطأ',
+          'error'.tr,
           msg is String
               ? msg
-              : 'يوجد تداخل مع إجازة قائمة في هذه الفترة',
+              : 'leave_overlap'.tr,
           snackPosition: SnackPosition.BOTTOM);
       return false;
     }
 
     final errMsg = response['message'];
     Get.snackbar(
-        'خطأ',
-        errMsg is String ? errMsg : 'فشل إنشاء الإجازة',
+        'error'.tr,
+        errMsg is String ? errMsg : 'leave_created_failed'.tr,
         snackPosition: SnackPosition.BOTTOM);
     return false;
   }
@@ -177,13 +180,13 @@ class LeaveController extends GetxController {
     final response = await _leaveData.createRecurringLeave(data);
 
     if (response['status'] == StatusRequest.success) {
-      Get.snackbar('تم', 'تم إنشاء الإجازة المتكررة بنجاح',
+      Get.snackbar('done'.tr, 'recurring_leave_created'.tr,
           snackPosition: SnackPosition.BOTTOM);
       loadLeaves();
       return true;
     }
 
-    Get.snackbar('خطأ', 'فشل إنشاء الإجازة المتكررة',
+    Get.snackbar('error'.tr, 'recurring_leave_failed'.tr,
         snackPosition: SnackPosition.BOTTOM);
     return false;
   }

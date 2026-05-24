@@ -4,6 +4,14 @@ final class AssetModel {
     public const TYPES = ['money', 'equipment', 'device', 'vehicle', 'document', 'other'];
     public const STATUSES = ['assigned', 'return_requested', 'returned'];
 
+    /** Custody items the employee asked to return, awaiting admin confirmation. */
+    public static function countReturnRequested(int $tenantId): int {
+        return (int) (Database::fetchOne(
+            "SELECT COUNT(*) AS c FROM asset_custody WHERE tenant_id = ? AND status = 'return_requested'",
+            [$tenantId]
+        )['c'] ?? 0);
+    }
+
     public static function create(
         int $tenantId,
         int $employeeId,

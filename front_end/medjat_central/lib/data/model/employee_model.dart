@@ -8,7 +8,7 @@ class EmployeeModel {
   final String? photoUrl;
   final String? employeeCode;
   final String? jobTitle;
-  final int baseSalary;
+  final double baseSalary;
   final String status;
   final String? branchName;
   final DateTime? hireDate;
@@ -40,6 +40,7 @@ class EmployeeModel {
   final DateTime? contractStart;
   final DateTime? contractEnd;
   final DateTime? healthInsuranceExpiry;
+  final DateTime? autoTerminateAt;
 
   EmployeeModel({
     required this.id,
@@ -80,10 +81,19 @@ class EmployeeModel {
     this.contractStart,
     this.contractEnd,
     this.healthInsuranceExpiry,
+    this.autoTerminateAt,
   });
 
   static DateTime? _parseDate(dynamic value) =>
       value is String && value.isNotEmpty ? DateTime.tryParse(value) : null;
+
+  /// DECIMAL columns come back from the API as strings (e.g. "4500.50"),
+  /// so accept both numbers and numeric strings.
+  static double _parseDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0;
+    return 0;
+  }
 
   factory EmployeeModel.fromJson(Map<String, dynamic> json) {
     return EmployeeModel(
@@ -94,7 +104,7 @@ class EmployeeModel {
       photoUrl: json['photo_url'] as String?,
       employeeCode: json['employee_code'] as String?,
       jobTitle: json['job_title'] as String?,
-      baseSalary: (json['base_salary'] as num?)?.toInt() ?? 0,
+      baseSalary: _parseDouble(json['base_salary']),
       status: (json['status'] as String?) ?? 'active',
       branchName: json['branch_name'] as String?,
       hireDate: json['hire_date'] != null
@@ -127,6 +137,7 @@ class EmployeeModel {
       contractStart: _parseDate(json['contract_start']),
       contractEnd: _parseDate(json['contract_end']),
       healthInsuranceExpiry: _parseDate(json['health_insurance_expiry']),
+      autoTerminateAt: _parseDate(json['auto_terminate_at']),
     );
   }
 

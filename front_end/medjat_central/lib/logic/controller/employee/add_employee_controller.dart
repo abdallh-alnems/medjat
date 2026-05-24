@@ -25,7 +25,7 @@ class AddEmployeeController extends GetxController {
   int? createdEmployeeId;
   int? selectedBranchId;
   int? selectedShiftId;
-  final Set<int> selectedCategoryIds = {};
+  int? selectedCategoryId;
   TimeOfDay startTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay endTime = const TimeOfDay(hour: 17, minute: 0);
 
@@ -148,8 +148,8 @@ class AddEmployeeController extends GetxController {
         Get.back(result: true);
         Future.delayed(const Duration(milliseconds: 250), () {
           Get.snackbar(
-            'تم',
-            'تم إضافة الموظف بنجاح',
+            'done'.tr,
+            'employee_added_success'.tr,
             snackPosition: SnackPosition.BOTTOM,
           );
         });
@@ -157,14 +157,14 @@ class AddEmployeeController extends GetxController {
       }
 
       Get.snackbar(
-        'تم',
-        'تم إضافة الموظف بنجاح',
+        'done'.tr,
+        'employee_added_success'.tr,
         snackPosition: SnackPosition.BOTTOM,
       );
     } else {
       status.value = (response['status'] as StatusRequest?) ?? StatusRequest.failure;
-      final message = (response['message'] as String?) ?? 'حدث خطأ، حاول مرة أخرى';
-      Get.snackbar('خطأ', message, snackPosition: SnackPosition.BOTTOM);
+      final message = (response['message'] as String?) ?? 'error_try_again'.tr;
+      Get.snackbar('error'.tr, message, snackPosition: SnackPosition.BOTTOM);
     }
     update();
   }

@@ -66,12 +66,12 @@ class CompanySettingsController extends GetxController {
     final response = await _companySettingsData.updateCompanySettings(data);
 
     if (response['status'] == StatusRequest.success) {
-      Get.snackbar('تم', 'تم حفظ بيانات الشركة',
+      Get.snackbar('done'.tr, 'company_data_saved'.tr,
           snackPosition: SnackPosition.BOTTOM);
       status = StatusRequest.success;
     } else {
       Get.snackbar(
-          'خطأ', (response['message'] as String?) ?? 'حدث خطأ',
+          'error'.tr, (response['message'] as String?) ?? 'an_error_occurred'.tr,
           snackPosition: SnackPosition.BOTTOM);
       status = (response['status'] as StatusRequest?) ?? StatusRequest.failure;
     }

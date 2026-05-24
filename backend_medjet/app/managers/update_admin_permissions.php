@@ -36,6 +36,14 @@ foreach ($permissions as $perm) {
     }
 }
 
+// Enforce equal-or-lower: cannot grant a permission you don't hold yourself.
+$inviterPerms = PermissionMiddleware::effectivePermissions(
+    $auth['admin_id'], $tenantId, $auth['role']
+);
+if (!PermissionMiddleware::isWithin($permissions, $inviterPerms)) {
+    Response::forbidden('لا يمكنك منح صلاحيات لا تملكها');
+}
+
 Database::execute(
     "INSERT INTO custom_roles (tenant_id, admin_id, name, permissions)
      VALUES (?, ?, 'custom', ?)

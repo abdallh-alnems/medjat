@@ -20,7 +20,7 @@ class EmployeesScreen extends StatelessWidget {
         title: Text('employees'.tr),
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list_outlined),
+            icon: const Icon(Icons.tune),
             onPressed: () => _showFilterSheet(context, ctrl),
           ),
         ],
@@ -53,6 +53,12 @@ class EmployeesScreen extends StatelessWidget {
                 fontSize: 15,
               ),
             ),
+          ),
+          GetBuilder<EmployeeController>(
+            builder: (_) {
+              if (!ctrl.hasActiveFilters) return const SizedBox.shrink();
+              return _ActiveFiltersBar(ctrl: ctrl);
+            },
           ),
           Expanded(
             child: RefreshIndicator(
@@ -106,31 +112,287 @@ class EmployeesScreen extends StatelessWidget {
   }
 
   void _showFilterSheet(BuildContext context, EmployeeController ctrl) {
+    int? _branch = ctrl.branchFilter;
+    int? _shift = ctrl.shiftFilter;
+    int? _category = ctrl.categoryFilter;
+
     Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.all(AppSpacing.s4),
-        decoration: BoxDecoration(
-          color: AppColors.of(context).surface,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(AppRadius.lg),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('filter'.tr, style: AppTextStyles.h3(context)),
-            const SizedBox(height: AppSpacing.s4),
-            ListTile(
-              title: Text('all_branches'.tr),
-              onTap: () {
-                ctrl.filterByBranch(null);
-                Get.back();
-              },
+      StatefulBuilder(
+        builder: (context, setSheetState) {
+          final colors = AppColors.of(context);
+          return Container(
+            padding: const EdgeInsets.all(AppSpacing.s4),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppRadius.lg),
+              ),
             ),
-            const Divider(),
-            const SizedBox(height: AppSpacing.s3),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text('filter'.tr, style: AppTextStyles.h3(context)),
+                      const Spacer(),
+                      if (ctrl.hasActiveFilters)
+                        TextButton(
+                          onPressed: () {
+                            setSheetState(() {
+                              _branch = null;
+                              _shift = null;
+                              _category = null;
+                            });
+                          },
+                          child: Text('clear_all'.tr),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.s4),
+                  if (ctrl.branches.isNotEmpty) ...[
+                    _FilterLabel(text: 'branch'.tr),
+                    const SizedBox(height: AppSpacing.s2),
+                    _FilterDropdown(
+                      value: _branch,
+                      hint: 'all_branches'.tr,
+                      items: ctrl.branches
+                          .map((b) => DropdownMenuItem<int?>(
+                                value: b.id,
+                                child: Text(b.name,
+                                    style: const TextStyle(
+                                      fontFamily: 'IBM Plex Sans Arabic',
+                                      fontSize: 14,
+                                    )),
+                              ))
+                          .toList(),
+                      onChanged: (v) =>
+                          setSheetState(() => _branch = v),
+                    ),
+                    const SizedBox(height: AppSpacing.s3),
+                  ],
+                  if (ctrl.shifts.isNotEmpty) ...[
+                    _FilterLabel(text: 'shift'.tr),
+                    const SizedBox(height: AppSpacing.s2),
+                    _FilterDropdown(
+                      value: _shift,
+                      hint: 'all_shifts'.tr,
+                      items: ctrl.shifts
+                          .map((s) => DropdownMenuItem<int?>(
+                                value: s.id,
+                                child: Text(
+                                    '${s.name} (${s.startTime.substring(0, 5)} - ${s.endTime.substring(0, 5)})',
+                                    style: const TextStyle(
+                                      fontFamily: 'IBM Plex Sans Arabic',
+                                      fontSize: 14,
+                                    )),
+                              ))
+                          .toList(),
+                      onChanged: (v) =>
+                          setSheetState(() => _shift = v),
+                    ),
+                    const SizedBox(height: AppSpacing.s3),
+                  ],
+                  if (ctrl.categories.isNotEmpty) ...[
+                    _FilterLabel(text: 'employee_categories'.tr),
+                    const SizedBox(height: AppSpacing.s2),
+                    _FilterDropdown(
+                      value: _category,
+                      hint: 'all_categories'.tr,
+                      items: ctrl.categories
+                          .map((c) => DropdownMenuItem<int?>(
+                                value: c.id,
+                                child: Text(c.name,
+                                    style: const TextStyle(
+                                      fontFamily: 'IBM Plex Sans Arabic',
+                                      fontSize: 14,
+                                    )),
+                              ))
+                          .toList(),
+                      onChanged: (v) =>
+                          setSheetState(() => _category = v),
+                    ),
+                    const SizedBox(height: AppSpacing.s4),
+                  ],
+                  const SizedBox(height: AppSpacing.s2),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        ctrl.applyFilters(
+                          branchId: _branch,
+                          shiftId: _shift,
+                          categoryId: _category,
+                        );
+                        Get.back();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(0, 48),
+                      ),
+                      child: Text('apply_filter'.tr),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s4),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+      isScrollControlled: true,
+    );
+  }
+}
+
+class _ActiveFiltersBar extends StatelessWidget {
+  final EmployeeController ctrl;
+  const _ActiveFiltersBar({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final chips = <Widget>[];
+
+    if (ctrl.branchFilter != null) {
+      chips.add(_filterChip(
+        context,
+        label: ctrl.branchName(ctrl.branchFilter) ?? '',
+        color: colors.brand,
+        onRemove: () => ctrl.applyFilters(
+          branchId: null,
+          shiftId: ctrl.shiftFilter,
+          categoryId: ctrl.categoryFilter,
+        ),
+      ));
+    }
+    if (ctrl.shiftFilter != null) {
+      chips.add(_filterChip(
+        context,
+        label: ctrl.shiftName(ctrl.shiftFilter) ?? '',
+        color: colors.brand,
+        onRemove: () => ctrl.applyFilters(
+          branchId: ctrl.branchFilter,
+          shiftId: null,
+          categoryId: ctrl.categoryFilter,
+        ),
+      ));
+    }
+    if (ctrl.categoryFilter != null) {
+      chips.add(_filterChip(
+        context,
+        label: ctrl.categoryName(ctrl.categoryFilter) ?? '',
+        color: colors.brand,
+        onRemove: () => ctrl.applyFilters(
+          branchId: ctrl.branchFilter,
+          shiftId: ctrl.shiftFilter,
+          categoryId: null,
+        ),
+      ));
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
+      child: Wrap(
+        spacing: AppSpacing.s2,
+        runSpacing: AppSpacing.s1,
+        children: chips,
+      ),
+    );
+  }
+
+  Widget _filterChip(
+    BuildContext context, {
+    required String label,
+    required Color color,
+    required VoidCallback onRemove,
+  }) {
+    return Chip(
+      label: Text(
+        label,
+        style: TextStyle(
+          fontFamily: 'IBM Plex Sans Arabic',
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: color,
+        ),
+      ),
+      deleteIcon: Icon(Icons.close, size: 16, color: color),
+      onDeleted: onRemove,
+      visualDensity: VisualDensity.compact,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      side: BorderSide(color: color.withValues(alpha: 0.3)),
+      backgroundColor: color.withValues(alpha: 0.08),
+    );
+  }
+}
+
+class _FilterLabel extends StatelessWidget {
+  final String text;
+  const _FilterLabel({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Text(
+      text,
+      style: TextStyle(
+        fontFamily: 'IBM Plex Sans Arabic',
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
+        color: colors.textSecondary,
+      ),
+    );
+  }
+}
+
+class _FilterDropdown extends StatelessWidget {
+  final int? value;
+  final String hint;
+  final List<DropdownMenuItem<int?>> items;
+  final ValueChanged<int?> onChanged;
+
+  const _FilterDropdown({
+    required this.value,
+    required this.hint,
+    required this.items,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s3),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<int?>(
+          value: value,
+          hint: Text(hint,
+              style: TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 14,
+                color: colors.textSecondary,
+              )),
+          isExpanded: true,
+          icon: Icon(Icons.expand_more, color: colors.textTertiary),
+          items: [
+            DropdownMenuItem<int?>(
+              value: null,
+              child: Text(hint,
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 14,
+                    color: colors.textTertiary,
+                  )),
+            ),
+            ...items,
           ],
+          onChanged: onChanged,
         ),
       ),
     );

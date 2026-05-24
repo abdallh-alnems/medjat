@@ -1,7 +1,7 @@
 <?php
 
 final class AuditLogModel {
-    public static function log(int $tenantId, int $adminId, string $action, ?string $targetType = null, $targetId = null, ?array $payload = null): void {
+    public static function log(int $tenantId, ?int $adminId, string $action, ?string $targetType = null, $targetId = null, ?array $payload = null): void {
         try {
             Database::execute(
                 "INSERT INTO audit_log (tenant_id, admin_id, action, target_type, target_id, payload, ip) VALUES (?,?,?,?,?,?,?)",

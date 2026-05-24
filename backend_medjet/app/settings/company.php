@@ -39,7 +39,7 @@ if ($method === 'GET') {
         'name' => $tenant['name'] ?? '',
         'address' => $tenant['domain'] ?? '',
         'phone' => '',
-        'email' => $tenant['owner_email'] ?? '',
+        'email' => '',
         'attendance_methods' => $tenantMethods,
         'manual_attendance_admin_ids' => $manualAdminIds,
         'allow_offline_attendance' => (bool) ($tenant['allow_offline_attendance'] ?? true),

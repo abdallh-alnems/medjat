@@ -186,6 +186,18 @@ final class LeaveModel {
         ];
     }
 
+    public static function countPending(int $tenantId, ?int $branchId = null): int {
+        $sql = "SELECT COUNT(*) AS c FROM leaves l
+                JOIN employees e ON e.id = l.employee_id
+                WHERE l.tenant_id = ? AND l.status = 'pending'";
+        $params = [$tenantId];
+        if ($branchId) {
+            $sql .= " AND e.branch_id = ?";
+            $params[] = $branchId;
+        }
+        return (int) (Database::fetchOne($sql, $params)['c'] ?? 0);
+    }
+
     public static function getByTenant(int $tenantId, int $page = 1, int $limit = 20, ?string $status = null): array {
         $sql = "SELECT l.*, e.name as employee_name FROM leaves l
                 JOIN employees e ON e.id = l.employee_id

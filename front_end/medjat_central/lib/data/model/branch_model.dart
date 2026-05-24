@@ -35,6 +35,13 @@ class BranchModel {
     this.allowOfflineAttendance,
   });
 
+  static double? _parseDouble(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v);
+    return null;
+  }
+
   factory BranchModel.fromJson(Map<String, dynamic> json) {
     List<String>? methods;
     if (json['attendance_methods'] != null) {
@@ -55,8 +62,8 @@ class BranchModel {
       id: (json['id'] as int?) ?? 0,
       name: (json['name'] as String?) ?? '',
       address: json['address'] as String?,
-      lat: (json['lat'] as num?)?.toDouble(),
-      lng: (json['lng'] as num?)?.toDouble(),
+      lat: _parseDouble(json['lat']),
+      lng: _parseDouble(json['lng']),
       qrCode: json['qr_code'] as String?,
       employeeCount: (json['employee_count'] as int?) ?? 0,
       attendanceMethods: methods,
@@ -64,7 +71,7 @@ class BranchModel {
       stationEnabled: (json['station_enabled'] as int?) == 1,
       stationMethods: (json['station_methods'] as String?) ?? 'face_only',
       stationGpsRadiusMeters: (json['station_gps_radius_meters'] as int?) ?? 30,
-      stationConfidenceThreshold: (json['station_confidence_threshold'] as num?)?.toDouble() ?? 0.85,
+      stationConfidenceThreshold: _parseDouble(json['station_confidence_threshold']) ?? 0.85,
       stationAntiSpoofing: (json['station_anti_spoofing_enabled'] as int?) == 1,
       hasStationPin: (json['station_admin_pin_hash'] as String?) != null,
       allowOfflineAttendance: allowOffline,

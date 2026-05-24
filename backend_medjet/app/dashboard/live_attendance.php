@@ -8,6 +8,8 @@ $tenantId = TenantMiddleware::requireTenant();
 PermissionMiddleware::check($auth, 'view_reports');
 
 $branchId = ($_GET['branch_id'] ?? null) ? (int) $_GET['branch_id'] : null;
+$shiftId = ($_GET['shift_id'] ?? null) ? (int) $_GET['shift_id'] : null;
+$categoryId = ($_GET['category_id'] ?? null) ? (int) $_GET['category_id'] : null;
 
 // "Today" resolved in the tenant timezone (fallback to server time).
 $tenant = TenantModel::findById($tenantId);
@@ -19,7 +21,7 @@ try {
 }
 $today = $now->format('Y-m-d');
 
-$rows = AttendanceModel::getLiveBoard($tenantId, $today, $branchId);
+$rows = AttendanceModel::getLiveBoard($tenantId, $today, $branchId, $shiftId, $categoryId);
 
 $summary = [
     'total' => 0,

@@ -26,7 +26,8 @@ $updatableFields = array_merge(
     ['name', 'phone', 'email', 'job_title', 'base_salary', 'branch_id', 'hire_date', 'national_id', 'work_start_time', 'work_end_time', 'shift_id', 'bank_name', 'bank_account_number', 'bank_iban', 'bank_swift'],
     EmployeeModel::COMPLIANCE_FIELDS
 );
-$dateFields = ['hire_date', 'iqama_expiry', 'passport_expiry', 'work_permit_expiry', 'contract_start', 'contract_end', 'health_insurance_expiry'];
+$updatableFields[] = 'auto_terminate_at';
+$dateFields = ['hire_date', 'iqama_expiry', 'passport_expiry', 'work_permit_expiry', 'contract_start', 'contract_end', 'health_insurance_expiry', 'auto_terminate_at'];
 foreach ($updatableFields as $field) {
     if (isset($input[$field])) {
         // Empty string on a date/optional field clears it back to NULL.
@@ -34,6 +35,14 @@ foreach ($updatableFields as $field) {
             ? null
             : $input[$field];
     }
+}
+
+if (isset($updateData['phone']) && $updateData['phone'] !== '') {
+    $normalizedPhone = Validator::phone($updateData['phone']);
+    if ($normalizedPhone === null) {
+        Response::fail('Invalid phone number', 422);
+    }
+    $updateData['phone'] = $normalizedPhone;
 }
 
 // annual_leave_days: empty/null = inherit company default (store NULL); number = per-employee override.
@@ -48,6 +57,10 @@ if (array_key_exists('annual_leave_days', $input)) {
         }
         $updateData['annual_leave_days'] = $days;
     }
+}
+
+if (array_key_exists('weekly_off_days', $input)) {
+    $updateData['weekly_off_days'] = EmployeeModel::normalizeWeeklyOffDays($input['weekly_off_days']);
 }
 
 if (!empty($updateData)) {

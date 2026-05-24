@@ -667,7 +667,8 @@ class _InfoSection extends StatelessWidget {
         _InfoRow(label: 'phone_number'.tr, value: e.phone ?? '—'),
         _InfoRow(
             label: 'base_salary'.tr,
-            value: '${e.baseSalary} ج.م'),
+            value:
+                '${e.baseSalary.toStringAsFixed(e.baseSalary == e.baseSalary.roundToDouble() ? 0 : 2)} ج.م'),
         _InfoRow(label: 'branch'.tr, value: e.branchName ?? '—'),
         _InfoRow(
             label: 'hire_date'.tr,

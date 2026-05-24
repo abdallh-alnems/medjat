@@ -73,7 +73,8 @@ void main() {
       expect(code, 'ABC123');
     });
 
-    test('createInvitation — فشل يعيد null', () async {
+    testWidgets('createInvitation — فشل يعيد null', (tester) async {
+      await pumpSnackbarHost(tester);
       when(() => mockData.getAdmins()).thenAnswer(
           (_) async => {'status': StatusRequest.success, 'data': []});
       when(() => mockData.getInvitations(status: any(named: 'status')))
@@ -90,9 +91,11 @@ void main() {
       );
 
       expect(code, isNull);
+      await settleSnackbars(tester);
     });
 
-    test('cancelInvitation — نجاح يعيد true', () async {
+    testWidgets('cancelInvitation — نجاح يعيد true', (tester) async {
+      await pumpSnackbarHost(tester);
       when(() => mockData.getAdmins()).thenAnswer(
           (_) async => {'status': StatusRequest.success, 'data': []});
       when(() => mockData.getInvitations(status: any(named: 'status')))
@@ -106,6 +109,7 @@ void main() {
       final result = await controller.cancelInvitation(5);
 
       expect(result, isTrue);
+      await settleSnackbars(tester);
     });
 
     test('togglePermission يضيف ويزيل صلاحية', () async {

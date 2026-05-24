@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -13,4 +14,18 @@ void setupGetX() {
 
 void teardownGetX() {
   Get.reset();
+}
+
+/// Pumps a minimal [GetMaterialApp] so that controller code calling
+/// `Get.snackbar(...)` has a valid navigator overlay during unit tests.
+Future<void> pumpSnackbarHost(WidgetTester tester) async {
+  await tester.pumpWidget(const GetMaterialApp(home: Scaffold()));
+}
+
+/// Lets any snackbar triggered by the action display and auto-dismiss so the
+/// test ends with no pending timers.
+Future<void> settleSnackbars(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(seconds: 4));
+  await tester.pumpAndSettle();
 }

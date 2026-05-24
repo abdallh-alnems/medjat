@@ -5,7 +5,13 @@ RateLimiter::enforceIpLimit();
 $auth = Auth::authenticateUser(db());
 $tenantId = TenantMiddleware::requireTenant();
 
-PermissionMiddleware::check($auth, 'manage_employees');
+// Category names are a dashboard filter dimension, so allow any staff member
+// who can see the dashboard to read the list (not just employee managers).
+PermissionMiddleware::checkAny($auth, [
+    'manage_employees',
+    'view_reports',
+    'manage_company_settings',
+]);
 
 $categories = EmployeeCategoryModel::listByTenant($tenantId);
 

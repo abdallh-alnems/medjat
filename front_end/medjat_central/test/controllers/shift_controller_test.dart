@@ -87,6 +87,8 @@ void main() {
                 'status': StatusRequest.success,
                 'data': {'data': {'assigned': 3}},
               });
+      when(() => mockData.getShifts(branchId: any(named: 'branchId')))
+          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': []});
 
       final controller = ShiftController();
       await controller.loadShifts();

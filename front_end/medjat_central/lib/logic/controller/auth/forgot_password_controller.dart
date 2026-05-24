@@ -1,13 +1,13 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/constant/theme/theme.dart';
 import '../../../core/shared/buttons/primary_button.dart';
+import '../../../data/data_source/remote/auth_data/auth_data.dart';
 
 class ForgotPasswordController extends GetxController {
-  final _auth = FirebaseAuth.instance;
+  final AuthData _authData = Get.find<AuthData>();
 
   final status = StatusRequest.none.obs;
   final isSendingReset = false.obs;
@@ -17,35 +17,25 @@ class ForgotPasswordController extends GetxController {
     status.value = StatusRequest.loading;
 
     final cleanEmail = email.trim().toLowerCase();
+    final lang = Get.locale?.languageCode ?? 'ar';
 
-    try {
-      await _auth.setLanguageCode(Get.locale?.languageCode ?? 'ar');
-      await _auth.sendPasswordResetEmail(email: cleanEmail);
+    // Sends our own branded reset email via the backend (which generates the
+    // Firebase reset link that opens Firebase's default reset page). The backend
+    // is enumeration-safe and always returns success, so we show the same
+    // confirmation regardless of account existence.
+    final response = await _authData.sendPasswordReset(cleanEmail, lang);
+    isSendingReset.value = false;
 
-      isSendingReset.value = false;
+    if (response['status'] == StatusRequest.success) {
       status.value = StatusRequest.success;
       _showSuccessDialog(cleanEmail);
-    } on FirebaseAuthException catch (e) {
-      isSendingReset.value = false;
+    } else if (response['status'] == StatusRequest.offline) {
       status.value = StatusRequest.failure;
-
-      // Firebase enables email enumeration protection by default, so it will
-      // not throw 'user-not-found' for non-existing emails — it silently
-      // succeeds. We only surface real errors here (invalid format, throttling).
-      if (e.code == 'invalid-email' ||
-          e.code == 'too-many-requests' ||
-          e.code == 'missing-email') {
-        Get.snackbar('خطأ', _getErrorMessage(e.code),
-            snackPosition: SnackPosition.BOTTOM);
-      } else {
-        status.value = StatusRequest.success;
-        _showSuccessDialog(cleanEmail);
-      }
-    } catch (e) {
-      debugPrint('❌ sendResetLink error: $e');
-      isSendingReset.value = false;
+      Get.snackbar('error'.tr, 'offline_error'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    } else {
       status.value = StatusRequest.failure;
-      Get.snackbar('خطأ', 'حدث خطأ غير متوقع',
+      Get.snackbar('error'.tr, 'unexpected_error'.tr,
           snackPosition: SnackPosition.BOTTOM);
     }
   }
@@ -125,18 +115,5 @@ class ForgotPasswordController extends GetxController {
       ),
       barrierDismissible: false,
     );
-  }
-
-  String _getErrorMessage(String code) {
-    switch (code) {
-      case 'invalid-email':
-        return 'invalid_email'.tr;
-      case 'too-many-requests':
-        return 'too_many_requests'.tr;
-      case 'missing-email':
-        return 'enter_email'.tr;
-      default:
-        return 'حدث خطأ غير متوقع';
-    }
   }
 }

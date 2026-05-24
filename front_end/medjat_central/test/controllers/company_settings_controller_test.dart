@@ -50,7 +50,8 @@ void main() {
       expect(controller.status, StatusRequest.serverFailure);
     });
 
-    test('saveSettings — نجاح', () async {
+    testWidgets('saveSettings — نجاح', (tester) async {
+      await pumpSnackbarHost(tester);
       when(() => mockData.getCompanySettings()).thenAnswer((_) async => {
             'status': StatusRequest.success,
             'data': {'name': '', 'address': '', 'phone': '', 'email': ''},
@@ -66,6 +67,7 @@ void main() {
 
       expect(controller.status, StatusRequest.success);
       verify(() => mockData.updateCompanySettings(any())).called(1);
+      await settleSnackbars(tester);
     });
   });
 }

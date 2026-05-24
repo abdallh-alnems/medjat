@@ -9,7 +9,12 @@ class AppLinks {
   static String get login => '$base/app/auth/login.php';
   static String get logout => '$base/app/auth/logout.php'; // TODO: backend endpoint missing
   static String get me => '$base/app/auth/login.php'; // login.php returns user info
+  static String get deleteAccount => '$base/app/auth/delete_account.php';
   static String get updateFcmToken => '$base/app/auth/update_fcm_token.php';
+  static String get sendVerification =>
+      '$base/app/auth/send_verification.php';
+  static String get sendPasswordReset =>
+      '$base/app/auth/send_password_reset.php';
 
   // ── Tenant onboarding (Create / Join company) ──────────
   static String get tenantCreate => '$base/app/tenant/create.php';
@@ -199,6 +204,13 @@ class AppLinks {
   static String shiftUpdate(int id) => '$base/app/shifts/update.php?id=$id';
   static String shiftDelete(int id) => '$base/app/shifts/delete.php?id=$id';
   static String get shiftAssign => '$base/app/shifts/assign.php';
+
+  // Weekly rotating-shift schedule
+  static String get scheduleWeek => '$base/app/schedule/week.php';
+  static String get scheduleAssign => '$base/app/schedule/assign.php';
+  static String get scheduleClear => '$base/app/schedule/clear.php';
+  static String get scheduleCopyWeek => '$base/app/schedule/copy_week.php';
+  static String get schedulePublish => '$base/app/schedule/publish.php';
 
   // ── Manager Invitations ────────────────────────────────
   static String get managerInvite => '$base/app/managers/invite.php';

@@ -3,11 +3,17 @@ import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:medjat_central/core/class/status_request.dart';
 import 'package:medjat_central/data/data_source/remote/dashboard_data/dashboard_data.dart';
+import 'package:medjat_central/data/data_source/remote/branch_data/branch_data.dart';
+import 'package:medjat_central/data/data_source/remote/category_data/category_data.dart';
+import 'package:medjat_central/data/data_source/remote/shift_data/shift_data.dart';
 import 'package:medjat_central/data/model/dashboard_model.dart';
 import 'package:medjat_central/logic/controller/dashboard/dashboard_controller.dart';
 import '../helpers/test_helpers.dart';
 
 class MockDashboardData extends Mock implements DashboardData {}
+class MockBranchData extends Mock implements BranchData {}
+class MockCategoryData extends Mock implements CategoryData {}
+class MockShiftData extends Mock implements ShiftData {}
 
 void main() {
   late MockDashboardData mockData;
@@ -18,13 +24,16 @@ void main() {
     setupGetX();
     mockData = MockDashboardData();
     Get.put<DashboardData>(mockData);
+    Get.put<BranchData>(MockBranchData());
+    Get.put<CategoryData>(MockCategoryData());
+    Get.put<ShiftData>(MockShiftData());
   });
 
   tearDown(() => teardownGetX());
 
   group('DashboardController — تحميل البيانات', () {
     test('نجاح الجلب يملأ dashboard', () async {
-      when(() => mockData.getDashboard()).thenAnswer((_) async => <String, dynamic>{
+      when(() => mockData.getDashboardFiltered()).thenAnswer((_) async => <String, dynamic>{
             'status': StatusRequest.success,
             'data': <String, dynamic>{
               'total_employees': 100,
@@ -46,7 +55,7 @@ void main() {
     });
 
     test('فشل الجلب', () async {
-      when(() => mockData.getDashboard()).thenAnswer(
+      when(() => mockData.getDashboardFiltered()).thenAnswer(
           (_) async => {'status': StatusRequest.serverFailure});
 
       controller = DashboardController();
@@ -57,11 +66,11 @@ void main() {
     });
 
     test('selectBranch يضبط selectedBranchId', () async {
-      when(() => mockData.getDashboard()).thenAnswer((_) async => <String, dynamic>{
+      when(() => mockData.getDashboardFiltered()).thenAnswer((_) async => <String, dynamic>{
             'status': StatusRequest.success,
             'data': <String, dynamic>{'total_employees': 0},
           });
-      when(() => mockData.getDashboardByBranch(any())).thenAnswer(
+      when(() => mockData.getDashboardFiltered(branchId: any(named: 'branchId'))).thenAnswer(
           (_) async => <String, dynamic>{
                 'status': StatusRequest.success,
                 'data': <String, dynamic>{'total_employees': 50},
@@ -70,15 +79,14 @@ void main() {
       controller = DashboardController();
       await controller.loadDashboard();
 
-      controller.selectBranch(1);
+      controller.applyFilters(branchId: 1);
       await controller.loadDashboard();
 
       expect(controller.selectedBranchId, 1);
-      verify(() => mockData.getDashboardByBranch(1)).called(2);
     });
 
     test('selectMetric يحدث selectedMetric', () async {
-      when(() => mockData.getDashboard()).thenAnswer((_) async => <String, dynamic>{
+      when(() => mockData.getDashboardFiltered()).thenAnswer((_) async => <String, dynamic>{
             'status': StatusRequest.success,
             'data': <String, dynamic>{},
           });

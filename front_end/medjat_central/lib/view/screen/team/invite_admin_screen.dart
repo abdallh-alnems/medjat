@@ -7,6 +7,7 @@ import '../../../core/shared/buttons/primary_button.dart';
 import '../../../core/shared/input_fields/primary_input.dart';
 import '../../../data/data_source/remote/branch_data/branch_data.dart';
 import '../../../data/model/branch_model.dart';
+import '../../../logic/controller/auth/auth_controller.dart';
 import '../../../logic/controller/team/team_controller.dart';
 
 class InviteAdminScreen extends StatefulWidget {
@@ -91,6 +92,10 @@ class _InviteAdminScreenState extends State<InviteAdminScreen> {
                     selected: roleCtrl.value,
                     onChanged: (v) => roleCtrl.value = v,
                     colors: colors,
+                    // Only a general manager (full access) may grant the top role.
+                    includeGeneralManager:
+                        Get.find<AuthController>().user?.isGeneralManager ??
+                            false,
                   )),
               const SizedBox(height: AppSpacing.s4),
               Text('branch'.tr, style: AppTextStyles.h3(context)),
@@ -139,11 +144,13 @@ class _RoleSelector extends StatelessWidget {
   final String selected;
   final ValueChanged<String> onChanged;
   final AppColorScheme colors;
+  final bool includeGeneralManager;
 
   const _RoleSelector({
     required this.selected,
     required this.onChanged,
     required this.colors,
+    this.includeGeneralManager = false,
   });
 
   static const _roles = [
@@ -153,12 +160,19 @@ class _RoleSelector extends StatelessWidget {
     ('viewer', 'role_viewer', Icons.visibility_outlined),
   ];
 
+  static const _generalManagerRole =
+      ('general_manager', 'role_general_manager', Icons.workspace_premium_outlined);
+
   @override
   Widget build(BuildContext context) {
+    final roles = [
+      if (includeGeneralManager) _generalManagerRole,
+      ..._roles,
+    ];
     return Wrap(
       spacing: AppSpacing.s2,
       runSpacing: AppSpacing.s2,
-      children: _roles.map((r) {
+      children: roles.map((r) {
         final isSelected = selected == r.$1;
         return ChoiceChip(
           label: Text(r.$2.tr),

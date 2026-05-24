@@ -64,7 +64,8 @@ void main() {
       verify(() => mockData.getAssets(status: any(named: 'status'))).called(greaterThanOrEqualTo(2));
     });
 
-    test('createAsset — نجاح يعيد true', () async {
+    testWidgets('createAsset — نجاح يعيد true', (tester) async {
+      await pumpSnackbarHost(tester);
       when(() => mockData.createAsset(any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
       when(() => mockData.getAssets(status: any(named: 'status')))
@@ -81,11 +82,15 @@ void main() {
       );
 
       expect(result, isTrue);
+      await settleSnackbars(tester);
     });
 
-    test('createAsset — فشل يعيد false', () async {
+    testWidgets('createAsset — فشل يعيد false', (tester) async {
+      await pumpSnackbarHost(tester);
       when(() => mockData.createAsset(any()))
           .thenAnswer((_) async => {'status': StatusRequest.failure});
+      when(() => mockData.getAssets(status: any(named: 'status')))
+          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': []});
 
       controller = AssetController();
       await controller.loadAssets();
@@ -98,9 +103,11 @@ void main() {
       );
 
       expect(result, isFalse);
+      await settleSnackbars(tester);
     });
 
-    test('approveReturn — نجاح يعيد تحميل البيانات', () async {
+    testWidgets('approveReturn — نجاح يعيد تحميل البيانات', (tester) async {
+      await pumpSnackbarHost(tester);
       when(() => mockData.approveReturn(any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
       when(() => mockData.getAssets(status: any(named: 'status')))
@@ -112,9 +119,11 @@ void main() {
       await controller.approveReturn(5);
 
       verify(() => mockData.getAssets(status: any(named: 'status'))).called(greaterThanOrEqualTo(2));
+      await settleSnackbars(tester);
     });
 
-    test('rejectReturn — نجاح', () async {
+    testWidgets('rejectReturn — نجاح', (tester) async {
+      await pumpSnackbarHost(tester);
       when(() => mockData.rejectReturn(any(), reason: any(named: 'reason')))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
       when(() => mockData.getAssets(status: any(named: 'status')))
@@ -126,6 +135,7 @@ void main() {
       await controller.rejectReturn(5, reason: 'غير صالح');
 
       verify(() => mockData.getAssets(status: any(named: 'status'))).called(greaterThanOrEqualTo(2));
+      await settleSnackbars(tester);
     });
 
     test('data كـ Map مع data.data.items', () async {

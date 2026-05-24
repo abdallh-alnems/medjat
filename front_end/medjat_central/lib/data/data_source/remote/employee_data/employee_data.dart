@@ -5,9 +5,16 @@ import '../../../../core/constant/id/app_links.dart';
 class EmployeeData {
   final CRUD _crud = Get.find<CRUD>();
 
-  Future<Map<String, dynamic>> getEmployees({int? branchId, String? search}) async {
+  Future<Map<String, dynamic>> getEmployees({
+    int? branchId,
+    int? shiftId,
+    int? categoryId,
+    String? search,
+  }) async {
     final params = <String, dynamic>{};
     if (branchId != null) params['branch_id'] = branchId;
+    if (shiftId != null) params['shift_id'] = shiftId;
+    if (categoryId != null) params['category_id'] = categoryId;
     if (search != null && search.isNotEmpty) params['search'] = search;
     return await _crud.getData(AppLinks.employees, queryParameters: params);
   }

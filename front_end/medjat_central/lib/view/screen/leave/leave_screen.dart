@@ -169,20 +169,20 @@ class LeaveScreen extends StatelessWidget {
     final employeeData = Get.find<EmployeeData>();
 
     const leaveTypes = [
-      ('annual', 'سنوية'),
-      ('sick', 'مرضية'),
-      ('personal', 'شخصية'),
-      ('unpaid', 'بدون أجر'),
+      ('annual', 'leave_type_annual'),
+      ('sick', 'leave_type_sick'),
+      ('personal', 'leave_type_personal'),
+      ('unpaid', 'leave_type_unpaid'),
     ];
 
     const daysOfWeek = [
-      ('saturday', 'السبت'),
-      ('sunday', 'الأحد'),
-      ('monday', 'الاثنين'),
-      ('tuesday', 'الثلاثاء'),
-      ('wednesday', 'الأربعاء'),
-      ('thursday', 'الخميس'),
-      ('friday', 'الجمعة'),
+      ('saturday', 'day_saturday'),
+      ('sunday', 'day_sunday'),
+      ('monday', 'day_monday'),
+      ('tuesday', 'day_tuesday'),
+      ('wednesday', 'day_wednesday'),
+      ('thursday', 'day_thursday'),
+      ('friday', 'day_friday'),
     ];
 
     Get.bottomSheet<void>(
@@ -271,7 +271,7 @@ class LeaveScreen extends StatelessWidget {
                     runSpacing: AppSpacing.s2,
                     children: leaveTypes
                         .map((t) => _TypeChip(
-                              label: t.$2,
+                              label: t.$2.tr,
                               selected: selectedLeaveType == t.$1,
                               onTap: () => setSheetState(
                                   () => selectedLeaveType = t.$1),
@@ -349,7 +349,7 @@ class LeaveScreen extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: AppSpacing.s3),
-                  _sectionLabel('المدة', colors),
+                  _sectionLabel('duration'.tr, colors),
                   const SizedBox(height: AppSpacing.s2),
                   Wrap(
                     spacing: AppSpacing.s2,
@@ -419,7 +419,7 @@ class LeaveScreen extends StatelessWidget {
                   ],
                   if (selectedDuration == 'recurring') ...[
                     const SizedBox(height: AppSpacing.s3),
-                    _sectionLabel('يوم الأسبوع', colors),
+                    _sectionLabel('day_of_week'.tr, colors),
                     const SizedBox(height: AppSpacing.s2),
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -436,7 +436,7 @@ class LeaveScreen extends StatelessWidget {
                           items: daysOfWeek
                               .map((d) => DropdownMenuItem<String>(
                                     value: d.$1,
-                                    child: Text(d.$2,
+                                    child: Text(d.$2.tr,
                                         style: const TextStyle(
                                           fontFamily: 'IBM Plex Sans Arabic',
                                           fontSize: 14,
@@ -464,12 +464,12 @@ class LeaveScreen extends StatelessWidget {
                     text: 'save'.tr,
                     onPressed: () async {
                       if (selectedEmployeeId == null) {
-                        Get.snackbar('خطأ', 'يرجى اختيار الموظف',
+                        Get.snackbar('error'.tr, 'select_employee'.tr,
                             snackPosition: SnackPosition.BOTTOM);
                         return;
                       }
                       if (selectedDuration == 'single' && startDate == null) {
-                        Get.snackbar('خطأ', 'يرجى اختيار تاريخ البداية',
+                        Get.snackbar('error'.tr, 'select_start_date'.tr,
                             snackPosition: SnackPosition.BOTTOM);
                         return;
                       }
@@ -589,7 +589,10 @@ class _BalanceWarning extends StatelessWidget {
           const SizedBox(width: AppSpacing.s2),
           Expanded(
             child: Text(
-              'سيُحتسب $paidDays يوم بأجر و $unpaidDays يوم بدون أجر',
+              'leave_balance_warning'.trParams({
+                'paid': '$paidDays',
+                'unpaid': '$unpaidDays',
+              }),
               style: TextStyle(
                 fontFamily: 'IBM Plex Sans Arabic',
                 fontSize: 13,

@@ -4,6 +4,13 @@ final class LoanModel {
     public const TYPES = ['loan', 'advance'];
     public const STATUSES = ['pending', 'active', 'completed', 'cancelled'];
 
+    public static function countPending(int $tenantId): int {
+        return (int) (Database::fetchOne(
+            "SELECT COUNT(*) AS c FROM employee_loans WHERE tenant_id = ? AND status = 'pending'",
+            [$tenantId]
+        )['c'] ?? 0);
+    }
+
     public static function create(
         int $tenantId,
         int $employeeId,

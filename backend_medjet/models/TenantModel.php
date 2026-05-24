@@ -17,13 +17,11 @@ final class TenantModel {
 
     public static function create(array $data): int {
         Database::execute(
-            "INSERT INTO tenants (name, domain, owner_name, owner_email, plan, is_active)
-             VALUES (?, ?, ?, ?, ?, 1)",
+            "INSERT INTO tenants (name, domain, plan, is_active)
+             VALUES (?, ?, ?, 1)",
             [
                 $data['name'],
                 $data['domain'] ?? null,
-                $data['owner_name'],
-                $data['owner_email'],
                 $data['plan'] ?? 'starter',
             ]
         );

@@ -433,15 +433,22 @@ CREATE TABLE IF NOT EXISTS `employees` (
   `contract_start` date DEFAULT NULL,
   `contract_end` date DEFAULT NULL,
   `health_insurance_expiry` date DEFAULT NULL,
-  `base_salary` int unsigned NOT NULL DEFAULT '0',
+  `base_salary` decimal(12,2) unsigned NOT NULL DEFAULT '0.00',
   `hire_date` date DEFAULT NULL,
   `work_start_time` time NOT NULL DEFAULT '09:00:00',
   `work_end_time` time NOT NULL DEFAULT '17:00:00',
   `annual_leave_days` int DEFAULT NULL COMMENT 'NULL = inherit tenant default; number = per-employee override',
+  `weekly_off_days` set('saturday','sunday','monday','tuesday','wednesday','thursday','friday') COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Recurring weekly days off for this employee',
+  `auto_terminate_at` date DEFAULT NULL COMMENT 'Auto-terminate the employee on this date (fixed-term workers); NULL = open-ended',
   `shift_id` int unsigned DEFAULT NULL,
+  `shift_type` enum('fixed','rotating') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'fixed',
   `status` enum('pending_activation','active','terminated','on_leave','suspended') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending_activation',
   `profile_image` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `face_embedding` blob COMMENT 'For ML Kit face verification (v2)',
+  `bank_name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `bank_account_number` varchar(34) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `bank_iban` varchar(34) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `bank_swift` varchar(11) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `face_photo_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `face_enrolled_at` datetime DEFAULT NULL,
   `face_quality_score` decimal(4,3) DEFAULT NULL,
@@ -833,6 +840,26 @@ CREATE TABLE IF NOT EXISTS `shifts` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE IF NOT EXISTS `employee_shift_schedule` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `employee_id` int unsigned NOT NULL,
+  `shift_id` int unsigned DEFAULT NULL COMMENT 'NULL = rest / off day',
+  `work_date` date NOT NULL,
+  `status` enum('draft','published') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `created_by` int unsigned DEFAULT NULL COMMENT 'admin who last set this cell',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_sched_emp_date` (`employee_id`,`work_date`),
+  KEY `idx_sched_tenant_date` (`tenant_id`,`work_date`),
+  KEY `idx_sched_shift` (`shift_id`),
+  KEY `idx_sched_admin` (`created_by`),
+  CONSTRAINT `fk_sched_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_sched_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_sched_shift` FOREIGN KEY (`shift_id`) REFERENCES `shifts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_sched_admin` FOREIGN KEY (`created_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 CREATE TABLE IF NOT EXISTS `station_recognition_logs` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `tenant_id` int unsigned NOT NULL,
@@ -944,8 +971,6 @@ CREATE TABLE IF NOT EXISTS `tenants` (
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `domain` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `logo_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `owner_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `owner_email` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
   `plan` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'starter' COMMENT 'Denormalized current plan name for fast checks',
   `timezone` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Africa/Cairo',
   `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'EGP',
@@ -966,8 +991,7 @@ CREATE TABLE IF NOT EXISTS `tenants` (
   `company_address` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `company_phone` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `domain` (`domain`),
-  KEY `idx_tenant_email` (`owner_email`)
+  UNIQUE KEY `domain` (`domain`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;

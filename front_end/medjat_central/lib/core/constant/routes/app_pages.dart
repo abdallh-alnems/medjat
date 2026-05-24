@@ -18,7 +18,6 @@ import '../../../data/data_source/remote/company_settings_data/company_settings_
 import '../../../data/data_source/remote/shift_data/shift_data.dart';
 import '../../../data/data_source/remote/report_data/report_data.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
-import '../../../logic/controller/settings/settings_controller.dart';
 import '../../../logic/bindings/home_binding.dart';
 import '../../../view/screen/auth/login_screen.dart';
 import '../../../view/screen/auth/signup_screen.dart';
@@ -56,6 +55,9 @@ import '../../../view/screen/settings/account_settings_screen.dart';
 import '../../../view/screen/settings/app_settings_screen.dart';
 import '../../../view/screen/shift/shifts_screen.dart';
 import '../../../view/screen/shift/assign_shift_screen.dart';
+import '../../../view/screen/schedule/weekly_schedule_screen.dart';
+import '../../../data/data_source/remote/schedule_data/schedule_data.dart';
+import '../../../logic/controller/schedule/schedule_controller.dart';
 import '../../../view/screen/team/team_screen.dart';
 import '../../../view/screen/team/invite_admin_screen.dart';
 import '../../../view/screen/team/invitation_code_screen.dart';
@@ -70,11 +72,11 @@ import '../../../view/screen/notification/notifications_screen.dart';
 import '../../../view/screen/notification/notification_prefs_screen.dart';
 // TODO: statutory payroll settings screen not yet implemented; route disabled below.
 // import '../../../view/screen/settings/statutory_payroll_settings_screen.dart';
-import '../../../view/screen/live_attendance/live_attendance_screen.dart';
-import '../../../data/data_source/remote/live_attendance_data/live_attendance_data.dart';
-import '../../../logic/controller/live_attendance/live_attendance_controller.dart';
 import '../../../view/screen/letter/letters_hub_screen.dart';
 import '../../../view/screen/letter/letter_template_edit_screen.dart';
+import '../../../view/screen/dashboard/status_employees_screen.dart';
+import '../../../logic/controller/dashboard/status_employees_controller.dart';
+import '../../../data/data_source/remote/live_attendance_data/live_attendance_data.dart';
 import '../../../data/data_source/remote/letter_data/letter_data.dart';
 import '../../../logic/controller/letter/letter_request_controller.dart';
 import '../../../logic/controller/letter/letter_template_controller.dart';
@@ -378,6 +380,17 @@ List<GetPage<dynamic>> getPages = [
     transitionDuration: AppMotion.transition,
   ),
   GetPage(
+    name: AppRoutes.weeklySchedule,
+    page: () => const WeeklyScheduleScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<ScheduleData>(() => ScheduleData());
+      Get.lazyPut<ScheduleController>(() => ScheduleController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
     name: AppRoutes.settingsCompany,
     page: () => const CompanySettingsHubScreen(),
     middlewares: [AuthMiddleware()],
@@ -538,18 +551,6 @@ List<GetPage<dynamic>> getPages = [
     transitionDuration: AppMotion.transition,
   ),
   GetPage(
-    name: AppRoutes.liveAttendance,
-    page: () => const LiveAttendanceScreen(),
-    binding: BindingsBuilder<void>(() {
-      Get.lazyPut<LiveAttendanceData>(() => LiveAttendanceData());
-      Get.lazyPut<BranchData>(() => BranchData());
-      Get.lazyPut<LiveAttendanceController>(() => LiveAttendanceController());
-    }),
-    middlewares: [AuthMiddleware()],
-    transition: Transition.fadeIn,
-    transitionDuration: AppMotion.transition,
-  ),
-  GetPage(
     name: AppRoutes.letters,
     page: () => const LettersHubScreen(),
     binding: BindingsBuilder<void>(() {
@@ -568,6 +569,20 @@ List<GetPage<dynamic>> getPages = [
     binding: BindingsBuilder<void>(() {
       Get.lazyPut<LetterData>(() => LetterData());
       Get.lazyPut<LetterTemplateController>(() => LetterTemplateController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.statusEmployees,
+    page: () => const StatusEmployeesScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<LiveAttendanceData>(() => LiveAttendanceData());
+      Get.lazyPut<BranchData>(() => BranchData());
+      Get.lazyPut<ShiftData>(() => ShiftData());
+      Get.lazyPut<CategoryData>(() => CategoryData());
+      Get.lazyPut<StatusEmployeesController>(() => StatusEmployeesController());
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
@@ -593,7 +608,7 @@ class MoreScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = Get.find<AuthController>();
-    final isManager = auth.user?.isOwner ?? false;
+    final canManageCompany = auth.user?.canManageCompanySettings ?? false;
 
     return Scaffold(
       appBar: AppBar(title: Text('more'.tr)),
@@ -606,6 +621,12 @@ class MoreScreen extends StatelessWidget {
               icon: Icons.schedule_outlined,
               title: 'shifts'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.shifts),
+            ),
+          if (auth.user?.canManageEmployees == true)
+            _MenuTile(
+              icon: Icons.calendar_view_week_outlined,
+              title: 'weekly_schedule'.tr,
+              onTap: () => Get.toNamed<void>(AppRoutes.weeklySchedule),
             ),
           if (auth.user?.canManageEmployees == true)
             _MenuTile(
@@ -649,19 +670,13 @@ class MoreScreen extends StatelessWidget {
             ),
           if (auth.user?.canViewReports == true)
             _MenuTile(
-              icon: Icons.sensors,
-              title: 'live_attendance'.tr,
-              onTap: () => Get.toNamed<void>(AppRoutes.liveAttendance),
-            ),
-          if (auth.user?.canViewReports == true)
-            _MenuTile(
               icon: Icons.assessment_outlined,
               title: 'reports'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.reports),
             ),
           const SizedBox(height: AppSpacing.s4),
           _MoreSectionHeader(title: 'settings'.tr),
-          if (isManager)
+          if (canManageCompany)
             _MenuTile(
               icon: Icons.business_outlined,
               title: 'company_settings'.tr,
@@ -679,13 +694,6 @@ class MoreScreen extends StatelessWidget {
             title: 'app_settings'.tr,
             subtitle: 'app_settings_hint'.tr,
             onTap: () => Get.toNamed<void>(AppRoutes.settingsApp),
-          ),
-          const Divider(height: AppSpacing.s5 * 2),
-          _MenuTile(
-            icon: Icons.logout,
-            title: 'logout'.tr,
-            onTap: () => Get.find<SettingsController>().logout(),
-            isDestructive: true,
           ),
           const SizedBox(height: AppSpacing.s5),
         ],
@@ -722,14 +730,12 @@ class _MenuTile extends StatelessWidget {
   final String title;
   final String? subtitle;
   final VoidCallback onTap;
-  final bool isDestructive;
 
   const _MenuTile({
     required this.icon,
     required this.title,
     this.subtitle,
     required this.onTap,
-    this.isDestructive = false,
   });
 
   @override
@@ -738,7 +744,7 @@ class _MenuTile extends StatelessWidget {
     return ListTile(
       leading: Icon(
         icon,
-        color: isDestructive ? colors.error : colors.textSecondary,
+        color: colors.textSecondary,
       ),
       title: Text(
         title,
@@ -746,7 +752,7 @@ class _MenuTile extends StatelessWidget {
           fontFamily: 'IBM Plex Sans Arabic',
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: isDestructive ? colors.error : colors.textPrimary,
+          color: colors.textPrimary,
         ),
       ),
       subtitle: subtitle != null

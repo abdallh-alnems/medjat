@@ -47,10 +47,12 @@ void main() {
       expect(user.permissions, isEmpty);
     });
 
-    test('isOwner', () {
-      expect(UserModel.fromJson({'role_key': 'owner'}).isOwner, isTrue);
-      expect(UserModel.fromJson({'role_key': 'general_manager'}).isOwner, isTrue);
-      expect(UserModel.fromJson({'role_key': 'hr'}).isOwner, isFalse);
+    test('isGeneralManager', () {
+      expect(UserModel.fromJson({'role_key': 'general_manager'}).isGeneralManager,
+          isTrue);
+      // There is no longer an "owner" role — only general_manager is the top role.
+      expect(UserModel.fromJson({'role_key': 'owner'}).isGeneralManager, isFalse);
+      expect(UserModel.fromJson({'role_key': 'hr'}).isGeneralManager, isFalse);
     });
 
     test('isHR', () {
@@ -63,20 +65,20 @@ void main() {
     });
 
     test('canManageEmployees', () {
-      expect(UserModel.fromJson({'role_key': 'owner'}).canManageEmployees, isTrue);
+      expect(UserModel.fromJson({'role_key': 'general_manager'}).canManageEmployees, isTrue);
       expect(UserModel.fromJson({'role_key': 'hr'}).canManageEmployees, isTrue);
       expect(UserModel.fromJson({'role_key': 'employee', 'permissions': ['manage_employees']}).canManageEmployees, isTrue);
       expect(UserModel.fromJson({'role_key': 'employee'}).canManageEmployees, isFalse);
     });
 
     test('canManagePayroll', () {
-      expect(UserModel.fromJson({'role_key': 'owner'}).canManagePayroll, isTrue);
+      expect(UserModel.fromJson({'role_key': 'general_manager'}).canManagePayroll, isTrue);
       expect(UserModel.fromJson({'role_key': 'hr'}).canManagePayroll, isTrue);
       expect(UserModel.fromJson({'role_key': 'employee'}).canManagePayroll, isFalse);
     });
 
     test('canManageBranches', () {
-      expect(UserModel.fromJson({'role_key': 'owner'}).canManageBranches, isTrue);
+      expect(UserModel.fromJson({'role_key': 'general_manager'}).canManageBranches, isTrue);
       expect(UserModel.fromJson({'role_key': 'employee', 'permissions': ['manage_company_settings']}).canManageBranches, isTrue);
       expect(UserModel.fromJson({'role_key': 'hr'}).canManageBranches, isFalse);
     });

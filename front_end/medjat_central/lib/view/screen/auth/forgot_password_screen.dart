@@ -67,7 +67,7 @@ class ForgotPasswordScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.s7),
                   PrimaryInput(
                     label: 'email'.tr,
-                    hint: 'admin@company.com',
+                    hint: '',
                     controller: _emailCtrl,
                     keyboardType: TextInputType.emailAddress,
                     validator: (v) {

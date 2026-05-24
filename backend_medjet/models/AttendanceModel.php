@@ -1,6 +1,23 @@
 <?php
 
 final class AttendanceModel {
+    /**
+     * Overrides an employee's shift_start/shift_end with the published rotating-shift
+     * schedule for $date, when one exists. Falls back silently (no change) when the
+     * employee has no published row that day, so fixed-shift staff behave as before.
+     */
+    private static function withScheduledShift(?array $employee, int $tenantId, string $date): ?array {
+        if (empty($employee['id'])) {
+            return $employee;
+        }
+        $sched = EmployeeShiftScheduleModel::findEffective((int) $employee['id'], $tenantId, $date);
+        if ($sched && !empty($sched['start_time'])) {
+            $employee['shift_start'] = $sched['start_time'];
+            $employee['shift_end'] = $sched['end_time'];
+        }
+        return $employee;
+    }
+
     public static function checkIn(int $employeeId, int $branchId, int $tenantId, string $method, ?string $checkInTime = null): int {
         $today = date('Y-m-d');
         $time = $checkInTime ?? date('H:i:s');
@@ -15,6 +32,7 @@ final class AttendanceModel {
         }
 
         $employee = EmployeeModel::findById($employeeId, $tenantId);
+        $employee = self::withScheduledShift($employee, $tenantId, $today);
         $expectedStart = $employee['shift_start'] ?? $employee['work_start_time'] ?? '09:00:00';
         $lateMinutes = max(0, (strtotime($time) - strtotime($expectedStart)) / 60);
 
@@ -46,6 +64,7 @@ final class AttendanceModel {
             $workedMinutes = max(0, ($checkOut - $checkIn) / 60);
 
             $employee = EmployeeModel::findById($record['employee_id'], $tenantId);
+            $employee = self::withScheduledShift($employee, $tenantId, $today);
             $workEndTime = $employee['shift_end'] ?? $employee['work_end_time'] ?? '17:00:00';
             $overtimeMinutes = max(0, ($checkOut - strtotime($workEndTime)) / 60);
 
@@ -66,6 +85,7 @@ final class AttendanceModel {
 
     public static function manualCheckIn(int $employeeId, int $branchId, int $tenantId, string $date, string $checkInTime, string $checkOutTime, int $recordedBy): int {
         $employee = EmployeeModel::findById($employeeId, $tenantId);
+        $employee = self::withScheduledShift($employee, $tenantId, $date);
         $workStartTime = $employee['shift_start'] ?? $employee['work_start_time'] ?? '09:00:00';
         $workEndTime = $employee['shift_end'] ?? $employee['work_end_time'] ?? '17:00:00';
 
@@ -102,6 +122,7 @@ final class AttendanceModel {
         }
 
         $employee = EmployeeModel::findById($employeeId, $tenantId);
+        $employee = self::withScheduledShift($employee, $tenantId, $date);
         $workStartTime = $employee['shift_start'] ?? $employee['work_start_time'] ?? '09:00:00';
         $lateMinutes = max(0, (strtotime($checkInTime) - strtotime($workStartTime)) / 60);
 
@@ -136,6 +157,7 @@ final class AttendanceModel {
         }
 
         $employee = EmployeeModel::findById($employeeId, $tenantId);
+        $employee = self::withScheduledShift($employee, $tenantId, $date);
         $workEndTime = $employee['shift_end'] ?? $employee['work_end_time'] ?? '17:00:00';
 
         $checkIn = strtotime($record['check_in_time']);
@@ -156,6 +178,18 @@ final class AttendanceModel {
         );
     }
 
+    /** Number of employees who checked in on a given date (for trend deltas). */
+    public static function countPresentOnDate(int $tenantId, string $date, ?int $branchId = null): int {
+        $sql = "SELECT COUNT(*) AS c FROM attendance
+                WHERE tenant_id = ? AND date = ? AND check_in_time IS NOT NULL";
+        $params = [$tenantId, $date];
+        if ($branchId) {
+            $sql .= " AND branch_id = ?";
+            $params[] = $branchId;
+        }
+        return (int) (Database::fetchOne($sql, $params)['c'] ?? 0);
+    }
+
     public static function getByDate(int $tenantId, string $date, ?int $branchId = null): array {
         $sql = "SELECT a.*, e.name as employee_name, e.job_title
                 FROM attendance a
@@ -172,7 +206,13 @@ final class AttendanceModel {
         return Database::fetchAll($sql, $params);
     }
 
-    public static function getLiveBoard(int $tenantId, string $date, ?int $branchId = null): array {
+    public static function getLiveBoard(
+        int $tenantId,
+        string $date,
+        ?int $branchId = null,
+        ?int $shiftId = null,
+        ?int $categoryId = null
+    ): array {
         // Start from active employees so those with no attendance row today
         // still appear (derived as "not_in" by the caller).
         $sql = "SELECT
@@ -199,38 +239,111 @@ final class AttendanceModel {
             $params[] = $branchId;
         }
 
+        if ($shiftId) {
+            $sql .= " AND e.shift_id = ?";
+            $params[] = $shiftId;
+        }
+
+        if ($categoryId) {
+            $sql .= " AND EXISTS (
+                        SELECT 1 FROM employee_category_assignments eca
+                        WHERE eca.employee_id = e.id AND eca.category_id = ?
+                      )";
+            $params[] = $categoryId;
+        }
+
         $sql .= " ORDER BY e.name ASC";
         return Database::fetchAll($sql, $params);
     }
 
+    /**
+     * Records an 'absent' row for every active employee who, on $date, has no
+     * attendance record and is genuinely a no-show — i.e. NOT on approved leave,
+     * NOT on their weekly off day, and NOT on a company/branch holiday or
+     * recurring weekly off. Idempotent (INSERT IGNORE). Intended to run once at
+     * the end of the working day so "not arrived yet" becomes a confirmed
+     * "absent". Returns the number of employees marked.
+     */
     public static function markAbsent(int $tenantId, string $date): int {
-        $presentIds = Database::fetchAll(
-            "SELECT employee_id FROM attendance WHERE tenant_id = ? AND date = ?",
+        $weekday = strtolower(date('l', strtotime($date))); // saturday..friday
+
+        // Active employees with no attendance row that day.
+        $employees = Database::fetchAll(
+            "SELECT e.id, e.branch_id, e.weekly_off_days
+             FROM employees e
+             WHERE e.tenant_id = ? AND e.status = 'active'
+               AND NOT EXISTS (
+                   SELECT 1 FROM attendance a
+                   WHERE a.employee_id = e.id AND a.date = ? AND a.tenant_id = e.tenant_id
+               )",
             [$tenantId, $date]
         );
-        $presentIds = array_column($presentIds, 'employee_id');
+        if (!$employees) {
+            return 0;
+        }
 
-        $sql = "SELECT id FROM employees WHERE tenant_id = ? AND status = 'active'";
-        $params = [$tenantId];
+        // Approved leaves that day.
+        $onLeave = array_flip(array_column(
+            Database::fetchAll(
+                "SELECT employee_id FROM leaves WHERE tenant_id = ? AND date = ? AND status = 'approved'",
+                [$tenantId, $date]
+            ),
+            'employee_id'
+        ));
 
-        $allEmployees = Database::fetchAll($sql, $params);
+        // Holidays for the date and recurring weekly-offs for the weekday.
+        // A NULL branch_id means it applies company-wide.
+        [$holidayAll, $holidayBranches] = self::scopeFlags(Database::fetchAll(
+            "SELECT branch_id FROM holidays WHERE tenant_id = ? AND date = ?",
+            [$tenantId, $date]
+        ));
+        [$recurAll, $recurBranches] = self::scopeFlags(Database::fetchAll(
+            "SELECT branch_id FROM recurring_leaves
+             WHERE tenant_id = ? AND day_of_week = ? AND is_active = 1",
+            [$tenantId, $weekday]
+        ));
 
         $count = 0;
-        foreach ($allEmployees as $emp) {
-            if (!in_array($emp['id'], $presentIds)) {
-                $onLeave = LeaveModel::isEmployeeOnLeave($emp['id'], $date, $tenantId);
-                if (!$onLeave) {
-                    Database::execute(
-                        "INSERT IGNORE INTO attendance (tenant_id, branch_id, employee_id, date, status)
-                         SELECT tenant_id, branch_id, id, ?, 'absent'
-                         FROM employees WHERE id = ? AND tenant_id = ?",
-                        [$date, $emp['id'], $tenantId]
-                    );
-                    $count++;
-                }
+        foreach ($employees as $e) {
+            $eid = (int) $e['id'];
+            $bid = $e['branch_id'] !== null ? (int) $e['branch_id'] : null;
+
+            if (isset($onLeave[$eid])) {
+                continue;
             }
+            $woff = (string) ($e['weekly_off_days'] ?? '');
+            if ($woff !== '' && in_array($weekday, array_map('trim', explode(',', $woff)), true)) {
+                continue;
+            }
+            if ($holidayAll || ($bid !== null && isset($holidayBranches[$bid]))) {
+                continue;
+            }
+            if ($recurAll || ($bid !== null && isset($recurBranches[$bid]))) {
+                continue;
+            }
+
+            Database::execute(
+                "INSERT IGNORE INTO attendance (tenant_id, branch_id, employee_id, date, status)
+                 VALUES (?, ?, ?, ?, 'absent')",
+                [$tenantId, $bid, $eid, $date]
+            );
+            $count++;
         }
         return $count;
+    }
+
+    /** Splits branch-scoped rows into [appliesToAllBranches, {branchId: true}]. */
+    private static function scopeFlags(array $rows): array {
+        $all = false;
+        $branches = [];
+        foreach ($rows as $r) {
+            if ($r['branch_id'] === null) {
+                $all = true;
+            } else {
+                $branches[(int) $r['branch_id']] = true;
+            }
+        }
+        return [$all, $branches];
     }
 
     public static function syncOffline(array $records, int $employeeId, int $tenantId): array {
@@ -317,6 +430,7 @@ final class AttendanceModel {
                 $checkOutTime = $rec['check_out_time'] ?? null;
 
                 $employee = EmployeeModel::findById($employeeId, $tenantId);
+                $employee = self::withScheduledShift($employee, $tenantId, $date);
                 $workStartTime = $employee['shift_start'] ?? $employee['work_start_time'] ?? '09:00:00';
                 $workEndTime = $employee['shift_end'] ?? $employee['work_end_time'] ?? '17:00:00';
 
@@ -426,6 +540,7 @@ final class AttendanceModel {
 
         if (!$lastRecord || $lastRecord['check_out_time'] !== null) {
             $employee = EmployeeModel::findById($employeeId, $tenantId);
+            $employee = self::withScheduledShift($employee, $tenantId, $today);
             $expectedStart = $employee['shift_start'] ?? $employee['work_start_time'] ?? '09:00:00';
             $lateMinutes = max(0, (strtotime($time) - strtotime($expectedStart)) / 60);
 
@@ -444,6 +559,7 @@ final class AttendanceModel {
             $workedMinutes = max(0, ($checkOut - $checkIn) / 60);
 
             $employee = EmployeeModel::findById($employeeId, $tenantId);
+            $employee = self::withScheduledShift($employee, $tenantId, $today);
             $workEndTime = $employee['shift_end'] ?? $employee['work_end_time'] ?? '17:00:00';
             $overtimeMinutes = max(0, ($checkOut - strtotime($workEndTime)) / 60);
             $workStartTime = $employee['shift_start'] ?? $employee['work_start_time'] ?? '09:00:00';

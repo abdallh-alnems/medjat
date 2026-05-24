@@ -26,6 +26,7 @@ abstract class AppRoutes {
   static const String forgotPassword = '/forgot-password';
   static const String shifts = '/shifts';
   static const String assignShift = '/shifts/assign';
+  static const String weeklySchedule = '/shifts/schedule';
   static const String settingsCompany = '/settings/company-hub';
   static const String settingsAccount = '/settings/account';
   static const String settingsApp = '/settings/app';
@@ -43,8 +44,8 @@ abstract class AppRoutes {
   static const String statutoryPayrollSettings = '/settings/statutory-payroll';
   static const String notifications = '/notifications';
   static const String notificationPrefs = '/notifications/prefs';
-  static const String liveAttendance = '/dashboard/live-attendance';
   static const String assets = '/assets';
   static const String letters = '/letters';
   static const String letterTemplateEdit = '/letters/template/edit';
+  static const String statusEmployees = '/status-employees';
 }

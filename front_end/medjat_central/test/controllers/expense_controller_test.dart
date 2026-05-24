@@ -60,7 +60,8 @@ void main() {
       expect(controller.statusFilter, 'approved');
     });
 
-    test('createExpense — نجاح يعيد true', () async {
+    testWidgets('createExpense — نجاح يعيد true', (tester) async {
+      await pumpSnackbarHost(tester);
       when(() => mockData.createExpense(any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
       when(() => mockData.getExpenses(status: any(named: 'status')))
@@ -77,9 +78,11 @@ void main() {
       );
 
       expect(result, isTrue);
+      await settleSnackbars(tester);
     });
 
-    test('createExpense — فشل يعيد false', () async {
+    testWidgets('createExpense — فشل يعيد false', (tester) async {
+      await pumpSnackbarHost(tester);
       when(() => mockData.createExpense(any()))
           .thenAnswer((_) async => {'status': StatusRequest.failure});
       when(() => mockData.getExpenses(status: any(named: 'status')))
@@ -96,6 +99,7 @@ void main() {
       );
 
       expect(result, isFalse);
+      await settleSnackbars(tester);
     });
   });
 }

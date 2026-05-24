@@ -1,19 +1,18 @@
+import 'package:get/get.dart';
+
 class UpdateStrings {
   UpdateStrings._();
 
-  static const String forceTitle = 'تحديث مطلوب';
-  static const String forceMessage =
-      'هذه النسخة لم تعد مدعومة. يرجى التحديث للاستمرار في استخدام التطبيق.';
-  static const String optionalTitle = 'تحديث متاح';
-  static const String optionalMessage =
-      'يتوفر إصدار جديد من التطبيق. هل تريد التحديث الآن؟';
-  static const String updateNow = 'تحديث الآن';
-  static const String later = 'لاحقاً';
-  static const String downloadingUpdate = 'جاري تنزيل التحديث...';
-  static const String updateReady = 'التحديث جاهز للتركيب';
-  static const String installNow = 'تركيب الآن';
+  static String get forceTitle => 'update_required'.tr;
+  static String get forceMessage => 'update_required_message'.tr;
+  static String get optionalTitle => 'update_available'.tr;
+  static String get optionalMessage => 'update_available_message'.tr;
+  static String get updateNow => 'update_now_btn'.tr;
+  static String get later => 'later'.tr;
+  static String get downloadingUpdate => 'downloading_update'.tr;
+  static String get updateReady => 'update_ready'.tr;
+  static String get installNow => 'install_now'.tr;
 
-  static const String maintenanceTitle = 'تحت الصيانة';
-  static const String maintenanceMessage =
-      'التطبيق تحت الصيانة حالياً، سنعود قريباً';
+  static String get maintenanceTitle => 'maintenance_title'.tr;
+  static String get maintenanceMessage => 'maintenance_message'.tr;
 }

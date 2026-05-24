@@ -27,6 +27,14 @@ class PayrollModel {
     this.generatedAt,
   });
 
+  /// DECIMAL columns arrive from the API as strings (e.g. "10000.00"),
+  /// so accept both numbers and numeric strings.
+  static double _parseDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0;
+    return 0;
+  }
+
   factory PayrollModel.fromJson(Map<String, dynamic> json) {
     return PayrollModel(
       id: (json['id'] as int?) ?? 0,
@@ -34,10 +42,10 @@ class PayrollModel {
       employeeName: json['employee_name'] as String?,
       month: (json['month'] as int?) ?? 1,
       year: (json['year'] as int?) ?? 2026,
-      baseSalary: (json['base_salary'] as num?)?.toDouble() ?? 0,
-      totalDeductions: (json['total_deductions'] as num?)?.toDouble() ?? 0,
-      totalOvertime: (json['total_overtime'] as num?)?.toDouble() ?? 0,
-      netSalary: (json['net_salary'] as num?)?.toDouble() ?? 0,
+      baseSalary: _parseDouble(json['base_salary']),
+      totalDeductions: _parseDouble(json['total_deductions']),
+      totalOvertime: _parseDouble(json['total_overtime']),
+      netSalary: _parseDouble(json['net_salary']),
       status: (json['status'] as String?) ?? 'draft',
       generatedAt: json['generated_at'] != null
           ? DateTime.tryParse(json['generated_at'] as String)

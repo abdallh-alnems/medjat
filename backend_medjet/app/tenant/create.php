@@ -1,5 +1,6 @@
 <?php
-// Create a new company. Caller becomes the Owner.
+// Create a new company. The caller receives the highest role (general_manager).
+// Companies have no owner — access is governed entirely by roles & permissions.
 // Free tier for early adopters — no payment required for now.
 
 require_once __DIR__ . '/../../config/bootstrap.php';
@@ -42,13 +43,11 @@ try {
     $pdo->beginTransaction();
 
     $stmt = $pdo->prepare(
-        "INSERT INTO tenants (name, owner_name, owner_email, plan, is_active, email_verified_at)
-         VALUES (?, ?, ?, 'starter', 1, NOW())"
+        "INSERT INTO tenants (name, plan, is_active, email_verified_at)
+         VALUES (?, 'starter', 1, NOW())"
     );
     $stmt->execute([
         $companyName,
-        $admin['name'],
-        $admin['email'],
     ]);
     $tenantId = (int) $pdo->lastInsertId();
 

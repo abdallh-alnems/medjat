@@ -70,7 +70,7 @@ class SignUpScreen extends StatelessWidget {
 
                   PrimaryInput(
                     label: 'name'.tr,
-                    hint: 'name'.tr,
+                    hint: '',
                     controller: _nameCtrl,
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) return 'enter_name'.tr;
@@ -81,7 +81,7 @@ class SignUpScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.s4),
                   PrimaryInput(
                     label: 'email'.tr,
-                    hint: 'admin@company.com',
+                    hint: '',
                     controller: _emailCtrl,
                     keyboardType: TextInputType.emailAddress,
                     validator: (v) {
@@ -95,14 +95,17 @@ class SignUpScreen extends StatelessWidget {
                     controller: _passCtrl,
                     validator: (v) {
                       if (v == null || v.isEmpty) return 'enter_password'.tr;
-                      if (v.length < 6) return 'password_min_length'.tr;
+                      if (v.length < 8) return 'password_min_length'.tr;
+                      if (!RegExp(r'[a-zA-Z]').hasMatch(v)) {
+                        return 'password_weak'.tr;
+                      }
                       return null;
                     },
                   ),
                   const SizedBox(height: AppSpacing.s4),
                   PasswordInput(
                     label: 'confirm_password'.tr,
-                    hint: 're_enter_password'.tr,
+                    hint: '',
                     controller: _confirmPassCtrl,
                     validator: (v) {
                       if (v == null || v.isEmpty) return 're_enter_password'.tr;

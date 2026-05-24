@@ -70,8 +70,8 @@ class TeamController extends GetxController {
       update();
       return code;
     }
-    Get.snackbar('خطأ',
-        (response['message'] as String?) ?? 'فشل إنشاء الدعوة',
+    Get.snackbar('error'.tr,
+        (response['message'] as String?) ?? 'invitation_create_failed'.tr,
         snackPosition: SnackPosition.BOTTOM);
     return null;
   }
@@ -81,7 +81,7 @@ class TeamController extends GetxController {
     if (response['status'] == StatusRequest.success) {
       await loadInvitations();
       update();
-      Get.snackbar('تم', 'تم إلغاء الدعوة',
+      Get.snackbar('done'.tr, 'invitation_cancelled'.tr,
           snackPosition: SnackPosition.BOTTOM);
       return true;
     }
@@ -151,8 +151,8 @@ class TeamController extends GetxController {
       update();
       return true;
     }
-    Get.snackbar('خطأ',
-        (response['message'] as String?) ?? 'فشل حفظ الصلاحيات',
+    Get.snackbar('error'.tr,
+        (response['message'] as String?) ?? 'permissions_save_failed'.tr,
         snackPosition: SnackPosition.BOTTOM);
     return false;
   }
@@ -167,8 +167,8 @@ class TeamController extends GetxController {
       update();
       return true;
     }
-    Get.snackbar('خطأ',
-        (response['message'] as String?) ?? 'فشل إعادة التعيين',
+    Get.snackbar('error'.tr,
+        (response['message'] as String?) ?? 'permissions_reset_failed'.tr,
         snackPosition: SnackPosition.BOTTOM);
     return false;
   }

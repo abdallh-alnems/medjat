@@ -47,7 +47,8 @@ void main() {
       expect(controller.status, StatusRequest.serverFailure);
     });
 
-    test('deleteRule — نجاح يحذف من القائمة', () async {
+    testWidgets('deleteRule — نجاح يحذف من القائمة', (tester) async {
+      await pumpSnackbarHost(tester);
       when(() => mockData.getDeductionRules()).thenAnswer((_) async => {
             'status': StatusRequest.success,
             'data': [
@@ -66,9 +67,11 @@ void main() {
 
       expect(controller.rules.length, 1);
       expect(controller.rules.first.id, 2);
+      await settleSnackbars(tester);
     });
 
-    test('createRule — نجاح يعيد تحميل القواعد', () async {
+    testWidgets('createRule — نجاح يعيد تحميل القواعد', (tester) async {
+      await pumpSnackbarHost(tester);
       when(() => mockData.createDeductionRule(any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
       when(() => mockData.getDeductionRules())
@@ -80,6 +83,7 @@ void main() {
       await controller.createRule({'name': 'قاعدة جديدة'});
 
       verify(() => mockData.getDeductionRules()).called(2);
+      await settleSnackbars(tester);
     });
   });
 }

@@ -26,6 +26,7 @@ require_once __DIR__ . '/../core/I18n.php';
 require_once __DIR__ . '/../core/NotificationService.php';
 require_once __DIR__ . '/../core/SmartAlertService.php';
 require_once __DIR__ . '/../core/EmailService.php';
+require_once __DIR__ . '/../core/AuthEmail.php';
 require_once __DIR__ . '/../core/LoginAlertService.php';
 
 require_once __DIR__ . '/../models/TenantModel.php';
@@ -44,6 +45,7 @@ require_once __DIR__ . '/../models/RoleModel.php';
 require_once __DIR__ . '/../models/SubscriptionModel.php';
 require_once __DIR__ . '/../models/AuditLogModel.php';
 require_once __DIR__ . '/../models/ShiftModel.php';
+require_once __DIR__ . '/../models/EmployeeShiftScheduleModel.php';
 require_once __DIR__ . '/../models/ActivationCodeModel.php';
 require_once __DIR__ . '/../models/EmployeeAuthTokenModel.php';
 require_once __DIR__ . '/../models/ManagerInvitationModel.php';

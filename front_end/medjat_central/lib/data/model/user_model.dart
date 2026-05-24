@@ -62,23 +62,41 @@ class UserModel {
         'branch_name': branchName,
       };
 
-  bool get isOwner => roleKey == 'owner' || roleKey == 'general_manager';
+  /// The highest role — full access to everything. A company has no "owner";
+  /// the creator simply holds this role, and it can be granted to anyone.
+  bool get isGeneralManager => roleKey == 'general_manager';
   bool get isHR => roleKey == 'hr';
   bool get isManager => roleKey == 'branch_manager';
   bool get canManageEmployees =>
-      isOwner || isHR || permissions.contains('manage_employees');
+      isGeneralManager || isHR || permissions.contains('manage_employees');
   bool get canManageAttendance =>
-      isOwner || isHR || isManager || permissions.contains('manage_attendance');
+      isGeneralManager ||
+      isHR ||
+      isManager ||
+      permissions.contains('manage_attendance');
   bool get canManagePayroll =>
-      isOwner || isHR || permissions.contains('manage_payroll');
+      isGeneralManager || isHR || permissions.contains('manage_payroll');
   bool get canViewReports =>
-      isOwner || isHR || isManager || permissions.contains('view_reports');
+      isGeneralManager ||
+      isHR ||
+      isManager ||
+      permissions.contains('view_reports');
   bool get canManageBranches =>
-      isOwner || permissions.contains('manage_company_settings');
+      isGeneralManager || permissions.contains('manage_company_settings');
+  bool get canManageCompanySettings =>
+      isGeneralManager || permissions.contains('manage_company_settings');
+  bool get canAddManagers =>
+      isGeneralManager || permissions.contains('add_managers');
   bool get canManageLeaves =>
-      isOwner || isHR || permissions.contains('manage_leaves');
+      isGeneralManager || isHR || permissions.contains('manage_leaves');
   bool get canManageAssets =>
-      isOwner || isHR || isManager || permissions.contains('manage_assets');
+      isGeneralManager ||
+      isHR ||
+      isManager ||
+      permissions.contains('manage_assets');
   bool get canManageDocuments =>
-      isOwner || isHR || isManager || permissions.contains('manage_documents');
+      isGeneralManager ||
+      isHR ||
+      isManager ||
+      permissions.contains('manage_documents');
 }

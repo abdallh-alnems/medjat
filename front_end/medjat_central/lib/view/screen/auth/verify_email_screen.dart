@@ -112,11 +112,6 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                   ),
                 ),
                 const SizedBox(height: AppSpacing.s7),
-                PrimaryButton(
-                  text: 'activated'.tr,
-                  onPressed: () => auth.checkEmailVerified(),
-                ),
-                const SizedBox(height: AppSpacing.s4),
                 Obx(() => PrimaryButton(
                       text: 'resend_link'.tr,
                       isLoading: auth.isSendingVerification.value,

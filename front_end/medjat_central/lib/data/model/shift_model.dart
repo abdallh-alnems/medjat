@@ -24,8 +24,8 @@ class ShiftModel {
   });
 
   factory ShiftModel.fromJson(Map<String, dynamic> json) => ShiftModel(
-        id: (json['id'] as num).toInt(),
-        tenantId: (json['tenant_id'] as num).toInt(),
+        id: (json['id'] as num?)?.toInt() ?? 0,
+        tenantId: (json['tenant_id'] as num?)?.toInt() ?? 0,
         branchId: (json['branch_id'] as num?)?.toInt(),
         branchName: json['branch_name'] as String?,
         name: json['name'] as String? ?? '',

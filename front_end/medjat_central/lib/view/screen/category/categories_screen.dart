@@ -66,7 +66,6 @@ class CategoriesScreen extends StatelessWidget {
     final isEdit = existing != null;
     final nameCtl = TextEditingController(text: existing?.name ?? '');
     final descCtl = TextEditingController(text: existing?.description ?? '');
-    final colorCtl = TextEditingController(text: existing?.color ?? '');
 
     Get.dialog<void>(
       Dialog(
@@ -112,16 +111,6 @@ class CategoriesScreen extends StatelessWidget {
                         maxLines: 2,
                       ),
                       const SizedBox(height: AppSpacing.s3),
-                      TextField(
-                        controller: colorCtl,
-                        decoration: InputDecoration(
-                          labelText: 'category_color_hint'.tr,
-                          isDense: true,
-                          prefixIcon: Icon(Icons.color_lens_outlined,
-                              size: 20,
-                              color: _parseColor(colorCtl.text)),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -137,6 +126,9 @@ class CategoriesScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: AppSpacing.s2),
                     ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(0, 48),
+                      ),
                       onPressed: () {
                         if (nameCtl.text.trim().isEmpty) return;
                         final cat = EmployeeCategoryModel(
@@ -145,9 +137,7 @@ class CategoriesScreen extends StatelessWidget {
                           description: descCtl.text.trim().isEmpty
                               ? null
                               : descCtl.text.trim(),
-                          color: colorCtl.text.trim().isEmpty
-                              ? null
-                              : colorCtl.text.trim(),
+                          color: existing?.color,
                         );
                         if (isEdit) {
                           ctrl.updateCategory(cat);

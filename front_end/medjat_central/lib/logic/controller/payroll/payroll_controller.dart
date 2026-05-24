@@ -84,11 +84,11 @@ class PayrollController extends GetxController {
   Future<void> approvePayroll(int id) async {
     final response = await _payrollData.approvePayroll(id);
     if (response['status'] == StatusRequest.success) {
-      Get.snackbar('تم', 'تم اعتماد كشف الراتب',
+      Get.snackbar('done'.tr, 'payroll_approved'.tr,
           snackPosition: SnackPosition.BOTTOM);
       loadPayrolls();
     } else {
-      Get.snackbar('خطأ', 'حدث خطأ في الاعتماد',
+      Get.snackbar('error'.tr, 'payroll_approve_failed'.tr,
           snackPosition: SnackPosition.BOTTOM);
     }
   }
@@ -119,7 +119,7 @@ class PayrollController extends GetxController {
   void showBankFileDialog(BuildContext context) async {
     final preview = await getBankFilePreview();
     if (preview == null) {
-      Get.snackbar('خطأ', 'failed_load_preview'.tr,
+      Get.snackbar('error'.tr, 'failed_load_preview'.tr,
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
@@ -181,7 +181,7 @@ class _BankFilePreviewDialog extends StatelessWidget {
             _row('ready_count'.tr,
                 preview['ready_count']?.toString() ?? '0'),
             _row('total_amount'.tr,
-                '${(preview['total_amount'] as num?)?.toStringAsFixed(2) ?? '0.00'} EGP'),
+                '${(preview['total_amount'] as num?)?.toStringAsFixed(2) ?? '0.00'} ${'currency_egp'.tr}'),
             if (missing.isNotEmpty) ...[
               const SizedBox(height: 12),
               Container(

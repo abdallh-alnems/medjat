@@ -14,9 +14,39 @@ $role = $input['role'] ?? '';
 $branchId = isset($input['branch_id']) && $input['branch_id'] !== ''
     ? (int) $input['branch_id'] : null;
 
-$validRoles = ['hr', 'branch_manager', 'attendance', 'viewer'];
+$validRoles = ['general_manager', 'hr', 'branch_manager', 'attendance', 'viewer'];
 if (!in_array($role, $validRoles, true)) {
     Response::fail('الدور غير صالح', 422);
+}
+
+// Optional custom permissions chosen by the inviter for this invitee.
+$permissions = $input['permissions'] ?? null;
+if ($permissions !== null) {
+    if (!is_array($permissions)) {
+        Response::fail('permissions must be an array', 422);
+    }
+    $validPerms = RoleModel::getAvailablePermissions();
+    foreach ($permissions as $perm) {
+        if (!in_array($perm, $validPerms, true)) {
+            Response::fail("صلاحية غير معروفة: {$perm}", 422);
+        }
+    }
+    $permissions = array_values(array_unique($permissions));
+}
+
+// Enforce equal-or-lower: an admin can never grant access above their own.
+$grantedPerms = ($role === 'general_manager')
+    ? '*'
+    : ($permissions ?? RoleModel::getRoleDefaults($role));
+$inviterPerms = PermissionMiddleware::effectivePermissions(
+    $auth['admin_id'], $tenantId, $auth['role']
+);
+if ($grantedPerms === '*') {
+    if ($inviterPerms !== '*') {
+        Response::forbidden('لا يمكنك منح صلاحيات أعلى من صلاحياتك');
+    }
+} elseif (!PermissionMiddleware::isWithin($grantedPerms, $inviterPerms)) {
+    Response::forbidden('لا يمكنك منح صلاحيات لا تملكها');
 }
 
 Validator::required($email, 'البريد الإلكتروني');
@@ -59,6 +89,7 @@ $result = ManagerInvitationModel::create($tenantId, $auth['admin_id'], [
     'email' => $email,
     'role' => $role,
     'branch_id' => $branchId,
+    'permissions' => $permissions,
 ]);
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'manager.invite', 'invitation', $result['id']);

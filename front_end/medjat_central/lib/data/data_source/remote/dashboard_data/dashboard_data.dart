@@ -18,4 +18,21 @@ class DashboardData {
       queryParameters: {'branch_id': branchId},
     );
   }
+
+  // TODO: Backend must support category_id param on overview.php.
+  // If not yet supported, the default behaviour returns all employees.
+  Future<Map<String, dynamic>> getDashboardFiltered({
+    int? branchId,
+    int? shiftId,
+    int? categoryId,
+  }) async {
+    final params = <String, dynamic>{};
+    if (branchId != null) params['branch_id'] = branchId;
+    if (shiftId != null) params['shift_id'] = shiftId;
+    if (categoryId != null) params['category_id'] = categoryId;
+    return await _crud.getData(
+      AppLinks.dashboard,
+      queryParameters: params.isNotEmpty ? params : null,
+    );
+  }
 }

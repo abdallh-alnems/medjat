@@ -15,6 +15,8 @@ $counts = [
     'missing_checkout' => 0,
     'document_expiry' => 0,
     'compliance_expiry' => 0,
+    'employment_ending' => 0,
+    'employment_terminated' => 0,
 ];
 
 $tenants = Database::fetchAll(
@@ -30,6 +32,7 @@ foreach ($tenants as $tenant) {
     _checkMissingCheckout($tenantId, $today, $counts);
     _checkDocumentExpiry($tenantId, $counts);
     _checkComplianceExpiry($tenantId, $counts);
+    _checkEmploymentEnd($tenantId, $today, $counts);
 }
 
 header('Content-Type: application/json');
@@ -244,5 +247,79 @@ function _checkComplianceExpiry(int $tenantId, array &$counts): void
             );
             $counts['compliance_expiry']++;
         }
+    }
+}
+
+/**
+ * Fixed-term ("temporary") employees:
+ *  - warn admins when the employment end date is within 7 days, and
+ *  - auto-terminate the employee once that date has passed.
+ */
+function _checkEmploymentEnd(int $tenantId, string $today, array &$counts): void
+{
+    // 1) Upcoming end (within 7 days) — heads-up for the admins.
+    $upcoming = EmployeeModel::upcomingAutoTermination($tenantId, $today, 7);
+    foreach ($upcoming as $row) {
+        $empName = $row['name'];
+        $endsAt = $row['auto_terminate_at'];
+        $daysLeft = (int) $row['days_left'];
+        $branchId = $row['branch_id'] ? (int) $row['branch_id'] : null;
+
+        $recipients = SmartAlertService::recipientsForBranch(
+            $tenantId, $branchId, 'manage_employees'
+        );
+        foreach ($recipients as $rid) {
+            SmartAlertService::dispatch(
+                $rid,
+                'compliance_expiry',
+                'general',
+                'انتهاء مدة عمل قريباً',
+                "تنتهي مدة عمل الموظف {$empName} خلال {$daysLeft} يوم ({$endsAt})",
+                'Employment Ending Soon',
+                "Employment of {$empName} ends in {$daysLeft} days ({$endsAt})",
+                [
+                    'employee_id' => (int) $row['id'],
+                    'employee_name' => $empName,
+                    'ends_at' => $endsAt,
+                    'days_left' => $daysLeft,
+                ],
+                "empend:{$row['id']}:{$endsAt}"
+            );
+            $counts['employment_ending']++;
+        }
+    }
+
+    // 2) End date passed — terminate the employee and notify.
+    $expired = EmployeeModel::dueForAutoTermination($tenantId, $today);
+    foreach ($expired as $row) {
+        $empId = (int) $row['id'];
+        $empName = $row['name'];
+        $endsAt = $row['auto_terminate_at'];
+        $branchId = $row['branch_id'] ? (int) $row['branch_id'] : null;
+
+        EmployeeModel::autoTerminate($empId, $tenantId);
+        AuditLogModel::log($tenantId, null, 'employee.auto_terminate', 'employee', $empId);
+
+        $recipients = SmartAlertService::recipientsForBranch(
+            $tenantId, $branchId, 'manage_employees'
+        );
+        foreach ($recipients as $rid) {
+            SmartAlertService::dispatch(
+                $rid,
+                'compliance_expiry',
+                'general',
+                'انتهت مدة عمل الموظف',
+                "انتهت مدة عمل الموظف {$empName} بتاريخ {$endsAt} وتم إنهاء حسابه تلقائياً",
+                'Employment Ended',
+                "Employment of {$empName} ended on {$endsAt}; the account was terminated automatically",
+                [
+                    'employee_id' => $empId,
+                    'employee_name' => $empName,
+                    'ended_at' => $endsAt,
+                ],
+                "empterm:{$empId}:{$endsAt}"
+            );
+        }
+        $counts['employment_terminated']++;
     }
 }

@@ -85,8 +85,9 @@ class CRUD {
           }
         } catch (_) {}
       }
+      final merged = {...uri.queryParameters, ...params};
       final response = await _client
-          .get(uri.replace(queryParameters: params), headers: headers)
+          .get(uri.replace(queryParameters: merged), headers: headers)
           .timeout(const Duration(seconds: 15));
 
       return handleResponse(response);
@@ -129,8 +130,9 @@ class CRUD {
           }
         } catch (_) {}
       }
+      final merged = {...uri.queryParameters, ...params};
       final response = await _client
-          .get(uri.replace(queryParameters: params), headers: headers)
+          .get(uri.replace(queryParameters: merged), headers: headers)
           .timeout(const Duration(seconds: 30));
 
       if (response.statusCode >= 200 && response.statusCode < 300) {

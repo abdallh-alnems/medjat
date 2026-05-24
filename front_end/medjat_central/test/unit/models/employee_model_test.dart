@@ -108,9 +108,15 @@ void main() {
         'shift_id': 3.0,
       });
 
-      expect(emp.baseSalary, 5000);
+      // base_salary أصبح double فيحتفظ بالكسور بدل بترها.
+      expect(emp.baseSalary, 5000.5);
       expect(emp.annualLeaveDays, 21);
       expect(emp.shiftId, 3);
+    });
+
+    test('base_salary نصي من عمود DECIMAL يُحلَّل لـ double', () {
+      final emp = EmployeeModel.fromJson({'base_salary': '4500.50'});
+      expect(emp.baseSalary, 4500.50);
     });
 
     test('hasComplianceInfo يرجع true عند وجود بيانات', () {

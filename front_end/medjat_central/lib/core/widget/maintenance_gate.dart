@@ -100,14 +100,14 @@ class _MaintenanceGateState extends State<MaintenanceGate>
       );
     }
 
-    if (_isMaintenance) return const _MaintenanceScreen();
+    if (_isMaintenance) return _MaintenanceScreen();
 
     return widget.child;
   }
 }
 
 class _MaintenanceScreen extends StatelessWidget {
-  const _MaintenanceScreen();
+  _MaintenanceScreen();
 
   @override
   Widget build(BuildContext context) {

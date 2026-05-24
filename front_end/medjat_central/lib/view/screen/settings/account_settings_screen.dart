@@ -96,17 +96,103 @@ class AccountSettingsScreen extends StatelessWidget {
           const SizedBox(height: AppSpacing.s5),
           Center(
             child: TextButton(
-              onPressed: settingsCtrl.logout,
+              onPressed: () => _confirmLogout(context, settingsCtrl),
               style: TextButton.styleFrom(
                 foregroundColor: colors.error,
               ),
               child: Text('logout'.tr),
             ),
           ),
+          const SizedBox(height: AppSpacing.s2),
+          Center(
+            child: TextButton.icon(
+              onPressed: () => _confirmDeleteAccount(context, auth),
+              icon: Icon(Icons.delete_forever_outlined,
+                  size: 18, color: colors.error),
+              style: TextButton.styleFrom(
+                foregroundColor: colors.error,
+              ),
+              label: Text('delete_account'.tr),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s5),
         ],
       ),
     );
   }
+}
+
+/// Confirms before signing the user out.
+void _confirmLogout(BuildContext context, SettingsController settingsCtrl) {
+  final colors = AppColors.of(context);
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text('logout_confirm_title'.tr),
+      content: Text('logout_confirm_message'.tr),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: Text('cancel'.tr),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.of(ctx).pop();
+            settingsCtrl.logout();
+          },
+          style: TextButton.styleFrom(foregroundColor: colors.error),
+          child: Text('logout'.tr),
+        ),
+      ],
+    ),
+  );
+}
+
+/// Confirms before permanently deleting the account. A general manager is
+/// warned that the whole company may be deleted (the backend decides whether
+/// they are the last one).
+void _confirmDeleteAccount(BuildContext context, AuthController auth) {
+  final colors = AppColors.of(context);
+  final isGeneralManager = auth.user?.isGeneralManager == true;
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text('delete_account_confirm_title'.tr),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('delete_account_confirm_message'.tr),
+          if (isGeneralManager) ...[
+            const SizedBox(height: AppSpacing.s3),
+            Text(
+              'delete_account_warning_company'.tr,
+              style: TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: colors.error,
+              ),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: Text('cancel'.tr),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.of(ctx).pop();
+            auth.deleteAccount();
+          },
+          style: TextButton.styleFrom(foregroundColor: colors.error),
+          child: Text('delete'.tr),
+        ),
+      ],
+    ),
+  );
 }
 
 void _showEditProfileSheet(BuildContext context) {

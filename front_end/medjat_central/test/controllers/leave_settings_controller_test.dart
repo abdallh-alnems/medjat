@@ -64,7 +64,8 @@ void main() {
       expect(controller.status, StatusRequest.serverFailure);
     });
 
-    test('saveSettings — نجاح', () async {
+    testWidgets('saveSettings — نجاح', (tester) async {
+      await pumpSnackbarHost(tester);
       when(() => mockData.getLeaveSettings()).thenAnswer((_) async => {
             'status': StatusRequest.success,
             'data': {'default_annual_leave_days': 21},
@@ -83,9 +84,11 @@ void main() {
             defaultAnnualLeaveDays: any(named: 'defaultAnnualLeaveDays'),
             carryoverMaxDays: any(named: 'carryoverMaxDays'),
           )).called(1);
+      await settleSnackbars(tester);
     });
 
-    test('runRollover — نجاح', () async {
+    testWidgets('runRollover — نجاح', (tester) async {
+      await pumpSnackbarHost(tester);
       when(() => mockData.getLeaveSettings()).thenAnswer((_) async => {
             'status': StatusRequest.success,
             'data': {'default_annual_leave_days': 21},
@@ -100,6 +103,7 @@ void main() {
 
       verify(() => mockData.runLeaveRollover(2025)).called(1);
       expect(controller.rolloverRunning, isFalse);
+      await settleSnackbars(tester);
     });
 
     test('setCarryoverEnabled يحدث القيمة', () async {

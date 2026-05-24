@@ -26,6 +26,36 @@ final class PermissionMiddleware {
         'employee' => [],
     ];
 
+    /**
+     * Passes when the user holds ANY of the given permissions (general_manager
+     * and '*' always pass). Used for read-only lists several roles need, e.g.
+     * dashboard filter dimensions.
+     */
+    public static function checkAny(array $user, array $permissions): void {
+        $role = $user['role'] ?? '';
+
+        if ($role === 'general_manager') {
+            return;
+        }
+
+        $rolePerms = RoleModel::getPermissions($user['admin_id'], $user['tenant_id']);
+        if ($rolePerms === null) {
+            $rolePerms = self::ROLE_DEFAULTS[$role] ?? [];
+        }
+
+        if ($rolePerms === '*') {
+            return;
+        }
+
+        foreach ($permissions as $perm) {
+            if (in_array($perm, (array) $rolePerms, true)) {
+                return;
+            }
+        }
+
+        Response::forbidden('Missing permission: one of ' . implode(', ', $permissions));
+    }
+
     public static function check(array $user, string $permission): void {
         $role = $user['role'] ?? '';
 
@@ -48,6 +78,41 @@ final class PermissionMiddleware {
         }
 
         Response::forbidden("Missing permission: {$permission}");
+    }
+
+    /**
+     * The effective permission set an admin currently holds.
+     * Returns '*' for full access (general_manager), otherwise an array of
+     * permission keys (custom role overrides the role defaults).
+     */
+    public static function effectivePermissions(int $adminId, int $tenantId, string $role): array|string {
+        if ($role === 'general_manager') {
+            return '*';
+        }
+
+        $custom = RoleModel::getPermissions($adminId, $tenantId);
+        if ($custom !== null) {
+            return $custom;
+        }
+
+        return self::ROLE_DEFAULTS[$role] ?? [];
+    }
+
+    /**
+     * True when every permission in $granted is covered by $owner.
+     * $owner === '*' covers everything. Used to enforce that an admin can
+     * never grant a permission (or role) higher than their own.
+     */
+    public static function isWithin(array $granted, array|string $owner): bool {
+        if ($owner === '*') {
+            return true;
+        }
+        foreach ($granted as $perm) {
+            if (!in_array($perm, $owner, true)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static function checkBranchAccess(array $user, ?int $branchId): void {

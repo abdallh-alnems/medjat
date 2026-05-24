@@ -11,7 +11,7 @@ PermissionMiddleware::check($auth, 'manage_employees');
 $input = $auth['input'];
 $name = $input['name'] ?? null;
 $branchId = (int) ($input['branch_id'] ?? 0);
-$baseSalary = (int) ($input['base_salary'] ?? 0);
+$baseSalary = round((float) ($input['base_salary'] ?? 0), 2);
 $jobTitle = $input['job_title'] ?? null;
 $phone = $input['phone'] ?? null;
 $hireDate = $input['hire_date'] ?? date('Y-m-d');
@@ -24,6 +24,14 @@ $annualLeaveDays = isset($input['annual_leave_days']) && $input['annual_leave_da
 
 Validator::required($name, 'name');
 Validator::required($branchId, 'branch_id');
+
+if ($phone !== null && $phone !== '') {
+    $normalizedPhone = Validator::phone($phone);
+    if ($normalizedPhone === null) {
+        Response::fail('Invalid phone number', 422);
+    }
+    $phone = $normalizedPhone;
+}
 
 PermissionMiddleware::checkBranchAccess($auth, $branchId);
 
@@ -46,11 +54,30 @@ $createData = [
     'bank_swift' => $input['bank_swift'] ?? null,
 ];
 
+if (array_key_exists('weekly_off_days', $input)) {
+    $createData['weekly_off_days'] = EmployeeModel::normalizeWeeklyOffDays($input['weekly_off_days']);
+}
+
+// Fixed-term employee: the date employment auto-ends. Must be a future date.
+if (!empty($input['auto_terminate_at'])) {
+    $endDate = Validator::date($input['auto_terminate_at'], 'auto_terminate_at');
+    if ($endDate <= date('Y-m-d')) {
+        Response::fail('auto_terminate_at must be a future date', 422);
+    }
+    $createData['auto_terminate_at'] = $endDate;
+}
+
 // Optional compliance / legal credential fields.
 foreach (EmployeeModel::COMPLIANCE_FIELDS as $field) {
     if (isset($input[$field]) && $input[$field] !== '') {
         $createData[$field] = $input[$field];
     }
+}
+
+// Contract end, when supplied with a start, must be strictly after it.
+if (!empty($createData['contract_start']) && !empty($createData['contract_end'])
+    && $createData['contract_end'] <= $createData['contract_start']) {
+    Response::fail('Contract end must be after the start date', 422);
 }
 
 $employeeId = EmployeeModel::create($tenantId, $createData);

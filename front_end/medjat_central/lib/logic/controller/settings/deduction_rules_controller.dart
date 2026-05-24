@@ -38,11 +38,11 @@ class DeductionRulesController extends GetxController {
   Future<void> createRule(Map<String, dynamic> data) async {
     final response = await _deductionRuleData.createDeductionRule(data);
     if (response['status'] == StatusRequest.success) {
-      Get.snackbar('تم', 'تم إضافة القاعدة', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('done'.tr, 'rule_added'.tr, snackPosition: SnackPosition.BOTTOM);
       loadRules();
     } else {
       Get.snackbar(
-          'خطأ', (response['message'] as String?) ?? 'حدث خطأ',
+          'error'.tr, (response['message'] as String?) ?? 'an_error_occurred'.tr,
           snackPosition: SnackPosition.BOTTOM);
     }
   }
@@ -50,12 +50,12 @@ class DeductionRulesController extends GetxController {
   Future<void> updateRule(int id, Map<String, dynamic> data) async {
     final response = await _deductionRuleData.updateDeductionRule(id, data);
     if (response['status'] == StatusRequest.success) {
-      Get.snackbar('تم', 'تم تحديث القاعدة',
+      Get.snackbar('done'.tr, 'rule_updated'.tr,
           snackPosition: SnackPosition.BOTTOM);
       loadRules();
     } else {
       Get.snackbar(
-          'خطأ', (response['message'] as String?) ?? 'حدث خطأ',
+          'error'.tr, (response['message'] as String?) ?? 'an_error_occurred'.tr,
           snackPosition: SnackPosition.BOTTOM);
     }
   }
@@ -64,7 +64,7 @@ class DeductionRulesController extends GetxController {
     final response = await _deductionRuleData.deleteDeductionRule(id);
     if (response['status'] == StatusRequest.success) {
       rules.removeWhere((r) => r.id == id);
-      Get.snackbar('تم', 'تم حذف القاعدة', snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('done'.tr, 'rule_deleted'.tr, snackPosition: SnackPosition.BOTTOM);
       update();
     }
   }
