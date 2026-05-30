@@ -107,21 +107,5 @@ void main() {
           )).called(1);
     });
 
-    test('convertAbsenceToLeave ينادي postData', () async {
-      when(() => mockCrud.postData(any(), any()))
-          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
-
-      await leaveData.convertAbsenceToLeave(
-        employeeId: 5,
-        date: '2024-06-01',
-        type: 'sick',
-        reason: 'مرضي',
-      );
-
-      verify(() => mockCrud.postData(
-            any(that: contains('convert_absence.php')),
-            {'employee_id': 5, 'date': '2024-06-01', 'type': 'sick', 'reason': 'مرضي'},
-          )).called(1);
-    });
   });
 }

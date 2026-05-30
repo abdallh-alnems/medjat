@@ -24,8 +24,41 @@ class PayrollData {
     return await _crud.getData(AppLinks.payroll, queryParameters: params);
   }
 
+  Future<Map<String, dynamic>> getPayrollLive(int month, int year, {int? branchId}) async {
+    final monthStr = '$year-${month.toString().padLeft(2, '0')}';
+    final params = <String, dynamic>{'month': monthStr};
+    if (branchId != null) params['branch_id'] = branchId;
+    return await _crud.getData(AppLinks.payrollLive, queryParameters: params);
+  }
+
   Future<Map<String, dynamic>> approvePayroll(int id) async {
     return await _crud.postData(AppLinks.payrollApprove(id), {});
+  }
+
+  Future<Map<String, dynamic>> approveBulk(List<int> ids) async {
+    return await _crud.postData(AppLinks.payrollApproveBulk, {'ids': ids});
+  }
+
+  /// `paidAt` is "YYYY-MM-DD". Pass null to default to today server-side.
+  Future<Map<String, dynamic>> markPaid(List<int> ids, {String? paidAt}) async {
+    final body = <String, dynamic>{'ids': ids};
+    if (paidAt != null) body['paid_at'] = paidAt;
+    return await _crud.postData(AppLinks.payrollMarkPaid, body);
+  }
+
+  /// Generate (or refresh) draft slips for every active employee for `month`
+  /// (YYYY-MM). Branch-scoped when `branchId` is provided.
+  Future<Map<String, dynamic>> generatePayroll(String month, {int? branchId}) async {
+    final body = <String, dynamic>{'month': month};
+    if (branchId != null) body['branch_id'] = branchId;
+    return await _crud.postData(AppLinks.payrollGenerate, body);
+  }
+
+  Future<Map<String, dynamic>> getAuditLog({int page = 1, int limit = 50}) async {
+    return await _crud.getData(
+      AppLinks.payrollAuditLog,
+      queryParameters: {'page': page, 'limit': limit},
+    );
   }
 
   Future<Map<String, dynamic>> addManualDeduction({
@@ -52,10 +85,164 @@ class PayrollData {
     });
   }
 
+  Future<Map<String, dynamic>> getEosb(int employeeId) async {
+    return await _crud.getData(AppLinks.payrollEosb(employeeId));
+  }
+
+  // ── Recurring monthly allowances ─────────────────────────
+  Future<Map<String, dynamic>> listAllowances(int employeeId) async {
+    return await _crud.getData(AppLinks.allowancesList(employeeId));
+  }
+
+  Future<Map<String, dynamic>> createAllowance({
+    required int employeeId,
+    required String type,
+    required num amount,
+    required String startMonth,
+    String? endMonth,
+    String? label,
+  }) async {
+    return await _crud.postData(AppLinks.allowanceCreate, {
+      'employee_id': employeeId,
+      'type': type,
+      'amount': amount,
+      'start_month': startMonth,
+      if (endMonth != null) 'end_month': endMonth,
+      if (label != null) 'label': label,
+    });
+  }
+
+  Future<Map<String, dynamic>> updateAllowance({
+    required int id,
+    required String type,
+    required num amount,
+    required String startMonth,
+    String? endMonth,
+    String? label,
+  }) async {
+    return await _crud.postData(AppLinks.allowanceUpdate, {
+      'id': id,
+      'type': type,
+      'amount': amount,
+      'start_month': startMonth,
+      if (endMonth != null) 'end_month': endMonth,
+      if (label != null) 'label': label,
+    });
+  }
+
+  Future<Map<String, dynamic>> deleteAllowance(int id) async {
+    return await _crud.postData(AppLinks.allowanceDelete, {'id': id});
+  }
+
+  /// Per-slip approval actions wired to the financial tab. Each one POSTs
+  /// `payroll_id` in the request body — that's the contract the existing
+  /// approve.php/mark_paid.php/revert.php endpoints expect.
+  Future<Map<String, dynamic>> approveSlip(int payrollId) async {
+    return await _crud
+        .postData(AppLinks.payrollSlipApprove, {'payroll_id': payrollId});
+  }
+
+  Future<Map<String, dynamic>> markSlipPaid(int payrollId,
+      {String? paidAt}) async {
+    final body = <String, dynamic>{'payroll_id': payrollId};
+    if (paidAt != null) body['paid_at'] = paidAt;
+    return await _crud.postData(AppLinks.payrollSlipMarkPaid, body);
+  }
+
+  Future<Map<String, dynamic>> revertSlip(int payrollId) async {
+    return await _crud
+        .postData(AppLinks.payrollSlipRevert, {'payroll_id': payrollId});
+  }
+
+  Future<Map<String, dynamic>> updateManualDeduction({
+    required int id,
+    required num amount,
+    required String reason,
+  }) async {
+    return await _crud.postData(AppLinks.deductionManualUpdate, {
+      'id': id,
+      'amount': amount,
+      'reason': reason,
+    });
+  }
+
+  Future<Map<String, dynamic>> deleteManualDeduction(int id) async {
+    return await _crud.postData(AppLinks.deductionManualDelete, {'id': id});
+  }
+
+  Future<Map<String, dynamic>> updateManualBonus({
+    required int id,
+    required num amount,
+    required String reason,
+  }) async {
+    return await _crud.postData(AppLinks.bonusManualUpdate, {
+      'id': id,
+      'amount': amount,
+      'reason': reason,
+    });
+  }
+
+  Future<Map<String, dynamic>> deleteManualBonus(int id) async {
+    return await _crud.postData(AppLinks.bonusManualDelete, {'id': id});
+  }
+
   Future<Map<String, dynamic>> getBankFilePreview(String month, {int? branchId}) async {
     final params = <String, dynamic>{'month': month};
     if (branchId != null) params['branch_id'] = branchId;
     return await _crud.getData(AppLinks.payrollBankPreview, queryParameters: params);
+  }
+
+  /// Downloads the employee's monthly payslip PDF to a temp file and returns
+  /// its local path (or null on failure). Mirrors [downloadBankFile] for auth
+  /// headers so it works with the existing API security model.
+  Future<String?> downloadPayslipPdf(int employeeId, String month) async {
+    try {
+      final uri = Uri.parse(AppLinks.payrollSlipPdf(employeeId, month));
+      final params = Map<String, String>.from(uri.queryParameters);
+
+      final headers = <String, String>{};
+      final securityUser = dotenv.env['SECURITY_USER'] ?? '';
+      final securityKey = dotenv.env['SECURITY_KEY'] ?? '';
+      headers['Authorization'] =
+          'Basic ${base64Encode(utf8.encode('$securityUser:$securityKey'))}';
+      headers['Accept'] = 'application/pdf';
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final idToken = await user.getIdToken();
+        if (idToken != null) {
+          headers['X-Firebase-Token'] = idToken;
+          params['token'] = idToken;
+        }
+      }
+
+      final userData = await TokenStorageService.getUserData();
+      if (userData != null) {
+        try {
+          final json = jsonDecode(userData);
+          final tenantId = json['tenant_id'];
+          if (tenantId != null && tenantId != 0) {
+            headers['X-Tenant-Id'] = tenantId.toString();
+            params['tenant_id'] = tenantId.toString();
+          }
+        } catch (_) {}
+      }
+
+      final response = await http
+          .get(uri.replace(queryParameters: params), headers: headers)
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final dir = Directory.systemTemp;
+        final filename = 'payslip_${employeeId}_$month.pdf';
+        final file = File('${dir.path}/$filename');
+        await file.writeAsBytes(response.bodyBytes);
+        return file.path;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 
   Future<String?> downloadBankFile(String month, {int? branchId}) async {

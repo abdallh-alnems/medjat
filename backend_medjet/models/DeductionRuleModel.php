@@ -28,9 +28,34 @@ final class DeductionRuleModel {
 
     public static function getManualByEmployeeMonth(int $employeeId, string $month, int $tenantId): array {
         return Database::fetchAll(
-            "SELECT * FROM manual_deductions WHERE employee_id = ? AND month = ? AND tenant_id = ? ORDER BY created_at DESC",
+            "SELECT md.*, a.name AS created_by_name
+             FROM manual_deductions md
+             LEFT JOIN admins a ON a.id = md.created_by
+             WHERE md.employee_id = ? AND md.month = ? AND md.tenant_id = ?
+             ORDER BY md.created_at DESC",
             [$employeeId, $month, $tenantId]
         );
+    }
+
+    public static function findManualById(int $id, int $tenantId): ?array {
+        return Database::fetchOne(
+            "SELECT * FROM manual_deductions WHERE id = ? AND tenant_id = ? LIMIT 1",
+            [$id, $tenantId]
+        );
+    }
+
+    public static function updateManualDeduction(int $id, int $tenantId, float $amount, string $reason): bool {
+        return Database::execute(
+            "UPDATE manual_deductions SET amount = ?, reason = ? WHERE id = ? AND tenant_id = ?",
+            [$amount, $reason, $id, $tenantId]
+        ) > 0;
+    }
+
+    public static function deleteManualDeduction(int $id, int $tenantId): bool {
+        return Database::execute(
+            "DELETE FROM manual_deductions WHERE id = ? AND tenant_id = ?",
+            [$id, $tenantId]
+        ) > 0;
     }
 
     public static function updateRules(int $tenantId, array $rules): void {

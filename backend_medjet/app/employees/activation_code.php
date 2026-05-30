@@ -27,13 +27,17 @@ if ($method === 'GET') {
 
     Response::success([
         'activation_code' => $existing['code'] ?? null,
-        'expires_at' => $existing['expires_at'] ?? null,
+        'expires_at' => isset($existing['expires_at'])
+            ? gmdate('Y-m-d\TH:i:s\Z', strtotime($existing['expires_at']))
+            : null,
         'employee_status' => $employee['status'],
         'device_bound' => $activeToken !== null,
         'device' => $activeToken ? [
             'platform' => $activeToken['platform'],
             'device_model' => $activeToken['device_model'],
-            'last_used_at' => $activeToken['last_used_at'],
+            'last_used_at' => isset($activeToken['last_used_at'])
+                ? gmdate('Y-m-d\TH:i:s\Z', strtotime($activeToken['last_used_at']))
+                : null,
         ] : null,
     ]);
 }
@@ -64,7 +68,7 @@ if ($wasActive) {
 }
 
 $code = ActivationCodeModel::generate($tenantId, $employeeId);
-$expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
+$expiresAt = gmdate('Y-m-d\TH:i:s\Z', strtotime('+24 hours'));
 
 AuditLogModel::log(
     $tenantId,

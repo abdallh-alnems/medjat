@@ -42,4 +42,26 @@ class EmployeeData {
   Future<Map<String, dynamic>> regenerateActivationCode(int employeeId) async {
     return await _crud.postData(AppLinks.employeeActivationCode(employeeId), {});
   }
+
+  Future<Map<String, dynamic>> getAttendanceHistory(
+    int employeeId, {
+    String? month,
+    String? from,
+    String? to,
+  }) async {
+    return await _crud.getData(AppLinks.employeeAttendanceHistory(
+      employeeId,
+      month: month,
+      from: from,
+      to: to,
+    ));
+  }
+
+  Future<Map<String, dynamic>> getFinancialSummary(int employeeId, String month) async {
+    return await _crud.getData(AppLinks.employeeFinancialSummary(employeeId, month));
+  }
+
+  Future<Map<String, dynamic>> getYearToDate(int employeeId, int year) async {
+    return await _crud.getData(AppLinks.employeeYearToDate(employeeId, year));
+  }
 }

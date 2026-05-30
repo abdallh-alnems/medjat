@@ -12,7 +12,7 @@ final class EmployeeShiftScheduleModel {
                        e.shift_type, e.shift_id
                 FROM employees e
                 LEFT JOIN branches b ON b.id = e.branch_id
-                WHERE e.tenant_id = ? AND e.status != 'terminated'";
+                WHERE e.tenant_id = ? AND e.status NOT IN ('terminated', 'pending_activation')";
         $params = [$tenantId];
         if ($branchId !== null) {
             $sql .= " AND e.branch_id = ?";

@@ -15,6 +15,9 @@ class CompanySettingsController extends GetxController {
   final phoneController = TextEditingController();
   final emailController = TextEditingController();
 
+  // Company default attendance cycle start day (1-28). Branches may override.
+  int cycleStartDay = 1;
+
   @override
   void onInit() {
     super.onInit();
@@ -37,18 +40,28 @@ class CompanySettingsController extends GetxController {
     final response = await _companySettingsData.getCompanySettings();
 
     if (response['status'] == StatusRequest.success) {
-      final data = response['data'];
+      // Unwrap the API envelope: {status, data:{...}}.
+      dynamic data = response['data'];
+      if (data is Map && data['data'] is Map) {
+        data = data['data'];
+      }
       if (data is Map<String, dynamic>) {
         companyData = data;
         nameController.text = (data['name'] as String?) ?? '';
         addressController.text = (data['address'] as String?) ?? '';
         phoneController.text = (data['phone'] as String?) ?? '';
         emailController.text = (data['email'] as String?) ?? '';
+        cycleStartDay = (data['cycle_start_day'] as num?)?.toInt() ?? 1;
       }
       status = StatusRequest.success;
     } else {
       status = (response['status'] as StatusRequest?) ?? StatusRequest.failure;
     }
+    update();
+  }
+
+  void setCycleStartDay(int day) {
+    cycleStartDay = day.clamp(1, 28);
     update();
   }
 
@@ -61,6 +74,7 @@ class CompanySettingsController extends GetxController {
       'address': addressController.text.trim(),
       'phone': phoneController.text.trim(),
       'email': emailController.text.trim(),
+      'cycle_start_day': cycleStartDay.clamp(1, 28),
     };
 
     final response = await _companySettingsData.updateCompanySettings(data);

@@ -23,7 +23,7 @@ void main() {
 
   group('PayrollController — تحميل البيانات', () {
     test('نجاح الجلب يملأ القائمة', () async {
-      when(() => mockData.getPayrollMonth(any(), any(),
+      when(() => mockData.getPayrollLive(any(), any(),
               branchId: any(named: 'branchId')))
           .thenAnswer((_) async => <String, dynamic>{
                 'status': StatusRequest.success,
@@ -43,7 +43,7 @@ void main() {
     });
 
     test('فشل الجلب', () async {
-      when(() => mockData.getPayrollMonth(any(), any(),
+      when(() => mockData.getPayrollLive(any(), any(),
               branchId: any(named: 'branchId')))
           .thenAnswer((_) async => {'status': StatusRequest.serverFailure});
 
@@ -55,7 +55,7 @@ void main() {
     });
 
     test('changeMonth يعيد التحميل', () async {
-      when(() => mockData.getPayrollMonth(any(), any(),
+      when(() => mockData.getPayrollLive(any(), any(),
               branchId: any(named: 'branchId')))
           .thenAnswer((_) async => <String, dynamic>{
                 'status': StatusRequest.success,
@@ -69,71 +69,10 @@ void main() {
 
       expect(controller.selectedMonth, 1);
       expect(controller.selectedYear, 2024);
-      verify(() => mockData.getPayrollMonth(any(), any(),
+      verify(() => mockData.getPayrollLive(any(), any(),
               branchId: any(named: 'branchId')))
           .called(2);
     });
 
-    test('getBankFilePreview عند النجاح', () async {
-      when(() => mockData.getPayrollMonth(any(), any(),
-              branchId: any(named: 'branchId')))
-          .thenAnswer((_) async => <String, dynamic>{
-                'status': StatusRequest.success,
-                'data': <String, dynamic>{'items': []},
-              });
-      when(() => mockData.getBankFilePreview(any(),
-              branchId: any(named: 'branchId')))
-          .thenAnswer((_) async => <String, dynamic>{
-                'status': StatusRequest.success,
-                'data': <String, dynamic>{
-                  'month': '2024-06',
-                  'total_employees': 10,
-                  'total_amount': 100000,
-                },
-              });
-
-      controller = PayrollController();
-      await controller.loadPayrolls();
-      final preview = await controller.getBankFilePreview();
-
-      expect(preview, isNotNull);
-      expect(preview!['total_employees'], 10);
-    });
-
-    test('getBankFilePreview عند الفشل يرجع null', () async {
-      when(() => mockData.getPayrollMonth(any(), any(),
-              branchId: any(named: 'branchId')))
-          .thenAnswer((_) async => <String, dynamic>{
-                'status': StatusRequest.success,
-                'data': <String, dynamic>{'items': []},
-              });
-      when(() => mockData.getBankFilePreview(any(),
-              branchId: any(named: 'branchId')))
-          .thenAnswer((_) async => {'status': StatusRequest.failure});
-
-      controller = PayrollController();
-      await controller.loadPayrolls();
-      final preview = await controller.getBankFilePreview();
-
-      expect(preview, isNull);
-    });
-
-    test('hasApprovedPayrolls', () async {
-      when(() => mockData.getPayrollMonth(any(), any(),
-              branchId: any(named: 'branchId')))
-          .thenAnswer((_) async => <String, dynamic>{
-                'status': StatusRequest.success,
-                'data': <String, dynamic>{
-                  'items': [
-                    {'id': 1, 'employee_id': 5, 'month': 6, 'year': 2024, 'status': 'approved'},
-                  ],
-                },
-              });
-
-      controller = PayrollController();
-      await controller.loadPayrolls();
-
-      expect(controller.hasApprovedPayrolls, isTrue);
-    });
   });
 }

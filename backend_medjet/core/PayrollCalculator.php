@@ -1,17 +1,42 @@
 <?php
 
 final class PayrollCalculator {
-    public static function calculate(int $employeeId, string $month, int $tenantId): array {
+    /**
+     * Compute a payroll slip for an employee over a cycle.
+     *
+     * @param string|null $asOfDate When provided ("YYYY-MM-DD"), attendance is
+     *  fetched only up to this date and the base salary is prorated by days
+     *  elapsed in the cycle. When null, the full cycle window is used (the
+     *  shape used by payroll generation and any other completed-cycle view).
+     */
+    public static function calculate(int $employeeId, string $month, int $tenantId, ?string $asOfDate = null): array {
         $employee = EmployeeModel::findById($employeeId, $tenantId);
         if (!$employee) {
             return [];
         }
 
-        $baseSalary = (float) $employee['base_salary'];
-        $deductions = self::calculateDeductions($employeeId, $month, $tenantId, $baseSalary);
-        $bonuses = self::calculateBonuses($employeeId, $month, $tenantId);
+        $branchId = isset($employee['branch_id']) && $employee['branch_id'] !== null
+            ? (int) $employee['branch_id'] : null;
+        $window = self::resolveCycleWindow($tenantId, $branchId, $month);
+        $cycleStart = $window['start'];
+        $cycleEnd = $window['end'];
 
-        $totalDeductions = array_sum(array_column($deductions, 'amount'));
+        // Date range over which attendance counts. For past/complete cycles
+        // this is the full window; for the in-progress cycle it stops at
+        // asOfDate; for future cycles it's empty.
+        $effectiveEnd = $cycleEnd;
+        if ($asOfDate !== null) {
+            if ($asOfDate < $cycleStart) {
+                $effectiveEnd = null;
+            } elseif ($asOfDate < $cycleEnd) {
+                $effectiveEnd = $asOfDate;
+            }
+        }
+
+        $baseSalary = (float) $employee['base_salary'];
+        $deductions = self::calculateDeductions($employeeId, $month, $tenantId, $baseSalary, $cycleStart, $effectiveEnd);
+        $bonuses = self::calculateBonuses($employeeId, $month, $tenantId, $cycleStart, $effectiveEnd, $baseSalary);
+
         $totalBonuses = array_sum(array_column($bonuses, 'amount'));
 
         $statutory = self::applyStatutory($baseSalary, $deductions, $tenantId);
@@ -19,13 +44,32 @@ final class PayrollCalculator {
         $totalDeductions = array_sum(array_column($deductions, 'amount'));
         $netSalary = $baseSalary - $totalDeductions + $totalBonuses;
 
+        $daysInCycle = self::daysBetween($cycleStart, $cycleEnd) + 1;
+        $daysElapsed = $effectiveEnd === null
+            ? 0
+            : min($daysInCycle, self::daysBetween($cycleStart, $effectiveEnd) + 1);
+        $proratedBase = $daysInCycle > 0
+            ? round($baseSalary * $daysElapsed / $daysInCycle, 2)
+            : 0.0;
+        // Negative results are kept (no clamp at 0) so HR sees when an
+        // employee's deductions exceeded what they earned — same applies
+        // to the full-cycle projection below.
+        $earnedToDate = round($proratedBase - $totalDeductions + $totalBonuses, 2);
+
         $result = [
             'employee_id' => $employeeId,
             'month' => $month,
             'base_salary' => $baseSalary,
             'total_deductions' => round($totalDeductions, 2),
             'total_bonuses' => round($totalBonuses, 2),
-            'net_salary' => round(max(0, $netSalary), 2),
+            'net_salary' => round($netSalary, 2),
+            'cycle_start' => $cycleStart,
+            'cycle_end' => $cycleEnd,
+            'effective_end' => $effectiveEnd ?? $cycleStart,
+            'days_in_cycle' => $daysInCycle,
+            'days_elapsed' => $daysElapsed,
+            'prorated_base_salary' => $proratedBase,
+            'earned_to_date' => $earnedToDate,
             'deductions_breakdown' => $deductions,
             'bonuses_breakdown' => $bonuses,
         ];
@@ -37,22 +81,84 @@ final class PayrollCalculator {
         return $result;
     }
 
-    private static function calculateDeductions(int $employeeId, string $month, int $tenantId, float $baseSalary): array {
+    /**
+     * Resolve the cycle window (inclusive YYYY-MM-DD dates) for a given month
+     * label, honouring the per-branch override of `cycle_start_day` and
+     * falling back to the tenant default. A cycle is named after whichever
+     * month holds most of its days (matching the attendance tab):
+     *   D <= 1       → plain calendar month
+     *   D in 2..16   → cycle starts in label month, ends in next month
+     *   D in 17..28  → cycle starts in prior month, ends in label month
+     */
+    public static function resolveCycleWindow(int $tenantId, ?int $branchId, string $month): array {
+        $row = Database::fetchOne(
+            "SELECT COALESCE(b.cycle_start_day, t.cycle_start_day, 1) AS d
+             FROM tenants t
+             LEFT JOIN branches b ON b.id = ? AND b.tenant_id = t.id
+             WHERE t.id = ? LIMIT 1",
+            [$branchId ?? 0, $tenantId]
+        );
+        $startDay = max(1, min(28, (int) ($row['d'] ?? 1)));
+
+        $year = (int) substr($month, 0, 4);
+        $mon = (int) substr($month, 5, 2);
+
+        if ($startDay <= 1) {
+            $start = sprintf('%04d-%02d-01', $year, $mon);
+            $lastDay = (int) date('t', mktime(0, 0, 0, $mon, 1, $year));
+            $end = sprintf('%04d-%02d-%02d', $year, $mon, $lastDay);
+        } else {
+            $labeledByEndMonth = $startDay >= 17;
+            $anchor = new DateTime(sprintf('%04d-%02d-%02d', $year, $mon, $startDay));
+            $startDt = $labeledByEndMonth
+                ? (clone $anchor)->modify('-1 month')
+                : clone $anchor;
+            $endDt = $labeledByEndMonth
+                ? (clone $anchor)->modify('-1 day')
+                : (clone $anchor)->modify('+1 month')->modify('-1 day');
+            $start = $startDt->format('Y-m-d');
+            $end = $endDt->format('Y-m-d');
+        }
+
+        return ['start' => $start, 'end' => $end];
+    }
+
+    private static function daysBetween(string $a, string $b): int {
+        return (int) (new DateTime($a))->diff(new DateTime($b))->days;
+    }
+
+    private static function calculateDeductions(int $employeeId, string $month, int $tenantId, float $baseSalary, string $cycleStart, ?string $effectiveEnd): array {
         $deductions = [];
         $rules = DeductionRuleModel::getActiveByTenant($tenantId);
-        $attendances = AttendanceModel::getByEmployeeMonth($employeeId, $month, $tenantId);
+        $attendances = $effectiveEnd === null
+            ? []
+            : AttendanceModel::getByEmployeeDateRange($employeeId, $cycleStart, $effectiveEnd, $tenantId);
 
         $dailyRate = $baseSalary / 30;
         $hourlyRate = $dailyRate / 8;
 
         foreach ($attendances as $att) {
             if ($att['status'] === 'absent') {
-                $multiplier = self::getRuleValue($rules, 'absence_multiplier', 1.5);
+                // Per-day override: 'amount' = fixed money, 'days' = value × daily
+                // rate, 'auto' (default) = company absence_multiplier rule.
+                $mode = $att['deduction_mode'] ?? 'auto';
+                $value = $att['deduction_value'];
+                if ($mode === 'amount' && $value !== null) {
+                    $amount = round((float) $value, 2);
+                    $desc = "خصم غياب مخصص يوم {$att['date']}";
+                } elseif ($mode === 'days' && $value !== null) {
+                    $amount = round($dailyRate * (float) $value, 2);
+                    $desc = "غياب {$value} يوم ({$att['date']})";
+                } else {
+                    $multiplier = self::getRuleValue($rules, 'absence_multiplier', 1.5);
+                    $amount = round($dailyRate * $multiplier, 2);
+                    $desc = "غياب يوم {$att['date']}";
+                }
                 $deductions[] = [
                     'type' => 'absence',
                     'date' => $att['date'],
-                    'amount' => round($dailyRate * $multiplier, 2),
-                    'description' => "غياب يوم {$att['date']}",
+                    'amount' => $amount,
+                    'description' => $desc,
                 ];
             }
 
@@ -83,10 +189,12 @@ final class PayrollCalculator {
         $manualDeductions = DeductionRuleModel::getManualByEmployeeMonth($employeeId, $month, $tenantId);
         foreach ($manualDeductions as $md) {
             $deductions[] = [
+                'id' => (int) $md['id'],
                 'type' => 'manual',
                 'date' => $md['created_at'],
                 'amount' => (float) $md['amount'],
                 'description' => $md['reason'],
+                'created_by_name' => $md['created_by_name'] ?? null,
             ];
         }
 
@@ -105,12 +213,13 @@ final class PayrollCalculator {
         return $deductions;
     }
 
-    private static function calculateBonuses(int $employeeId, string $month, int $tenantId): array {
+    private static function calculateBonuses(int $employeeId, string $month, int $tenantId, string $cycleStart, ?string $effectiveEnd, float $baseSalary): array {
         $bonuses = [];
         $rules = BonusRuleModel::getActiveByTenant($tenantId);
-        $attendances = AttendanceModel::getByEmployeeMonth($employeeId, $month, $tenantId);
+        $attendances = $effectiveEnd === null
+            ? []
+            : AttendanceModel::getByEmployeeDateRange($employeeId, $cycleStart, $effectiveEnd, $tenantId);
 
-        $baseSalary = (float) EmployeeModel::findById($employeeId, $tenantId)['base_salary'];
         $hourlyRate = ($baseSalary / 30) / 8;
         $overtimeMultiplier = self::getRuleValue($rules, 'overtime_multiplier', 1.5);
 
@@ -129,10 +238,28 @@ final class PayrollCalculator {
         $manualBonuses = BonusRuleModel::getManualByEmployeeMonth($employeeId, $month, $tenantId);
         foreach ($manualBonuses as $mb) {
             $bonuses[] = [
+                'id' => (int) $mb['id'],
                 'type' => 'manual',
                 'date' => $mb['created_at'],
                 'amount' => (float) $mb['amount'],
                 'description' => $mb['reason'],
+                'created_by_name' => $mb['created_by_name'] ?? null,
+            ];
+        }
+
+        // Recurring monthly allowances active this month (housing, transport…).
+        // Emitted as bonus lines with type='allowance' so the existing math
+        // path picks them up; the financial tab filters them into its own
+        // dedicated section.
+        $allowances = AllowanceModel::getActiveForEmployeeMonth($employeeId, $month, $tenantId);
+        foreach ($allowances as $a) {
+            $bonuses[] = [
+                'id' => (int) $a['id'],
+                'type' => 'allowance',
+                'allowance_type' => $a['type'],
+                'date' => null,
+                'amount' => (float) $a['amount'],
+                'description' => AllowanceModel::displayLabel($a),
             ];
         }
 

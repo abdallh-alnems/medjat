@@ -1,17 +1,25 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/class/handling_data_request.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
-import '../../../logic/controller/attendance/attendance_controller.dart';
+import '../../../core/utils/currency.dart';
+import '../../../core/widget/month_grid_picker.dart';
+import '../../../data/data_source/remote/employee_data/employee_data.dart';
+import '../../../data/model/employee_model.dart';
 import '../../../logic/controller/employee/employee_detail_controller.dart';
+import '../../../logic/controller/payroll/payroll_controller.dart';
 import '../../../data/model/document_model.dart';
 import '../../../data/model/warning_model.dart';
 import '../../../data/model/performance_review_model.dart';
 import '../../../data/model/attendance_model.dart';
+import '../../../data/model/financial_summary_model.dart';
 import '../../../core/constant/routes/app_routes.dart';
 
 class EmployeeDetailScreen extends StatelessWidget {
@@ -19,248 +27,98 @@ class EmployeeDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final int employeeId =
-        (Get.arguments as Map<String, dynamic>?)?['id'] as int? ?? 0;
-    final ctrl = Get.put(
-      EmployeeDetailController(employeeId: employeeId),
-    );
+    final args = Get.arguments as Map<String, dynamic>?;
+    final int employeeId = args?['id'] as int? ?? 0;
+    final int initialTab = args?['initialTab'] as int? ?? 0;
+    final ctrl = Get.put(EmployeeDetailController(employeeId: employeeId));
 
-    return Scaffold(
-      appBar: AppBar(title: Text('employee_profile'.tr)),
-      body: GetBuilder<EmployeeDetailController>(
-        builder: (_) {
-          return HandlingDataRequest(
-            statusRequest: ctrl.status,
-            onRetry: ctrl.loadEmployee,
-            widget: RefreshIndicator(
-              onRefresh: () async {
-                await ctrl.loadEmployee();
-                await ctrl.loadAttendance();
-                await ctrl.loadDocuments();
-                await ctrl.loadReviews();
-              },
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(AppSpacing.s4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _ProfileHeader(ctrl: ctrl),
-                    const SizedBox(height: AppSpacing.s5),
-                    if (ctrl.employee != null &&
-                        ctrl.employee!.status != 'terminated')
-                      _ActivationCodeCard(ctrl: ctrl),
-                    const SizedBox(height: AppSpacing.s5),
-                    _InfoSection(ctrl: ctrl),
-                    const SizedBox(height: AppSpacing.s5),
-                    if (ctrl.canManagePayroll) ...[
-                      _AdjustmentsSection(ctrl: ctrl),
-                      const SizedBox(height: AppSpacing.s5),
-                    ],
-                    _DocumentsSection(ctrl: ctrl),
-                    const SizedBox(height: AppSpacing.s5),
-                    _BiometricSection(ctrl: ctrl),
-                    const SizedBox(height: AppSpacing.s5),
-                    _RecentAttendanceSection(ctrl: ctrl),
-                    const SizedBox(height: AppSpacing.s5),
-                    if (ctrl.hasLeaveBalance) ...[
-                      _LeaveBalanceSection(ctrl: ctrl),
-                      const SizedBox(height: AppSpacing.s5),
-                    ],
-                    _WarningsSection(ctrl: ctrl),
-                    const SizedBox(height: AppSpacing.s5),
-                    _PerformanceReviewsSection(ctrl: ctrl),
-                    const SizedBox(height: AppSpacing.s7),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'fab_employee_attendance',
-        onPressed: () => _showQuickAttendanceSheet(context, ctrl),
-        backgroundColor: AppColors.of(context).brand,
-        child: const Icon(Icons.timer_outlined, color: Colors.white),
-      ),
-    );
-  }
+    return GetBuilder<EmployeeDetailController>(
+      builder: (_) {
+        final canPayroll = ctrl.canManagePayroll;
+        final tabs = <_TabSpec>[
+          _TabSpec('tab_overview'.tr),
+          _TabSpec('tab_attendance'.tr),
+          if (canPayroll) _TabSpec('tab_financial'.tr),
+          _TabSpec('tab_documents'.tr),
+          _TabSpec('tab_warnings'.tr),
+          _TabSpec('tab_reviews'.tr),
+        ];
 
-  void _showQuickAttendanceSheet(BuildContext context, EmployeeDetailController ctrl) async {
-    final attendanceCtrl = Get.find<AttendanceController>();
-    final employee = ctrl.employee;
-    if (employee == null) return;
-
-    final today = DateTime.now();
-    final hasRecord = attendanceCtrl.records
-        .any((r) => r.employeeId == employee.id);
-
-    if (hasRecord) {
-      Get.snackbar('manual_check_in'.tr, 'attendance_recorded_today'.tr,
-          snackPosition: SnackPosition.BOTTOM);
-      return;
-    }
-
-    TimeOfDay checkIn = const TimeOfDay(hour: 9, minute: 0);
-    TimeOfDay checkOut = const TimeOfDay(hour: 17, minute: 0);
-
-    Get.bottomSheet(
-      StatefulBuilder(
-        builder: (sheetCtx, setSheetState) {
-          final colors = AppColors.of(context);
-          return Container(
-            padding: EdgeInsets.only(
-              left: AppSpacing.s4,
-              right: AppSpacing.s4,
-              top: AppSpacing.s4,
-              bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s4,
-            ),
-            decoration: BoxDecoration(
-              color: colors.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadius.lg),
-              ),
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: AppSpacing.s3),
-                      decoration: BoxDecoration(
-                        color: colors.borderHairline,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
+        return DefaultTabController(
+          initialIndex: initialTab.clamp(0, tabs.length - 1),
+          length: tabs.length,
+          child: Scaffold(
+            body: HandlingDataRequest(
+              statusRequest: ctrl.status,
+              onRetry: ctrl.loadEmployee,
+              widget: NestedScrollView(
+                headerSliverBuilder: (ctx, _) => [
+                  SliverAppBar(
+                    pinned: true,
+                    expandedHeight: 220,
+                    title: Text('employee_profile'.tr),
+                    flexibleSpace: FlexibleSpaceBar(
+                      background: _ProfileHeader(ctrl: ctrl),
                     ),
-                  ),
-                  Text('manual_check_in'.tr, style: AppTextStyles.h2(context)),
-                  const SizedBox(height: AppSpacing.s2),
-                  Text(employee.name,
-                      style: AppTextStyles.bodySecondary(context)),
-                  const SizedBox(height: AppSpacing.s4),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('check_in'.tr, style: AppTextStyles.h3(context)),
-                            const SizedBox(height: AppSpacing.s2),
-                            InkWell(
-                              onTap: () async {
-                                final t = await showTimePicker(
-                                  context: sheetCtx,
-                                  initialTime: checkIn,
-                                );
-                                if (t != null) setSheetState(() => checkIn = t);
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(AppSpacing.s3),
-                                decoration: BoxDecoration(
-                                  color: colors.sunken,
-                                  borderRadius: BorderRadius.circular(AppRadius.md),
-                                  border: Border.all(color: colors.borderHairline),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.login, size: 18, color: colors.textSecondary),
-                                    const SizedBox(width: AppSpacing.s2),
-                                    Text(
-                                      '${checkIn.hour.toString().padLeft(2, '0')}:${checkIn.minute.toString().padLeft(2, '0')}',
-                                      style: TextStyle(
-                                        fontFamily: 'Geist',
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: colors.brand,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
+                    bottom: PreferredSize(
+                      preferredSize: const Size.fromHeight(48),
+                      child: Container(
+                        color: AppColors.of(context).surface,
+                        child: TabBar(
+                          isScrollable: true,
+                          tabAlignment: TabAlignment.start,
+                          labelColor: AppColors.of(context).brand,
+                          unselectedLabelColor:
+                              AppColors.of(context).textSecondary,
+                          indicatorColor: AppColors.of(context).brand,
+                          labelStyle: const TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          unselectedLabelStyle: const TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          tabs: tabs
+                              .map((t) => Tab(
+                                    height: 44,
+                                    child: Text(t.label),
+                                  ))
+                              .toList(),
                         ),
-                      ),
-                      const SizedBox(width: AppSpacing.s3),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('check_out'.tr, style: AppTextStyles.h3(context)),
-                            const SizedBox(height: AppSpacing.s2),
-                            InkWell(
-                              onTap: () async {
-                                final t = await showTimePicker(
-                                  context: sheetCtx,
-                                  initialTime: checkOut,
-                                );
-                                if (t != null) setSheetState(() => checkOut = t);
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(AppSpacing.s3),
-                                decoration: BoxDecoration(
-                                  color: colors.sunken,
-                                  borderRadius: BorderRadius.circular(AppRadius.md),
-                                  border: Border.all(color: colors.borderHairline),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.logout, size: 18, color: colors.textSecondary),
-                                    const SizedBox(width: AppSpacing.s2),
-                                    Text(
-                                      '${checkOut.hour.toString().padLeft(2, '0')}:${checkOut.minute.toString().padLeft(2, '0')}',
-                                      style: TextStyle(
-                                        fontFamily: 'Geist',
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: colors.brand,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.s6),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () async {
-                        Get.back();
-                        await attendanceCtrl.recordManualAttendance(
-                          employeeId: employee.id,
-                          branchId: employee.branchId,
-                          date: today,
-                          checkInTime: checkIn,
-                          checkOutTime: checkOut,
-                        );
-                      },
-                      icon: const Icon(Icons.save_outlined),
-                      label: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
-                        child: Text('save'.tr),
                       ),
                     ),
                   ),
                 ],
+                body: TabBarView(
+                  children: [
+                    _OverviewTab(ctrl: ctrl),
+                    _AttendanceTab(ctrl: ctrl),
+                    if (canPayroll) _FinancialTab(ctrl: ctrl),
+                    _DocumentsTab(ctrl: ctrl),
+                    _WarningsTab(ctrl: ctrl),
+                    _ReviewsTab(ctrl: ctrl),
+                  ],
+                ),
               ),
             ),
-          );
-        },
-      ),
-      isScrollControlled: true,
+          ),
+        );
+      },
     );
   }
 }
+
+class _TabSpec {
+  final String label;
+  const _TabSpec(this.label);
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  PROFILE HEADER                                                          */
+/* ─────────────────────────────────────────────────────────────────────── */
 
 class _ProfileHeader extends StatelessWidget {
   final EmployeeDetailController ctrl;
@@ -270,1236 +128,89 @@ class _ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final e = ctrl.employee;
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.s4),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: colors.borderHairline),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 32,
-            backgroundColor: colors.brandSubtle,
-            backgroundImage:
-                e?.photoUrl != null ? NetworkImage(e!.photoUrl!) : null,
-            child: e?.photoUrl == null
-                ? Text(
-                    e?.name.isNotEmpty == true ? e!.name[0] : '?',
-                    style: TextStyle(
-                      fontFamily: 'Geist',
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
-                      color: colors.brand,
-                    ),
-                  )
-                : null,
-          ),
-          const SizedBox(width: AppSpacing.s4),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  e?.name ?? '',
-                  style: const TextStyle(
-                    fontFamily: 'IBM Plex Sans Arabic',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (e?.jobTitle != null) ...[
-                  const SizedBox(height: 2),
-                  Text(e!.jobTitle!, style: AppTextStyles.bodySecondary(context)),
-                ],
-                const SizedBox(height: AppSpacing.s1),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.s2,
-                        vertical: AppSpacing.s1,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _employeeStatusColor(e?.status ?? '', colors)
-                            .withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppRadius.full),
-                      ),
-                      child: Text(
-                        e?.statusLabel ?? '',
-                        style: TextStyle(
-                          fontFamily: 'IBM Plex Sans Arabic',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: _employeeStatusColor(e?.status ?? '', colors),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActivationCodeCard extends StatelessWidget {
-  final EmployeeDetailController ctrl;
-  const _ActivationCodeCard({required this.ctrl});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final isActiveEmployee = ctrl.employee?.status == 'active';
-    final hasCode = ctrl.hasActiveCode;
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.s4),
-      decoration: BoxDecoration(
-        color: colors.brandSubtle,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: colors.brand),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.key_outlined, color: colors.brand, size: 22),
-              const SizedBox(width: AppSpacing.s3),
-              Expanded(
-                child: Text(
-                  'activation_code'.tr,
-                  style: TextStyle(
-                    fontFamily: 'IBM Plex Sans Arabic',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: colors.textPrimary,
-                  ),
-                ),
-              ),
-              if (isActiveEmployee && ctrl.deviceBound)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.s2, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: colors.success.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                  ),
-                  child: Text(
-                    'employee_active'.tr,
-                    style: TextStyle(
-                      fontFamily: 'IBM Plex Sans Arabic',
-                      fontSize: 11,
-                      color: colors.success,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.s3),
-          if (hasCode) ...[
-            _CodeRow(ctrl: ctrl, colors: colors),
-            const SizedBox(height: AppSpacing.s2),
-            _ExpiryLine(ctrl: ctrl, colors: colors),
-            const SizedBox(height: AppSpacing.s3),
-            _ActionRow(ctrl: ctrl, colors: colors),
-          ] else if (isActiveEmployee) ...[
-            _DeviceInfo(ctrl: ctrl, colors: colors),
-            const SizedBox(height: AppSpacing.s3),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _confirmDeviceReset(context, ctrl),
-                icon: Icon(Icons.phonelink_setup, size: 18, color: colors.brand),
-                label: Text('reset_device_title'.tr),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colors.brand,
-                  side: BorderSide(color: colors.brand),
-                ),
-              ),
-            ),
-          ] else ...[
-            Text(
-              'no_active_code'.tr,
-              style: AppTextStyles.bodySecondary(context),
-            ),
-            const SizedBox(height: AppSpacing.s3),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: ctrl.generateActivationCode,
-                icon: const Icon(Icons.refresh, size: 18),
-                label: Text('generate_activation_code'.tr),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Future<void> _confirmDeviceReset(
-      BuildContext context, EmployeeDetailController ctrl) async {
-    final confirmed = await Get.dialog<bool>(
-      AlertDialog(
-        title: Text('reset_device_title'.tr),
-        content: Text('reset_device_warning'.tr),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(result: false),
-            child: Text('cancel'.tr),
-          ),
-          ElevatedButton(
-            onPressed: () => Get.back(result: true),
-            child: Text('reset_device_confirm'.tr),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      await ctrl.generateActivationCode();
-    }
-  }
-}
-
-class _CodeRow extends StatelessWidget {
-  final EmployeeDetailController ctrl;
-  final AppColorScheme colors;
-  const _CodeRow({required this.ctrl, required this.colors});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.s3, vertical: AppSpacing.s3),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: colors.brand.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: SelectableText(
-              ctrl.activationCode ?? '',
-              style: TextStyle(
-                fontFamily: 'Geist',
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 4,
-                color: colors.brand,
-              ),
-            ),
-          ),
-          IconButton(
-            tooltip: 'copy_code'.tr,
-            icon: Icon(Icons.content_copy, size: 18, color: colors.brand),
-            onPressed: ctrl.copyCodeToClipboard,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ExpiryLine extends StatelessWidget {
-  final EmployeeDetailController ctrl;
-  final AppColorScheme colors;
-  const _ExpiryLine({required this.ctrl, required this.colors});
-
-  @override
-  Widget build(BuildContext context) {
-    final remaining = ctrl.activationRemaining;
-    if (remaining == null) {
-      return const SizedBox.shrink();
-    }
-    final isExpired = remaining <= Duration.zero;
-    final color = isExpired
-        ? colors.error
-        : (remaining.inHours < 2 ? colors.warning : colors.textSecondary);
-
-    return Row(
-      children: [
-        Icon(Icons.schedule, size: 14, color: color),
-        const SizedBox(width: AppSpacing.s2),
-        Text(
-          isExpired
-              ? 'code_expired'.tr
-              : 'code_expires_in'.trParams(
-                  {'duration': _formatDuration(remaining)},
-                ),
-          style: TextStyle(
-            fontFamily: 'IBM Plex Sans Arabic',
-            fontSize: 12,
-            color: color,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _formatDuration(Duration d) {
-    if (d.inHours >= 1) {
-      return 'duration_hours_minutes'.trParams({
-        'hours': d.inHours.toString(),
-        'minutes': (d.inMinutes % 60).toString(),
-      });
-    }
-    return 'duration_minutes'.trParams({'minutes': d.inMinutes.toString()});
-  }
-}
-
-class _ActionRow extends StatelessWidget {
-  final EmployeeDetailController ctrl;
-  final AppColorScheme colors;
-  const _ActionRow({required this.ctrl, required this.colors});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: ctrl.shareCodeViaWhatsApp,
-            icon: const Icon(Icons.share, size: 18),
-            label: Text('share_via_whatsapp'.tr),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF25D366),
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.s2),
-        OutlinedButton.icon(
-          onPressed: ctrl.generateActivationCode,
-          icon: const Icon(Icons.refresh, size: 18),
-          label: Text('regenerate_code'.tr),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: colors.brand,
-            side: BorderSide(color: colors.brand),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _DeviceInfo extends StatelessWidget {
-  final EmployeeDetailController ctrl;
-  final AppColorScheme colors;
-  const _DeviceInfo({required this.ctrl, required this.colors});
-
-  @override
-  Widget build(BuildContext context) {
-    if (!ctrl.deviceBound) {
-      return Text(
-        'no_device_bound'.tr,
-        style: AppTextStyles.bodySecondary(context),
-      );
-    }
-    final platform = ctrl.devicePlatform == 'ios'
-        ? 'device_platform_ios'.tr
-        : 'device_platform_android'.tr;
-    final lastUsed = ctrl.deviceLastUsedAt;
-    final lastUsedLabel = lastUsed == null
-        ? '—'
-        : '${lastUsed.year}-${lastUsed.month.toString().padLeft(2, '0')}-${lastUsed.day.toString().padLeft(2, '0')} ${lastUsed.hour.toString().padLeft(2, '0')}:${lastUsed.minute.toString().padLeft(2, '0')}';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.smartphone, size: 16, color: colors.textSecondary),
-            const SizedBox(width: AppSpacing.s2),
-            Text(
-              ctrl.deviceModel?.isNotEmpty == true
-                  ? '${ctrl.deviceModel} · $platform'
-                  : platform,
-              style: TextStyle(
-                fontFamily: 'IBM Plex Sans Arabic',
-                fontSize: 13,
-                color: colors.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.s1),
-        Padding(
-          padding: const EdgeInsetsDirectional.only(start: 22),
-          child: Text(
-            'device_last_seen'.trParams({'date': lastUsedLabel}),
-            style: TextStyle(
-              fontFamily: 'Geist',
-              fontSize: 12,
-              color: colors.textTertiary,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _InfoSection extends StatelessWidget {
-  final EmployeeDetailController ctrl;
-  const _InfoSection({required this.ctrl});
-
-  @override
-  Widget build(BuildContext context) {
-    final e = ctrl.employee;
     if (e == null) return const SizedBox.shrink();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('info'.tr, style: AppTextStyles.h3(context)),
-        const SizedBox(height: AppSpacing.s3),
-        _InfoRow(label: 'phone_number'.tr, value: e.phone ?? '—'),
-        _InfoRow(
-            label: 'base_salary'.tr,
-            value:
-                '${e.baseSalary.toStringAsFixed(e.baseSalary == e.baseSalary.roundToDouble() ? 0 : 2)} ج.م'),
-        _InfoRow(label: 'branch'.tr, value: e.branchName ?? '—'),
-        _InfoRow(
-            label: 'hire_date'.tr,
-            value: e.hireDate != null
-                ? '${e.hireDate!.year}-${e.hireDate!.month.toString().padLeft(2, '0')}-${e.hireDate!.day.toString().padLeft(2, '0')}'
-                : '—'),
-        if (e.bankName != null && e.bankName!.isNotEmpty ||
-            e.bankAccountNumber != null && e.bankAccountNumber!.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.s3),
-          Text('bank_info'.tr, style: AppTextStyles.h3(context)),
-          const SizedBox(height: AppSpacing.s2),
-          _InfoRow(label: 'bank_name'.tr, value: e.bankName ?? '—'),
-          _InfoRow(label: 'bank_account_number'.tr, value: e.bankAccountNumber ?? '—'),
-          _InfoRow(label: 'bank_iban'.tr, value: e.bankIban ?? '—'),
-          if (e.bankSwift != null && e.bankSwift!.isNotEmpty)
-            _InfoRow(label: 'bank_swift'.tr, value: e.bankSwift!),
-        ],
-        if (e.hasComplianceInfo) ...[
-          const SizedBox(height: AppSpacing.s3),
-          Text('compliance_info'.tr, style: AppTextStyles.h3(context)),
-          const SizedBox(height: AppSpacing.s2),
-          if (e.nationalId != null && e.nationalId!.isNotEmpty)
-            _InfoRow(label: 'national_id'.tr, value: e.nationalId!),
-          if (e.nationality != null && e.nationality!.isNotEmpty)
-            _InfoRow(label: 'nationality'.tr, value: e.nationality!),
-          if ((e.iqamaNumber != null && e.iqamaNumber!.isNotEmpty) ||
-              e.iqamaExpiry != null)
-            _ComplianceRow(
-                label: 'iqama_number'.tr,
-                value: e.iqamaNumber,
-                expiry: e.iqamaExpiry),
-          if ((e.passportNumber != null && e.passportNumber!.isNotEmpty) ||
-              e.passportExpiry != null)
-            _ComplianceRow(
-                label: 'passport_number'.tr,
-                value: e.passportNumber,
-                expiry: e.passportExpiry),
-          if ((e.workPermitNumber != null &&
-                  e.workPermitNumber!.isNotEmpty) ||
-              e.workPermitExpiry != null)
-            _ComplianceRow(
-                label: 'work_permit_number'.tr,
-                value: e.workPermitNumber,
-                expiry: e.workPermitExpiry),
-          if (e.contractType != null)
-            _InfoRow(
-                label: 'contract_type'.tr,
-                value: 'contract_${e.contractType}'.tr),
-          if (e.contractEnd != null)
-            _ComplianceRow(label: 'contract_end'.tr, expiry: e.contractEnd),
-          if (e.healthInsuranceExpiry != null)
-            _ComplianceRow(
-                label: 'health_insurance_expiry'.tr,
-                expiry: e.healthInsuranceExpiry),
-        ],
-        if (ctrl.categories.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.s2),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 120,
-                child: Text(
-                  'employee_categories'.tr,
-                  style: TextStyle(
-                    fontFamily: 'IBM Plex Sans Arabic',
-                    fontSize: 13,
-                    color: AppColors.of(context).textTertiary,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Wrap(
-                  spacing: AppSpacing.s1,
-                  runSpacing: AppSpacing.s1,
-                  children: ctrl.categories.map((cat) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.s2,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.of(context).brandSubtle,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: Text(
-                        (cat['name'] as String?) ?? '',
-                        style: TextStyle(
-                          fontFamily: 'IBM Plex Sans Arabic',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.of(context).brand,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-  const _InfoRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.s2),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'IBM Plex Sans Arabic',
-                fontSize: 13,
-                color: colors.textTertiary,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontFamily: 'IBM Plex Sans Arabic',
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Info row for a compliance credential: optional number + colored expiry badge.
-class _ComplianceRow extends StatelessWidget {
-  final String label;
-  final String? value;
-  final DateTime? expiry;
-  const _ComplianceRow({required this.label, this.value, this.expiry});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.s2),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'IBM Plex Sans Arabic',
-                fontSize: 13,
-                color: colors.textTertiary,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (value != null && value!.isNotEmpty)
-                  Text(
-                    value!,
-                    style: const TextStyle(
-                      fontFamily: 'IBM Plex Sans Arabic',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                if (expiry != null) _ExpiryBadge(expiry: expiry!),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Small chip showing an expiry date, colored by how close it is.
-class _ExpiryBadge extends StatelessWidget {
-  final DateTime expiry;
-  const _ExpiryBadge({required this.expiry});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final today = DateTime.now();
-    final dayOnly = DateTime(today.year, today.month, today.day);
-    final expiryDay = DateTime(expiry.year, expiry.month, expiry.day);
-    final daysLeft = expiryDay.difference(dayOnly).inDays;
-    final dateStr =
-        '${expiry.year}-${expiry.month.toString().padLeft(2, '0')}-${expiry.day.toString().padLeft(2, '0')}';
-
-    Color color;
-    String text;
-    if (daysLeft < 0) {
-      color = colors.error;
-      text = '$dateStr · ${'expired'.tr}';
-    } else if (daysLeft <= 30) {
-      color = colors.warning;
-      text = '$dateStr · ${'expires_in_days'.trParams({'days': '$daysLeft'})}';
-    } else {
-      color = colors.textSecondary;
-      text = dateStr;
-    }
-
     return Container(
-      margin: const EdgeInsets.only(top: 2),
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s2, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontFamily: 'IBM Plex Sans Arabic',
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
-      ),
-    );
-  }
-}
-
-class _DocumentsSection extends StatelessWidget {
-  final EmployeeDetailController ctrl;
-  const _DocumentsSection({required this.ctrl});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-
-    final e = ctrl.employee;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text('documents'.tr, style: AppTextStyles.h3(context)),
-            const Spacer(),
-            Text(
-              '${ctrl.documents.where((d) => d.status == 'uploaded').length}/${ctrl.documents.length}',
-              style: TextStyle(
-                fontFamily: 'Geist',
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: colors.brand,
-              ),
-            ),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            colors.brand.withValues(alpha: 0.15),
+            colors.surface,
           ],
         ),
-        const SizedBox(height: AppSpacing.s3),
-        if (ctrl.documentsStatus == StatusRequest.loading)
-          const Center(child: CircularProgressIndicator.adaptive())
-        else if (ctrl.documents.isEmpty)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.s5),
-              child: Text('no_documents'.tr,
-                  style: AppTextStyles.bodySecondary(context)),
-            ),
-          )
-        else
-          ...ctrl.documents.map((doc) => _DocumentTile(
-                document: doc,
-                onDelete: () => ctrl.deleteDocument(doc.id),
-              )),
-        if (e != null) ...[
-          const SizedBox(height: AppSpacing.s3),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => Get.toNamed<void>(
-                AppRoutes.employeeDocuments,
-                arguments: {'employee_id': e.id, 'employee_name': e.name},
-              ),
-              icon: const Icon(Icons.folder_open_outlined, size: 18),
-              label: Text('manage_documents_button'.tr,
-                  style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic')),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: colors.brand,
-                side: BorderSide(color: colors.brand),
-                padding:
-                    const EdgeInsets.symmetric(vertical: AppSpacing.s3),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md)),
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _DocumentTile extends StatelessWidget {
-  final DocumentModel document;
-  final VoidCallback onDelete;
-  const _DocumentTile({required this.document, required this.onDelete});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final statusColor = _statusColor(document.status, colors);
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.s2),
-      padding: const EdgeInsets.all(AppSpacing.s3),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: colors.borderHairline),
       ),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s4, 56, AppSpacing.s4, AppSpacing.s3),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Icon(
-            document.status == 'uploaded'
-                ? Icons.description_outlined
-                : Icons.error_outline,
-            size: 22,
-            color: statusColor,
-          ),
-          const SizedBox(width: AppSpacing.s3),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  document.name,
-                  style: const TextStyle(
-                    fontFamily: 'IBM Plex Sans Arabic',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                if (document.expiryDate != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    '${'expires'.tr} ${document.expiryDate!.year}-${document.expiryDate!.month.toString().padLeft(2, '0')}-${document.expiryDate!.day.toString().padLeft(2, '0')}',
-                    style: TextStyle(
-                      fontFamily: 'Geist',
-                      fontSize: 12,
-                      color: colors.textTertiary,
-                    ),
-                  ),
-                ],
-              ],
+          CircleAvatar(
+            radius: 38,
+            backgroundColor: colors.surface,
+            child: CircleAvatar(
+              radius: 36,
+              backgroundColor: colors.brandSubtle,
+              backgroundImage:
+                  e.photoUrl != null ? NetworkImage(e.photoUrl!) : null,
+              child: e.photoUrl == null
+                  ? Text(
+                      e.name.isNotEmpty ? e.name[0] : '?',
+                      style: TextStyle(
+                        fontFamily: 'Geist',
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        color: colors.brand,
+                      ),
+                    )
+                  : null,
             ),
           ),
+          const SizedBox(height: AppSpacing.s2),
+          Text(
+            e.name,
+            style: const TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (e.jobTitle != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              e.jobTitle!,
+              style: AppTextStyles.sm(context),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          const SizedBox(height: AppSpacing.s2),
           Container(
             padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.s2,
-              vertical: AppSpacing.s1,
+              horizontal: AppSpacing.s3,
+              vertical: 4,
             ),
             decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.12),
+              color: _employeeStatusColor(e.status, colors)
+                  .withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(AppRadius.full),
             ),
             child: Text(
-              document.statusLabel,
+              e.statusLabel,
               style: TextStyle(
                 fontFamily: 'IBM Plex Sans Arabic',
                 fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: statusColor,
+                fontWeight: FontWeight.w600,
+                color: _employeeStatusColor(e.status, colors),
               ),
             ),
           ),
-          if (document.status == 'uploaded') ...[
-            const SizedBox(width: AppSpacing.s2),
-            IconButton(
-              icon: Icon(Icons.delete_outline, size: 18, color: colors.error),
-              onPressed: onDelete,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          ],
         ],
       ),
     );
-  }
-
-  Color _statusColor(String status, AppColorScheme colors) {
-    switch (status) {
-      case 'uploaded':
-        return colors.success;
-      case 'required':
-        return colors.warning;
-      case 'expired':
-        return colors.error;
-      default:
-        return colors.textTertiary;
-    }
-  }
-}
-
-class _BiometricSection extends StatelessWidget {
-  final EmployeeDetailController ctrl;
-  const _BiometricSection({required this.ctrl});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final e = ctrl.employee;
-    if (e == null) return const SizedBox.shrink();
-
-    final status = e.biometricEnrollmentStatus;
-    final isEnrolled = status != 'not_enrolled';
-    final statusLabel = status == 'face_only'
-        ? 'face_enrollment'.tr
-        : status == 'fingerprint_only'
-            ? 'fingerprint_enrollment'.tr
-            : status == 'both'
-                ? '${'face_enrollment'.tr} + ${'fingerprint_enrollment'.tr}'
-                : '—';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text('biometric_data'.tr, style: AppTextStyles.h3(context)),
-            const Spacer(),
-            if (isEnrolled)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s2, vertical: 2),
-                decoration: BoxDecoration(
-                  color: colors.success.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-                child: Text(
-                  'enrolled'.tr,
-                  style: TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 11, color: colors.success, fontWeight: FontWeight.w500),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.s3),
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.s3),
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: colors.borderHairline),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.fingerprint, size: 22, color: isEnrolled ? colors.success : colors.textTertiary),
-              const SizedBox(width: AppSpacing.s3),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isEnrolled ? statusLabel : 'biometric_data_desc'.tr,
-                      style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: Icon(Icons.chevron_left, size: 20, color: colors.textTertiary),
-                onPressed: () => Get.toNamed<void>(
-                  AppRoutes.biometricEnrollment,
-                  arguments: {'employee_id': e.id, 'employee_name': e.name},
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _RecentAttendanceSection extends StatelessWidget {
-  final EmployeeDetailController ctrl;
-  const _RecentAttendanceSection({required this.ctrl});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('recent_attendance'.tr, style: AppTextStyles.h3(context)),
-        const SizedBox(height: AppSpacing.s3),
-        if (ctrl.attendanceStatus == StatusRequest.loading)
-          const Center(child: CircularProgressIndicator.adaptive())
-        else if (ctrl.attendanceRecords.isEmpty)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.s5),
-              child: Text('no_attendance_records'.tr,
-                  style: AppTextStyles.bodySecondary(context)),
-            ),
-          )
-        else
-          ...ctrl.attendanceRecords.take(10).map((r) {
-            final statusColor = _statusColor(r.status, colors);
-            final displayDate = r.date ??
-                (r.checkIn != null
-                    ? '${r.checkIn!.year}-${r.checkIn!.month.toString().padLeft(2, '0')}-${r.checkIn!.day.toString().padLeft(2, '0')}'
-                    : null);
-            return Container(
-              margin: const EdgeInsets.only(bottom: AppSpacing.s2),
-              padding: const EdgeInsets.all(AppSpacing.s3),
-              decoration: BoxDecoration(
-                color: colors.surface,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: colors.borderHairline),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      displayDate ?? '',
-                      style: TextStyle(
-                        fontFamily: 'Geist',
-                        fontSize: 13,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  ),
-                  if (r.checkIn != null)
-                    Text(
-                      '${r.checkIn!.hour.toString().padLeft(2, '0')}:${r.checkIn!.minute.toString().padLeft(2, '0')}',
-                      style: TextStyle(
-                        fontFamily: 'Geist',
-                        fontSize: 13,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  if (r.checkIn != null && r.checkOut != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.s2),
-                      child: Text('—',
-                          style: TextStyle(
-                              fontSize: 12, color: colors.textTertiary)),
-                    ),
-                  if (r.checkOut != null)
-                    Text(
-                      '${r.checkOut!.hour.toString().padLeft(2, '0')}:${r.checkOut!.minute.toString().padLeft(2, '0')}',
-                      style: TextStyle(
-                        fontFamily: 'Geist',
-                        fontSize: 13,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                  const SizedBox(width: AppSpacing.s2),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.s2,
-                      vertical: AppSpacing.s1,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(AppRadius.full),
-                    ),
-                    child: Text(
-                      r.statusLabel,
-                      style: TextStyle(
-                        fontFamily: 'IBM Plex Sans Arabic',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: statusColor,
-                      ),
-                    ),
-                  ),
-                  if (r.status == 'absent' &&
-                      ctrl.canManageLeaves &&
-                      displayDate != null) ...[
-                    const SizedBox(width: AppSpacing.s2),
-                    InkWell(
-                      onTap: () => _showConvertAbsenceSheet(context, r),
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.s2,
-                          vertical: AppSpacing.s1,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.accentWarm.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(AppRadius.full),
-                          border: Border.all(
-                              color: colors.accentWarm.withValues(alpha: 0.3)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.swap_horiz,
-                                size: 14, color: colors.accentWarm),
-                            const SizedBox(width: AppSpacing.s1),
-                            Text(
-                              'convert_to_leave'.tr,
-                              style: TextStyle(
-                                fontFamily: 'IBM Plex Sans Arabic',
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: colors.accentWarm,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          }),
-      ],
-    );
-  }
-
-  void _showConvertAbsenceSheet(
-      BuildContext context, AttendanceRecordModel record) {
-    final reasonCtrl = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    String selectedType = 'annual';
-
-    final leaveTypes = [
-      ('annual', 'leave_type_annual'),
-      ('sick', 'leave_type_sick'),
-      ('unpaid', 'leave_type_unpaid'),
-    ];
-
-    Get.bottomSheet(
-      StatefulBuilder(
-        builder: (sheetCtx, setSheetState) {
-          final colors = AppColors.of(context);
-          final isLoading = ctrl.conversionStatus == StatusRequest.loading;
-
-          return Container(
-            padding: EdgeInsets.only(
-              left: AppSpacing.s4,
-              right: AppSpacing.s4,
-              top: AppSpacing.s4,
-              bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s4,
-            ),
-            decoration: BoxDecoration(
-              color: colors.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadius.lg),
-              ),
-            ),
-            child: SingleChildScrollView(
-              child: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: AppSpacing.s3),
-                        decoration: BoxDecoration(
-                          color: colors.borderHairline,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    Text('convert_absence_title'.tr,
-                        style: AppTextStyles.h2(context)),
-                    const SizedBox(height: AppSpacing.s2),
-                    Text(ctrl.employee?.name ?? '',
-                        style: AppTextStyles.bodySecondary(context)),
-                    const SizedBox(height: AppSpacing.s4),
-                    Row(
-                      children: [
-                        Icon(Icons.calendar_today_outlined,
-                            size: 16, color: colors.textSecondary),
-                        const SizedBox(width: AppSpacing.s2),
-                        Text(
-                          '${'selected_absence_date'.tr}: ',
-                          style: TextStyle(
-                            fontFamily: 'IBM Plex Sans Arabic',
-                            fontSize: 13,
-                            color: colors.textSecondary,
-                          ),
-                        ),
-                        Text(
-                          record.date ?? '',
-                          style: TextStyle(
-                            fontFamily: 'Geist',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: colors.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.s4),
-                    Text(
-                      'select_leave_type'.tr,
-                      style: TextStyle(
-                        fontFamily: 'IBM Plex Sans Arabic',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: colors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.s2),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.s3),
-                      decoration: BoxDecoration(
-                        color: colors.sunken,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        border: Border.all(color: colors.borderHairline),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: selectedType,
-                          isExpanded: true,
-                          icon: Icon(Icons.arrow_drop_down,
-                              color: colors.textSecondary),
-                          items: leaveTypes.map((e) {
-                            return DropdownMenuItem<String>(
-                              value: e.$1,
-                              child: Text(
-                                e.$2.tr,
-                                style: const TextStyle(
-                                  fontFamily: 'IBM Plex Sans Arabic',
-                                  fontSize: 14,
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (v) {
-                            if (v != null) setSheetState(() => selectedType = v);
-                          },
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.s4),
-                    TextFormField(
-                      controller: reasonCtrl,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        labelText: 'conversion_reason'.tr,
-                        hintText: 'enter_conversion_reason'.tr,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                      ),
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) {
-                          return 'reason_required'.tr;
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.s6),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: isLoading
-                            ? null
-                            : () async {
-                                if (!formKey.currentState!.validate()) return;
-                                Get.back();
-                                await ctrl.convertAbsenceToLeave(
-                                  date: record.date!,
-                                  type: selectedType,
-                                  reason: reasonCtrl.text.trim(),
-                                );
-                              },
-                        icon: isLoading
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator.adaptive(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.swap_horiz),
-                        label: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: AppSpacing.s2),
-                          child: Text('convert_to_leave'.tr),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-      isScrollControlled: true,
-    );
-  }
-
-  Color _statusColor(String status, AppColorScheme colors) {
-    switch (status) {
-      case 'present':
-        return colors.success;
-      case 'absent':
-        return colors.error;
-      case 'late':
-        return colors.warning;
-      case 'leave':
-        return colors.accentWarm;
-      default:
-        return colors.textTertiary;
-    }
   }
 }
 
@@ -1520,203 +231,589 @@ Color _employeeStatusColor(String status, AppColorScheme colors) {
   }
 }
 
-class _AdjustmentsSection extends StatelessWidget {
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  OVERVIEW TAB                                                            */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+class _OverviewTab extends StatelessWidget {
   final EmployeeDetailController ctrl;
-  const _AdjustmentsSection({required this.ctrl});
+  const _OverviewTab({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: ctrl.loadEmployee,
+      child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.s4),
+        children: [
+          if (ctrl.employee != null &&
+              ctrl.employee!.status != 'terminated')
+            _ActivationCard(ctrl: ctrl),
+          if (ctrl.employee != null &&
+              ctrl.employee!.status != 'terminated')
+            const SizedBox(height: AppSpacing.s4),
+          if (ctrl.hasLeaveBalance) ...[
+            _LeaveBalanceCard(ctrl: ctrl),
+            const SizedBox(height: AppSpacing.s4),
+          ],
+          _InfoCard(ctrl: ctrl),
+          const SizedBox(height: AppSpacing.s7),
+        ],
+      ),
+    );
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  ACTIVATION CARD (simplified)                                            */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+class _ActivationCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _ActivationCard({required this.ctrl});
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final isActiveEmployee = ctrl.employee?.status == 'active';
+    final hasCode = ctrl.hasActiveCode;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('adjustments'.tr, style: AppTextStyles.h3(context)),
-        const SizedBox(height: AppSpacing.s3),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _showAdjustmentSheet(
-                  context,
-                  isDeduction: true,
-                ),
-                icon: Icon(Icons.remove_circle_outline, size: 18, color: colors.error),
-                label: Text('add_deduction'.tr),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colors.error,
-                  side: BorderSide(color: colors.error),
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.s3),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _showAdjustmentSheet(
-                  context,
-                  isDeduction: false,
-                ),
-                icon: Icon(Icons.add_circle_outline, size: 18, color: colors.success),
-                label: Text('add_bonus'.tr),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colors.success,
-                  side: BorderSide(color: colors.success),
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: colors.borderHairline),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _ActivationHeader(
+            isActive: isActiveEmployee,
+            hasCode: hasCode,
+          ),
+          if (isActiveEmployee)
+            _ActivationActiveBody(ctrl: ctrl)
+          else if (hasCode)
+            _ActivationCodeBody(ctrl: ctrl)
+          else
+            _ActivationEmptyBody(ctrl: ctrl),
+        ],
+      ),
     );
   }
+}
 
-  void _showAdjustmentSheet(BuildContext context, {required bool isDeduction}) {
-    final amountCtrl = TextEditingController();
-    final reasonCtrl = TextEditingController();
-    final formKey = GlobalKey<FormState>();
+/* Header with icon, title, and status badge. */
+class _ActivationHeader extends StatelessWidget {
+  final bool isActive;
+  final bool hasCode;
+  const _ActivationHeader({required this.isActive, required this.hasCode});
 
-    Get.bottomSheet(
-      StatefulBuilder(
-        builder: (sheetCtx, setSheetState) {
-          final colors = AppColors.of(context);
-          final isLoading = ctrl.adjustmentStatus == StatusRequest.loading;
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    Color badgeColor;
+    String badgeText;
+    IconData badgeIcon;
 
-          return Container(
-            padding: EdgeInsets.only(
-              left: AppSpacing.s4,
-              right: AppSpacing.s4,
-              top: AppSpacing.s4,
-              bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s4,
-            ),
+    if (isActive) {
+      badgeColor = colors.success;
+      badgeText = 'employee_active_simple'.tr;
+      badgeIcon = Icons.check_circle;
+    } else if (hasCode) {
+      badgeColor = colors.brand;
+      badgeText = 'pending_activation'.tr;
+      badgeIcon = Icons.pending_actions;
+    } else {
+      badgeColor = colors.warning;
+      badgeText = 'pending_activation'.tr;
+      badgeIcon = Icons.warning_amber_rounded;
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.s4, AppSpacing.s4, AppSpacing.s4, AppSpacing.s3),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
+          colors: [
+            colors.brand.withValues(alpha: 0.08),
+            colors.brand.withValues(alpha: 0.02),
+          ],
+        ),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppRadius.lg),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.s2),
             decoration: BoxDecoration(
               color: colors.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadius.lg),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              border: Border.all(color: colors.brand.withValues(alpha: 0.2)),
+            ),
+            child: Icon(Icons.key_rounded, size: 20, color: colors.brand),
+          ),
+          const SizedBox(width: AppSpacing.s3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'activation_code'.tr,
+                  style: AppTextStyles.h3(context).copyWith(fontSize: 15),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.s2, vertical: 4),
+            decoration: BoxDecoration(
+              color: badgeColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadius.full),
+              border: Border.all(color: badgeColor.withValues(alpha: 0.25)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(badgeIcon, size: 12, color: badgeColor),
+                const SizedBox(width: 4),
+                Text(
+                  badgeText,
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: badgeColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/* Body when employee is fully active (device bound). */
+class _ActivationActiveBody extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _ActivationActiveBody({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final isBusy = ctrl.activationStatus == StatusRequest.loading;
+    final hasDevice =
+        ctrl.deviceBound && (ctrl.deviceModel ?? '').isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.s4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (hasDevice)
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.s3),
+              decoration: BoxDecoration(
+                color: colors.sunken.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: colors.borderHairline),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.s2),
+                    decoration: BoxDecoration(
+                      color: colors.success.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                    ),
+                    child: Icon(Icons.smartphone,
+                        size: 18, color: colors.success),
+                  ),
+                  const SizedBox(width: AppSpacing.s3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          ctrl.deviceModel ?? '',
+                          style: const TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          ctrl.devicePlatform == 'ios'
+                              ? 'device_platform_ios'.tr
+                              : 'device_platform_android'.tr,
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 12,
+                            color: colors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            child: SingleChildScrollView(
-              child: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          if (hasDevice) const SizedBox(height: AppSpacing.s3),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed:
+                  isBusy ? null : () => _confirmDeviceReset(context, ctrl),
+              icon: Icon(Icons.phonelink_setup, size: 18, color: colors.brand),
+              label: Text(
+                'reset_and_create_code'.tr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: colors.brand,
+                side: BorderSide(color: colors.brand),
+                padding:
+                    const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/* Body when there's an active pending code. */
+class _ActivationCodeBody extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _ActivationCodeBody({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final isBusy = ctrl.activationStatus == StatusRequest.loading;
+    final remaining = ctrl.activationRemaining ?? Duration.zero;
+    final isExpired = remaining <= Duration.zero;
+    final progress =
+        isExpired ? 0.0 : (remaining.inSeconds / (24 * 3600)).clamp(0.0, 1.0);
+    final progressColor = isExpired
+        ? colors.error
+        : (remaining.inHours < 2 ? colors.warning : colors.brand);
+
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.s4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Hero code display
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.s4, vertical: AppSpacing.s4),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
+                colors: [
+                  colors.brand,
+                  colors.brand.withValues(alpha: 0.85),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              boxShadow: [
+                BoxShadow(
+                  color: colors.brand.withValues(alpha: 0.25),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: AppSpacing.s3),
-                        decoration: BoxDecoration(
-                          color: colors.borderHairline,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    Text(
-                      isDeduction ? 'add_deduction'.tr : 'add_bonus'.tr,
-                      style: AppTextStyles.h2(context),
-                    ),
-                    const SizedBox(height: AppSpacing.s2),
-                    Text(
-                      ctrl.employee?.name ?? '',
-                      style: AppTextStyles.bodySecondary(context),
-                    ),
-                    const SizedBox(height: AppSpacing.s4),
-                    TextFormField(
-                      controller: amountCtrl,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      decoration: InputDecoration(
-                        labelText: 'amount'.tr,
-                        hintText: 'enter_amount'.tr,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                      ),
-                      style: const TextStyle(fontFamily: 'Geist', fontSize: 16),
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'amount_required'.tr;
-                        final parsed = num.tryParse(v);
-                        if (parsed == null || parsed <= 0) return 'amount_must_be_positive'.tr;
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.s3),
-                    TextFormField(
-                      controller: reasonCtrl,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        labelText: 'reason'.tr,
-                        hintText: 'enter_reason'.tr,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                      ),
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'reason_required'.tr;
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.s6),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: isLoading
-                            ? null
-                            : () async {
-                                if (!formKey.currentState!.validate()) return;
-                                final amount = num.parse(amountCtrl.text);
-                                final reason = reasonCtrl.text.trim();
-                                Get.back();
-                                if (isDeduction) {
-                                  await ctrl.addManualDeduction(
-                                    amount: amount,
-                                    reason: reason,
-                                  );
-                                } else {
-                                  await ctrl.addManualBonus(
-                                    amount: amount,
-                                    reason: reason,
-                                  );
-                                }
-                              },
-                        icon: isLoading
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator.adaptive(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.save_outlined),
-                        label: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
-                          child: Text('save'.tr),
+                    Expanded(
+                      child: Center(
+                        child: SelectableText(
+                          _formatCode(ctrl.activationCode ?? ''),
+                          style: const TextStyle(
+                            fontFamily: 'Geist',
+                            fontSize: 36,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 8,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
+                const SizedBox(height: AppSpacing.s2),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    InkWell(
+                      onTap: ctrl.copyCodeToClipboard,
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.s3, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          borderRadius:
+                              BorderRadius.circular(AppRadius.full),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.content_copy_rounded,
+                                size: 14, color: Colors.white),
+                            const SizedBox(width: 6),
+                            Text(
+                              'copy_code'.tr,
+                              style: const TextStyle(
+                                fontFamily: 'IBM Plex Sans Arabic',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s4),
+
+          // Expiry indicator with progress bar
+          Row(
+            children: [
+              Icon(
+                isExpired ? Icons.error_outline : Icons.schedule_rounded,
+                size: 16,
+                color: progressColor,
+              ),
+              const SizedBox(width: AppSpacing.s2),
+              Expanded(
+                child: Text(
+                  isExpired
+                      ? 'code_expired'.tr
+                      : 'code_expires_in'.trParams(
+                          {'duration': _formatDurationLocal(remaining)}),
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 13,
+                    color: progressColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s2),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.full),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              backgroundColor: colors.sunken,
+              valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+            ),
+          ),
+
+          const SizedBox(height: AppSpacing.s4),
+
+          // Actions
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: isBusy ? null : ctrl.generateActivationCode,
+              icon: const Icon(Icons.refresh_rounded, size: 16),
+              label: Text(
+                'regenerate_code'.tr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: colors.brand,
+                side: BorderSide(color: colors.brand),
+                padding:
+                    const EdgeInsets.symmetric(vertical: AppSpacing.s3),
               ),
             ),
-          );
-        },
+          ),
+          const SizedBox(height: AppSpacing.s3),
+          Center(
+            child: TextButton(
+              onPressed: ctrl.shareCodeViaWhatsApp,
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF25D366),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s4,
+                  vertical: AppSpacing.s1,
+                ),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'share_via_whatsapp'.tr,
+                style: const TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  decoration: TextDecoration.underline,
+                  decorationColor: Color(0xFF25D366),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
-      isScrollControlled: true,
+    );
+  }
+
+  static String _formatCode(String raw) {
+    // Splits a code into two halves for easier reading (e.g., "A7B3K9" -> "A7B 3K9")
+    if (raw.length <= 4) return raw;
+    final mid = raw.length ~/ 2;
+    return '${raw.substring(0, mid)} ${raw.substring(mid)}';
+  }
+
+  static String _formatDurationLocal(Duration d) {
+    if (d.inHours >= 1) {
+      return 'duration_hours_minutes'.trParams({
+        'hours': d.inHours.toString(),
+        'minutes': (d.inMinutes % 60).toString(),
+      });
+    }
+    return 'duration_minutes'.trParams({'minutes': d.inMinutes.toString()});
+  }
+}
+
+/* Body when no code exists yet. */
+class _ActivationEmptyBody extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _ActivationEmptyBody({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final isBusy = ctrl.activationStatus == StatusRequest.loading;
+
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.s4),
+      child: Column(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: colors.brandSubtle,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.phonelink_lock_outlined,
+                size: 28, color: colors.brand),
+          ),
+          const SizedBox(height: AppSpacing.s3),
+          Text(
+            'no_activation_code_simple'.tr,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: colors.textPrimary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.s1),
+          Text(
+            'activation_code_valid_for'.tr,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 12,
+              color: colors.textTertiary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.s4),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: isBusy ? null : ctrl.generateActivationCode,
+              icon: isBusy
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator.adaptive(
+                          strokeWidth: 2),
+                    )
+                  : const Icon(Icons.add_rounded, size: 18),
+              label: Text('create_new_code'.tr),
+              style: ElevatedButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _LeaveBalanceSection extends StatelessWidget {
+Future<void> _confirmDeviceReset(
+    BuildContext context, EmployeeDetailController ctrl) async {
+  final confirmed = await Get.dialog<bool>(
+    AlertDialog(
+      title: Text('reset_device_title'.tr),
+      content: Text('reset_device_warning'.tr),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(result: false),
+          child: Text('cancel'.tr),
+        ),
+        ElevatedButton(
+          onPressed: () => Get.back(result: true),
+          child: Text('reset_device_confirm'.tr),
+        ),
+      ],
+    ),
+  );
+  if (confirmed == true) {
+    await ctrl.generateActivationCode();
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  LEAVE BALANCE CARD                                                      */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+class _LeaveBalanceCard extends StatelessWidget {
   final EmployeeDetailController ctrl;
-  const _LeaveBalanceSection({required this.ctrl});
+  const _LeaveBalanceCard({required this.ctrl});
 
   @override
   Widget build(BuildContext context) {
@@ -1726,155 +823,103 @@ class _LeaveBalanceSection extends StatelessWidget {
     final total = ctrl.leaveTotal;
     final progress = total > 0 ? used / total : 0.0;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text('leave_balance'.tr, style: AppTextStyles.h3(context)),
-            const Spacer(),
-            Text(
-              '${ctrl.leaveYear}',
-              style: TextStyle(
-                fontFamily: 'Geist',
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: colors.textTertiary,
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s4),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.beach_access_outlined,
+                  size: 18, color: colors.brand),
+              const SizedBox(width: AppSpacing.s2),
+              Text('leave_balance'.tr, style: AppTextStyles.h3(context)),
+              const Spacer(),
+              Text(
+                '${ctrl.leaveYear}',
+                style: TextStyle(
+                  fontFamily: 'Geist',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: colors.textTertiary,
+                ),
+              ),
+              if (ctrl.canManageEmployees)
+                IconButton(
+                  onPressed: () => _showEditAnnualLeaveSheet(context),
+                  icon: Icon(Icons.edit_outlined,
+                      size: 18, color: colors.textSecondary),
+                  tooltip: 'employee_annual_leave_label'.tr,
+                  visualDensity: VisualDensity.compact,
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s3),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.full),
+            child: LinearProgressIndicator(
+              value: progress.clamp(0.0, 1.0),
+              minHeight: 8,
+              backgroundColor: colors.sunken,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                progress > 0.8 ? colors.warning : colors.brand,
               ),
             ),
-            if (ctrl.canManageEmployees)
-              IconButton(
-                onPressed: () => _showEditAnnualLeaveSheet(context),
-                icon: Icon(Icons.edit_outlined,
-                    size: 18, color: colors.textSecondary),
-                tooltip: 'employee_annual_leave_label'.tr,
-                visualDensity: VisualDensity.compact,
-              ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.s3),
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.s4),
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: colors.borderHairline),
           ),
-          child: Column(
+          const SizedBox(height: AppSpacing.s4),
+          Row(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.full),
-                child: LinearProgressIndicator(
-                  value: progress.clamp(0.0, 1.0),
-                  minHeight: 8,
-                  backgroundColor: colors.sunken,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    progress > 0.8 ? colors.warning : colors.brand,
-                  ),
+              Expanded(
+                child: _LeaveStatCol(
+                  value: '$used',
+                  label: 'leave_used'.tr,
+                  color: colors.error,
                 ),
               ),
-              if (ctrl.leaveCarriedOver > 0) ...[
-                const SizedBox(height: AppSpacing.s3),
-                Row(
-                  children: [
-                    Icon(Icons.sync_alt, size: 14, color: colors.textTertiary),
-                    const SizedBox(width: AppSpacing.s2),
-                    Expanded(
-                      child: Text(
-                        'leave_carried_over_note'.trParams({
-                          'days': ctrl.leaveCarriedOver.toString(),
-                        }),
-                        style: TextStyle(
-                          fontFamily: 'IBM Plex Sans Arabic',
-                          fontSize: 12,
-                          color: colors.textTertiary,
-                        ),
-                      ),
-                    ),
-                  ],
+              Expanded(
+                child: _LeaveStatCol(
+                  value: '$remaining',
+                  label: 'leave_remaining'.tr,
+                  color: colors.success,
                 ),
-              ],
-              const SizedBox(height: AppSpacing.s4),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text(
-                          '$used',
-                          style: TextStyle(
-                            fontFamily: 'Geist',
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: colors.error,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.s1),
-                        Text(
-                          'leave_used'.tr,
-                          style: TextStyle(
-                            fontFamily: 'IBM Plex Sans Arabic',
-                            fontSize: 12,
-                            color: colors.textTertiary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text(
-                          '$remaining',
-                          style: TextStyle(
-                            fontFamily: 'Geist',
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: colors.success,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.s1),
-                        Text(
-                          'leave_remaining'.tr,
-                          style: TextStyle(
-                            fontFamily: 'IBM Plex Sans Arabic',
-                            fontSize: 12,
-                            color: colors.textTertiary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text(
-                          '$total',
-                          style: TextStyle(
-                            fontFamily: 'Geist',
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: colors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.s1),
-                        Text(
-                          'leave_total_annual'.tr,
-                          style: TextStyle(
-                            fontFamily: 'IBM Plex Sans Arabic',
-                            fontSize: 12,
-                            color: colors.textTertiary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              ),
+              Expanded(
+                child: _LeaveStatCol(
+                  value: '$total',
+                  label: 'leave_total_annual'.tr,
+                  color: colors.textPrimary,
+                ),
               ),
             ],
           ),
-        ),
-      ],
+          if (ctrl.leaveCarriedOver > 0) ...[
+            const SizedBox(height: AppSpacing.s3),
+            Row(
+              children: [
+                Icon(Icons.sync_alt, size: 14, color: colors.textTertiary),
+                const SizedBox(width: AppSpacing.s2),
+                Expanded(
+                  child: Text(
+                    'leave_carried_over_note'.trParams({
+                      'days': ctrl.leaveCarriedOver.toString(),
+                    }),
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 12,
+                      color: colors.textTertiary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -1954,234 +999,6455 @@ class _LeaveBalanceSection extends StatelessWidget {
   }
 }
 
-class _WarningsSection extends StatelessWidget {
-  final EmployeeDetailController ctrl;
-  const _WarningsSection({required this.ctrl});
+class _LeaveStatCol extends StatelessWidget {
+  final String value;
+  final String label;
+  final Color color;
+  const _LeaveStatCol({
+    required this.value,
+    required this.label,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text('warnings_log'.tr, style: AppTextStyles.h3(context)),
-            const Spacer(),
-            if (ctrl.canManageEmployees)
-              OutlinedButton.icon(
-                onPressed: () => _showAddWarningSheet(context),
-                icon: Icon(Icons.add_circle_outline, size: 18, color: colors.warning),
-                label: Text('add_warning'.tr),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colors.warning,
-                  side: BorderSide(color: colors.warning),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.s3,
-                    vertical: AppSpacing.s1,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                ),
-              ),
-          ],
+        Text(
+          value,
+          style: TextStyle(
+            fontFamily: 'Geist',
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
         ),
-        const SizedBox(height: AppSpacing.s3),
-        if (ctrl.warnings.isEmpty)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.s5),
-              child: Text('no_warnings'.tr,
-                  style: AppTextStyles.bodySecondary(context)),
-            ),
-          )
-        else
-          ...ctrl.warnings.map((w) => _WarningTile(warning: w)),
+        const SizedBox(height: AppSpacing.s1),
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'IBM Plex Sans Arabic',
+            fontSize: 11,
+            color: colors.textTertiary,
+          ),
+        ),
       ],
     );
   }
+}
 
-  void _showAddWarningSheet(BuildContext context) {
-    String selectedType = 'verbal';
-    final reasonCtrl = TextEditingController();
-    final formKey = GlobalKey<FormState>();
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  INFO CARD (Phone / Branch / Bank / Compliance / Categories)             */
+/* ─────────────────────────────────────────────────────────────────────── */
 
-    Get.bottomSheet(
-      StatefulBuilder(
-        builder: (sheetCtx, setSheetState) {
-          final colors = AppColors.of(context);
-          final isLoading = ctrl.warningStatus == StatusRequest.loading;
+String _formatShiftRange(String? start, String? end) {
+  String trim(String? t) {
+    if (t == null || t.isEmpty) return '—';
+    final parts = t.split(':');
+    if (parts.length < 2) return t;
+    return '${parts[0]}:${parts[1]}';
+  }
 
-          return Container(
-            padding: EdgeInsets.only(
-              left: AppSpacing.s4,
-              right: AppSpacing.s4,
-              top: AppSpacing.s4,
-              bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s4,
+  return '${trim(start)} - ${trim(end)}';
+}
+
+class _InfoCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _InfoCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final e = ctrl.employee;
+    if (e == null) return const SizedBox.shrink();
+    final colors = AppColors.of(context);
+    final hasBank = (e.bankName ?? '').isNotEmpty ||
+        (e.bankAccountNumber ?? '').isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s4),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.info_outline, size: 18, color: colors.brand),
+              const SizedBox(width: AppSpacing.s2),
+              Expanded(
+                child: Text('profile_overview'.tr,
+                    style: AppTextStyles.h3(context),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+              ),
+              if (ctrl.canManageEmployees)
+                IconButton(
+                  onPressed: () => _showEditInfoSheet(context, ctrl),
+                  icon: Icon(Icons.edit_outlined,
+                      size: 18, color: colors.brand),
+                  tooltip: 'edit_basic_info'.tr,
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s3),
+          _InfoRow(label: 'phone_number'.tr, value: e.phone ?? '—'),
+          _InfoRow(label: 'branch'.tr, value: e.branchName ?? '—'),
+          _InfoRow(
+            label: 'work_time'.tr,
+            value: () {
+              final range = _formatShiftRange(
+                e.shiftStart ?? e.workStartTime,
+                e.shiftEnd ?? e.workEndTime,
+              );
+              final name = e.shiftName;
+              return (name != null && name.isNotEmpty)
+                  ? '$range ($name)'
+                  : range;
+            }(),
+          ),
+          _InfoRow(
+            label: 'base_salary'.tr,
+            value:
+                '${e.baseSalary.toStringAsFixed(e.baseSalary == e.baseSalary.roundToDouble() ? 0 : 2)} ${'currency_egp'.tr}',
+          ),
+          _InfoRow(
+            label: 'hire_date'.tr,
+            value: e.hireDate != null
+                ? '${e.hireDate!.year}-${e.hireDate!.month.toString().padLeft(2, '0')}-${e.hireDate!.day.toString().padLeft(2, '0')}'
+                : '—',
+          ),
+          if (hasBank) ...[
+            const SizedBox(height: AppSpacing.s3),
+            const Divider(height: 1),
+            const SizedBox(height: AppSpacing.s3),
+            Text('bank_info'.tr,
+                style: AppTextStyles.h3(context).copyWith(fontSize: 15)),
+            const SizedBox(height: AppSpacing.s2),
+            _InfoRow(label: 'bank_name'.tr, value: e.bankName ?? '—'),
+            _InfoRow(
+                label: 'bank_account_number'.tr,
+                value: e.bankAccountNumber ?? '—'),
+            _InfoRow(label: 'bank_iban'.tr, value: e.bankIban ?? '—'),
+            if ((e.bankSwift ?? '').isNotEmpty)
+              _InfoRow(label: 'bank_swift'.tr, value: e.bankSwift!),
+          ],
+          if (e.hasComplianceInfo) ...[
+            const SizedBox(height: AppSpacing.s3),
+            const Divider(height: 1),
+            const SizedBox(height: AppSpacing.s3),
+            Text('compliance_info'.tr,
+                style: AppTextStyles.h3(context).copyWith(fontSize: 15)),
+            const SizedBox(height: AppSpacing.s2),
+            if ((e.nationalId ?? '').isNotEmpty)
+              _InfoRow(label: 'national_id'.tr, value: e.nationalId!),
+            if ((e.nationality ?? '').isNotEmpty)
+              _InfoRow(label: 'nationality'.tr, value: e.nationality!),
+            if ((e.iqamaNumber ?? '').isNotEmpty || e.iqamaExpiry != null)
+              _ComplianceRow(
+                  label: 'iqama_number'.tr,
+                  value: e.iqamaNumber,
+                  expiry: e.iqamaExpiry),
+            if ((e.passportNumber ?? '').isNotEmpty ||
+                e.passportExpiry != null)
+              _ComplianceRow(
+                  label: 'passport_number'.tr,
+                  value: e.passportNumber,
+                  expiry: e.passportExpiry),
+            if ((e.workPermitNumber ?? '').isNotEmpty ||
+                e.workPermitExpiry != null)
+              _ComplianceRow(
+                  label: 'work_permit_number'.tr,
+                  value: e.workPermitNumber,
+                  expiry: e.workPermitExpiry),
+            if (e.contractType != null)
+              _InfoRow(
+                  label: 'contract_type'.tr,
+                  value: 'contract_${e.contractType}'.tr),
+            if (e.contractEnd != null)
+              _ComplianceRow(label: 'contract_end'.tr, expiry: e.contractEnd),
+            if (e.healthInsuranceExpiry != null)
+              _ComplianceRow(
+                  label: 'health_insurance_expiry'.tr,
+                  expiry: e.healthInsuranceExpiry),
+          ],
+          if (ctrl.categories.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.s3),
+            const Divider(height: 1),
+            const SizedBox(height: AppSpacing.s3),
+            Text('employee_categories'.tr,
+                style: AppTextStyles.h3(context).copyWith(fontSize: 15)),
+            const SizedBox(height: AppSpacing.s2),
+            Wrap(
+              spacing: AppSpacing.s2,
+              runSpacing: AppSpacing.s2,
+              children: ctrl.categories.map((cat) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s3,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colors.brandSubtle,
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                  child: Text(
+                    (cat['name'] as String?) ?? '',
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: colors.brand,
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
-            decoration: BoxDecoration(
-              color: colors.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadius.lg),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+  const _InfoRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 13,
+                color: colors.textTertiary,
               ),
             ),
-            child: SingleChildScrollView(
-              child: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: AppSpacing.s3),
-                        decoration: BoxDecoration(
-                          color: colors.borderHairline,
-                          borderRadius: BorderRadius.circular(2),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ComplianceRow extends StatelessWidget {
+  final String label;
+  final String? value;
+  final DateTime? expiry;
+  const _ComplianceRow({required this.label, this.value, this.expiry});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 13,
+                color: colors.textTertiary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if ((value ?? '').isNotEmpty)
+                  Text(
+                    value!,
+                    style: const TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                if (expiry != null) _ExpiryBadge(expiry: expiry!),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExpiryBadge extends StatelessWidget {
+  final DateTime expiry;
+  const _ExpiryBadge({required this.expiry});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final today = DateTime.now();
+    final dayOnly = DateTime(today.year, today.month, today.day);
+    final expiryDay = DateTime(expiry.year, expiry.month, expiry.day);
+    final daysLeft = expiryDay.difference(dayOnly).inDays;
+    final dateStr =
+        '${expiry.year}-${expiry.month.toString().padLeft(2, '0')}-${expiry.day.toString().padLeft(2, '0')}';
+
+    Color color;
+    String text;
+    if (daysLeft < 0) {
+      color = colors.error;
+      text = '$dateStr · ${'expired'.tr}';
+    } else if (daysLeft <= 30) {
+      color = colors.warning;
+      text = '$dateStr · ${'expires_in_days'.trParams({'days': '$daysLeft'})}';
+    } else {
+      color = colors.textSecondary;
+      text = dateStr;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(top: 2),
+      padding:
+          const EdgeInsets.symmetric(horizontal: AppSpacing.s2, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontFamily: 'IBM Plex Sans Arabic',
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  EDIT INFO SHEET                                                         */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+void _showEditInfoSheet(BuildContext context, EmployeeDetailController ctrl) {
+  final e = ctrl.employee;
+  if (e == null) return;
+
+  final nameCtrl = TextEditingController(text: e.name);
+  final phoneCtrl = TextEditingController(text: e.phone ?? '');
+  final jobTitleCtrl = TextEditingController(text: e.jobTitle ?? '');
+  final salaryCtrl = TextEditingController(
+    text: e.baseSalary == 0
+        ? ''
+        : (e.baseSalary == e.baseSalary.roundToDouble()
+            ? e.baseSalary.toInt().toString()
+            : e.baseSalary.toString()),
+  );
+  final bankNameCtrl = TextEditingController(text: e.bankName ?? '');
+  final bankAccountCtrl =
+      TextEditingController(text: e.bankAccountNumber ?? '');
+  final bankIbanCtrl = TextEditingController(text: e.bankIban ?? '');
+  final bankSwiftCtrl = TextEditingController(text: e.bankSwift ?? '');
+  final nationalIdCtrl = TextEditingController(text: e.nationalId ?? '');
+  final nationalityCtrl = TextEditingController(text: e.nationality ?? '');
+  final iqamaCtrl = TextEditingController(text: e.iqamaNumber ?? '');
+  final passportCtrl = TextEditingController(text: e.passportNumber ?? '');
+  final workPermitCtrl =
+      TextEditingController(text: e.workPermitNumber ?? '');
+
+  DateTime? hireDate = e.hireDate;
+  DateTime? iqamaExpiry = e.iqamaExpiry;
+  DateTime? passportExpiry = e.passportExpiry;
+  DateTime? workPermitExpiry = e.workPermitExpiry;
+  DateTime? contractEnd = e.contractEnd;
+  DateTime? healthInsuranceExpiry = e.healthInsuranceExpiry;
+
+  final formKey = GlobalKey<FormState>();
+
+  String fmtDate(DateTime? d) => d == null
+      ? ''
+      : '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  Get.bottomSheet<void>(
+    StatefulBuilder(
+      builder: (sheetCtx, setSheetState) {
+        final colors = AppColors.of(context);
+
+        Future<void> pickDate(
+            DateTime? current, void Function(DateTime?) setter) async {
+          final now = DateTime.now();
+          final picked = await showDatePicker(
+            context: sheetCtx,
+            initialDate: current ?? now,
+            firstDate: DateTime(1950),
+            lastDate: DateTime(now.year + 30),
+          );
+          if (picked != null) setSheetState(() => setter(picked));
+        }
+
+        return DraggableScrollableSheet(
+          initialChildSize: 0.92,
+          minChildSize: 0.6,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (ctx, scrollCtl) {
+            return Container(
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(AppRadius.lg),
+                ),
+              ),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(AppSpacing.s3),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: colors.borderHairline,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.s3),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'edit_basic_info'.tr,
+                                style: AppTextStyles.h2(context),
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close),
+                              onPressed: () => Get.back<void>(),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: Form(
+                      key: formKey,
+                      child: ListView(
+                        controller: scrollCtl,
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.s4,
+                          AppSpacing.s3,
+                          AppSpacing.s4,
+                          AppSpacing.s4,
+                        ),
+                        children: [
+                          _SectionLabel(label: 'profile_overview'.tr),
+                          _FormField(
+                            controller: nameCtrl,
+                            label: 'name'.tr,
+                            icon: Icons.person_outline,
+                            validator: (v) => (v == null || v.trim().isEmpty)
+                                ? 'required'.tr
+                                : null,
+                          ),
+                          _FormField(
+                            controller: phoneCtrl,
+                            label: 'phone_number'.tr,
+                            icon: Icons.phone_outlined,
+                            keyboardType: TextInputType.phone,
+                          ),
+                          _FormField(
+                            controller: jobTitleCtrl,
+                            label: 'job_title'.tr,
+                            icon: Icons.work_outline,
+                          ),
+                          _FormField(
+                            controller: salaryCtrl,
+                            label: 'base_salary'.tr,
+                            icon: Icons.payments_outlined,
+                            keyboardType:
+                                const TextInputType.numberWithOptions(
+                                    decimal: true),
+                          ),
+                          _DateField(
+                            label: 'hire_date'.tr,
+                            value: hireDate,
+                            onTap: () =>
+                                pickDate(hireDate, (v) => hireDate = v),
+                            onClear: () =>
+                                setSheetState(() => hireDate = null),
+                          ),
+
+                          const SizedBox(height: AppSpacing.s4),
+                          _SectionLabel(label: 'bank_info'.tr),
+                          _FormField(
+                            controller: bankNameCtrl,
+                            label: 'bank_name'.tr,
+                            icon: Icons.account_balance_outlined,
+                          ),
+                          _FormField(
+                            controller: bankAccountCtrl,
+                            label: 'bank_account_number'.tr,
+                            icon: Icons.numbers_outlined,
+                          ),
+                          _FormField(
+                            controller: bankIbanCtrl,
+                            label: 'bank_iban'.tr,
+                            icon: Icons.qr_code_outlined,
+                          ),
+                          _FormField(
+                            controller: bankSwiftCtrl,
+                            label: 'bank_swift'.tr,
+                            icon: Icons.swap_horiz_outlined,
+                          ),
+
+                          const SizedBox(height: AppSpacing.s4),
+                          _SectionLabel(label: 'compliance_info'.tr),
+                          _FormField(
+                            controller: nationalIdCtrl,
+                            label: 'national_id'.tr,
+                            icon: Icons.badge_outlined,
+                          ),
+                          _FormField(
+                            controller: nationalityCtrl,
+                            label: 'nationality'.tr,
+                            icon: Icons.public_outlined,
+                          ),
+                          _FormField(
+                            controller: iqamaCtrl,
+                            label: 'iqama_number'.tr,
+                            icon: Icons.card_membership_outlined,
+                          ),
+                          _DateField(
+                            label: 'iqama_expiry'.tr,
+                            value: iqamaExpiry,
+                            onTap: () => pickDate(
+                                iqamaExpiry, (v) => iqamaExpiry = v),
+                            onClear: () =>
+                                setSheetState(() => iqamaExpiry = null),
+                          ),
+                          _FormField(
+                            controller: passportCtrl,
+                            label: 'passport_number'.tr,
+                            icon: Icons.menu_book_outlined,
+                          ),
+                          _DateField(
+                            label: 'passport_expiry'.tr,
+                            value: passportExpiry,
+                            onTap: () => pickDate(
+                                passportExpiry, (v) => passportExpiry = v),
+                            onClear: () => setSheetState(
+                                () => passportExpiry = null),
+                          ),
+                          _FormField(
+                            controller: workPermitCtrl,
+                            label: 'work_permit_number'.tr,
+                            icon: Icons.assignment_outlined,
+                          ),
+                          _DateField(
+                            label: 'work_permit_expiry'.tr,
+                            value: workPermitExpiry,
+                            onTap: () => pickDate(workPermitExpiry,
+                                (v) => workPermitExpiry = v),
+                            onClear: () => setSheetState(
+                                () => workPermitExpiry = null),
+                          ),
+                          _DateField(
+                            label: 'contract_end'.tr,
+                            value: contractEnd,
+                            onTap: () => pickDate(
+                                contractEnd, (v) => contractEnd = v),
+                            onClear: () =>
+                                setSheetState(() => contractEnd = null),
+                          ),
+                          _DateField(
+                            label: 'health_insurance_expiry'.tr,
+                            value: healthInsuranceExpiry,
+                            onTap: () => pickDate(healthInsuranceExpiry,
+                                (v) => healthInsuranceExpiry = v),
+                            onClear: () => setSheetState(
+                                () => healthInsuranceExpiry = null),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.s4),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            if (!formKey.currentState!.validate()) return;
+                            final changes = <String, dynamic>{};
+
+                            void putIfChanged(
+                                String key, String newVal, String? oldVal) {
+                              final n = newVal.trim();
+                              final o = (oldVal ?? '').trim();
+                              if (n != o) changes[key] = n;
+                            }
+
+                            void putDateIfChanged(String key,
+                                DateTime? newVal, DateTime? oldVal) {
+                              final n = fmtDate(newVal);
+                              final o = fmtDate(oldVal);
+                              if (n != o) changes[key] = n;
+                            }
+
+                            putIfChanged('name', nameCtrl.text, e.name);
+                            putIfChanged('phone', phoneCtrl.text, e.phone);
+                            putIfChanged(
+                                'job_title', jobTitleCtrl.text, e.jobTitle);
+                            final newSalary =
+                                num.tryParse(salaryCtrl.text.trim());
+                            if (newSalary != null &&
+                                newSalary != e.baseSalary) {
+                              changes['base_salary'] = newSalary;
+                            }
+                            putDateIfChanged(
+                                'hire_date', hireDate, e.hireDate);
+
+                            putIfChanged(
+                                'bank_name', bankNameCtrl.text, e.bankName);
+                            putIfChanged('bank_account_number',
+                                bankAccountCtrl.text, e.bankAccountNumber);
+                            putIfChanged(
+                                'bank_iban', bankIbanCtrl.text, e.bankIban);
+                            putIfChanged('bank_swift', bankSwiftCtrl.text,
+                                e.bankSwift);
+
+                            putIfChanged('national_id',
+                                nationalIdCtrl.text, e.nationalId);
+                            putIfChanged('nationality',
+                                nationalityCtrl.text, e.nationality);
+                            putIfChanged('iqama_number', iqamaCtrl.text,
+                                e.iqamaNumber);
+                            putDateIfChanged('iqama_expiry', iqamaExpiry,
+                                e.iqamaExpiry);
+                            putIfChanged('passport_number',
+                                passportCtrl.text, e.passportNumber);
+                            putDateIfChanged('passport_expiry',
+                                passportExpiry, e.passportExpiry);
+                            putIfChanged('work_permit_number',
+                                workPermitCtrl.text, e.workPermitNumber);
+                            putDateIfChanged('work_permit_expiry',
+                                workPermitExpiry, e.workPermitExpiry);
+                            putDateIfChanged('contract_end', contractEnd,
+                                e.contractEnd);
+                            putDateIfChanged(
+                                'health_insurance_expiry',
+                                healthInsuranceExpiry,
+                                e.healthInsuranceExpiry);
+
+                            Get.back<void>();
+                            await ctrl.updateEmployeeInfo(changes);
+                          },
+                          icon: const Icon(Icons.save_outlined),
+                          label: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: AppSpacing.s2),
+                            child: Text('save'.tr),
+                          ),
                         ),
                       ),
                     ),
-                    Text('add_warning'.tr, style: AppTextStyles.h2(context)),
-                    const SizedBox(height: AppSpacing.s2),
-                    Text(
-                      ctrl.employee?.name ?? '',
-                      style: AppTextStyles.bodySecondary(context),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    ),
+    isScrollControlled: true,
+  );
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  const _SectionLabel({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: 'IBM Plex Sans Arabic',
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: colors.brand,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
+class _FormField extends StatelessWidget {
+  final TextEditingController controller;
+  final String label;
+  final IconData icon;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
+  const _FormField({
+    required this.controller,
+    required this.label,
+    required this.icon,
+    this.keyboardType,
+    this.validator,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        validator: validator,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, size: 18),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.s3,
+            vertical: AppSpacing.s3,
+          ),
+        ),
+        style: const TextStyle(
+          fontFamily: 'IBM Plex Sans Arabic',
+          fontSize: 14,
+        ),
+      ),
+    );
+  }
+}
+
+class _DateField extends StatelessWidget {
+  final String label;
+  final DateTime? value;
+  final VoidCallback onTap;
+  final VoidCallback onClear;
+  const _DateField({
+    required this.label,
+    required this.value,
+    required this.onTap,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final hasValue = value != null;
+    final text = hasValue
+        ? '${value!.year}-${value!.month.toString().padLeft(2, '0')}-${value!.day.toString().padLeft(2, '0')}'
+        : 'no_value_placeholder'.tr;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: label,
+            prefixIcon: const Icon(Icons.calendar_today_outlined, size: 18),
+            suffixIcon: hasValue
+                ? IconButton(
+                    onPressed: onClear,
+                    icon: Icon(Icons.clear,
+                        size: 18, color: colors.textTertiary),
+                  )
+                : null,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.s3,
+              vertical: AppSpacing.s3,
+            ),
+          ),
+          child: Text(
+            text,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 14,
+              color: hasValue ? colors.textPrimary : colors.textTertiary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  ATTENDANCE TAB                                                          */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+class _AttendanceTab extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _AttendanceTab({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    // The calendar grid renders the active window (a calendar month or a custom
+    // cycle like 25→24). For long custom ranges we hide it and keep the list.
+    final span = ctrl.periodTo.difference(ctrl.periodFrom).inDays;
+    final showCalendar = span >= 0 && span <= 31;
+
+    return RefreshIndicator(
+      onRefresh: ctrl.loadAttendanceMonth,
+      child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.s4),
+        children: [
+          _AttendancePeriodSelector(ctrl: ctrl),
+          const SizedBox(height: AppSpacing.s4),
+          _AttendanceSummaryCard(ctrl: ctrl),
+          const SizedBox(height: AppSpacing.s4),
+          if (showCalendar) ...[
+            _AttendanceCalendarCard(ctrl: ctrl),
+            const SizedBox(height: AppSpacing.s4),
+          ],
+          _AttendanceListCard(ctrl: ctrl),
+          const SizedBox(height: AppSpacing.s7),
+        ],
+      ),
+    );
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  ATTENDANCE PERIOD SELECTOR                                              */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+enum _AttendancePreset { thisMonth, lastMonth, last7Days, last30Days, custom }
+
+class _AttendancePeriodSelector extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _AttendancePeriodSelector({required this.ctrl});
+
+  _AttendancePreset _detectPreset() {
+    final now = DateTime.now();
+    if (!ctrl.attendanceIsRange) {
+      // Cycle mode: which cycle (by its label/end month) is anchored?
+      final current = ctrl.currentCycleLabelMonth();
+      if (ctrl.attendanceMonth.year == current.year &&
+          ctrl.attendanceMonth.month == current.month) {
+        return _AttendancePreset.thisMonth;
+      }
+      final last = DateTime(current.year, current.month - 1);
+      if (ctrl.attendanceMonth.year == last.year &&
+          ctrl.attendanceMonth.month == last.month) {
+        return _AttendancePreset.lastMonth;
+      }
+      return _AttendancePreset.custom;
+    }
+    final from = ctrl.attendanceFrom!;
+    final to = ctrl.attendanceTo!;
+    final today = DateTime(now.year, now.month, now.day);
+    final daySpan = to.difference(from).inDays + 1;
+    if (_sameDay(to, today)) {
+      if (daySpan == 7) return _AttendancePreset.last7Days;
+      if (daySpan == 30) return _AttendancePreset.last30Days;
+    }
+    return _AttendancePreset.custom;
+  }
+
+  bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+  void _apply(_AttendancePreset preset, BuildContext context) {
+    final now = DateTime.now();
+    final currentCycle = ctrl.currentCycleLabelMonth();
+    switch (preset) {
+      case _AttendancePreset.thisMonth:
+        ctrl.changeAttendanceMonth(currentCycle);
+        break;
+      case _AttendancePreset.lastMonth:
+        ctrl.changeAttendanceMonth(
+            DateTime(currentCycle.year, currentCycle.month - 1));
+        break;
+      case _AttendancePreset.last7Days:
+        ctrl.changeAttendanceRange(
+          now.subtract(const Duration(days: 6)),
+          now,
+        );
+        break;
+      case _AttendancePreset.last30Days:
+        ctrl.changeAttendanceRange(
+          now.subtract(const Duration(days: 29)),
+          now,
+        );
+        break;
+      case _AttendancePreset.custom:
+        _openRangePicker(context);
+        break;
+    }
+  }
+
+  Future<void> _openRangePicker(BuildContext context) async {
+    final now = DateTime.now();
+    final initial =
+        DateTimeRange(start: ctrl.periodFrom, end: ctrl.periodTo);
+
+    final picked = await showDateRangePicker(
+      context: context,
+      initialDateRange: initial,
+      firstDate: DateTime(now.year - 5),
+      lastDate: now,
+      helpText: 'select_date_range'.tr,
+      saveText: 'apply'.tr,
+      cancelText: 'cancel'.tr,
+    );
+    if (picked != null) {
+      ctrl.changeAttendanceRange(picked.start, picked.end);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final active = _detectPreset();
+
+    String fmt(DateTime d) =>
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+    final rangeStart = ctrl.periodFrom;
+    final rangeEnd = ctrl.periodTo;
+    final dayCount = rangeEnd.difference(rangeStart).inDays + 1;
+
+    final presets = <(_AttendancePreset, String, IconData)>[
+      (_AttendancePreset.thisMonth, 'preset_this_month'.tr,
+          Icons.today_outlined),
+      (_AttendancePreset.lastMonth, 'preset_last_month'.tr,
+          Icons.event_note_outlined),
+      (_AttendancePreset.last7Days, 'preset_last_7_days'.tr,
+          Icons.date_range_outlined),
+      (_AttendancePreset.last30Days, 'preset_last_30_days'.tr,
+          Icons.calendar_view_month_outlined),
+      (_AttendancePreset.custom, 'preset_custom'.tr,
+          Icons.tune_outlined),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s3),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: presets.map((p) {
+                final isActive = active == p.$1;
+                return Padding(
+                  padding: const EdgeInsetsDirectional.only(
+                      end: AppSpacing.s2),
+                  child: InkWell(
+                    onTap: () => _apply(p.$1, context),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.s3, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? colors.brand
+                            : colors.sunken.withValues(alpha: 0.5),
+                        borderRadius:
+                            BorderRadius.circular(AppRadius.full),
+                        border: Border.all(
+                          color: isActive
+                              ? colors.brand
+                              : colors.borderHairline,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            p.$3,
+                            size: 14,
+                            color: isActive
+                                ? Colors.white
+                                : colors.textSecondary,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            p.$2,
+                            style: TextStyle(
+                              fontFamily: 'IBM Plex Sans Arabic',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isActive
+                                  ? Colors.white
+                                  : colors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: AppSpacing.s4),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s3),
+          InkWell(
+            onTap: () => _openRangePicker(context),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s3, vertical: AppSpacing.s2),
+              decoration: BoxDecoration(
+                color: colors.brandSubtle,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(
+                    color: colors.brand.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.calendar_today_outlined,
+                      size: 16, color: colors.brand),
+                  const SizedBox(width: AppSpacing.s2),
+                  Expanded(
+                    child: Text(
+                      '${fmt(rangeStart)}  ←  ${fmt(rangeEnd)}',
+                      style: TextStyle(
+                        fontFamily: 'Geist',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.s2, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: colors.brand.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                    ),
+                    child: Text(
+                      'days_count'
+                          .trParams({'count': dayCount.toString()}),
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: colors.brand,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MonthSwitcher extends StatelessWidget {
+  final DateTime month;
+  final void Function(DateTime) onChange;
+  /// Inclusive cycle window for the picked month. When provided (and the
+  /// company uses a non-calendar cycle), it's shown as a subtitle so the
+  /// user can see, e.g., that "May" actually means May 12 → June 11.
+  final DateTime? cycleFrom;
+  final DateTime? cycleTo;
+  /// Most-recent label month the picker is allowed to land on. The "next"
+  /// arrow becomes disabled once `month` reaches this. Defaults to the
+  /// current calendar month for callers that aren't cycle-aware.
+  final DateTime? maxMonth;
+  /// Oldest label month the picker is allowed to land on. The "previous"
+  /// arrow becomes disabled once `month` reaches this. Null = uncapped.
+  final DateTime? minMonth;
+  const _MonthSwitcher({
+    required this.month,
+    required this.onChange,
+    this.cycleFrom,
+    this.cycleTo,
+    this.maxMonth,
+    this.minMonth,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final label = '${'month_${month.month}'.tr} ${month.year}';
+    final showRange = cycleFrom != null &&
+        cycleTo != null &&
+        (cycleFrom!.month != month.month || cycleTo!.month != month.month);
+    final now = DateTime.now();
+    final cap = maxMonth ?? DateTime(now.year, now.month);
+    final canGoNext = month.isBefore(cap);
+    final canGoPrev = minMonth == null || month.isAfter(minMonth!);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s2, vertical: AppSpacing.s2),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: 'previous_month'.tr,
+            onPressed: canGoPrev
+                ? () => onChange(DateTime(month.year, month.month - 1))
+                : null,
+            icon: Icon(
+              Icons.chevron_right,
+              color: canGoPrev ? colors.textSecondary : colors.textTertiary,
+            ),
+          ),
+          Expanded(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              onTap: () async {
+                final picked = await showMonthGridPicker(
+                  context,
+                  selected: month,
+                  min: minMonth,
+                  max: cap,
+                );
+                if (picked != null) onChange(picked);
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.s1),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     Text(
-                      'select_warning_type'.tr,
+                      label,
+                      style: const TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (showRange) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '${_dayMonth(cycleFrom!)} → ${_dayMonth(cycleTo!)}',
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Sans Arabic',
+                          fontSize: 11,
+                          color: colors.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: 'next_month'.tr,
+            onPressed: canGoNext
+                ? () => onChange(DateTime(month.year, month.month + 1))
+                : null,
+            icon: Icon(
+              Icons.chevron_left,
+              color: canGoNext ? colors.textSecondary : colors.textTertiary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _dayMonth(DateTime d) =>
+      '${d.day} ${'month_${d.month}'.tr}';
+}
+
+class _AttendanceSummaryCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _AttendanceSummaryCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final s = ctrl.attendanceSummary;
+    final overtime = s['overtime_minutes'] ?? 0;
+    final late = s['late_minutes'] ?? 0;
+    final e = ctrl.employee;
+    final shiftRange = e == null
+        ? null
+        : _formatShiftRange(
+            e.shiftStart ?? e.workStartTime,
+            e.shiftEnd ?? e.workEndTime,
+          );
+    final shiftLabel = (e?.shiftName != null && e!.shiftName!.isNotEmpty)
+        ? '$shiftRange (${e.shiftName})'
+        : shiftRange;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s4),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('attendance_summary'.tr, style: AppTextStyles.h3(context)),
+          if (shiftLabel != null) ...[
+            const SizedBox(height: AppSpacing.s2),
+            Row(
+              children: [
+                Icon(Icons.schedule, size: 14, color: colors.brand),
+                const SizedBox(width: AppSpacing.s2),
+                Expanded(
+                  child: Text(
+                    '${'work_time'.tr}: $shiftLabel',
+                    style: AppTextStyles.sm(context),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: AppSpacing.s3),
+          Row(
+            children: [
+              Expanded(
+                child: _SummaryChip(
+                  count: '${s['present'] ?? 0}',
+                  label: 'attendance_present_short'.tr,
+                  color: colors.success,
+                  icon: Icons.check_circle_outline,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s2),
+              Expanded(
+                child: _SummaryChip(
+                  count: '${s['late'] ?? 0}',
+                  label: 'attendance_late_short'.tr,
+                  color: colors.warning,
+                  icon: Icons.schedule,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s2),
+              Expanded(
+                child: _SummaryChip(
+                  count: '${s['absent'] ?? 0}',
+                  label: 'attendance_absent_short'.tr,
+                  color: colors.error,
+                  icon: Icons.cancel_outlined,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s2),
+              Expanded(
+                child: _SummaryChip(
+                  // Holiday & weekly-off are counted within "leave".
+                  count:
+                      '${(s['leave'] ?? 0) + (s['holiday'] ?? 0) + (s['weekly_off'] ?? 0)}',
+                  label: 'attendance_leave_short'.tr,
+                  color: colors.accentWarm,
+                  icon: Icons.beach_access_outlined,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s3),
+          Row(
+            children: [
+              Icon(Icons.trending_up,
+                  size: 14, color: colors.textSecondary),
+              const SizedBox(width: AppSpacing.s2),
+              Text(
+                '${'total_overtime'.tr}: ${_fmtMinutes(overtime)}',
+                style: AppTextStyles.sm(context),
+              ),
+              const SizedBox(width: AppSpacing.s4),
+              Icon(Icons.history, size: 14, color: colors.textSecondary),
+              const SizedBox(width: AppSpacing.s2),
+              Text(
+                '${'total_late_minutes'.tr}: ${_fmtMinutes(late)}',
+                style: AppTextStyles.sm(context),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _fmtMinutes(int minutes) {
+    if (minutes <= 0) return '0';
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    if (h == 0) return '$m ${'minutes_short'.tr}';
+    return '$h ${'hours_short'.tr} $m ${'minutes_short'.tr}';
+  }
+}
+
+class _SummaryChip extends StatelessWidget {
+  final String count;
+  final String label;
+  final Color color;
+  final IconData icon;
+  const _SummaryChip({
+    required this.count,
+    required this.label,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.s2, vertical: AppSpacing.s3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(height: 4),
+          Text(
+            count,
+            style: TextStyle(
+              fontFamily: 'Geist',
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 11,
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AttendanceCalendarCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _AttendanceCalendarCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    // Render the active window (calendar month or custom cycle like 25→24).
+    final from = ctrl.periodFrom;
+    final to = ctrl.periodTo;
+
+    // Map records by full date string (the window can span two months).
+    final byDate = <String, AttendanceRecordModel>{};
+    for (final r in ctrl.attendanceRecords) {
+      if (r.date != null) byDate[r.date!] = r;
+    }
+
+    _DayKind kindOf(AttendanceRecordModel? r) {
+      if (r == null) return _DayKind.none;
+      switch (r.status) {
+        case 'present':
+          return (r.lateMinutes ?? 0) > 0 ? _DayKind.late : _DayKind.present;
+        case 'absent':
+          return _DayKind.absent;
+        case 'leave':
+        case 'holiday':
+        case 'weekly_off':
+          return _DayKind.leave;
+        default:
+          return _DayKind.none;
+      }
+    }
+
+    final canEdit = ctrl.canManageAttendance;
+    String dateStr(DateTime d) =>
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+    // Weekday columns: start week on Saturday (Arabic standard).
+    // Convert to "Saturday-first" index (0=Sat,1=Sun,...,6=Fri).
+    final satFirstOffset = (from.weekday + 1) % 7;
+
+    final cells = <Widget>[];
+    final dayLabels = ['س', 'ح', 'ن', 'ث', 'ر', 'خ', 'ج'];
+    for (final l in dayLabels) {
+      cells.add(Center(
+        child: Text(
+          l,
+          style: TextStyle(
+            fontFamily: 'IBM Plex Sans Arabic',
+            fontSize: 11,
+            color: colors.textTertiary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ));
+    }
+    for (int i = 0; i < satFirstOffset; i++) {
+      cells.add(const SizedBox());
+    }
+    final totalDays = to.difference(from).inDays;
+    for (int i = 0; i <= totalDays; i++) {
+      final d = DateTime(from.year, from.month, from.day + i);
+      final ds = dateStr(d);
+      final rec = byDate[ds];
+      final future = _isFutureDay(d);
+      cells.add(_CalendarCell(
+        day: d.day,
+        kind: kindOf(rec),
+        dimmed: future,
+        // Future days can't be edited (you can't mark attendance ahead of time).
+        onTap: (canEdit && !future)
+            ? () => _showDayEditorSheet(context, ctrl,
+                record: rec, date: ds)
+            : null,
+      ));
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s4),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('attendance_calendar'.tr, style: AppTextStyles.h3(context)),
+          const SizedBox(height: AppSpacing.s3),
+          if (ctrl.attendanceStatus == StatusRequest.loading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.s5),
+              child: Center(child: CircularProgressIndicator.adaptive()),
+            )
+          else
+            GridView.count(
+              crossAxisCount: 7,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 4,
+              crossAxisSpacing: 4,
+              children: cells,
+            ),
+          const SizedBox(height: AppSpacing.s3),
+          Wrap(
+            spacing: AppSpacing.s3,
+            runSpacing: AppSpacing.s2,
+            children: [
+              _LegendDot(
+                  color: colors.success,
+                  label: 'attendance_present_short'.tr),
+              _LegendDot(
+                  color: colors.warning,
+                  label: 'attendance_late_short'.tr),
+              _LegendDot(
+                  color: colors.error,
+                  label: 'attendance_absent_short'.tr),
+              _LegendDot(
+                  color: colors.accentWarm,
+                  label: 'attendance_leave_short'.tr),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+enum _DayKind { none, present, late, absent, leave }
+
+class _CalendarCell extends StatelessWidget {
+  final int day;
+  final _DayKind kind;
+  final VoidCallback? onTap;
+  final bool dimmed;
+  const _CalendarCell(
+      {required this.day,
+      required this.kind,
+      this.onTap,
+      this.dimmed = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    Color? bg;
+    Color text = colors.textSecondary;
+    switch (kind) {
+      case _DayKind.present:
+        bg = colors.success.withValues(alpha: 0.18);
+        text = colors.success;
+        break;
+      case _DayKind.late:
+        bg = colors.warning.withValues(alpha: 0.18);
+        text = colors.warning;
+        break;
+      case _DayKind.absent:
+        bg = colors.error.withValues(alpha: 0.18);
+        text = colors.error;
+        break;
+      case _DayKind.leave:
+        bg = colors.accentWarm.withValues(alpha: 0.18);
+        text = colors.accentWarm;
+        break;
+      case _DayKind.none:
+        break;
+    }
+    return Opacity(
+      opacity: dimmed ? 0.4 : 1,
+      child: AspectRatio(
+      aspectRatio: 1,
+      child: Material(
+        color: bg ?? colors.sunken.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          child: Center(
+            child: Text(
+              '$day',
+              style: TextStyle(
+                fontFamily: 'Geist',
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: text,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+    );
+  }
+}
+
+class _LegendDot extends StatelessWidget {
+  final Color color;
+  final String label;
+  const _LegendDot({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.s2),
+        Text(label, style: AppTextStyles.xs(context)),
+      ],
+    );
+  }
+}
+
+class _AttendanceListCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _AttendanceListCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final records = ctrl.attendanceRecords;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s4),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('attendance_records'.tr, style: AppTextStyles.h3(context)),
+          const SizedBox(height: AppSpacing.s3),
+          if (ctrl.attendanceStatus == StatusRequest.loading)
+            const Center(child: CircularProgressIndicator.adaptive())
+          else if (records.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s5),
+              child: Center(
+                child: Text('attendance_no_records_for_month'.tr,
+                    style: AppTextStyles.bodySecondary(context)),
+              ),
+            )
+          else
+            ...records.map((r) => _AttendanceRow(ctrl: ctrl, record: r)),
+        ],
+      ),
+    );
+  }
+}
+
+class _AttendanceRow extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  final AttendanceRecordModel record;
+  const _AttendanceRow({required this.ctrl, required this.record});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    // A present day with late minutes is shown as "late" (matches the calendar).
+    final isLate =
+        record.status == 'present' && (record.lateMinutes ?? 0) > 0;
+    // Holiday & weekly-off are shown under the "leave" umbrella.
+    final isLeaveKind =
+        const ['leave', 'holiday', 'weekly_off'].contains(record.status);
+    final statusColor =
+        _attendanceStatusColor(isLate ? 'late' : record.status, colors);
+    final statusText = isLate
+        ? 'status_late'.tr
+        : (isLeaveKind ? 'status_leave'.tr : record.statusLabel);
+    final displayDate = record.date ??
+        (record.checkIn != null
+            ? '${record.checkIn!.year}-${record.checkIn!.month.toString().padLeft(2, '0')}-${record.checkIn!.day.toString().padLeft(2, '0')}'
+            : '');
+
+    final recDate =
+        record.date != null ? DateTime.tryParse(record.date!) : null;
+    final canEdit = ctrl.canManageAttendance &&
+        record.date != null &&
+        !_isFutureDay(recDate);
+
+    // Secondary details to surface what was entered (leave type / custom
+    // deduction / note) without reopening the editor.
+    final extra = <String>[];
+    if (record.status == 'holiday') {
+      extra.add('status_holiday'.tr);
+    } else if (record.status == 'weekly_off') {
+      extra.add('status_weekly_off'.tr);
+    } else if (record.status == 'leave' &&
+        (record.leaveType ?? '').isNotEmpty) {
+      extra.add(_leaveTypeLabel(record.leaveType!));
+    }
+    if (record.status == 'absent' &&
+        record.deductionMode != 'auto' &&
+        record.deductionValue != null) {
+      final v = _fmtDeductionValue(record.deductionValue!);
+      extra.add(record.deductionMode == 'days'
+          ? '${'deduction_label'.tr}: $v ${'days_unit'.tr}'
+          : '${'deduction_label'.tr}: $v ${'currency_egp'.tr}');
+    }
+    if ((record.note ?? '').isNotEmpty) extra.add(record.note!);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.s2),
+      decoration: BoxDecoration(
+        color: colors.sunken.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: canEdit
+              ? () => _showDayEditorSheet(context, ctrl,
+                  record: record, date: record.date!)
+              : null,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.s3),
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.s3),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        displayDate,
+                        style: const TextStyle(
+                          fontFamily: 'Geist',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          if (record.checkIn != null) ...[
+                            Icon(Icons.login,
+                                size: 12, color: colors.textSecondary),
+                            const SizedBox(width: 4),
+                            Text(
+                              _formatTime(record.checkIn!),
+                              style: TextStyle(
+                                fontFamily: 'Geist',
+                                fontSize: 12,
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          ],
+                          if (record.checkOut != null) ...[
+                            const SizedBox(width: AppSpacing.s2),
+                            Icon(Icons.logout,
+                                size: 12, color: colors.textSecondary),
+                            const SizedBox(width: 4),
+                            Text(
+                              _formatTime(record.checkOut!),
+                              style: TextStyle(
+                                fontFamily: 'Geist',
+                                fontSize: 12,
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          ],
+                          if (record.checkIn == null &&
+                              record.checkOut == null)
+                            Text(
+                              '—',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colors.textTertiary,
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (extra.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          extra.join('  ·  '),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 11,
+                            color: colors.textTertiary,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s2, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+                if (canEdit) ...[
+                  const SizedBox(width: AppSpacing.s2),
+                  Icon(Icons.edit_outlined,
+                      size: 16, color: colors.textTertiary),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatTime(DateTime t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+}
+
+Color _attendanceStatusColor(String status, AppColorScheme colors) {
+  switch (status) {
+    case 'present':
+      return colors.success;
+    case 'absent':
+      return colors.error;
+    case 'late':
+      return colors.warning;
+    case 'leave':
+    case 'holiday':
+    case 'weekly_off':
+      return colors.accentWarm;
+    default:
+      return colors.textTertiary;
+  }
+}
+
+/// True when [d] is strictly after today (date-only comparison).
+bool _isFutureDay(DateTime? d) {
+  if (d == null) return false;
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  return DateTime(d.year, d.month, d.day).isAfter(today);
+}
+
+String _leaveTypeLabel(String type) {
+  switch (type) {
+    case 'annual':
+      return 'leave_type_annual'.tr;
+    case 'sick':
+      return 'leave_type_sick'.tr;
+    case 'unpaid':
+      return 'leave_type_unpaid'.tr;
+    case 'holiday':
+      return 'status_holiday'.tr;
+    case 'weekly_off':
+      return 'status_weekly_off'.tr;
+    default:
+      return type;
+  }
+}
+
+String _fmtDeductionValue(double v) =>
+    v == v.roundToDouble() ? v.toInt().toString() : v.toString();
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  UNIFIED DAY EDITOR SHEET                                                */
+/*  One sheet to set any day to present / absent / leave, creating the     */
+/*  attendance record when it doesn't exist yet.                           */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+void _showDayEditorSheet(
+  BuildContext context,
+  EmployeeDetailController ctrl, {
+  AttendanceRecordModel? record,
+  required String date,
+}) {
+  // ── Working state (seeded from the existing record, if any) ──
+  // Holiday & weekly-off are presented as kinds of "leave", so they map to the
+  // 'leave' status chip and a leave-type selection.
+  String status = (record?.status == 'absent')
+      ? 'absent'
+      : (const ['leave', 'holiday', 'weekly_off'].contains(record?.status)
+          ? 'leave'
+          : 'present');
+
+  TimeOfDay? checkIn = record?.checkIn != null
+      ? TimeOfDay(hour: record!.checkIn!.hour, minute: record.checkIn!.minute)
+      : null;
+  TimeOfDay? checkOut = record?.checkOut != null
+      ? TimeOfDay(
+          hour: record!.checkOut!.hour, minute: record.checkOut!.minute)
+      : null;
+  // The chosen leave "kind": annual/sick/unpaid (real leaves) or
+  // holiday/weekly_off (non-working day statuses).
+  String leaveType = (record?.status == 'holiday')
+      ? 'holiday'
+      : (record?.status == 'weekly_off')
+          ? 'weekly_off'
+          : (const ['annual', 'sick', 'unpaid'].contains(record?.leaveType)
+              ? record!.leaveType!
+              : 'annual');
+  final reasonCtrl = TextEditingController(text: record?.note ?? '');
+
+  // Absence deduction override: auto = company rule, days = N × daily rate,
+  // amount = fixed money.
+  String deductionMode = const ['auto', 'days', 'amount']
+          .contains(record?.deductionMode)
+      ? record!.deductionMode
+      : 'auto';
+  final deductionValueCtrl = TextEditingController(
+    text: (record?.deductionValue != null && record!.deductionValue! > 0)
+        ? (record.deductionValue! == record.deductionValue!.roundToDouble()
+            ? record.deductionValue!.toInt().toString()
+            : record.deductionValue!.toString())
+        : '',
+  );
+
+  final parsed = DateTime.tryParse(date);
+  final weekdayText = parsed != null ? _weekdayLabel(parsed) : '';
+  String? validationError;
+
+  String fmt(TimeOfDay? t) => t == null
+      ? 'not_set'.tr
+      : '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+  String toApiTime(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}:00';
+  int toMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
+
+  const leaveTypes = <_LeaveTypeOption>[
+    _LeaveTypeOption(
+      id: 'annual',
+      labelKey: 'leave_type_annual',
+      descKey: 'leave_type_annual_desc',
+      icon: Icons.beach_access_outlined,
+    ),
+    _LeaveTypeOption(
+      id: 'sick',
+      labelKey: 'leave_type_sick',
+      descKey: 'leave_type_sick_desc',
+      icon: Icons.medical_services_outlined,
+    ),
+    _LeaveTypeOption(
+      id: 'unpaid',
+      labelKey: 'leave_type_unpaid',
+      descKey: 'leave_type_unpaid_desc',
+      icon: Icons.money_off_csred_outlined,
+    ),
+    _LeaveTypeOption(
+      id: 'holiday',
+      labelKey: 'status_holiday',
+      descKey: 'leave_type_holiday_desc',
+      icon: Icons.celebration_outlined,
+    ),
+    _LeaveTypeOption(
+      id: 'weekly_off',
+      labelKey: 'status_weekly_off',
+      descKey: 'leave_type_weekly_off_desc',
+      icon: Icons.weekend_outlined,
+    ),
+  ];
+
+  final statusOptions = <(String, String, IconData)>[
+    ('present', 'status_present', Icons.check_circle_outline),
+    ('absent', 'status_absent', Icons.cancel_outlined),
+    ('leave', 'status_leave', Icons.beach_access_outlined),
+  ];
+
+  Get.bottomSheet<void>(
+    StatefulBuilder(
+      builder: (sheetCtx, setSheetState) {
+        final colors = AppColors.of(context);
+        final isLoading = ctrl.conversionStatus == StatusRequest.loading;
+
+        Color statusColor(String s) => s == 'present'
+            ? colors.success
+            : (s == 'absent' ? colors.error : colors.accentWarm);
+
+        Future<void> pickTime(
+            TimeOfDay? current, void Function(TimeOfDay) onSet) async {
+          final picked = await showTimePicker(
+            context: sheetCtx,
+            initialTime: current ?? const TimeOfDay(hour: 9, minute: 0),
+          );
+          if (picked != null) {
+            setSheetState(() {
+              onSet(picked);
+              validationError = null;
+            });
+          }
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.lg),
+            ),
+          ),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(
+                        top: AppSpacing.s3, bottom: AppSpacing.s3),
+                    decoration: BoxDecoration(
+                      color: colors.borderHairline,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+
+                // Header
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.s2),
+                        decoration: BoxDecoration(
+                          color: colors.brandSubtle,
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                        child: Icon(Icons.edit_calendar_outlined,
+                            size: 20, color: colors.brand),
+                      ),
+                      const SizedBox(width: AppSpacing.s3),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('day_editor_title'.tr,
+                                style: AppTextStyles.h2(context)
+                                    .copyWith(fontSize: 17)),
+                            const SizedBox(height: 2),
+                            Text(
+                              weekdayText.isEmpty
+                                  ? date
+                                  : '$weekdayText · $date',
+                              style: AppTextStyles.sm(context),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Get.back<void>(),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        visualDensity: VisualDensity.compact,
+                        color: colors.textSecondary,
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: AppSpacing.s4),
+
+                // Status selector (segmented)
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
+                  child: Text(
+                    'select_status'.tr,
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.s2),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
+                  child: Wrap(
+                    spacing: AppSpacing.s2,
+                    runSpacing: AppSpacing.s2,
+                    children: statusOptions.map((o) {
+                      final selected = status == o.$1;
+                      final c = statusColor(o.$1);
+                      return InkWell(
+                        onTap: () => setSheetState(() {
+                          status = o.$1;
+                          validationError = null;
+                        }),
+                        borderRadius: BorderRadius.circular(AppRadius.full),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.s3, vertical: AppSpacing.s2),
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? c.withValues(alpha: 0.12)
+                                : colors.sunken.withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(AppRadius.full),
+                            border: Border.all(
+                              color: selected ? c : colors.borderHairline,
+                              width: selected ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(o.$3,
+                                  size: 16,
+                                  color:
+                                      selected ? c : colors.textSecondary),
+                              const SizedBox(width: 6),
+                              Text(
+                                o.$2.tr,
+                                style: TextStyle(
+                                  fontFamily: 'IBM Plex Sans Arabic',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: selected ? c : colors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+
+                const SizedBox(height: AppSpacing.s4),
+
+                // Contextual fields
+                if (status == 'present')
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.s4),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _TimePickerTile(
+                            label: 'check_in_time_label'.tr,
+                            icon: Icons.login,
+                            time: checkIn,
+                            color: colors.success,
+                            onTap: () => pickTime(checkIn, (v) {
+                              checkIn = v;
+                            }),
+                            onClear: checkIn == null
+                                ? null
+                                : () => setSheetState(() => checkIn = null),
+                            formattedTime: fmt(checkIn),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.s3),
+                        Expanded(
+                          child: _TimePickerTile(
+                            label: 'check_out_time_label'.tr,
+                            icon: Icons.logout,
+                            time: checkOut,
+                            color: colors.brand,
+                            onTap: () => pickTime(checkOut, (v) {
+                              checkOut = v;
+                            }),
+                            onClear: checkOut == null
+                                ? null
+                                : () => setSheetState(() => checkOut = null),
+                            formattedTime: fmt(checkOut),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else if (status == 'leave')
+                  ...leaveTypes.map((opt) {
+                    final sel = leaveType == opt.id;
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.s4, 0, AppSpacing.s4, AppSpacing.s2),
+                      child: InkWell(
+                        onTap: () => setSheetState(() => leaveType = opt.id),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.all(AppSpacing.s3),
+                          decoration: BoxDecoration(
+                            color:
+                                sel ? colors.brandSubtle : colors.surface,
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.md),
+                            border: Border.all(
+                              color:
+                                  sel ? colors.brand : colors.borderHairline,
+                              width: sel ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: sel ? colors.brand : colors.sunken,
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.sm),
+                                ),
+                                child: Icon(opt.icon,
+                                    size: 18,
+                                    color: sel
+                                        ? Colors.white
+                                        : colors.textSecondary),
+                              ),
+                              const SizedBox(width: AppSpacing.s3),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      opt.labelKey.tr,
+                                      style: TextStyle(
+                                        fontFamily: 'IBM Plex Sans Arabic',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: sel
+                                            ? colors.brand
+                                            : colors.textPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      opt.descKey.tr,
+                                      style: TextStyle(
+                                        fontFamily: 'IBM Plex Sans Arabic',
+                                        fontSize: 12,
+                                        color: colors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(
+                                sel
+                                    ? Icons.check_circle
+                                    : Icons.radio_button_unchecked,
+                                size: 20,
+                                color:
+                                    sel ? colors.brand : colors.borderHairline,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+
+                // Absence deduction override
+                if (status == 'absent') ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.s4),
+                    child: Text(
+                      'deduction_label'.tr,
                       style: TextStyle(
                         fontFamily: 'IBM Plex Sans Arabic',
                         fontSize: 13,
-                        color: colors.textTertiary,
+                        fontWeight: FontWeight.w600,
+                        color: colors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.s2),
-                    ...['verbal', 'written', 'final'].map((t) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.s2),
-                        child: InkWell(
-                          onTap: () => setSheetState(() => selectedType = t),
-                          child: Container(
-                            padding: const EdgeInsets.all(AppSpacing.s3),
-                            decoration: BoxDecoration(
-                              color: selectedType == t
-                                  ? colors.brandSubtle
-                                  : colors.surface,
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                              border: Border.all(
-                                color: selectedType == t
-                                    ? colors.brand
-                                    : colors.borderHairline,
-                              ),
+                  ),
+                  const SizedBox(height: AppSpacing.s2),
+                  ...<(String, String, IconData)>[
+                    ('auto', 'deduction_company_default',
+                        Icons.business_outlined),
+                    ('days', 'deduction_by_days',
+                        Icons.calendar_month_outlined),
+                    ('amount', 'deduction_direct_amount',
+                        Icons.payments_outlined),
+                  ].map((o) {
+                    final sel = deductionMode == o.$1;
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.s4, 0, AppSpacing.s4, AppSpacing.s2),
+                      child: InkWell(
+                        onTap: () => setSheetState(() {
+                          deductionMode = o.$1;
+                          validationError = null;
+                        }),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.all(AppSpacing.s3),
+                          decoration: BoxDecoration(
+                            color:
+                                sel ? colors.brandSubtle : colors.surface,
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.md),
+                            border: Border.all(
+                              color: sel
+                                  ? colors.brand
+                                  : colors.borderHairline,
+                              width: sel ? 1.5 : 1,
                             ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  selectedType == t
-                                      ? Icons.radio_button_checked
-                                      : Icons.radio_button_unchecked,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(o.$3,
                                   size: 20,
-                                  color: selectedType == t
+                                  color: sel
                                       ? colors.brand
-                                      : colors.textTertiary,
-                                ),
-                                const SizedBox(width: AppSpacing.s3),
-                                Text(
-                                  _warningTypeLabel(t),
+                                      : colors.textSecondary),
+                              const SizedBox(width: AppSpacing.s3),
+                              Expanded(
+                                child: Text(
+                                  o.$2.tr,
                                   style: TextStyle(
                                     fontFamily: 'IBM Plex Sans Arabic',
                                     fontSize: 14,
-                                    fontWeight: selectedType == t
-                                        ? FontWeight.w600
-                                        : FontWeight.w400,
-                                    color: selectedType == t
+                                    fontWeight: FontWeight.w600,
+                                    color: sel
                                         ? colors.brand
                                         : colors.textPrimary,
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                              Icon(
+                                sel
+                                    ? Icons.radio_button_checked
+                                    : Icons.radio_button_unchecked,
+                                size: 20,
+                                color: sel
+                                    ? colors.brand
+                                    : colors.borderHairline,
+                              ),
+                            ],
                           ),
                         ),
-                      );
-                    }),
-                    const SizedBox(height: AppSpacing.s3),
-                    TextFormField(
-                      controller: reasonCtrl,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        labelText: 'warning_reason'.tr,
-                        hintText: 'warning_reason_hint'.tr,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                    );
+                  }),
+                  if (deductionMode != 'auto')
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.s4, AppSpacing.s1, AppSpacing.s4, 0),
+                      child: TextField(
+                        controller: deductionValueCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                              RegExp(r'[0-9.]')),
+                        ],
+                        onChanged: (_) =>
+                            setSheetState(() => validationError = null),
+                        decoration: InputDecoration(
+                          labelText: deductionMode == 'days'
+                              ? 'deduction_days_label'.tr
+                              : 'deduction_amount_label'.tr,
+                          suffixText: deductionMode == 'days'
+                              ? 'days_unit'.tr
+                              : 'currency_egp'.tr,
+                          filled: true,
+                          fillColor: colors.sunken.withValues(alpha: 0.4),
+                          border: OutlineInputBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.md),
+                            borderSide:
+                                BorderSide(color: colors.borderHairline),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.md),
+                            borderSide:
+                                BorderSide(color: colors.borderHairline),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.md),
+                            borderSide: BorderSide(
+                                color: colors.brand, width: 1.5),
+                          ),
                         ),
                       ),
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) {
-                          return 'reason_required'.tr;
-                        }
-                        return null;
-                      },
                     ),
-                    const SizedBox(height: AppSpacing.s6),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: isLoading
-                            ? null
-                            : () async {
-                                if (!formKey.currentState!.validate()) return;
-                                final reason = reasonCtrl.text.trim();
-                                Get.back();
-                                await ctrl.addWarning(
-                                  type: selectedType,
-                                  reason: reason,
-                                );
-                              },
-                        icon: isLoading
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator.adaptive(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.save_outlined),
-                        label: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
-                          child: Text('save'.tr),
+                ],
+
+                // Reason / note (optional for all statuses)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.s4, AppSpacing.s3, AppSpacing.s4, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        status == 'leave'
+                            ? 'conversion_reason'.tr
+                            : 'optional_note'.tr,
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Sans Arabic',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.s2),
+                      TextField(
+                        controller: reasonCtrl,
+                        maxLines: 2,
+                        decoration: InputDecoration(
+                          hintText: 'enter_conversion_reason'.tr,
+                          hintStyle: TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 13,
+                            color: colors.textTertiary,
+                          ),
+                          filled: true,
+                          fillColor: colors.sunken.withValues(alpha: 0.4),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            borderSide:
+                                BorderSide(color: colors.borderHairline),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            borderSide:
+                                BorderSide(color: colors.borderHairline),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            borderSide:
+                                BorderSide(color: colors.brand, width: 1.5),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                if (validationError != null) ...[
+                  const SizedBox(height: AppSpacing.s3),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.s4),
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSpacing.s3),
+                      decoration: BoxDecoration(
+                        color: colors.error.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(
+                            color: colors.error.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline,
+                              size: 16, color: colors.error),
+                          const SizedBox(width: AppSpacing.s2),
+                          Expanded(
+                            child: Text(
+                              validationError!,
+                              style: TextStyle(
+                                fontFamily: 'IBM Plex Sans Arabic',
+                                fontSize: 12,
+                                color: colors.error,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: AppSpacing.s5),
+
+                // Actions
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    AppSpacing.s4,
+                    0,
+                    AppSpacing.s4,
+                    AppSpacing.s4 + MediaQuery.of(context).padding.bottom,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed:
+                              isLoading ? null : () => Get.back<void>(),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: colors.textSecondary,
+                            side: BorderSide(color: colors.borderHairline),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: AppSpacing.s3),
+                          ),
+                          child: Text('cancel'.tr),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.s3),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton.icon(
+                          onPressed: isLoading
+                              ? null
+                              : () async {
+                                  if (status == 'present' &&
+                                      checkIn != null &&
+                                      checkOut != null &&
+                                      toMinutes(checkOut!) <=
+                                          toMinutes(checkIn!)) {
+                                    setSheetState(() => validationError =
+                                        'check_out_must_be_after_check_in'
+                                            .tr);
+                                    return;
+                                  }
+                                  num? deductionValue;
+                                  if (status == 'absent' &&
+                                      deductionMode != 'auto') {
+                                    deductionValue = num.tryParse(
+                                        deductionValueCtrl.text.trim());
+                                    if (deductionValue == null ||
+                                        deductionValue < 0) {
+                                      setSheetState(() => validationError =
+                                          'deduction_value_invalid'.tr);
+                                      return;
+                                    }
+                                  }
+                                  Get.back<void>();
+                                  final reason = reasonCtrl.text.trim();
+                                  // Holiday / weekly-off are leave "kinds" in
+                                  // the UI but map to their own backend status.
+                                  final isLeave = status == 'leave';
+                                  final apiStatus = isLeave &&
+                                          (leaveType == 'holiday' ||
+                                              leaveType == 'weekly_off')
+                                      ? leaveType
+                                      : status;
+                                  await ctrl.setDayStatus(
+                                    date: date,
+                                    status: apiStatus,
+                                    checkInTime:
+                                        status == 'present' && checkIn != null
+                                            ? toApiTime(checkIn!)
+                                            : null,
+                                    checkOutTime: status == 'present' &&
+                                            checkOut != null
+                                        ? toApiTime(checkOut!)
+                                        : null,
+                                    leaveType: apiStatus == 'leave'
+                                        ? leaveType
+                                        : null,
+                                    reason: reason.isEmpty ? null : reason,
+                                    deductionMode:
+                                        status == 'absent' ? deductionMode : null,
+                                    deductionValue: status == 'absent'
+                                        ? deductionValue
+                                        : null,
+                                  );
+                                },
+                          icon: isLoading
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator.adaptive(
+                                      strokeWidth: 2),
+                                )
+                              : const Icon(Icons.save_outlined, size: 18),
+                          label: Text('save'.tr),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: AppSpacing.s3),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+    isScrollControlled: true,
+  );
+}
+
+class _TimePickerTile extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final TimeOfDay? time;
+  final Color color;
+  final VoidCallback onTap;
+  final VoidCallback? onClear;
+  final String formattedTime;
+  const _TimePickerTile({
+    required this.label,
+    required this.icon,
+    required this.time,
+    required this.color,
+    required this.onTap,
+    required this.onClear,
+    required this.formattedTime,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final hasValue = time != null;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.s3),
+        decoration: BoxDecoration(
+          color: hasValue
+              ? color.withValues(alpha: 0.08)
+              : colors.sunken.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+            color: hasValue
+                ? color.withValues(alpha: 0.3)
+                : colors.borderHairline,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 14, color: color),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 12,
+                      color: colors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (onClear != null)
+                  InkWell(
+                    onTap: onClear,
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                    child: Padding(
+                      padding: const EdgeInsets.all(2),
+                      child: Icon(Icons.close,
+                          size: 14, color: colors.textTertiary),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.s2),
+            Text(
+              formattedTime,
+              style: TextStyle(
+                fontFamily: 'Geist',
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: hasValue ? color : colors.textTertiary,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              hasValue ? '' : 'tap_to_set'.tr,
+              style: TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 11,
+                color: colors.textTertiary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LeaveTypeOption {
+  final String id;
+  final String labelKey;
+  final String descKey;
+  final IconData icon;
+  const _LeaveTypeOption({
+    required this.id,
+    required this.labelKey,
+    required this.descKey,
+    required this.icon,
+  });
+}
+
+String _weekdayLabel(DateTime d) {
+  // DateTime.weekday: 1=Mon ... 7=Sun
+  switch (d.weekday) {
+    case DateTime.saturday:
+      return 'weekday_sat'.tr;
+    case DateTime.sunday:
+      return 'weekday_sun'.tr;
+    case DateTime.monday:
+      return 'weekday_mon'.tr;
+    case DateTime.tuesday:
+      return 'weekday_tue'.tr;
+    case DateTime.wednesday:
+      return 'weekday_wed'.tr;
+    case DateTime.thursday:
+      return 'weekday_thu'.tr;
+    case DateTime.friday:
+      return 'weekday_fri'.tr;
+    default:
+      return '';
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  FINANCIAL TAB                                                           */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+class _FinancialTab extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _FinancialTab({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final f = ctrl.financialCurrent;
+    final firstLoad = ctrl.financialStatus == StatusRequest.loading && f == null;
+
+    return RefreshIndicator(
+      onRefresh: ctrl.loadFinancialMonth,
+      child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.s4),
+        children: [
+          _MonthSwitcher(
+            month: ctrl.financialMonth,
+            onChange: ctrl.changeFinancialMonth,
+            cycleFrom: ctrl.cycleWindowFrom(ctrl.financialMonth),
+            cycleTo: ctrl.cycleWindowTo(ctrl.financialMonth),
+            maxMonth: ctrl.currentCycleLabelMonth(),
+            minMonth: ctrl.minFinancialMonth(),
+          ),
+          const SizedBox(height: AppSpacing.s3),
+          _YearToDateButton(employeeId: ctrl.employeeId),
+          const SizedBox(height: AppSpacing.s4),
+          if (firstLoad)
+            const _FinancialLoading()
+          else ...[
+            _FinancialBreakdownCard(ctrl: ctrl),
+            if (_hasBankInfo(ctrl.employee)) ...[
+              const SizedBox(height: AppSpacing.s4),
+              _BankPaymentCard(ctrl: ctrl),
+            ],
+            const SizedBox(height: AppSpacing.s4),
+            _PayrollActionsCard(ctrl: ctrl),
+            if (f?.statutory?.hasAny ?? false) ...[
+              const SizedBox(height: AppSpacing.s4),
+              _StatutoryCard(ctrl: ctrl),
+            ],
+            if (ctrl.financialLoans.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.s4),
+              _LoansCard(ctrl: ctrl),
+            ],
+            const SizedBox(height: AppSpacing.s4),
+            _FinancialAttendanceCard(ctrl: ctrl),
+            const SizedBox(height: AppSpacing.s4),
+            _AdjustmentActionsCard(ctrl: ctrl),
+            const SizedBox(height: AppSpacing.s4),
+            _AdjustmentListCard(
+              ctrl: ctrl,
+              title: 'deductions_details'.tr,
+              items: f?.deductions ?? const [],
+              emptyKey: 'no_deductions_this_month',
+              isDeduction: true,
+            ),
+            const SizedBox(height: AppSpacing.s4),
+            _AdjustmentListCard(
+              ctrl: ctrl,
+              title: 'bonuses_details'.tr,
+              // Allowances are shown in their own dedicated card; exclude
+              // them here so they don't appear twice.
+              items: (f?.bonuses ?? const [])
+                  .where((a) => a.type != 'allowance')
+                  .toList(),
+              emptyKey: 'no_bonuses_this_month',
+              isDeduction: false,
+            ),
+            const SizedBox(height: AppSpacing.s4),
+            _AllowancesCard(ctrl: ctrl),
+            const SizedBox(height: AppSpacing.s4),
+            _PayslipDownloadButton(ctrl: ctrl),
+            if (ctrl.letterTemplates.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.s4),
+              _LettersCard(ctrl: ctrl),
+            ],
+            if (ctrl.eosb?.enabled ?? false) ...[
+              const SizedBox(height: AppSpacing.s4),
+              _EosbCard(ctrl: ctrl),
+            ],
+            if (f?.rules?.hasAny ?? false) ...[
+              const SizedBox(height: AppSpacing.s4),
+              _RulesCard(ctrl: ctrl),
+            ],
+            if (ctrl.financialHistory.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.s4),
+              _SalaryTrendCard(ctrl: ctrl),
+            ],
+            if (ctrl.salaryHistory.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.s4),
+              _SalaryHistoryCard(ctrl: ctrl),
+            ],
+            const SizedBox(height: AppSpacing.s4),
+            _PayrollHistoryCard(ctrl: ctrl),
+          ],
+          const SizedBox(height: AppSpacing.s7),
+        ],
+      ),
+    );
+  }
+}
+
+class _FinancialLoading extends StatelessWidget {
+  const _FinancialLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s8),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: const Center(child: CircularProgressIndicator.adaptive()),
+    );
+  }
+}
+
+/* ── Payroll status label ─────────────────────────────────────────────── */
+
+String _statusLabel(String s) {
+  switch (s) {
+    case 'approved':
+      return 'status_approved'.tr;
+    case 'paid':
+      return 'status_paid'.tr;
+    default:
+      return 'status_draft'.tr;
+  }
+}
+
+/* ── BREAKDOWN: how the amount is composed ──────────────────────────────── */
+
+class _FinancialBreakdownCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _FinancialBreakdownCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final f = ctrl.financialCurrent;
+    if (f == null) return const SizedBox.shrink();
+    final currency = 'currency_egp'.tr;
+
+    final daysIn = f.daysInMonth;
+    final partial = daysIn > 0 && f.daysElapsed > 0 && f.daysElapsed < daysIn;
+    final resultLabel =
+        partial ? 'salary_to_date_label'.tr : 'net_salary_full_label'.tr;
+    final resultAmount = partial ? f.earnedToDate : f.netSalary;
+    final statusColor = f.status == 'paid'
+        ? colors.success
+        : (f.status == 'approved' ? colors.brand : colors.warning);
+
+    return _SectionCard(
+      icon: Icons.calculate_outlined,
+      title: 'financial_breakdown'.tr,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Headline: the earned (or net) amount, formerly the hero card.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(resultLabel, style: AppTextStyles.bodySecondary(context)),
+                    const SizedBox(height: 2),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: AlignmentDirectional.centerStart,
+                      child: RichText(
+                        text: TextSpan(
+                          text: _money(resultAmount),
+                          style: TextStyle(
+                            fontFamily: 'Geist',
+                            fontSize: 30,
+                            fontWeight: FontWeight.w800,
+                            color: colors.brand,
+                            height: 1.0,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: '  $currency',
+                              style: TextStyle(
+                                fontFamily: 'IBM Plex Sans Arabic',
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: colors.textTertiary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s2, vertical: 3),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                ),
+                child: Text(
+                  _statusLabel(f.status),
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (f.cycleFrom != null && f.cycleTo != null) ...[
+            const SizedBox(height: AppSpacing.s2),
+            _MetaLine(
+              icon: Icons.date_range_outlined,
+              text: '${f.cycleFrom} → ${f.cycleTo}',
+              mono: true,
             ),
-          );
-        },
+          ],
+          if (partial && f.daysElapsed > 0) ...[
+            const SizedBox(height: AppSpacing.s1),
+            _MetaLine(
+              icon: Icons.event_available_outlined,
+              text: 'work_days_value'.trParams({'days': '${f.daysElapsed}'}),
+            ),
+          ],
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+            child: Divider(height: 1, color: colors.borderHairline),
+          ),
+          _BreakdownRow(
+            label: 'base_salary_label'.tr,
+            amount: '${_money(f.baseSalary)} $currency',
+            color: colors.textPrimary,
+          ),
+          if (partial) ...[
+            const SizedBox(height: AppSpacing.s2),
+            _BreakdownRow(
+              label: 'prorated_base_label'.tr,
+              amount: '${_money(f.proratedBaseSalary)} $currency',
+              color: colors.textSecondary,
+              indented: true,
+            ),
+          ],
+          const SizedBox(height: AppSpacing.s2),
+          _BreakdownRow(
+            label: 'total_bonuses_label'.tr,
+            amount: '+${_money(f.totalBonuses)} $currency',
+            color: colors.success,
+          ),
+          const SizedBox(height: AppSpacing.s2),
+          _BreakdownRow(
+            label: 'total_deductions_label'.tr,
+            amount: '-${_money(f.totalDeductions)} $currency',
+            color: colors.error,
+          ),
+          if (partial) ...[
+            const SizedBox(height: AppSpacing.s2),
+            _BreakdownRow(
+              label: 'full_cycle_net_label'.tr,
+              amount: '${_money(f.netSalary)} $currency',
+              color: colors.textTertiary,
+            ),
+          ],
+        ],
       ),
-      isScrollControlled: true,
+    );
+  }
+}
+
+/// A small icon + caption line used under the headline amount.
+class _MetaLine extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final bool mono;
+  const _MetaLine({required this.icon, required this.text, this.mono = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Row(
+      children: [
+        Icon(icon, size: 13, color: colors.textTertiary),
+        const SizedBox(width: AppSpacing.s1),
+        Text(
+          text,
+          style: TextStyle(
+            fontFamily: mono ? 'Geist' : 'IBM Plex Sans Arabic',
+            fontSize: 12,
+            color: colors.textTertiary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BreakdownRow extends StatelessWidget {
+  final String label;
+  final String amount;
+  final Color color;
+  final bool indented;
+  const _BreakdownRow({
+    required this.label,
+    required this.amount,
+    required this.color,
+    this.indented = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Row(
+      children: [
+        if (indented) ...[
+          Icon(Icons.subdirectory_arrow_left_rounded,
+              size: 14, color: colors.textTertiary),
+          const SizedBox(width: AppSpacing.s1),
+        ],
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 13,
+              color: colors.textSecondary,
+            ),
+          ),
+        ),
+        Text(
+          amount,
+          style: TextStyle(
+            fontFamily: 'Geist',
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/* ── PAYROLL APPROVAL ACTIONS (draft → approved → paid + revert) ───────── */
+
+class _PayrollActionsCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _PayrollActionsCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final f = ctrl.financialCurrent;
+    if (f == null) return const SizedBox.shrink();
+
+    // Without a generated slip there's nothing to approve. Show a quiet hint
+    // so the admin understands why no actions are visible.
+    if (f.payrollId == null) {
+      return Container(
+        padding: const EdgeInsets.all(AppSpacing.s3),
+        decoration: BoxDecoration(
+          color: colors.sunken.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: colors.borderHairline),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline, size: 16, color: colors.textTertiary),
+            const SizedBox(width: AppSpacing.s2),
+            Expanded(
+              child: Text(
+                'payroll_no_slip_yet'.tr,
+                style: AppTextStyles.bodySecondary(context),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final loading = ctrl.adjustmentStatus == StatusRequest.loading;
+    final status = f.status;
+    final isDraft = status == 'draft';
+    final isApproved = status == 'approved';
+    final isPaid = status == 'paid';
+
+    Future<void> confirmRevert() async {
+      final ok = await Get.dialog<bool>(
+        AlertDialog(
+          title: Text('payroll_revert_confirm_title'.tr),
+          content: Text('payroll_revert_confirm_message'.tr),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back<bool>(result: false),
+              child: Text('cancel'.tr),
+            ),
+            ElevatedButton(
+              onPressed: () => Get.back<bool>(result: true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colors.warning,
+                foregroundColor: Colors.white,
+              ),
+              child: Text('payroll_revert'.tr),
+            ),
+          ],
+        ),
+      );
+      if (ok == true) await ctrl.revertCurrentSlip();
+    }
+
+    return _SectionCard(
+      icon: Icons.task_alt_outlined,
+      title: 'payroll_actions_title'.tr,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isApproved && (f.approvedAt ?? '').isNotEmpty) ...[
+            _MetaLine(
+              icon: Icons.verified_outlined,
+              text: '${'payroll_approved_at'.tr} ${_adjDate(f.approvedAt)}',
+              mono: true,
+            ),
+            if ((f.approvedByName ?? '').isNotEmpty)
+              _MetaLine(
+                icon: Icons.person_outline,
+                text: 'audit_approved_by'
+                    .trParams({'name': f.approvedByName!}),
+              ),
+          ],
+          if (isPaid && (f.paidAt ?? '').isNotEmpty) ...[
+            _MetaLine(
+              icon: Icons.check_circle_outline,
+              text: '${'payroll_paid_at'.tr} ${_adjDate(f.paidAt)}',
+              mono: true,
+            ),
+            if ((f.approvedByName ?? '').isNotEmpty)
+              _MetaLine(
+                icon: Icons.person_outline,
+                text: 'audit_approved_by'
+                    .trParams({'name': f.approvedByName!}),
+              ),
+          ],
+          if (isApproved || isPaid) const SizedBox(height: AppSpacing.s3),
+          Row(
+            children: [
+              if (isDraft)
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed:
+                        loading ? null : ctrl.approveCurrentSlip,
+                    icon: const Icon(Icons.verified_outlined, size: 18),
+                    label: Text('payroll_approve'.tr),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colors.brand,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.s3),
+                    ),
+                  ),
+                ),
+              if (isApproved) ...[
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed:
+                        loading ? null : () => ctrl.markCurrentSlipPaid(),
+                    icon: const Icon(Icons.payments_outlined, size: 18),
+                    label: Text('payroll_mark_paid'.tr),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colors.success,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.s3),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.s3),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: loading ? null : confirmRevert,
+                    icon: const Icon(Icons.undo, size: 18),
+                    label: Text('payroll_revert'.tr),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colors.warning,
+                      side: BorderSide(color: colors.warning),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.s3),
+                    ),
+                  ),
+                ),
+              ],
+              if (isPaid)
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: loading ? null : confirmRevert,
+                    icon: const Icon(Icons.undo, size: 18),
+                    label: Text('payroll_revert'.tr),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colors.warning,
+                      side: BorderSide(color: colors.warning),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.s3),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/* ── BANK PAYMENT CARD (account info + payment status for this period) ── */
+
+bool _hasBankInfo(EmployeeModel? e) {
+  if (e == null) return false;
+  final any = (e.bankName ?? '').trim().isNotEmpty ||
+      (e.bankAccountNumber ?? '').trim().isNotEmpty ||
+      (e.bankIban ?? '').trim().isNotEmpty;
+  return any;
+}
+
+String _last4(String? s) {
+  final v = (s ?? '').replaceAll(RegExp(r'\s+'), '');
+  if (v.length <= 4) return v;
+  return v.substring(v.length - 4);
+}
+
+class _BankPaymentCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _BankPaymentCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final e = ctrl.employee;
+    final f = ctrl.financialCurrent;
+    if (e == null) return const SizedBox.shrink();
+
+    final bankName = (e.bankName ?? '').trim();
+    final accountLast4 = _last4(e.bankAccountNumber);
+    final ibanLast4 = _last4(e.bankIban);
+    final isPaid = f?.status == 'paid' && (f?.paidAt ?? '').isNotEmpty;
+
+    return _SectionCard(
+      icon: Icons.account_balance_wallet_outlined,
+      title: 'bank_card_title'.tr,
+      trailing: Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: AppSpacing.s2, vertical: 3),
+        decoration: BoxDecoration(
+          color: (isPaid ? colors.success : colors.warning)
+              .withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(AppRadius.full),
+        ),
+        child: Text(
+          isPaid
+              ? 'bank_card_paid_on'.trParams({'date': _adjDate(f!.paidAt)})
+              : 'bank_card_pending_pay'.tr,
+          style: TextStyle(
+            fontFamily: 'IBM Plex Sans Arabic',
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: isPaid ? colors.success : colors.warning,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (bankName.isNotEmpty)
+            Row(
+              children: [
+                Icon(Icons.account_balance, size: 16, color: colors.brand),
+                const SizedBox(width: AppSpacing.s2),
+                Expanded(
+                  child: Text(
+                    bankName,
+                    style: const TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          if (accountLast4.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.s2),
+            _MetaLine(
+              icon: Icons.credit_card,
+              text:
+                  'bank_card_account_masked'.trParams({'last4': accountLast4}),
+              mono: true,
+            ),
+          ],
+          if (ibanLast4.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.s1),
+            _MetaLine(
+              icon: Icons.qr_code,
+              text: 'bank_card_iban_masked'.trParams({'last4': ibanLast4}),
+              mono: true,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/* ── STATUTORY: social insurance / income tax (compliance transparency) ── */
+
+class _StatutoryCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _StatutoryCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final s = ctrl.financialCurrent?.statutory;
+    if (s == null) return const SizedBox.shrink();
+    final currency = 'currency_egp'.tr;
+
+    return _SectionCard(
+      icon: Icons.gavel_outlined,
+      title: 'statutory_title'.tr,
+      child: Column(
+        children: [
+          if (s.insuranceEmployee > 0)
+            _BreakdownRow(
+              label: 'statutory_insurance_employee'.tr,
+              amount: '-${_money(s.insuranceEmployee)} $currency',
+              color: colors.error,
+            ),
+          if (s.incomeTax > 0) ...[
+            if (s.insuranceEmployee > 0) const SizedBox(height: AppSpacing.s2),
+            _BreakdownRow(
+              label: 'statutory_income_tax'.tr,
+              amount: '-${_money(s.incomeTax)} $currency',
+              color: colors.error,
+            ),
+          ],
+          if (s.taxableIncome > 0) ...[
+            const SizedBox(height: AppSpacing.s2),
+            _BreakdownRow(
+              label: 'statutory_taxable_income'.tr,
+              amount: '${_money(s.taxableIncome)} $currency',
+              color: colors.textTertiary,
+            ),
+          ],
+          if (s.insuranceEmployer > 0) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+              child: Divider(height: 1, color: colors.borderHairline),
+            ),
+            _BreakdownRow(
+              label: 'statutory_insurance_employer'.tr,
+              amount: '${_money(s.insuranceEmployer)} $currency',
+              color: colors.textTertiary,
+            ),
+            const SizedBox(height: AppSpacing.s1),
+            Row(
+              children: [
+                Icon(Icons.info_outline,
+                    size: 12, color: colors.textTertiary),
+                const SizedBox(width: AppSpacing.s1),
+                Expanded(
+                  child: Text(
+                    'statutory_employer_note'.tr,
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 11,
+                      color: colors.textTertiary,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/* ── LOANS & ADVANCES (active balances + next due) ──────────────────────── */
+
+class _LoansCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _LoansCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final loans = ctrl.financialLoans;
+    final currency = 'currency_egp'.tr;
+    final totalRemaining =
+        loans.fold<double>(0, (sum, l) => sum + l.remainingAmount);
+
+    return _SectionCard(
+      icon: Icons.account_balance_outlined,
+      title: 'loans_title'.tr,
+      trailing: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.s2, vertical: 3),
+        decoration: BoxDecoration(
+          color: colors.brand.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(AppRadius.full),
+        ),
+        child: Text(
+          '${_money(totalRemaining)} $currency',
+          style: TextStyle(
+            fontFamily: 'Geist',
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: colors.brand,
+          ),
+        ),
+      ),
+      child: Column(
+        children: [
+          for (var i = 0; i < loans.length; i++) ...[
+            if (i > 0) const SizedBox(height: AppSpacing.s2),
+            _LoanTile(loan: loans[i]),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _LoanTile extends StatelessWidget {
+  final LoanSummary loan;
+  const _LoanTile({required this.loan});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final currency = 'currency_egp'.tr;
+    final progress = loan.installmentsCount > 0
+        ? (loan.installmentsPaid / loan.installmentsCount).clamp(0.0, 1.0)
+        : 0.0;
+    final isPending = loan.status == 'pending';
+    final statusColor = isPending ? colors.warning : colors.brand;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s3),
+      decoration: BoxDecoration(
+        color: colors.sunken.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s2, vertical: 2),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                child: Text(
+                  loan.typeLabel,
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 11,
+                    color: statusColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s2),
+              if (isPending)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s2, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: colors.warning.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                  child: Text(
+                    loan.statusLabel,
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 10,
+                      color: colors.warning,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              const Spacer(),
+              Text(
+                '${_money(loan.totalAmount)} $currency',
+                style: TextStyle(
+                  fontFamily: 'Geist',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: colors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          if ((loan.reason ?? '').isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.s1),
+            Text(
+              loan.reason!,
+              style: AppTextStyles.sm(context),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          const SizedBox(height: AppSpacing.s3),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.full),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 5,
+              backgroundColor: colors.sunken,
+              valueColor: AlwaysStoppedAnimation<Color>(colors.brand),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s2),
+          Row(
+            children: [
+              Text(
+                'loan_installments_progress'.trParams({
+                  'paid': '${loan.installmentsPaid}',
+                  'total': '${loan.installmentsCount}',
+                }),
+                style: AppTextStyles.xs(context),
+              ),
+              const Spacer(),
+              if (loan.nextDueMonth != null && !isPending)
+                Text(
+                  'loan_next_due'
+                      .trParams({'month': loan.nextDueMonth!}),
+                  style: TextStyle(
+                    fontFamily: 'Geist',
+                    fontSize: 11,
+                    color: colors.textTertiary,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s3),
+          Row(
+            children: [
+              Expanded(
+                child: _LoanMini(
+                  label: 'loan_paid_label'.tr,
+                  value: '${_money(loan.paidAmount)} $currency',
+                  color: colors.success,
+                ),
+              ),
+              _MetricDivider(color: colors.borderHairline),
+              Expanded(
+                child: _LoanMini(
+                  label: 'loan_remaining_label'.tr,
+                  value: '${_money(loan.remainingAmount)} $currency',
+                  color: colors.error,
+                ),
+              ),
+              _MetricDivider(color: colors.borderHairline),
+              Expanded(
+                child: _LoanMini(
+                  label: 'loan_installment_label'.tr,
+                  value: '${_money(loan.installmentAmount)} $currency',
+                  color: colors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoanMini extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  const _LoanMini(
+      {required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontFamily: 'Geist',
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'IBM Plex Sans Arabic',
+            fontSize: 10,
+            color: colors.textTertiary,
+          ),
+          maxLines: 1,
+        ),
+      ],
+    );
+  }
+}
+
+/* ── ATTENDANCE within the pay period ───────────────────────────────────── */
+
+class _FinancialAttendanceCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _FinancialAttendanceCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final f = ctrl.financialCurrent;
+    if (f == null) return const SizedBox.shrink();
+
+    final total = f.attPresent + f.attLate + f.attAbsent + f.attLeave;
+    final hasHours = f.attWorkedMinutes > 0 ||
+        f.attOvertimeMinutes > 0 ||
+        f.attLateMinutes > 0;
+
+    return _SectionCard(
+      icon: Icons.event_note_outlined,
+      title: 'attendance_in_period'.tr,
+      child: total == 0 && !hasHours
+          ? Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+              child: Center(
+                child: Text('no_attendance_in_period'.tr,
+                    style: AppTextStyles.bodySecondary(context)),
+              ),
+            )
+          : Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _SummaryChip(
+                        count: '${f.attPresent}',
+                        label: 'attendance_present_short'.tr,
+                        color: colors.success,
+                        icon: Icons.check_circle_outline,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.s2),
+                    Expanded(
+                      child: _SummaryChip(
+                        count: '${f.attLate}',
+                        label: 'attendance_late_short'.tr,
+                        color: colors.warning,
+                        icon: Icons.schedule,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.s2),
+                    Expanded(
+                      child: _SummaryChip(
+                        count: '${f.attAbsent}',
+                        label: 'attendance_absent_short'.tr,
+                        color: colors.error,
+                        icon: Icons.cancel_outlined,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.s2),
+                    Expanded(
+                      child: _SummaryChip(
+                        count: '${f.attLeave}',
+                        label: 'attendance_leave_short'.tr,
+                        color: colors.accentWarm,
+                        icon: Icons.beach_access_outlined,
+                      ),
+                    ),
+                  ],
+                ),
+                if (hasHours) ...[
+                  const SizedBox(height: AppSpacing.s3),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.s3),
+                    decoration: BoxDecoration(
+                      color: colors.sunken.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _MetricMini(
+                            icon: Icons.work_history_outlined,
+                            label: 'worked_hours_label'.tr,
+                            value: _fmtHM(f.attWorkedMinutes),
+                            color: colors.brand,
+                          ),
+                        ),
+                        _MetricDivider(color: colors.borderHairline),
+                        Expanded(
+                          child: _MetricMini(
+                            icon: Icons.trending_up,
+                            label: 'overtime_hours_label'.tr,
+                            value: _fmtHM(f.attOvertimeMinutes),
+                            color: colors.success,
+                          ),
+                        ),
+                        _MetricDivider(color: colors.borderHairline),
+                        Expanded(
+                          child: _MetricMini(
+                            icon: Icons.history,
+                            label: 'late_time_label'.tr,
+                            value: _fmtHM(f.attLateMinutes),
+                            color: colors.warning,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+    );
+  }
+}
+
+class _MetricMini extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+  const _MetricMini({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Column(
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontFamily: 'Geist',
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'IBM Plex Sans Arabic',
+            fontSize: 10,
+            color: colors.textTertiary,
+          ),
+          maxLines: 1,
+        ),
+      ],
+    );
+  }
+}
+
+class _MetricDivider extends StatelessWidget {
+  final Color color;
+  const _MetricDivider({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 34,
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.s2),
+      color: color,
+    );
+  }
+}
+
+/* ── Reusable section card shell ────────────────────────────────────────── */
+
+class _SectionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final Widget child;
+  final Widget? trailing;
+  const _SectionCard({
+    required this.icon,
+    required this.title,
+    required this.child,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s4),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: colors.brand),
+              const SizedBox(width: AppSpacing.s2),
+              Expanded(
+                child: Text(title, style: AppTextStyles.h3(context)),
+              ),
+              ?trailing,
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s3),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+/* ── Add deduction / bonus ──────────────────────────────────────────────── */
+
+class _AdjustmentActionsCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _AdjustmentActionsCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () =>
+                _showAdjustmentSheet(context, ctrl, isDeduction: true),
+            icon: Icon(Icons.remove_circle_outline,
+                size: 18, color: colors.error),
+            label: Text('add_deduction'.tr),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: colors.error,
+              side: BorderSide(color: colors.error),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.s3),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () =>
+                _showAdjustmentSheet(context, ctrl, isDeduction: false),
+            icon:
+                Icon(Icons.add_circle_outline, size: 18, color: colors.success),
+            label: Text('add_bonus'.tr),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: colors.success,
+              side: BorderSide(color: colors.success),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+void _showAdjustmentSheet(
+  BuildContext context,
+  EmployeeDetailController ctrl, {
+  required bool isDeduction,
+  FinancialAdjustment? existing,
+}) {
+  final isEdit = existing != null && existing.isManual;
+  final amountCtrl = TextEditingController(
+    text: isEdit
+        ? (existing.amount == existing.amount.roundToDouble()
+            ? existing.amount.toInt().toString()
+            : existing.amount.toString())
+        : '',
+  );
+  final reasonCtrl =
+      TextEditingController(text: isEdit ? existing.description : '');
+  final formKey = GlobalKey<FormState>();
+
+  Get.bottomSheet<void>(
+    StatefulBuilder(
+      builder: (sheetCtx, setSheetState) {
+        final colors = AppColors.of(context);
+        final isLoading = ctrl.adjustmentStatus == StatusRequest.loading;
+        final accent = isDeduction ? colors.error : colors.success;
+
+        return Container(
+          padding: EdgeInsets.only(
+            left: AppSpacing.s4,
+            right: AppSpacing.s4,
+            top: AppSpacing.s4,
+            bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s4,
+          ),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.lg),
+            ),
+          ),
+          child: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: AppSpacing.s3),
+                      decoration: BoxDecoration(
+                        color: colors.borderHairline,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.s2),
+                        decoration: BoxDecoration(
+                          color: accent.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                        child: Icon(
+                          isDeduction
+                              ? Icons.remove_circle_outline
+                              : Icons.add_circle_outline,
+                          color: accent,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.s3),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isEdit
+                                  ? 'adjustment_edit_title'.tr
+                                  : (isDeduction
+                                      ? 'add_deduction'.tr
+                                      : 'add_bonus'.tr),
+                              style: AppTextStyles.h2(context),
+                            ),
+                            Text(ctrl.employee?.name ?? '',
+                                style: AppTextStyles.bodySecondary(context)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.s4),
+                  TextFormField(
+                    controller: amountCtrl,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      labelText: 'amount'.tr,
+                      hintText: 'enter_amount'.tr,
+                      suffixText: 'currency_egp'.tr,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                    ),
+                    style: const TextStyle(fontFamily: 'Geist', fontSize: 16),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return 'amount_required'.tr;
+                      }
+                      final parsed = num.tryParse(v);
+                      if (parsed == null || parsed <= 0) {
+                        return 'amount_must_be_positive'.tr;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.s3),
+                  TextFormField(
+                    controller: reasonCtrl,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      labelText: 'reason'.tr,
+                      hintText: 'enter_reason'.tr,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return 'reason_required'.tr;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.s6),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: isLoading
+                          ? null
+                          : () async {
+                              if (!formKey.currentState!.validate()) return;
+                              final amount = num.parse(amountCtrl.text);
+                              final reason = reasonCtrl.text.trim();
+                              Get.back<void>();
+                              if (isEdit) {
+                                await ctrl.updateManualAdjustment(
+                                  id: existing.id!,
+                                  isDeduction: isDeduction,
+                                  amount: amount,
+                                  reason: reason,
+                                );
+                              } else if (isDeduction) {
+                                await ctrl.addManualDeduction(
+                                    amount: amount, reason: reason);
+                              } else {
+                                await ctrl.addManualBonus(
+                                    amount: amount, reason: reason);
+                              }
+                            },
+                      icon: isLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator.adaptive(
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.save_outlined),
+                      label: Padding(
+                        padding:
+                            const EdgeInsets.symmetric(vertical: AppSpacing.s2),
+                        child: Text('save'.tr),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accent,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    ),
+    isScrollControlled: true,
+  );
+}
+
+/* ── Deduction / bonus detail lists ─────────────────────────────────────── */
+
+class _AdjustmentListCard extends StatefulWidget {
+  final EmployeeDetailController ctrl;
+  final String title;
+  final List<FinancialAdjustment> items;
+  final String emptyKey;
+  final bool isDeduction;
+  const _AdjustmentListCard({
+    required this.ctrl,
+    required this.title,
+    required this.items,
+    required this.emptyKey,
+    required this.isDeduction,
+  });
+
+  @override
+  State<_AdjustmentListCard> createState() => _AdjustmentListCardState();
+}
+
+class _AdjustmentListCardState extends State<_AdjustmentListCard> {
+  /// Show the search bar once the list gets unwieldy; below this we just
+  /// render the rows directly.
+  static const int _searchThreshold = 8;
+  String _query = '';
+
+  List<FinancialAdjustment> _filtered() {
+    if (_query.trim().isEmpty) return widget.items;
+    final q = _query.trim().toLowerCase();
+    return widget.items.where((a) {
+      final desc = a.description.toLowerCase();
+      final type = a.typeLabel.toLowerCase();
+      final amt = a.amount.toString();
+      return desc.contains(q) || type.contains(q) || amt.contains(q);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final accent = widget.isDeduction ? colors.error : colors.success;
+    final currency = 'currency_egp'.tr;
+    final all = widget.items;
+    final showSearch = all.length > _searchThreshold;
+    final visible = showSearch ? _filtered() : all;
+    final total = all.fold<double>(0, (sum, a) => sum + a.amount);
+
+    Widget body;
+    if (all.isEmpty) {
+      body = Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+        child: Center(
+          child: Text(widget.emptyKey.tr,
+              style: AppTextStyles.bodySecondary(context)),
+        ),
+      );
+    } else {
+      body = Column(
+        children: [
+          if (showSearch) ...[
+            TextField(
+              onChanged: (v) => setState(() => _query = v),
+              decoration: InputDecoration(
+                hintText: 'adjustment_search_hint'.tr,
+                prefixIcon:
+                    Icon(Icons.search, size: 18, color: colors.textTertiary),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s3, vertical: AppSpacing.s2),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+              ),
+              style:
+                  const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 13),
+            ),
+            const SizedBox(height: AppSpacing.s2),
+          ],
+          if (visible.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+              child: Center(
+                child: Text('adjustment_search_no_match'.tr,
+                    style: AppTextStyles.bodySecondary(context)),
+              ),
+            )
+          else
+            for (var i = 0; i < visible.length; i++) ...[
+              if (i > 0) const SizedBox(height: AppSpacing.s2),
+              _AdjustmentTile(
+                ctrl: widget.ctrl,
+                adjustment: visible[i],
+                color: accent,
+                sign: widget.isDeduction ? '-' : '+',
+              ),
+            ],
+        ],
+      );
+    }
+
+    return _SectionCard(
+      icon: widget.isDeduction
+          ? Icons.remove_circle_outline
+          : Icons.add_circle_outline,
+      title: widget.title,
+      trailing: all.isEmpty
+          ? null
+          : Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s2, vertical: 3),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppRadius.full),
+              ),
+              child: Text(
+                '${widget.isDeduction ? '-' : '+'}${_money(total)} $currency',
+                style: TextStyle(
+                  fontFamily: 'Geist',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: accent,
+                ),
+              ),
+            ),
+      child: body,
+    );
+  }
+}
+
+class _AdjustmentTile extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  final FinancialAdjustment adjustment;
+  final Color color;
+  final String sign;
+  const _AdjustmentTile({
+    required this.ctrl,
+    required this.adjustment,
+    required this.color,
+    required this.sign,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        onTap: () => _showAdjustmentDetailSheet(
+          context,
+          ctrl,
+          adjustment,
+          color: color,
+          sign: sign,
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.s3),
+          decoration: BoxDecoration(
+            color: colors.sunken.withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s2, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                child: Text(
+                  adjustment.typeLabel,
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 11,
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      adjustment.description,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (_adjDate(adjustment.date).isNotEmpty)
+                      Text(
+                        _adjDate(adjustment.date),
+                        style: TextStyle(
+                          fontFamily: 'Geist',
+                          fontSize: 11,
+                          color: colors.textTertiary,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s2),
+              Text(
+                '$sign${_money(adjustment.amount)} ${'currency_egp'.tr}',
+                style: TextStyle(
+                  fontFamily: 'Geist',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s1),
+              Icon(Icons.chevron_left,
+                  size: 18, color: colors.textTertiary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Normalises an adjustment date/time string to a plain `YYYY-MM-DD` (or the
+/// `YYYY-MM` month label) for display, dropping any time component.
+String _adjDate(String? raw) {
+  final s = (raw ?? '').trim();
+  if (s.isEmpty) return '';
+  if (s.length >= 10 && s[4] == '-' && s[7] == '-') return s.substring(0, 10);
+  return s;
+}
+
+/// Detail bottom sheet for a single deduction / bonus line, showing its full
+/// data (type, amount, date, and the description / reason).
+void _showAdjustmentDetailSheet(
+  BuildContext context,
+  EmployeeDetailController ctrl,
+  FinancialAdjustment adjustment, {
+  required Color color,
+  required String sign,
+}) {
+  final colors = AppColors.of(context);
+  final isDeduction = sign == '-';
+
+  Get.bottomSheet<void>(
+    Container(
+      padding: EdgeInsets.only(
+        left: AppSpacing.s4,
+        right: AppSpacing.s4,
+        top: AppSpacing.s4,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s5,
+      ),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: AppSpacing.s4),
+              decoration: BoxDecoration(
+                color: colors.borderHairline,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.s2),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                child: Icon(
+                  isDeduction
+                      ? Icons.remove_circle_outline
+                      : Icons.add_circle_outline,
+                  color: color,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isDeduction
+                          ? 'deduction_detail_title'.tr
+                          : 'bonus_detail_title'.tr,
+                      style: AppTextStyles.h2(context),
+                    ),
+                    Text(adjustment.typeLabel,
+                        style: AppTextStyles.bodySecondary(context)),
+                  ],
+                ),
+              ),
+              Text(
+                '$sign${_money(adjustment.amount)} ${'currency_egp'.tr}',
+                style: TextStyle(
+                  fontFamily: 'Geist',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s4),
+          _DetailRow(
+            label: 'adjustment_type_label'.tr,
+            value: adjustment.typeLabel,
+          ),
+          _DetailRow(
+            label: 'adjustment_amount_label'.tr,
+            value: '${_money(adjustment.amount)} ${'currency_egp'.tr}',
+            valueColor: color,
+          ),
+          if (_adjDate(adjustment.date).isNotEmpty)
+            _DetailRow(
+              label: 'adjustment_date_label'.tr,
+              value: _adjDate(adjustment.date),
+              mono: true,
+            ),
+          if (adjustment.description.trim().isNotEmpty)
+            _DetailRow(
+              label: 'adjustment_description_label'.tr,
+              value: adjustment.description,
+            ),
+          if ((adjustment.createdByName ?? '').isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.s1),
+            _MetaLine(
+              icon: Icons.person_outline,
+              text: 'audit_added_by'
+                  .trParams({'name': adjustment.createdByName!}),
+            ),
+          ],
+          if (adjustment.isManual) ...[
+            const SizedBox(height: AppSpacing.s4),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Get.back<void>();
+                      _showAdjustmentSheet(
+                        context, ctrl,
+                        isDeduction: isDeduction,
+                        existing: adjustment,
+                      );
+                    },
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: Text('adjustment_edit'.tr),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colors.brand,
+                      side: BorderSide(color: colors.brand),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.s3),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final confirmed = await Get.dialog<bool>(
+                        AlertDialog(
+                          title: Text('adjustment_delete_confirm_title'.tr),
+                          content:
+                              Text('adjustment_delete_confirm_message'.tr),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Get.back<bool>(result: false),
+                              child: Text('cancel'.tr),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => Get.back<bool>(result: true),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: colors.error,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: Text('adjustment_delete'.tr),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed == true) {
+                        Get.back<void>();
+                        await ctrl.deleteManualAdjustment(
+                          id: adjustment.id!,
+                          isDeduction: isDeduction,
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.delete_outline, size: 18),
+                    label: Text('adjustment_delete'.tr),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colors.error,
+                      side: BorderSide(color: colors.error),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    ),
+    isScrollControlled: true,
+  );
+}
+
+class _DetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? valueColor;
+  final bool mono;
+  const _DetailRow({
+    required this.label,
+    required this.value,
+    this.valueColor,
+    this.mono = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 96,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 13,
+                color: colors.textTertiary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontFamily: mono ? 'Geist' : 'IBM Plex Sans Arabic',
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: valueColor ?? colors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/* ── Payslip PDF download (generated server-side by PayslipPdfService) ──── */
+
+class _PayslipDownloadButton extends StatefulWidget {
+  final EmployeeDetailController ctrl;
+  const _PayslipDownloadButton({required this.ctrl});
+
+  @override
+  State<_PayslipDownloadButton> createState() => _PayslipDownloadButtonState();
+}
+
+class _PayslipDownloadButtonState extends State<_PayslipDownloadButton> {
+  bool _busy = false;
+
+  Future<void> _download() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    final path = await widget.ctrl.downloadPayslipPdf();
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (path == null) return;
+    final colors = AppColors.of(context);
+    // url_launcher can open file:// URIs on iOS/desktop; on Android the OS
+    // file viewer may handle it depending on the device. Always show the saved
+    // path so the user can locate the file manually as a fallback.
+    Get.snackbar(
+      'done'.tr,
+      '${'payslip_saved_to'.tr} $path',
+      snackPosition: SnackPosition.BOTTOM,
+      duration: const Duration(seconds: 6),
+      mainButton: TextButton(
+        onPressed: () => launchUrl(Uri.file(path)),
+        child: Text('payslip_open'.tr,
+            style: TextStyle(
+              color: colors.brand,
+              fontWeight: FontWeight.w700,
+            )),
+      ),
     );
   }
 
-  String _warningTypeLabel(String type) {
-    switch (type) {
-      case 'verbal':
-        return 'warning_type_verbal'.tr;
-      case 'written':
-        return 'warning_type_written'.tr;
-      case 'final':
-        return 'warning_type_final'.tr;
-      default:
-        return type;
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: _busy ? null : _download,
+        icon: _busy
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator.adaptive(strokeWidth: 2),
+              )
+            : const Icon(Icons.picture_as_pdf_outlined, size: 18),
+        label: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
+          child: Text('payslip_download_pdf'.tr),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: colors.brand,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/* ── ALLOWANCES (recurring monthly: housing, transport, food…) ──────────── */
+
+class _AllowancesCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _AllowancesCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final items = ctrl.allowances;
+    final currency = 'currency_egp'.tr;
+    final now = DateTime.now();
+    final currentMonth =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}';
+    final activeTotal = items
+        .where((a) => a.isActive(currentMonth))
+        .fold<double>(0, (s, a) => s + a.amount);
+
+    return _SectionCard(
+      icon: Icons.workspace_premium_outlined,
+      title: 'allowances_title'.tr,
+      trailing: items.isEmpty
+          ? IconButton(
+              onPressed: () => _showAllowanceSheet(context, ctrl),
+              icon: Icon(Icons.add, color: colors.brand),
+              tooltip: 'allowance_add'.tr,
+              visualDensity: VisualDensity.compact,
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s2, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: colors.success.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                  child: Text(
+                    '+${_money(activeTotal)} $currency',
+                    style: TextStyle(
+                      fontFamily: 'Geist',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: colors.success,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => _showAllowanceSheet(context, ctrl),
+                  icon: Icon(Icons.add, color: colors.brand),
+                  tooltip: 'allowance_add'.tr,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
+      child: items.isEmpty
+          ? Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+              child: Center(
+                child: Text('allowance_empty'.tr,
+                    style: AppTextStyles.bodySecondary(context)),
+              ),
+            )
+          : Column(
+              children: [
+                for (var i = 0; i < items.length; i++) ...[
+                  if (i > 0) const SizedBox(height: AppSpacing.s2),
+                  _AllowanceTile(
+                    ctrl: ctrl,
+                    allowance: items[i],
+                    currentMonth: currentMonth,
+                  ),
+                ],
+              ],
+            ),
+    );
+  }
+}
+
+class _AllowanceTile extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  final Allowance allowance;
+  final String currentMonth;
+  const _AllowanceTile({
+    required this.ctrl,
+    required this.allowance,
+    required this.currentMonth,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final currency = 'currency_egp'.tr;
+    final active = allowance.isActive(currentMonth);
+    final future = allowance.startMonth.compareTo(currentMonth) > 0;
+    final (badge, badgeColor) = future
+        ? ('allowance_future_badge'.tr, colors.warning)
+        : (active
+            ? ('allowance_active_badge'.tr, colors.success)
+            : ('allowance_ended_badge'.tr, colors.textTertiary));
+    final periodText = 'allowance_period'.trParams({
+      'from': allowance.startMonth,
+      'to': allowance.endMonth ?? 'allowance_end_month_ongoing'.tr,
+    });
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        onTap: () =>
+            _showAllowanceSheet(context, ctrl, existing: allowance),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.s3),
+          decoration: BoxDecoration(
+            color: colors.sunken.withValues(alpha: 0.35),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s2, vertical: 2),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                child: Text(
+                  badge,
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: badgeColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      allowance.displayLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      periodText,
+                      style: TextStyle(
+                        fontFamily: 'Geist',
+                        fontSize: 11,
+                        color: colors.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s2),
+              Text(
+                '+${_money(allowance.amount)} $currency',
+                style: TextStyle(
+                  fontFamily: 'Geist',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: active ? colors.success : colors.textTertiary,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s1),
+              Icon(Icons.chevron_left, size: 18, color: colors.textTertiary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+void _showAllowanceSheet(
+  BuildContext context,
+  EmployeeDetailController ctrl, {
+  Allowance? existing,
+}) {
+  final isEdit = existing != null;
+  final amountCtrl = TextEditingController(
+    text: isEdit
+        ? (existing.amount == existing.amount.roundToDouble()
+            ? existing.amount.toInt().toString()
+            : existing.amount.toString())
+        : '',
+  );
+  final labelCtrl =
+      TextEditingController(text: isEdit ? (existing.label ?? '') : '');
+  String type = isEdit ? existing.type : 'housing';
+  String startMonth = isEdit
+      ? existing.startMonth
+      : '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}';
+  String? endMonth = isEdit ? existing.endMonth : null;
+  final formKey = GlobalKey<FormState>();
+
+  const knownTypes = ['housing', 'transport', 'food', 'communication', 'other'];
+
+  Future<String?> pickMonth(BuildContext c, {String? initial}) async {
+    final now = DateTime.now();
+    DateTime init = now;
+    if (initial != null && RegExp(r'^\d{4}-\d{2}$').hasMatch(initial)) {
+      final p = initial.split('-');
+      init = DateTime(int.parse(p[0]), int.parse(p[1]));
     }
+    final picked = await showDatePicker(
+      context: c,
+      initialDate: init,
+      firstDate: DateTime(now.year - 5),
+      lastDate: DateTime(now.year + 5),
+      helpText: 'allowance_select_month'.tr,
+      initialDatePickerMode: DatePickerMode.year,
+    );
+    if (picked == null) return null;
+    return '${picked.year}-${picked.month.toString().padLeft(2, '0')}';
+  }
+
+  Get.bottomSheet<void>(
+    StatefulBuilder(
+      builder: (sheetCtx, setSheetState) {
+        final colors = AppColors.of(context);
+        final loading = ctrl.adjustmentStatus == StatusRequest.loading;
+
+        return Container(
+          padding: EdgeInsets.only(
+            left: AppSpacing.s4,
+            right: AppSpacing.s4,
+            top: AppSpacing.s4,
+            bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s4,
+          ),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.lg),
+            ),
+          ),
+          child: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: AppSpacing.s3),
+                      decoration: BoxDecoration(
+                        color: colors.borderHairline,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.s2),
+                        decoration: BoxDecoration(
+                          color: colors.brand.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                        child: Icon(Icons.workspace_premium_outlined,
+                            color: colors.brand, size: 20),
+                      ),
+                      const SizedBox(width: AppSpacing.s3),
+                      Expanded(
+                        child: Text(
+                          isEdit
+                              ? 'allowance_edit'.tr
+                              : 'allowance_add'.tr,
+                          style: AppTextStyles.h2(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.s4),
+                  Wrap(
+                    spacing: AppSpacing.s2,
+                    runSpacing: AppSpacing.s2,
+                    children: [
+                      for (final t in knownTypes)
+                        ChoiceChip(
+                          label: Text({
+                            'housing': 'allowance_type_housing'.tr,
+                            'transport': 'allowance_type_transport'.tr,
+                            'food': 'allowance_type_food'.tr,
+                            'communication': 'allowance_type_communication'.tr,
+                            'other': 'allowance_type_other'.tr,
+                          }[t]!),
+                          selected: type == t,
+                          onSelected: (_) =>
+                              setSheetState(() => type = t),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.s3),
+                  TextFormField(
+                    controller: amountCtrl,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    autofocus: !isEdit,
+                    decoration: InputDecoration(
+                      labelText: 'amount'.tr,
+                      suffixText: 'currency_egp'.tr,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                    ),
+                    style: const TextStyle(fontFamily: 'Geist', fontSize: 16),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return 'amount_required'.tr;
+                      }
+                      final parsed = num.tryParse(v);
+                      if (parsed == null || parsed <= 0) {
+                        return 'amount_must_be_positive'.tr;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.s3),
+                  TextFormField(
+                    controller: labelCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'allowance_label_label'.tr,
+                      hintText: 'allowance_label_hint'.tr,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s3),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final picked = await pickMonth(sheetCtx,
+                                initial: startMonth);
+                            if (picked != null) {
+                              setSheetState(() => startMonth = picked);
+                            }
+                          },
+                          icon: const Icon(Icons.calendar_today, size: 16),
+                          label: Text(
+                            '${'allowance_start_month'.tr}: $startMonth',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: AppSpacing.s3,
+                                horizontal: AppSpacing.s3),
+                            alignment: AlignmentDirectional.centerStart,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.s2),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final picked = await pickMonth(sheetCtx,
+                                initial: endMonth ?? startMonth);
+                            if (picked != null) {
+                              setSheetState(() => endMonth = picked);
+                            }
+                          },
+                          icon: const Icon(Icons.event_outlined, size: 16),
+                          label: Text(
+                            endMonth == null
+                                ? 'allowance_end_month_optional'.tr
+                                : '${'allowance_end_month_optional'.tr}: $endMonth',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: AppSpacing.s3,
+                                horizontal: AppSpacing.s3),
+                            alignment: AlignmentDirectional.centerStart,
+                          ),
+                        ),
+                      ),
+                      if (endMonth != null)
+                        IconButton(
+                          tooltip: 'allowance_end_month_ongoing'.tr,
+                          icon: const Icon(Icons.close, size: 18),
+                          onPressed: () =>
+                              setSheetState(() => endMonth = null),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.s5),
+                  Row(
+                    children: [
+                      if (isEdit) ...[
+                        OutlinedButton.icon(
+                          onPressed: loading
+                              ? null
+                              : () async {
+                                  final ok = await Get.dialog<bool>(
+                                    AlertDialog(
+                                      title: Text(
+                                          'allowance_delete_confirm_title'.tr),
+                                      content: Text(
+                                          'allowance_delete_confirm_message'
+                                              .tr),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Get.back<bool>(result: false),
+                                          child: Text('cancel'.tr),
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () =>
+                                              Get.back<bool>(result: true),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: colors.error,
+                                            foregroundColor: Colors.white,
+                                          ),
+                                          child:
+                                              Text('adjustment_delete'.tr),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (ok == true) {
+                                    Get.back<void>();
+                                    await ctrl.deleteAllowance(existing.id);
+                                  }
+                                },
+                          icon: Icon(Icons.delete_outline,
+                              color: colors.error, size: 18),
+                          label: Text('adjustment_delete'.tr,
+                              style: TextStyle(color: colors.error)),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: colors.error),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.s2),
+                      ],
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: loading
+                              ? null
+                              : () async {
+                                  if (!formKey.currentState!.validate()) {
+                                    return;
+                                  }
+                                  final amount = num.parse(amountCtrl.text);
+                                  final label = labelCtrl.text.trim();
+                                  Get.back<void>();
+                                  await ctrl.saveAllowance(
+                                    id: existing?.id,
+                                    type: type,
+                                    amount: amount,
+                                    startMonth: startMonth,
+                                    endMonth: endMonth,
+                                    label: label.isEmpty ? null : label,
+                                  );
+                                },
+                          icon: loading
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator.adaptive(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.save_outlined),
+                          label: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: AppSpacing.s2),
+                            child: Text('save'.tr),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colors.brand,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    ),
+    isScrollControlled: true,
+  );
+}
+
+/* ── LETTERS & CERTIFICATES (one-tap issue + open PDF) ───────────────────── */
+
+class _LettersCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _LettersCard({required this.ctrl});
+
+  /// Picks an icon for the template based on its key (defaults gracefully for
+  /// custom templates the admin creates later).
+  IconData _iconFor(String? key) {
+    switch (key) {
+      case 'salary_certificate':
+        return Icons.workspace_premium_outlined;
+      case 'employment_verification':
+        return Icons.badge_outlined;
+      case 'bank_letter':
+        return Icons.account_balance_outlined;
+      default:
+        return Icons.description_outlined;
+    }
+  }
+
+  /// Bank letters need an "addressed_to" extra (the bank name); other
+  /// templates issue immediately.
+  Future<void> _onTap(BuildContext context, Map<String, dynamic> tpl) async {
+    final id = (tpl['id'] as num?)?.toInt() ?? 0;
+    final key = tpl['template_key'] as String?;
+    if (key == 'bank_letter') {
+      final to = await _askAddressedTo(context);
+      if (to == null || to.trim().isEmpty) return;
+      await ctrl.issueAndOpenLetter(id, extraFields: {'addressed_to': to.trim()});
+    } else {
+      await ctrl.issueAndOpenLetter(id);
+    }
+  }
+
+  Future<String?> _askAddressedTo(BuildContext context) async {
+    final colors = AppColors.of(context);
+    final tc = TextEditingController();
+    return await Get.dialog<String>(
+      AlertDialog(
+        title: Text('letter_bank_addressed_to'.tr),
+        content: TextField(
+          controller: tc,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'letter_bank_addressed_to_hint'.tr,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back<String>(),
+            child: Text('cancel'.tr),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back<String>(result: tc.text),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colors.brand,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('letter_bank_issue'.tr),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final templates = ctrl.letterTemplates;
+
+    return _SectionCard(
+      icon: Icons.assignment_outlined,
+      title: 'letters_card_title'.tr,
+      child: Column(
+        children: [
+          for (var i = 0; i < templates.length; i++) ...[
+            if (i > 0) const SizedBox(height: AppSpacing.s2),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                onTap: () => _onTap(context, templates[i]),
+                child: Container(
+                  padding: const EdgeInsets.all(AppSpacing.s3),
+                  decoration: BoxDecoration(
+                    color: colors.sunken.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.s2),
+                        decoration: BoxDecoration(
+                          color: colors.brand.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                        child: Icon(
+                          _iconFor(templates[i]['template_key'] as String?),
+                          size: 18,
+                          color: colors.brand,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.s3),
+                      Expanded(
+                        child: Text(
+                          (templates[i]['name_ar'] as String?)?.isNotEmpty == true
+                              ? templates[i]['name_ar'] as String
+                              : (templates[i]['name_en'] as String? ?? '—'),
+                          style: const TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      Icon(Icons.picture_as_pdf_outlined,
+                          size: 16, color: colors.textTertiary),
+                      const SizedBox(width: AppSpacing.s1),
+                      Icon(Icons.chevron_left,
+                          size: 18, color: colors.textTertiary),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/* ── End-of-Service Benefits (long-horizon entitlement snapshot) ────────── */
+
+class _EosbCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _EosbCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final e = ctrl.eosb;
+    if (e == null || !e.enabled) return const SizedBox.shrink();
+    final currency = 'currency_egp'.tr;
+
+    return _SectionCard(
+      icon: Icons.savings_outlined,
+      title: 'eosb_title'.tr,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('eosb_amount_label'.tr,
+                        style: AppTextStyles.bodySecondary(context)),
+                    const SizedBox(height: 2),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: AlignmentDirectional.centerStart,
+                      child: RichText(
+                        text: TextSpan(
+                          text: _money(e.eosbAmount),
+                          style: TextStyle(
+                            fontFamily: 'Geist',
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            color: colors.brand,
+                            height: 1.0,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: '  $currency',
+                              style: TextStyle(
+                                fontFamily: 'IBM Plex Sans Arabic',
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: colors.textTertiary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (e.hireDate != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s2, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: colors.brand.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                  child: Text(
+                    e.hireDate!,
+                    style: TextStyle(
+                      fontFamily: 'Geist',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: colors.brand,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s3),
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.s3),
+            decoration: BoxDecoration(
+              color: colors.sunken.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _LoanMini(
+                    label: 'eosb_years_label'.tr,
+                    value: 'eosb_years_value'
+                        .trParams({'years': _years(e.yearsOfService)}),
+                    color: colors.brand,
+                  ),
+                ),
+                _MetricDivider(color: colors.borderHairline),
+                Expanded(
+                  child: _LoanMini(
+                    label: 'eosb_days_per_year_label'.tr,
+                    value: _years(e.eosbDaysPerYear),
+                    color: colors.textPrimary,
+                  ),
+                ),
+                _MetricDivider(color: colors.borderHairline),
+                Expanded(
+                  child: _LoanMini(
+                    label: 'eosb_daily_wage_label'.tr,
+                    value: '${_money(e.dailyWage)} $currency',
+                    color: colors.success,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s2),
+          Row(
+            children: [
+              Icon(Icons.info_outline, size: 12, color: colors.textTertiary),
+              const SizedBox(width: AppSpacing.s1),
+              Expanded(
+                child: Text(
+                  'eosb_formula_note'.trParams({
+                    'years': _years(e.yearsOfService),
+                    'days': _years(e.eosbDaysPerYear),
+                    'wage': _money(e.dailyWage),
+                  }),
+                  style: TextStyle(
+                    fontFamily: 'Geist',
+                    fontSize: 11,
+                    color: colors.textTertiary,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Compact number for years/days (1 decimal when not whole).
+  static String _years(double v) {
+    if (v == v.roundToDouble()) return v.toInt().toString();
+    return v.toStringAsFixed(1);
+  }
+}
+
+/* ── RULES TRANSPARENCY (how late/absence/overtime convert to money) ───── */
+
+class _RulesCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _RulesCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final r = ctrl.financialCurrent?.rules;
+    if (r == null || !r.hasAny) return const SizedBox.shrink();
+    final currency = 'currency_egp'.tr;
+
+    final lines = <Widget>[];
+    // Late rule
+    if (r.lateType == 'proportional' &&
+        r.lateUnitMinutes != null &&
+        r.lateDeductionPerUnit != null) {
+      lines.add(_RuleLine(
+        icon: Icons.history,
+        label: 'rule_section_late'.tr,
+        value: 'rule_late_proportional'.trParams({
+          'unit': _money(r.lateUnitMinutes!),
+          'amount': '${_money(r.lateDeductionPerUnit!)} $currency',
+        }),
+        color: colors.warning,
+      ));
+    } else if (r.lateType == 'fixed' && r.lateFixedAmount != null) {
+      lines.add(_RuleLine(
+        icon: Icons.history,
+        label: 'rule_section_late'.tr,
+        value: 'rule_late_fixed'
+            .trParams({'amount': '${_money(r.lateFixedAmount!)} $currency'}),
+        color: colors.warning,
+      ));
+    }
+    // Absence rule
+    if (r.absenceMultiplier != null) {
+      lines.add(_RuleLine(
+        icon: Icons.cancel_outlined,
+        label: 'rule_section_absence'.tr,
+        value: 'rule_absence_multiplier'
+            .trParams({'multiplier': _money(r.absenceMultiplier!)}),
+        color: colors.error,
+      ));
+    }
+    // Overtime rule
+    if (r.overtimeMultiplier != null) {
+      lines.add(_RuleLine(
+        icon: Icons.trending_up,
+        label: 'rule_section_overtime'.tr,
+        value: 'rule_overtime_multiplier'
+            .trParams({'multiplier': _money(r.overtimeMultiplier!)}),
+        color: colors.success,
+      ));
+    }
+
+    return _SectionCard(
+      icon: Icons.rule_outlined,
+      title: 'rule_transparency_title'.tr,
+      child: Column(
+        children: [
+          for (var i = 0; i < lines.length; i++) ...[
+            if (i > 0) const SizedBox(height: AppSpacing.s2),
+            lines[i],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RuleLine extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+  const _RuleLine({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s3),
+      decoration: BoxDecoration(
+        color: colors.sunken.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.s2),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Icon(icon, size: 16, color: color),
+          ),
+          const SizedBox(width: AppSpacing.s3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 12,
+                    color: colors.textTertiary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/* ── SALARY TREND (bar chart from financialHistory, last 6 months) ─────── */
+
+class _SalaryTrendCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _SalaryTrendCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final all = ctrl.financialHistory;
+    if (all.isEmpty) return const SizedBox.shrink();
+    // Take the most-recent 6 and display oldest → newest left-to-right (or
+    // right-to-left in RTL, the Row direction follows the locale).
+    final items = all.length > 6 ? all.sublist(0, 6) : all;
+    final ordered = items.reversed.toList();
+    final maxNet = ordered.map((e) => e.netSalary).reduce(math.max);
+    final avg = ordered.map((e) => e.netSalary).reduce((a, b) => a + b) /
+        ordered.length;
+    final currency = 'currency_egp'.tr;
+
+    return _SectionCard(
+      icon: Icons.bar_chart_outlined,
+      title: 'trend_card_title'.tr,
+      trailing: Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: AppSpacing.s2, vertical: 3),
+        decoration: BoxDecoration(
+          color: colors.brand.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(AppRadius.full),
+        ),
+        child: Text(
+          '${'trend_avg_label'.tr} ${_money(avg)} $currency',
+          style: TextStyle(
+            fontFamily: 'Geist',
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: colors.brand,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('trend_card_subtitle'.tr,
+              style: AppTextStyles.bodySecondary(context)),
+          const SizedBox(height: AppSpacing.s3),
+          SizedBox(
+            height: 140,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                for (final e in ordered)
+                  Expanded(
+                    child: _TrendBar(
+                      entry: e,
+                      maxNet: maxNet,
+                      currency: currency,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrendBar extends StatelessWidget {
+  final FinancialHistoryEntry entry;
+  final double maxNet;
+  final String currency;
+  const _TrendBar({
+    required this.entry,
+    required this.maxNet,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final fraction =
+        maxNet > 0 ? (entry.netSalary / maxNet).clamp(0.0, 1.0) : 0.0;
+    final color = entry.status == 'paid'
+        ? colors.success
+        : (entry.status == 'approved' ? colors.brand : colors.warning);
+    final parts = entry.month.split('-');
+    final monthIdx = parts.length == 2 ? int.tryParse(parts[1]) ?? 1 : 1;
+    final monthShort = 'month_$monthIdx'.tr;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 3),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Text(
+            _money(entry.netSalary),
+            style: TextStyle(
+              fontFamily: 'Geist',
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: colors.textSecondary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          // Reserve full height; the visible portion is sized by `fraction`.
+          Expanded(
+            child: LayoutBuilder(
+              builder: (ctx, c) {
+                final h = (c.maxHeight * fraction).clamp(4.0, c.maxHeight);
+                return Stack(
+                  alignment: AlignmentDirectional.bottomCenter,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: colors.sunken.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                    ),
+                    Container(
+                      width: double.infinity,
+                      height: h,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            color,
+                            color.withValues(alpha: 0.7),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            monthShort,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 10,
+              color: colors.textTertiary,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/* ── SALARY HISTORY (base salary change timeline from audit_log) ────────── */
+
+class _SalaryHistoryCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _SalaryHistoryCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final history = ctrl.salaryHistory;
+    final currentBase = ctrl.employee?.baseSalary ?? 0;
+    final currency = 'currency_egp'.tr;
+
+    return _SectionCard(
+      icon: Icons.timeline_outlined,
+      title: 'salary_history_title'.tr,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // The current salary always tops the timeline.
+          _SalaryHistoryRow(
+            amount: '${_money(currentBase)} $currency',
+            subtitle: 'salary_history_current'.tr,
+            color: colors.brand,
+            isCurrent: true,
+          ),
+          for (final s in history) ...[
+            const SizedBox(height: AppSpacing.s2),
+            _SalaryHistoryRow(
+              amount: '${_money(s.baseSalary)} $currency',
+              subtitle: [
+                _adjDate(s.createdAt),
+                if ((s.adminName ?? '').isNotEmpty)
+                  'salary_history_by'.trParams({'name': s.adminName!}),
+              ].join(' · '),
+              color: colors.textTertiary,
+              isCurrent: false,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SalaryHistoryRow extends StatelessWidget {
+  final String amount;
+  final String subtitle;
+  final Color color;
+  final bool isCurrent;
+  const _SalaryHistoryRow({
+    required this.amount,
+    required this.subtitle,
+    required this.color,
+    required this.isCurrent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s3),
+      decoration: BoxDecoration(
+        color: isCurrent
+            ? colors.brand.withValues(alpha: 0.08)
+            : colors.sunken.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: isCurrent
+            ? Border.all(color: colors.brand.withValues(alpha: 0.3))
+            : null,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.s3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  amount,
+                  style: TextStyle(
+                    fontFamily: 'Geist',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isCurrent ? colors.brand : colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 11,
+                    color: colors.textTertiary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/* ── Payroll history ────────────────────────────────────────────────────── */
+
+class _PayrollHistoryCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _PayrollHistoryCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final history = ctrl.financialHistory;
+    return _SectionCard(
+      icon: Icons.receipt_long_outlined,
+      title: 'payroll_history'.tr,
+      child: history.isEmpty
+          ? Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+              child: Center(
+                child: Text('no_payroll_history'.tr,
+                    style: AppTextStyles.bodySecondary(context)),
+              ),
+            )
+          : Column(
+              children: [
+                for (var i = 0; i < history.length; i++) ...[
+                  if (i > 0) const SizedBox(height: AppSpacing.s2),
+                  _PayrollHistoryTile(history[i]),
+                ],
+              ],
+            ),
+    );
+  }
+}
+
+class _PayrollHistoryTile extends StatelessWidget {
+  final FinancialHistoryEntry entry;
+  const _PayrollHistoryTile(this.entry);
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final parts = entry.month.split('-');
+    final monthIdx = parts.length == 2 ? int.tryParse(parts[1]) ?? 1 : 1;
+    final year = parts.length == 2 ? parts[0] : '';
+    final label = '${'month_$monthIdx'.tr} $year';
+    final statusColor = entry.status == 'paid'
+        ? colors.success
+        : (entry.status == 'approved' ? colors.brand : colors.warning);
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s3),
+      decoration: BoxDecoration(
+        color: colors.sunken.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 32,
+            margin: const EdgeInsetsDirectional.only(end: AppSpacing.s3),
+            decoration: BoxDecoration(
+              color: statusColor,
+              borderRadius: BorderRadius.circular(AppRadius.full),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s2, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                  child: Text(
+                    entry.statusLabel,
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            '${_money(entry.netSalary)} ${'currency_egp'.tr}',
+            style: TextStyle(
+              fontFamily: 'Geist',
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: colors.textPrimary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/* ── Money & time formatting helpers ────────────────────────────────────── */
+
+/// Formats a money amount with thousands separators, dropping the decimals
+/// when the value is whole (e.g. 12500 → "12,500", 12500.5 → "12,500.50").
+String _money(double v) {
+  final isWhole = v == v.roundToDouble();
+  final raw = isWhole ? v.toInt().toString() : v.toStringAsFixed(2);
+  final dot = raw.indexOf('.');
+  final intPart = dot == -1 ? raw : raw.substring(0, dot);
+  final frac = dot == -1 ? '' : raw.substring(dot);
+  final neg = intPart.startsWith('-');
+  final digits = neg ? intPart.substring(1) : intPart;
+  final buf = StringBuffer();
+  for (var i = 0; i < digits.length; i++) {
+    if (i > 0 && (digits.length - i) % 3 == 0) buf.write(',');
+    buf.write(digits[i]);
+  }
+  return '${neg ? '-' : ''}$buf$frac';
+}
+
+/// Formats a minutes count as "Xس Yد" (hours/minutes), or "Yد" under an hour.
+String _fmtHM(int minutes) {
+  if (minutes <= 0) return '0 ${'hours_short'.tr}';
+  final h = minutes ~/ 60;
+  final m = minutes % 60;
+  if (h == 0) return '$m ${'minutes_short'.tr}';
+  if (m == 0) return '$h ${'hours_short'.tr}';
+  return '$h ${'hours_short'.tr} $m ${'minutes_short'.tr}';
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  DOCUMENTS TAB                                                           */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+class _DocumentsTab extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _DocumentsTab({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final e = ctrl.employee;
+
+    return RefreshIndicator(
+      onRefresh: ctrl.loadDocuments,
+      child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.s4),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.s4),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: colors.borderHairline),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.folder_outlined,
+                        size: 18, color: colors.brand),
+                    const SizedBox(width: AppSpacing.s2),
+                    Text('documents'.tr, style: AppTextStyles.h3(context)),
+                    const Spacer(),
+                    Text(
+                      '${ctrl.documents.where((d) => d.status == 'uploaded').length}/${ctrl.documents.length}',
+                      style: TextStyle(
+                        fontFamily: 'Geist',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: colors.brand,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.s3),
+                if (ctrl.documentsStatus == StatusRequest.loading)
+                  const Center(child: CircularProgressIndicator.adaptive())
+                else if (ctrl.documents.isEmpty)
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.s5),
+                    child: Center(
+                      child: Text('no_documents'.tr,
+                          style: AppTextStyles.bodySecondary(context)),
+                    ),
+                  )
+                else
+                  ...ctrl.documents.map((doc) => _DocumentTile(
+                        document: doc,
+                        onDelete: () => ctrl.deleteDocument(doc.id),
+                      )),
+                if (e != null) ...[
+                  const SizedBox(height: AppSpacing.s3),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => Get.toNamed<void>(
+                        AppRoutes.employeeDocuments,
+                        arguments: {
+                          'employee_id': e.id,
+                          'employee_name': e.name
+                        },
+                      ),
+                      icon: const Icon(Icons.folder_open_outlined, size: 18),
+                      label: Text('manage_documents_button'.tr),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: colors.brand,
+                        side: BorderSide(color: colors.brand),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.s3),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s7),
+        ],
+      ),
+    );
+  }
+}
+
+class _DocumentTile extends StatelessWidget {
+  final DocumentModel document;
+  final VoidCallback onDelete;
+  const _DocumentTile({required this.document, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final statusColor = _docStatusColor(document.status, colors);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.s2),
+      padding: const EdgeInsets.all(AppSpacing.s3),
+      decoration: BoxDecoration(
+        color: colors.sunken.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            document.status == 'uploaded'
+                ? Icons.description_outlined
+                : Icons.error_outline,
+            size: 22,
+            color: statusColor,
+          ),
+          const SizedBox(width: AppSpacing.s3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  document.name,
+                  style: const TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (document.expiryDate != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '${'expires'.tr} ${document.expiryDate!.year}-${document.expiryDate!.month.toString().padLeft(2, '0')}-${document.expiryDate!.day.toString().padLeft(2, '0')}',
+                    style: TextStyle(
+                      fontFamily: 'Geist',
+                      fontSize: 12,
+                      color: colors.textTertiary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.s2, vertical: 2),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadius.full),
+            ),
+            child: Text(
+              document.statusLabel,
+              style: TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: statusColor,
+              ),
+            ),
+          ),
+          if (document.status == 'uploaded') ...[
+            const SizedBox(width: AppSpacing.s2),
+            IconButton(
+              icon: Icon(Icons.delete_outline, size: 18, color: colors.error),
+              onPressed: onDelete,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+Color _docStatusColor(String status, AppColorScheme colors) {
+  switch (status) {
+    case 'uploaded':
+      return colors.success;
+    case 'required':
+      return colors.warning;
+    case 'expired':
+      return colors.error;
+    default:
+      return colors.textTertiary;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  WARNINGS TAB                                                            */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+class _WarningsTab extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _WarningsTab({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
+    return RefreshIndicator(
+      onRefresh: ctrl.loadEmployee,
+      child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.s4),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.s4),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: colors.borderHairline),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.report_gmailerrorred_outlined,
+                        size: 18, color: colors.warning),
+                    const SizedBox(width: AppSpacing.s2),
+                    Expanded(
+                      child: Text(
+                        'warnings_log'.tr,
+                        style: AppTextStyles.h3(context),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (ctrl.canManageEmployees)
+                      OutlinedButton.icon(
+                        onPressed: () => _showAddWarningSheet(context, ctrl),
+                        icon: Icon(Icons.add_circle_outline,
+                            size: 16, color: colors.warning),
+                        label: Text('add_warning'.tr),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: colors.warning,
+                          side: BorderSide(color: colors.warning),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.s3,
+                            vertical: AppSpacing.s1,
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.md),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.s3),
+                if (ctrl.warnings.isEmpty)
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.s5),
+                    child: Center(
+                      child: Text('no_warnings'.tr,
+                          style: AppTextStyles.bodySecondary(context)),
+                    ),
+                  )
+                else
+                  ...ctrl.warnings.map((w) => _WarningTile(warning: w)),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s7),
+        ],
+      ),
+    );
+  }
+}
+
+void _showAddWarningSheet(BuildContext context, EmployeeDetailController ctrl) {
+  String selectedType = 'verbal';
+  final reasonCtrl = TextEditingController();
+  final formKey = GlobalKey<FormState>();
+
+  Get.bottomSheet(
+    StatefulBuilder(
+      builder: (sheetCtx, setSheetState) {
+        final colors = AppColors.of(context);
+        final isLoading = ctrl.warningStatus == StatusRequest.loading;
+
+        return Container(
+          padding: EdgeInsets.only(
+            left: AppSpacing.s4,
+            right: AppSpacing.s4,
+            top: AppSpacing.s4,
+            bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s4,
+          ),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.lg),
+            ),
+          ),
+          child: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: AppSpacing.s3),
+                      decoration: BoxDecoration(
+                        color: colors.borderHairline,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Text('add_warning'.tr, style: AppTextStyles.h2(context)),
+                  const SizedBox(height: AppSpacing.s2),
+                  Text(ctrl.employee?.name ?? '',
+                      style: AppTextStyles.bodySecondary(context)),
+                  const SizedBox(height: AppSpacing.s4),
+                  Text('select_warning_type'.tr,
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 13,
+                        color: colors.textTertiary,
+                      )),
+                  const SizedBox(height: AppSpacing.s2),
+                  ...['verbal', 'written', 'final'].map((t) {
+                    final selected = selectedType == t;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+                      child: InkWell(
+                        onTap: () => setSheetState(() => selectedType = t),
+                        child: Container(
+                          padding: const EdgeInsets.all(AppSpacing.s3),
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? colors.brandSubtle
+                                : colors.surface,
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            border: Border.all(
+                              color: selected
+                                  ? colors.brand
+                                  : colors.borderHairline,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                selected
+                                    ? Icons.radio_button_checked
+                                    : Icons.radio_button_unchecked,
+                                size: 20,
+                                color: selected
+                                    ? colors.brand
+                                    : colors.textTertiary,
+                              ),
+                              const SizedBox(width: AppSpacing.s3),
+                              Text(
+                                _warningTypeLabel(t),
+                                style: TextStyle(
+                                  fontFamily: 'IBM Plex Sans Arabic',
+                                  fontSize: 14,
+                                  fontWeight: selected
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                  color: selected
+                                      ? colors.brand
+                                      : colors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: AppSpacing.s3),
+                  TextFormField(
+                    controller: reasonCtrl,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      labelText: 'warning_reason'.tr,
+                      hintText: 'warning_reason_hint'.tr,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return 'reason_required'.tr;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.s6),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: isLoading
+                          ? null
+                          : () async {
+                              if (!formKey.currentState!.validate()) return;
+                              final reason = reasonCtrl.text.trim();
+                              Get.back();
+                              await ctrl.addWarning(
+                                  type: selectedType, reason: reason);
+                            },
+                      icon: isLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator.adaptive(
+                                  strokeWidth: 2),
+                            )
+                          : const Icon(Icons.save_outlined),
+                      label: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.s2),
+                        child: Text('save'.tr),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    ),
+    isScrollControlled: true,
+  );
+}
+
+String _warningTypeLabel(String type) {
+  switch (type) {
+    case 'verbal':
+      return 'warning_type_verbal'.tr;
+    case 'written':
+      return 'warning_type_written'.tr;
+    case 'final':
+      return 'warning_type_final'.tr;
+    default:
+      return type;
   }
 }
 
@@ -2199,18 +7465,15 @@ class _WarningTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.s2),
       padding: const EdgeInsets.all(AppSpacing.s3),
       decoration: BoxDecoration(
-        color: colors.surface,
+        color: colors.sunken.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: colors.borderHairline),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.s2,
-              vertical: AppSpacing.s1,
-            ),
+                horizontal: AppSpacing.s2, vertical: AppSpacing.s1),
             decoration: BoxDecoration(
               color: typeColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(AppRadius.full),
@@ -2252,13 +7515,9 @@ class _WarningTile extends StatelessWidget {
                       ),
                     if (warning.issuedByName != null) ...[
                       const SizedBox(width: AppSpacing.s2),
-                      Text(
-                        '·',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colors.textTertiary,
-                        ),
-                      ),
+                      Text('·',
+                          style: TextStyle(
+                              fontSize: 12, color: colors.textTertiary)),
                       const SizedBox(width: AppSpacing.s2),
                       Flexible(
                         child: Text(
@@ -2281,289 +7540,315 @@ class _WarningTile extends StatelessWidget {
       ),
     );
   }
+}
 
-  Color _warningColor(String type, AppColorScheme colors) {
-    switch (type) {
-      case 'verbal':
-        return colors.warning;
-      case 'written':
-        return colors.accentWarm;
-      case 'final':
-        return colors.error;
-      case 'device_change':
-      case 'system':
-        return colors.textTertiary;
-      default:
-        return colors.textTertiary;
-    }
+Color _warningColor(String type, AppColorScheme colors) {
+  switch (type) {
+    case 'verbal':
+      return colors.warning;
+    case 'written':
+      return colors.accentWarm;
+    case 'final':
+      return colors.error;
+    case 'device_change':
+    case 'system':
+      return colors.textTertiary;
+    default:
+      return colors.textTertiary;
   }
 }
 
-class _PerformanceReviewsSection extends StatelessWidget {
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  REVIEWS TAB                                                             */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+class _ReviewsTab extends StatelessWidget {
   final EmployeeDetailController ctrl;
-  const _PerformanceReviewsSection({required this.ctrl});
+  const _ReviewsTab({required this.ctrl});
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text('performance_reviews'.tr, style: AppTextStyles.h3(context)),
-            const Spacer(),
-            if (ctrl.canManageEmployees)
-              OutlinedButton.icon(
-                onPressed: () => _showAddReviewSheet(context),
-                icon: Icon(Icons.star_outline, size: 18, color: colors.brand),
-                label: Text('add_review'.tr),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: colors.brand,
-                  side: BorderSide(color: colors.brand),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.s3,
-                    vertical: AppSpacing.s1,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
+    return RefreshIndicator(
+      onRefresh: ctrl.loadReviews,
+      child: ListView(
+        padding: const EdgeInsets.all(AppSpacing.s4),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.s4),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: colors.borderHairline),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.star_outline, size: 18, color: colors.brand),
+                    const SizedBox(width: AppSpacing.s2),
+                    Expanded(
+                      child: Text(
+                        'performance_reviews'.tr,
+                        style: AppTextStyles.h3(context),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (ctrl.canManageEmployees)
+                      OutlinedButton.icon(
+                        onPressed: () => _showAddReviewSheet(context, ctrl),
+                        icon: Icon(Icons.star_outline,
+                            size: 16, color: colors.brand),
+                        label: Text('add_review'.tr),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: colors.brand,
+                          side: BorderSide(color: colors.brand),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.s3,
+                            vertical: AppSpacing.s1,
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.md),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-              ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.s3),
-        if (ctrl.reviewStatus == StatusRequest.loading)
-          const Center(child: CircularProgressIndicator.adaptive())
-        else if (ctrl.reviews.isEmpty)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.s5),
-              child: Text('no_reviews_yet'.tr,
-                  style: AppTextStyles.bodySecondary(context)),
+                const SizedBox(height: AppSpacing.s3),
+                if (ctrl.reviewStatus == StatusRequest.loading)
+                  const Center(child: CircularProgressIndicator.adaptive())
+                else if (ctrl.reviews.isEmpty)
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.s5),
+                    child: Center(
+                      child: Text('no_reviews_yet'.tr,
+                          style: AppTextStyles.bodySecondary(context)),
+                    ),
+                  )
+                else
+                  ...ctrl.reviews.map((r) => _ReviewTile(
+                        review: r,
+                        onDelete: ctrl.canManageEmployees
+                            ? () => _confirmDeleteReview(context, ctrl, r.id)
+                            : null,
+                      )),
+              ],
             ),
-          )
-        else
-          ...ctrl.reviews.map((r) => _ReviewTile(
-                review: r,
-                onDelete: ctrl.canManageEmployees
-                    ? () => _confirmDeleteReview(context, r.id)
-                    : null,
-              )),
-      ],
-    );
-  }
-
-  void _confirmDeleteReview(BuildContext context, int reviewId) async {
-    final confirmed = await Get.dialog<bool>(
-      AlertDialog(
-        title: Text('delete'.tr),
-        content: Text('confirm_delete_review'.tr),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(result: false),
-            child: Text('cancel'.tr),
           ),
-          ElevatedButton(
-            onPressed: () => Get.back(result: true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colors(context).error,
-              foregroundColor: Colors.white,
-            ),
-            child: Text('delete'.tr),
-          ),
+          const SizedBox(height: AppSpacing.s7),
         ],
       ),
     );
-    if (confirmed == true) {
-      await ctrl.deleteReview(reviewId);
-    }
   }
+}
 
-  AppColorScheme colors(BuildContext context) => AppColors.of(context);
+void _confirmDeleteReview(
+    BuildContext context, EmployeeDetailController ctrl, int reviewId) async {
+  final confirmed = await Get.dialog<bool>(
+    AlertDialog(
+      title: Text('delete'.tr),
+      content: Text('confirm_delete_review'.tr),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(result: false),
+          child: Text('cancel'.tr),
+        ),
+        ElevatedButton(
+          onPressed: () => Get.back(result: true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.of(context).error,
+            foregroundColor: Colors.white,
+          ),
+          child: Text('delete'.tr),
+        ),
+      ],
+    ),
+  );
+  if (confirmed == true) {
+    await ctrl.deleteReview(reviewId);
+  }
+}
 
-  void _showAddReviewSheet(BuildContext context) {
-    int selectedRating = 3;
-    final periodCtrl = TextEditingController();
-    final notesCtrl = TextEditingController();
-    final formKey = GlobalKey<FormState>();
+void _showAddReviewSheet(BuildContext context, EmployeeDetailController ctrl) {
+  int selectedRating = 3;
+  final periodCtrl = TextEditingController();
+  final notesCtrl = TextEditingController();
+  final formKey = GlobalKey<FormState>();
 
-    Get.bottomSheet(
-      StatefulBuilder(
-        builder: (sheetCtx, setSheetState) {
-          final colors = AppColors.of(context);
-          final isLoading = ctrl.reviewStatus == StatusRequest.loading;
+  Get.bottomSheet(
+    StatefulBuilder(
+      builder: (sheetCtx, setSheetState) {
+        final colors = AppColors.of(context);
+        final isLoading = ctrl.reviewStatus == StatusRequest.loading;
 
-          return Container(
-            padding: EdgeInsets.only(
-              left: AppSpacing.s4,
-              right: AppSpacing.s4,
-              top: AppSpacing.s4,
-              bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s4,
+        return Container(
+          padding: EdgeInsets.only(
+            left: AppSpacing.s4,
+            right: AppSpacing.s4,
+            top: AppSpacing.s4,
+            bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s4,
+          ),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.lg),
             ),
-            decoration: BoxDecoration(
-              color: colors.surface,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(AppRadius.lg),
-              ),
-            ),
-            child: SingleChildScrollView(
-              child: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: AppSpacing.s3),
-                        decoration: BoxDecoration(
-                          color: colors.borderHairline,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
+          ),
+          child: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: AppSpacing.s3),
+                      decoration: BoxDecoration(
+                        color: colors.borderHairline,
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    Text('add_review'.tr, style: AppTextStyles.h2(context)),
-                    const SizedBox(height: AppSpacing.s2),
-                    Text(
-                      ctrl.employee?.name ?? '',
-                      style: AppTextStyles.bodySecondary(context),
-                    ),
-                    const SizedBox(height: AppSpacing.s4),
-                    Text(
-                      'review_rating'.tr,
+                  ),
+                  Text('add_review'.tr, style: AppTextStyles.h2(context)),
+                  const SizedBox(height: AppSpacing.s2),
+                  Text(ctrl.employee?.name ?? '',
+                      style: AppTextStyles.bodySecondary(context)),
+                  const SizedBox(height: AppSpacing.s4),
+                  Text('review_rating'.tr,
                       style: TextStyle(
                         fontFamily: 'IBM Plex Sans Arabic',
                         fontSize: 13,
                         color: colors.textTertiary,
+                      )),
+                  const SizedBox(height: AppSpacing.s2),
+                  _StarRating(
+                    rating: selectedRating,
+                    onChanged: (v) => setSheetState(() => selectedRating = v),
+                    colors: colors,
+                  ),
+                  const SizedBox(height: AppSpacing.s2),
+                  Text(
+                    _ratingLabel(selectedRating),
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _ratingColor(selectedRating, colors),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s4),
+                  TextFormField(
+                    controller: periodCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'review_period'.tr,
+                      hintText: 'review_period_hint'.tr,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.s2),
-                    _StarRating(
-                      rating: selectedRating,
-                      onChanged: (v) => setSheetState(() => selectedRating = v),
-                      colors: colors,
-                    ),
-                    const SizedBox(height: AppSpacing.s2),
-                    Text(
-                      _ratingLabel(selectedRating),
-                      style: TextStyle(
-                        fontFamily: 'IBM Plex Sans Arabic',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: _ratingColor(selectedRating, colors),
+                    style: const TextStyle(fontFamily: 'Geist', fontSize: 16),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) {
+                        return 'required'.tr;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.s3),
+                  TextFormField(
+                    controller: notesCtrl,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      labelText: 'review_notes'.tr,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.s4),
-                    TextFormField(
-                      controller: periodCtrl,
-                      decoration: InputDecoration(
-                        labelText: 'review_period'.tr,
-                        hintText: 'review_period_hint'.tr,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                      ),
-                      style: const TextStyle(fontFamily: 'Geist', fontSize: 16),
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) {
-                          return 'required'.tr;
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.s3),
-                    TextFormField(
-                      controller: notesCtrl,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        labelText: 'review_notes'.tr,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.s6),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: isLoading
-                            ? null
-                            : () async {
-                                if (!formKey.currentState!.validate()) return;
-                                Get.back();
-                                await ctrl.addReview(
-                                  rating: selectedRating,
-                                  period: periodCtrl.text.trim(),
-                                  notes: notesCtrl.text.trim().isEmpty
-                                      ? null
-                                      : notesCtrl.text.trim(),
-                                );
-                              },
-                        icon: isLoading
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator.adaptive(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.save_outlined),
-                        label: Padding(
-                          padding:
-                              const EdgeInsets.symmetric(vertical: AppSpacing.s2),
-                          child: Text('save'.tr),
-                        ),
+                  ),
+                  const SizedBox(height: AppSpacing.s6),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: isLoading
+                          ? null
+                          : () async {
+                              if (!formKey.currentState!.validate()) return;
+                              Get.back();
+                              await ctrl.addReview(
+                                rating: selectedRating,
+                                period: periodCtrl.text.trim(),
+                                notes: notesCtrl.text.trim().isEmpty
+                                    ? null
+                                    : notesCtrl.text.trim(),
+                              );
+                            },
+                      icon: isLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator.adaptive(
+                                  strokeWidth: 2),
+                            )
+                          : const Icon(Icons.save_outlined),
+                      label: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.s2),
+                        child: Text('save'.tr),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          );
-        },
-      ),
-      isScrollControlled: true,
-    );
-  }
+          ),
+        );
+      },
+    ),
+    isScrollControlled: true,
+  );
+}
 
-  String _ratingLabel(int rating) {
-    switch (rating) {
-      case 1:
-        return 'rating_1'.tr;
-      case 2:
-        return 'rating_2'.tr;
-      case 3:
-        return 'rating_3'.tr;
-      case 4:
-        return 'rating_4'.tr;
-      case 5:
-        return 'rating_5'.tr;
-      default:
-        return '';
-    }
+String _ratingLabel(int rating) {
+  switch (rating) {
+    case 1:
+      return 'rating_1'.tr;
+    case 2:
+      return 'rating_2'.tr;
+    case 3:
+      return 'rating_3'.tr;
+    case 4:
+      return 'rating_4'.tr;
+    case 5:
+      return 'rating_5'.tr;
+    default:
+      return '';
   }
+}
 
-  Color _ratingColor(int rating, AppColorScheme colors) {
-    switch (rating) {
-      case 1:
-        return colors.error;
-      case 2:
-        return colors.warning;
-      case 3:
-        return colors.accentWarm;
-      case 4:
-        return colors.success;
-      case 5:
-        return colors.brand;
-      default:
-        return colors.textTertiary;
-    }
+Color _ratingColor(int rating, AppColorScheme colors) {
+  switch (rating) {
+    case 1:
+      return colors.error;
+    case 2:
+      return colors.warning;
+    case 3:
+      return colors.accentWarm;
+    case 4:
+      return colors.success;
+    case 5:
+      return colors.brand;
+    default:
+      return colors.textTertiary;
   }
 }
 
@@ -2591,36 +7876,20 @@ class _StarRating extends StatelessWidget {
             child: Icon(
               filled ? Icons.star : Icons.star_border,
               size: 32,
-              color: filled ? _starColor(rating, colors) : colors.textTertiary,
+              color: filled
+                  ? _ratingColor(rating, colors)
+                  : colors.textTertiary,
             ),
           ),
         );
       }),
     );
   }
-
-  Color _starColor(int rating, AppColorScheme colors) {
-    switch (rating) {
-      case 1:
-        return colors.error;
-      case 2:
-        return colors.warning;
-      case 3:
-        return colors.accentWarm;
-      case 4:
-        return colors.success;
-      case 5:
-        return colors.brand;
-      default:
-        return colors.brand;
-    }
-  }
 }
 
 class _ReviewTile extends StatelessWidget {
   final PerformanceReviewModel review;
   final VoidCallback? onDelete;
-
   const _ReviewTile({required this.review, this.onDelete});
 
   @override
@@ -2633,9 +7902,8 @@ class _ReviewTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.s2),
       padding: const EdgeInsets.all(AppSpacing.s3),
       decoration: BoxDecoration(
-        color: colors.surface,
+        color: colors.sunken.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: colors.borderHairline),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2688,7 +7956,7 @@ class _ReviewTile extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                if (review.notes != null && review.notes!.isNotEmpty) ...[
+                if ((review.notes ?? '').isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.s1),
                   Text(
                     review.notes!,
@@ -2713,13 +7981,9 @@ class _ReviewTile extends StatelessWidget {
                       ),
                     if (review.reviewerName != null) ...[
                       const SizedBox(width: AppSpacing.s2),
-                      Text(
-                        '·',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colors.textTertiary,
-                        ),
-                      ),
+                      Text('·',
+                          style: TextStyle(
+                              fontSize: 12, color: colors.textTertiary)),
                       const SizedBox(width: AppSpacing.s2),
                       Flexible(
                         child: Text(
@@ -2751,21 +8015,362 @@ class _ReviewTile extends StatelessWidget {
       ),
     );
   }
+}
 
-  Color _ratingColor(int rating, AppColorScheme colors) {
-    switch (rating) {
-      case 1:
-        return colors.error;
-      case 2:
-        return colors.warning;
-      case 3:
-        return colors.accentWarm;
-      case 4:
-        return colors.success;
-      case 5:
-        return colors.brand;
-      default:
-        return colors.textTertiary;
+/* ── YTD button + dialog ──────────────────────────────────────────── */
+
+class _YearToDateButton extends StatelessWidget {
+  final int employeeId;
+  const _YearToDateButton({required this.employeeId});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => _showSheet(context),
+        icon: const Icon(Icons.calendar_month_outlined, size: 18),
+        label: Text(
+          'ytd_button'.tr,
+          style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic'),
+        ),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: colors.brand,
+          side: BorderSide(color: colors.brand),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showSheet(BuildContext context) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _YearToDateSheet(employeeId: employeeId),
+    );
+  }
+}
+
+class _YearToDateSheet extends StatefulWidget {
+  final int employeeId;
+  const _YearToDateSheet({required this.employeeId});
+
+  @override
+  State<_YearToDateSheet> createState() => _YearToDateSheetState();
+}
+
+class _YearToDateSheetState extends State<_YearToDateSheet> {
+  late int _year = DateTime.now().year;
+  StatusRequest _status = StatusRequest.loading;
+  Map<String, dynamic>? _data;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetch();
+  }
+
+  Future<void> _fetch() async {
+    setState(() {
+      _status = StatusRequest.loading;
+      _data = null;
+    });
+    final res = await Get.find<EmployeeData>()
+        .getYearToDate(widget.employeeId, _year);
+    if (!mounted) return;
+    if (res['status'] == StatusRequest.success) {
+      dynamic payload = res['data'];
+      if (payload is Map && payload['data'] is Map) payload = payload['data'];
+      setState(() {
+        _data = payload is Map<String, dynamic> ? payload : null;
+        _status = StatusRequest.success;
+      });
+    } else {
+      setState(() => _status = StatusRequest.failure);
     }
+  }
+
+  String _money(num v) {
+    final s = v.toStringAsFixed(0);
+    final buf = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+      buf.write(s[i]);
+    }
+    return buf.toString();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final totals = (_data?['totals'] as Map?)?.cast<String, dynamic>();
+    final monthly = (_data?['monthly'] as List?) ?? const [];
+    // Lift the currency off the payroll controller if it happens to be
+    // mounted (common path: user navigated here from the payroll page).
+    // Falls back to EGP when this screen was reached without going through
+    // payroll first.
+    String iso = 'EGP';
+    try {
+      iso = Get.find<PayrollController>().currency;
+    } catch (_) {/* controller not bound, keep default */}
+    final cur = currencyLabel(iso);
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.85,
+      maxChildSize: 0.95,
+      minChildSize: 0.5,
+      expand: false,
+      builder: (_, scroll) => Container(
+        decoration: BoxDecoration(
+          color: colors.canvas,
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            const SizedBox(height: AppSpacing.s2),
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: colors.borderHairline,
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s3),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s4),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: () {
+                      setState(() => _year--);
+                      _fetch();
+                    },
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        '${'ytd_title'.tr} • $_year',
+                        style: AppTextStyles.h2(context),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: _year >= DateTime.now().year
+                        ? null
+                        : () {
+                            setState(() => _year++);
+                            _fetch();
+                          },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s3),
+            Expanded(
+              child: _status == StatusRequest.loading
+                  ? const Center(
+                      child: CircularProgressIndicator.adaptive(),
+                    )
+                  : _status == StatusRequest.failure
+                      ? Center(
+                          child: Text('error'.tr,
+                              style: AppTextStyles.bodySecondary(context)),
+                        )
+                      : ListView(
+                          controller: scroll,
+                          padding: const EdgeInsets.all(AppSpacing.s4),
+                          children: [
+                            if (totals != null) _totalsCard(totals, cur, colors),
+                            const SizedBox(height: AppSpacing.s3),
+                            Text('ytd_monthly_breakdown'.tr,
+                                style: AppTextStyles.h3(context)),
+                            const SizedBox(height: AppSpacing.s2),
+                            if (monthly.isEmpty)
+                              Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(AppSpacing.s5),
+                                  child: Text('ytd_no_data'.tr,
+                                      style: AppTextStyles.bodySecondary(context)),
+                                ),
+                              )
+                            else
+                              ...monthly.map<Widget>((row) {
+                                final r = (row as Map).cast<String, dynamic>();
+                                return _monthRow(r, cur, colors);
+                              }),
+                          ],
+                        ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _totalsCard(
+      Map<String, dynamic> t, String cur, AppColorScheme colors) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s4),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [colors.brand, colors.brandHover],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('ytd_total_net'.tr,
+              style: const TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 12,
+                color: Colors.white70,
+              )),
+          const SizedBox(height: 2),
+          Text(
+            '${_money((t['total_net'] as num?) ?? 0)} $cur',
+            style: const TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s3),
+          Row(
+            children: [
+              Expanded(child: _miniStat('ytd_total_base'.tr,
+                  _money((t['total_base'] as num?) ?? 0),
+                  Icons.account_balance_wallet_outlined)),
+              const SizedBox(width: AppSpacing.s2),
+              Expanded(child: _miniStat('ytd_total_bonuses'.tr,
+                  _money((t['total_bonuses'] as num?) ?? 0),
+                  Icons.north_rounded)),
+              const SizedBox(width: AppSpacing.s2),
+              Expanded(child: _miniStat('ytd_total_deductions'.tr,
+                  _money((t['total_deductions'] as num?) ?? 0),
+                  Icons.south_rounded)),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s2),
+          Text(
+            '${t['months_count'] ?? 0} ${'ytd_months'.tr} • '
+            '${t['paid_count'] ?? 0} ${'status_paid'.tr} • '
+            '${t['approved_count'] ?? 0} ${'status_approved'.tr} • '
+            '${t['draft_count'] ?? 0} ${'status_draft'.tr}',
+            style: const TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 11,
+              color: Colors.white70,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniStat(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s2),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(icon, size: 12, color: Colors.white),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 10,
+                  color: Colors.white70,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ]),
+          const SizedBox(height: 2),
+          Text(value,
+              style: const TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              )),
+        ],
+      ),
+    );
+  }
+
+  Widget _monthRow(
+      Map<String, dynamic> r, String cur, AppColorScheme colors) {
+    final month = (r['month'] as String?) ?? '';
+    final parts = month.split('-');
+    final monthNum = parts.length >= 2 ? int.tryParse(parts[1]) : null;
+    final year = parts.isNotEmpty ? parts[0] : '';
+    final monthLabel = monthNum != null ? '${'month_$monthNum'.tr} $year' : month;
+    final status = (r['status'] as String?) ?? 'draft';
+    final statusColor = status == 'paid'
+        ? colors.brand
+        : status == 'approved'
+            ? colors.success
+            : colors.warning;
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.s2),
+      padding: const EdgeInsets.all(AppSpacing.s3),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 8, height: 8,
+            decoration: BoxDecoration(
+              color: statusColor, shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.s2),
+          Expanded(
+            child: Text(monthLabel,
+                style: const TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                )),
+          ),
+          Text(
+            '${_money((r['net_salary'] as num?) ?? 0)} $cur',
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: colors.brand,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

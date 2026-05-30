@@ -27,6 +27,9 @@ if ($method === 'GET') {
             'name' => $b['name'],
             'attendance_methods' => $methods,
             'gps_radius_meters' => (int) ($b['gps_radius_meters'] ?? 100),
+            'cycle_start_day' => $b['cycle_start_day'] !== null
+                ? (int) $b['cycle_start_day']
+                : null,
         ];
     }, $branches);
 
@@ -43,6 +46,7 @@ if ($method === 'GET') {
         'attendance_methods' => $tenantMethods,
         'manual_attendance_admin_ids' => $manualAdminIds,
         'allow_offline_attendance' => (bool) ($tenant['allow_offline_attendance'] ?? true),
+        'cycle_start_day' => (int) ($tenant['cycle_start_day'] ?? 1),
         'branches' => $branchList,
         // Letter/certificate branding & company text data
         'commercial_register' => $tenant['commercial_register'] ?? '',
@@ -65,7 +69,10 @@ if ($method === 'PUT' || $method === 'POST') {
     }
 
     $updateData = [];
-    foreach (['name', 'address', 'phone', 'email', 'timezone', 'currency'] as $field) {
+    // Only real `tenants` columns may go here. (address/phone/email are not
+    // columns — they have dedicated branding fields handled further below — so
+    // including them would make the whole UPDATE fail.)
+    foreach (['name', 'timezone', 'currency'] as $field) {
         if (isset($input[$field])) {
             $updateData[$field] = $input[$field];
         }
@@ -120,6 +127,14 @@ if ($method === 'PUT' || $method === 'POST') {
             }
         }
         TenantModel::updateAttendanceMethods($tenantId, $currentMethods, $manualAdminIdsVal);
+    }
+
+    if (isset($input['cycle_start_day'])) {
+        $day = (int) $input['cycle_start_day'];
+        if ($day < 1 || $day > 28) {
+            Response::fail('cycle_start_day must be between 1 and 28', 422);
+        }
+        $updateData['cycle_start_day'] = $day;
     }
 
     if (isset($input['allow_offline_attendance'])) {

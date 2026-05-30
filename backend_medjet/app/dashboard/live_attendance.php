@@ -28,11 +28,14 @@ $summary = [
     'in' => 0,
     'out' => 0,
     'not_in' => 0,
+    'pre_shift' => 0,
     'absent' => 0,
     'leave' => 0,
     'late' => 0,
 ];
 $employees = [];
+
+$nowTime = $now->format('H:i:s');
 
 foreach ($rows as $row) {
     $checkIn = $row['check_in_time'] ?? null;
@@ -41,6 +44,7 @@ foreach ($rows as $row) {
     $lateMinutes = (int) ($row['late_minutes'] ?? 0);
     $isLate = $lateMinutes > 0;
 
+    $leaveReason = null;
     if ($checkIn && $checkOut) {
         $derived = 'out';                                    // checked in and out
     } elseif ($checkIn) {
@@ -49,10 +53,38 @@ foreach ($rows as $row) {
         $derived = 'absent';
     } elseif (in_array($attStatus, ['leave', 'holiday', 'weekly_off'], true)) {
         $derived = 'leave';
+        $notes = trim((string) ($row['attendance_notes'] ?? ''));
+        if ($attStatus === 'holiday') {
+            $leaveReason = $notes !== '' ? $notes : 'holiday';
+        } elseif ($attStatus === 'weekly_off') {
+            $leaveReason = $notes !== '' ? $notes : 'weekly_off';
+        } else {
+            $leaveReason = $notes !== '' ? $notes : null;
+        }
     } elseif (LeaveModel::isEmployeeOnLeave((int) $row['employee_id'], $today, $tenantId)) {
         $derived = 'leave';                                  // approved leave today
+        $leaveReason = LeaveModel::getActiveLeaveTypeForEmployee(
+            (int) $row['employee_id'],
+            $today,
+            $tenantId
+        );
     } else {
-        $derived = 'not_in';                                 // active, no record, not on leave
+        // No check-in and no recorded status: split into "shift hasn't started
+        // yet" vs "in-shift no-show" so a night-shift worker isn't flagged as
+        // not-arrived during the morning. Normal shift (end > start): pre-shift
+        // when now < start. Overnight shift (end <= start, crosses midnight):
+        // pre-shift only in the gap (now > end AND now < start).
+        $shiftStart = $row['shift_start'] ?? null;
+        $shiftEnd = $row['shift_end'] ?? null;
+        $isPreShift = false;
+        if ($shiftStart !== null) {
+            if ($shiftEnd === null || $shiftEnd > $shiftStart) {
+                $isPreShift = $nowTime < $shiftStart;
+            } else {
+                $isPreShift = $nowTime > $shiftEnd && $nowTime < $shiftStart;
+            }
+        }
+        $derived = $isPreShift ? 'pre_shift' : 'not_in';
     }
 
     $summary['total']++;
@@ -68,6 +100,8 @@ foreach ($rows as $row) {
         'branch_id' => $row['branch_id'] !== null ? (int) $row['branch_id'] : null,
         'branch_name' => $row['branch_name'],
         'derived_status' => $derived,
+        'leave_reason' => $leaveReason,
+        'attendance_status' => $attStatus,
         'check_in_time' => $checkIn,
         'check_out_time' => $checkOut,
         'late_minutes' => $lateMinutes,

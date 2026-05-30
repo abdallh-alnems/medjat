@@ -36,6 +36,8 @@ class AppLinks {
   static String get employeeCreate => '$base/app/employees/create.php';
   static String get employeeUpdate => '$base/app/employees/update.php';
   static String get employeeDelete => '$base/app/employees/delete.php';
+  static String get expiringCompliance =>
+      '$base/app/employees/expiring_compliance.php';
   static String employeeDocuments(int id) =>
       '$base/app/employees/get_documents.php?employee_id=$id';
   static String employeeDocument(int employeeId, int docId) =>
@@ -52,6 +54,15 @@ class AppLinks {
       '$base/app/employees/get_missing_documents.php?employee_id=$id';
   static String employeeActivationCode(int id) =>
       '$base/app/employees/activation_code.php?id=$id';
+  static String employeeAttendanceHistory(int id,
+          {String? month, String? from, String? to}) =>
+      from != null && to != null
+          ? '$base/app/employees/get_attendance_history.php?employee_id=$id&from=$from&to=$to'
+          : '$base/app/employees/get_attendance_history.php?employee_id=$id&month=${month ?? ''}';
+  static String employeeFinancialSummary(int id, String month) =>
+      '$base/app/employees/get_financial_summary.php?employee_id=$id&month=$month';
+  static String employeeYearToDate(int id, int year) =>
+      '$base/app/employees/get_year_to_date.php?employee_id=$id&year=$year';
 
   // ── Required Documents (tenant-level types) ────────────
   static String get documentsRequired =>
@@ -94,11 +105,39 @@ class AppLinks {
       '$base/app/attendance/get_branch_attendance.php';
   static String get attendanceManual =>
       '$base/app/attendance/manual_check_in.php';
+  static String get attendanceSetDayStatus =>
+      '$base/app/attendance/set_day_status.php';
+  static String get attendanceUpdateNote =>
+      '$base/app/attendance/update_note.php';
 
   // ── Payroll ────────────────────────────────────────────
   static String get payroll => '$base/app/payroll/list_slips.php';
+  static String get payrollLive => '$base/app/payroll/live.php';
   static String payrollApprove(int id) =>
       '$base/app/payroll/approve.php?id=$id';
+  static String get payrollApproveBulk =>
+      '$base/app/payroll/approve_bulk.php';
+  static String get payrollMarkPaid =>
+      '$base/app/payroll/mark_paid.php';
+  static String get payrollGenerate => '$base/app/payroll/generate.php';
+  static String payrollSlipPdf(int employeeId, String month) =>
+      '$base/app/payroll/get_slip_pdf.php?employee_id=$employeeId&month=$month';
+  static String payrollEosb(int employeeId) =>
+      '$base/app/payroll/eosb_calculate.php?employee_id=$employeeId';
+  static String get payrollSlipApprove =>
+      '$base/app/payroll/approve.php';
+  static String get payrollSlipMarkPaid =>
+      '$base/app/payroll/mark_paid.php';
+  static String get payrollSlipRevert =>
+      '$base/app/payroll/revert.php';
+
+  // ── Allowances (recurring monthly bonuses: housing, transport, etc.) ──
+  static String allowancesList(int employeeId) =>
+      '$base/app/allowances/list.php?employee_id=$employeeId';
+  static String get allowanceCreate => '$base/app/allowances/create.php';
+  static String get allowanceUpdate => '$base/app/allowances/update.php';
+  static String get allowanceDelete => '$base/app/allowances/delete.php';
+  static String get payrollAuditLog => '$base/app/payroll/audit_log.php';
   static String get payrollBankFile =>
       '$base/app/payroll/export_bank_file.php';
   static String get payrollBankPreview =>
@@ -131,8 +170,6 @@ class AppLinks {
       '$base/app/leaves/approve.php?id=$id';
   static String leaveReject(int id) =>
       '$base/app/leaves/reject.php?id=$id';
-  static String get leaveConvertAbsence =>
-      '$base/app/leaves/convert_absence.php';
   static String get leaveCreateRecurring =>
       '$base/app/leaves/create_recurring.php';
   static String get leaveBalance => '$base/app/leaves/get_balance.php';
@@ -143,7 +180,13 @@ class AppLinks {
   static String get deductionRules => '$base/app/deductions/get_rules.php';
   static String get deductionManualAdd =>
       '$base/app/deductions/add_manual.php';
+  static String get deductionManualUpdate =>
+      '$base/app/deductions/update_manual.php';
+  static String get deductionManualDelete =>
+      '$base/app/deductions/delete_manual.php';
   static String get bonusManualAdd => '$base/app/bonuses/add_manual.php';
+  static String get bonusManualUpdate => '$base/app/bonuses/update_manual.php';
+  static String get bonusManualDelete => '$base/app/bonuses/delete_manual.php';
 
   // ── Expenses (claims with receipts) ────────────────────
   static String get expenses => '$base/app/expenses/list.php';

@@ -26,4 +26,20 @@ $id = BonusRuleModel::addManualBonus($employeeId, $tenantId, $amount, $reason, $
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'bonus.manual', 'employee', $employeeId, ['amount' => $amount]);
 
+PayrollCache::invalidate($tenantId);
+
+// Notify the employee that a bonus was added.
+if (!empty($employee['admin_id'])) {
+    try {
+        NotificationService::sendToUser(
+            (int) $employee['admin_id'],
+            'مكافأة جديدة',
+            "تمت إضافة مكافأة بقيمة {$amount} لراتبك.",
+            ['type' => 'bonus_added', 'amount' => $amount, 'reason' => $reason]
+        );
+    } catch (Throwable $e) {
+        error_log('Notify employee (bonus): ' . $e->getMessage());
+    }
+}
+
 Response::success(['id' => $id, 'message' => 'Manual bonus added']);

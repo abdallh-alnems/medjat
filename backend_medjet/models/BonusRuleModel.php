@@ -28,9 +28,34 @@ final class BonusRuleModel {
 
     public static function getManualByEmployeeMonth(int $employeeId, string $month, int $tenantId): array {
         return Database::fetchAll(
-            "SELECT * FROM manual_bonuses WHERE employee_id = ? AND month = ? AND tenant_id = ? ORDER BY created_at DESC",
+            "SELECT mb.*, a.name AS created_by_name
+             FROM manual_bonuses mb
+             LEFT JOIN admins a ON a.id = mb.created_by
+             WHERE mb.employee_id = ? AND mb.month = ? AND mb.tenant_id = ?
+             ORDER BY mb.created_at DESC",
             [$employeeId, $month, $tenantId]
         );
+    }
+
+    public static function findManualById(int $id, int $tenantId): ?array {
+        return Database::fetchOne(
+            "SELECT * FROM manual_bonuses WHERE id = ? AND tenant_id = ? LIMIT 1",
+            [$id, $tenantId]
+        );
+    }
+
+    public static function updateManualBonus(int $id, int $tenantId, float $amount, string $reason): bool {
+        return Database::execute(
+            "UPDATE manual_bonuses SET amount = ?, reason = ? WHERE id = ? AND tenant_id = ?",
+            [$amount, $reason, $id, $tenantId]
+        ) > 0;
+    }
+
+    public static function deleteManualBonus(int $id, int $tenantId): bool {
+        return Database::execute(
+            "DELETE FROM manual_bonuses WHERE id = ? AND tenant_id = ?",
+            [$id, $tenantId]
+        ) > 0;
     }
 
     public static function updateRules(int $tenantId, array $rules): void {

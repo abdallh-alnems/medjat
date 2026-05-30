@@ -20,7 +20,7 @@ import 'core/services/locale_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load();
-
+ 
   await GetStorage.init();
   Get.put<GetStorage>(GetStorage(), permanent: true);
   Get.put<LocaleService>(LocaleService(), permanent: true);
@@ -38,6 +38,7 @@ void main() async {
 
   final analytics = FirebaseAnalytics.instance;
   await analytics.setAnalyticsCollectionEnabled(true);
+
 
   FirebaseAnalytics.instance.logAppOpen();
 

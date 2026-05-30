@@ -25,6 +25,7 @@ $branchId = (int) ($input['branch_id'] ?? 0);
 $date = $input['date'] ?? date('Y-m-d');
 $checkInTime = $input['check_in_time'] ?? null;
 $checkOutTime = $input['check_out_time'] ?? null;
+$notes = isset($input['notes']) ? trim((string) $input['notes']) : '';
 
 Validator::required($employeeId, 'employee_id');
 Validator::date($date, 'date');
@@ -53,6 +54,9 @@ if ($branchId > 0) {
 if ($checkInTime && $checkOutTime) {
     Validator::required($branchId, 'branch_id');
     AttendanceModel::manualCheckIn($employeeId, $branchId, $tenantId, $date, $checkInTime, $checkOutTime, $auth['admin_id']);
+    if ($notes !== '') {
+        AttendanceModel::updateNote($tenantId, $employeeId, $date, $notes);
+    }
     AuditLogModel::log($tenantId, $auth['admin_id'], 'attendance.manual_check_in', 'employee', $employeeId);
     Response::success(['message' => 'Manual attendance recorded']);
 }
@@ -60,10 +64,16 @@ if ($checkInTime && $checkOutTime) {
 if ($checkInTime) {
     Validator::required($branchId, 'branch_id');
     AttendanceModel::manualCheckInOnly($employeeId, $branchId, $tenantId, $date, $checkInTime, $auth['admin_id']);
+    if ($notes !== '') {
+        AttendanceModel::updateNote($tenantId, $employeeId, $date, $notes);
+    }
     AuditLogModel::log($tenantId, $auth['admin_id'], 'attendance.manual_check_in', 'employee', $employeeId);
     Response::success(['message' => 'Manual check-in recorded']);
 }
 
 AttendanceModel::manualCheckOutOnly($employeeId, $tenantId, $date, $checkOutTime, $auth['admin_id']);
+if ($notes !== '') {
+    AttendanceModel::updateNote($tenantId, $employeeId, $date, $notes);
+}
 AuditLogModel::log($tenantId, $auth['admin_id'], 'attendance.manual_check_out', 'employee', $employeeId);
 Response::success(['message' => 'Manual check-out recorded']);

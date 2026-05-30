@@ -70,6 +70,42 @@ final class LoanModel {
     }
 
     /**
+     * Active and pending loans/advances for one employee, each enriched with
+     * paid / remaining totals and the next due installment. Used by the
+     * financial tab's loans card so the employee/admin sees outstanding
+     * balances without an extra round-trip.
+     */
+    public static function getActiveSummaryForEmployee(int $employeeId, int $tenantId): array {
+        $loans = Database::fetchAll(
+            "SELECT id, type, total_amount, installment_amount, installments_count,
+                    installments_paid, start_month, reason, status, created_at, approved_at
+             FROM employee_loans
+             WHERE employee_id = ? AND tenant_id = ?
+               AND status IN ('pending','active')
+             ORDER BY created_at DESC",
+            [$employeeId, $tenantId]
+        );
+        foreach ($loans as &$loan) {
+            $sums = Database::fetchOne(
+                "SELECT
+                    COALESCE(SUM(CASE WHEN status='paid' THEN amount ELSE 0 END), 0)    AS paid_amount,
+                    COALESCE(SUM(CASE WHEN status='pending' THEN amount ELSE 0 END), 0) AS remaining_amount,
+                    MIN(CASE WHEN status='pending' THEN month END)                       AS next_due_month,
+                    COUNT(CASE WHEN status='pending' THEN 1 END)                         AS remaining_installments
+                 FROM loan_installments
+                 WHERE loan_id = ? AND tenant_id = ?",
+                [(int) $loan['id'], $tenantId]
+            );
+            $loan['paid_amount']            = (float) ($sums['paid_amount'] ?? 0);
+            $loan['remaining_amount']       = (float) ($sums['remaining_amount'] ?? 0);
+            $loan['next_due_month']         = $sums['next_due_month'] ?? null;
+            $loan['remaining_installments'] = (int) ($sums['remaining_installments'] ?? 0);
+        }
+        unset($loan);
+        return $loans;
+    }
+
+    /**
      * Approve a pending loan: activate it and generate the monthly installment
      * schedule starting from start_month. The final installment absorbs any
      * rounding remainder so the schedule sums exactly to total_amount.

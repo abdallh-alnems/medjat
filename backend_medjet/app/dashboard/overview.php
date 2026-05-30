@@ -20,6 +20,15 @@ try {
 $today = $now->format('Y-m-d');
 $yesterday = (clone $now)->modify('-1 day')->format('Y-m-d');
 
+// Lazily materialize absences on app open (no cron): backfill completed days
+// since the last run and confirm today's already-ended shifts, so the board
+// below reflects no-shows immediately. Never let a failure break the dashboard.
+try {
+    AttendanceModel::catchUpAbsences($tenantId, $tz);
+} catch (Throwable $e) {
+    error_log('catchUpAbsences (overview) failed: ' . $e->getMessage());
+}
+
 // Active employees (filtered) joined with today's attendance. Reusing the
 // live-board query keeps status derivation identical to the live screen and
 // gives us branch/shift/category filtering for free.
@@ -50,9 +59,10 @@ foreach ($rows as $row) {
 
     // Derive the day bucket once (one leave lookup per employee, not two).
     // "absent" is now ONLY a confirmed absence (an explicit 'absent' record,
-    // created at end of day by the mark_absent cron). Active employees with no
-    // record yet are "not arrived" (shown by the live "not in" card), NOT
-    // absent — so the two no longer overlap.
+    // written by AttendanceModel::catchUpAbsences — invoked above on every
+    // dashboard load and nightly by the catchup_absences cron). Active
+    // employees with no record yet are "not arrived" (shown by the live
+    // "not in" card), NOT absent — so the two no longer overlap.
     if ($isPresent) {
         $bucket = 'present';
     } elseif (in_array($attStatus, ['leave', 'holiday', 'weekly_off'], true)

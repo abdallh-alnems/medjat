@@ -55,6 +55,14 @@ class CompanySettingsScreen extends StatelessWidget {
                     keyboardType: TextInputType.emailAddress,
                   ),
                   const SizedBox(height: AppSpacing.s6),
+                  Text('attendance_cycle'.tr,
+                      style: AppTextStyles.h3(context)),
+                  const SizedBox(height: AppSpacing.s2),
+                  Text('cycle_start_day_hint'.tr,
+                      style: AppTextStyles.sm(context)),
+                  const SizedBox(height: AppSpacing.s3),
+                  _CycleStartDayField(ctrl: ctrl),
+                  const SizedBox(height: AppSpacing.s6),
                   GetBuilder<CompanySettingsController>(
                     builder: (_) {
                       return PrimaryButton(
@@ -71,6 +79,84 @@ class CompanySettingsScreen extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// A compact stepper (− value +) for the company cycle start day (1-28).
+class _CycleStartDayField extends StatelessWidget {
+  final CompanySettingsController ctrl;
+  const _CycleStartDayField({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return GetBuilder<CompanySettingsController>(
+      builder: (_) {
+        final from = ctrl.cycleStartDay;
+        final previewText = from <= 1
+            ? 'cycle_normal_month'.tr
+            : 'cycle_window_preview'
+                .trParams({'from': '$from', 'to': '${from - 1}'});
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.s4),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: colors.borderHairline),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'cycle_start_day_label'.tr,
+                      style: const TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: from > 1
+                        ? () => ctrl.setCycleStartDay(from - 1)
+                        : null,
+                    icon: const Icon(Icons.remove_circle_outline),
+                    color: colors.brand,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  SizedBox(
+                    width: 36,
+                    child: Text(
+                      '$from',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Geist',
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: colors.brand,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: from < 28
+                        ? () => ctrl.setCycleStartDay(from + 1)
+                        : null,
+                    icon: const Icon(Icons.add_circle_outline),
+                    color: colors.brand,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.s2),
+              Text(previewText, style: AppTextStyles.sm(context)),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -24,6 +24,20 @@ foreach (['name', 'address', 'latitude', 'longitude'] as $field) {
     }
 }
 
+// Per-branch attendance cycle override: 1-28, or null to inherit company default.
+if (array_key_exists('cycle_start_day', $input)) {
+    $val = $input['cycle_start_day'];
+    if ($val === null || $val === '') {
+        $updateData['cycle_start_day'] = null;
+    } else {
+        $day = (int) $val;
+        if ($day < 1 || $day > 28) {
+            Response::fail('cycle_start_day must be between 1 and 28, or null', 422);
+        }
+        $updateData['cycle_start_day'] = $day;
+    }
+}
+
 if (!empty($updateData)) {
     BranchModel::update($branchId, $tenantId, $updateData);
 }

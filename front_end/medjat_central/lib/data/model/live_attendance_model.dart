@@ -1,5 +1,5 @@
 /// Derived presence state for a single employee on the live board.
-enum LiveStatus { inside, out, notIn, absent, leave, unknown }
+enum LiveStatus { inside, out, notIn, preShift, absent, leave, unknown }
 
 LiveStatus liveStatusFromString(String? raw) {
   switch (raw) {
@@ -9,6 +9,8 @@ LiveStatus liveStatusFromString(String? raw) {
       return LiveStatus.out;
     case 'not_in':
       return LiveStatus.notIn;
+    case 'pre_shift':
+      return LiveStatus.preShift;
     case 'absent':
       return LiveStatus.absent;
     case 'leave':
@@ -25,6 +27,8 @@ class LiveAttendanceEntry {
   final int? branchId;
   final String? branchName;
   final LiveStatus status;
+  final String? attendanceStatus;
+  final String? leaveReason;
   final String? checkInTime;
   final String? checkOutTime;
   final int lateMinutes;
@@ -39,6 +43,8 @@ class LiveAttendanceEntry {
     this.branchId,
     this.branchName,
     this.status = LiveStatus.unknown,
+    this.attendanceStatus,
+    this.leaveReason,
     this.checkInTime,
     this.checkOutTime,
     this.lateMinutes = 0,
@@ -55,6 +61,8 @@ class LiveAttendanceEntry {
       branchId: (json['branch_id'] as num?)?.toInt(),
       branchName: json['branch_name'] as String?,
       status: liveStatusFromString(json['derived_status'] as String?),
+      attendanceStatus: json['attendance_status'] as String?,
+      leaveReason: json['leave_reason'] as String?,
       checkInTime: json['check_in_time'] as String?,
       checkOutTime: json['check_out_time'] as String?,
       lateMinutes: (json['late_minutes'] as num?)?.toInt() ?? 0,
@@ -70,6 +78,7 @@ class LiveAttendanceSummary {
   final int inside;
   final int out;
   final int notIn;
+  final int preShift;
   final int absent;
   final int leave;
   final int late;
@@ -79,6 +88,7 @@ class LiveAttendanceSummary {
     this.inside = 0,
     this.out = 0,
     this.notIn = 0,
+    this.preShift = 0,
     this.absent = 0,
     this.leave = 0,
     this.late = 0,
@@ -90,6 +100,7 @@ class LiveAttendanceSummary {
       inside: (json['in'] as num?)?.toInt() ?? 0,
       out: (json['out'] as num?)?.toInt() ?? 0,
       notIn: (json['not_in'] as num?)?.toInt() ?? 0,
+      preShift: (json['pre_shift'] as num?)?.toInt() ?? 0,
       absent: (json['absent'] as num?)?.toInt() ?? 0,
       leave: (json['leave'] as num?)?.toInt() ?? 0,
       late: (json['late'] as num?)?.toInt() ?? 0,

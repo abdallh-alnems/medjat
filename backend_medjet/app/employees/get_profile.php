@@ -24,10 +24,22 @@ $activationExpiresAt = null;
 if ($employee['status'] === 'pending_activation') {
     $codeRow = ActivationCodeModel::findActive((int) $employee['id']);
     $activationCode = $codeRow['code'] ?? null;
-    $activationExpiresAt = $codeRow['expires_at'] ?? null;
+    $activationExpiresAt = isset($codeRow['expires_at'])
+        ? gmdate('Y-m-d\TH:i:s\Z', strtotime($codeRow['expires_at']))
+        : null;
 }
 
 $categories = EmployeeCategoryModel::getEmployeeCategories((int) $employee['id'], $tenantId);
+
+// Effective attendance cycle start day: branch override, else company default.
+$cycleRow = Database::fetchOne(
+    "SELECT COALESCE(b.cycle_start_day, t.cycle_start_day, 1) AS cycle_start_day
+     FROM tenants t
+     LEFT JOIN branches b ON b.id = ? AND b.tenant_id = t.id
+     WHERE t.id = ? LIMIT 1",
+    [$employee['branch_id'] ?? 0, $tenantId]
+);
+$cycleStartDay = (int) ($cycleRow['cycle_start_day'] ?? 1);
 
 Response::success([
     'employee' => $employee,
@@ -35,6 +47,7 @@ Response::success([
     'warnings' => $warnings,
     'leave_balance' => $leavesBalance,
     'activation_code' => $activationCode,
-    'activation_expires_at' => $activationExpiresAt,
+    'expires_at' => $activationExpiresAt,
     'categories' => $categories,
+    'cycle_start_day' => $cycleStartDay,
 ]);

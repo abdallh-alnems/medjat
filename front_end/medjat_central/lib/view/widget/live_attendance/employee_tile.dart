@@ -150,6 +150,9 @@ class LiveEmployeeTile extends StatelessWidget {
       case LiveStatus.notIn:
         return _StatusMeta(
             'status_not_in'.tr, Icons.schedule, colors.accentWarm);
+      case LiveStatus.preShift:
+        return _StatusMeta(
+            'status_pre_shift'.tr, Icons.bedtime_outlined, colors.textTertiary);
       case LiveStatus.absent:
         return _StatusMeta(
             'status_absent'.tr, Icons.cancel_outlined, colors.error);

@@ -15,6 +15,8 @@ class BranchModel {
   final bool stationAntiSpoofing;
   final bool hasStationPin;
   final bool? allowOfflineAttendance;
+  // Per-branch attendance cycle start day; null = inherit company default.
+  final int? cycleStartDay;
 
   BranchModel({
     required this.id,
@@ -33,6 +35,7 @@ class BranchModel {
     this.stationAntiSpoofing = true,
     this.hasStationPin = false,
     this.allowOfflineAttendance,
+    this.cycleStartDay,
   });
 
   static double? _parseDouble(dynamic v) {
@@ -75,6 +78,7 @@ class BranchModel {
       stationAntiSpoofing: (json['station_anti_spoofing_enabled'] as int?) == 1,
       hasStationPin: (json['station_admin_pin_hash'] as String?) != null,
       allowOfflineAttendance: allowOffline,
+      cycleStartDay: (json['cycle_start_day'] as num?)?.toInt(),
     );
   }
 
@@ -95,6 +99,7 @@ class BranchModel {
     bool? stationAntiSpoofing,
     bool? hasStationPin,
     bool? allowOfflineAttendance,
+    int? cycleStartDay,
   }) {
     return BranchModel(
       id: id ?? this.id,
@@ -113,6 +118,7 @@ class BranchModel {
       stationAntiSpoofing: stationAntiSpoofing ?? this.stationAntiSpoofing,
       hasStationPin: hasStationPin ?? this.hasStationPin,
       allowOfflineAttendance: allowOfflineAttendance ?? this.allowOfflineAttendance,
+      cycleStartDay: cycleStartDay ?? this.cycleStartDay,
     );
   }
 }

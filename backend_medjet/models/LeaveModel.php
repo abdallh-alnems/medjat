@@ -24,28 +24,6 @@ final class LeaveModel {
         );
     }
 
-    public static function convertAbsenceToLeave(int $employeeId, int $tenantId, string $date, string $type, string $reason, int $convertedBy): void {
-        $con = Database::getInstance();
-        $con->beginTransaction();
-        try {
-            Database::execute(
-                "UPDATE attendance SET status = 'leave' WHERE employee_id = ? AND date = ? AND tenant_id = ?",
-                [$employeeId, $date, $tenantId]
-            );
-
-            Database::execute(
-                "INSERT INTO leaves (tenant_id, employee_id, date, start_date, end_date, type, reason, status, approved_by, approved_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, 'approved', ?, NOW())",
-                [$tenantId, $employeeId, $date, $date, $date, $type, $reason, $convertedBy]
-            );
-
-            $con->commit();
-        } catch (Exception $e) {
-            $con->rollBack();
-            throw $e;
-        }
-    }
-
     public static function createRecurring(int $tenantId, ?int $branchId, string $dayOfWeek, string $type, ?string $reason = null): int {
         Database::execute(
             "INSERT INTO recurring_leaves (tenant_id, branch_id, day_of_week, type, reason, is_active)
@@ -61,6 +39,17 @@ final class LeaveModel {
             [$employeeId, $date, $tenantId]
         );
         return $row !== null;
+    }
+
+    public static function getActiveLeaveTypeForEmployee(int $employeeId, string $date, int $tenantId): ?string {
+        $row = Database::fetchOne(
+            "SELECT type, reason FROM leaves WHERE employee_id = ? AND date = ? AND tenant_id = ? AND status = 'approved' LIMIT 1",
+            [$employeeId, $date, $tenantId]
+        );
+        if ($row === null) return null;
+        $reason = trim((string) ($row['reason'] ?? ''));
+        if ($reason !== '') return $reason;
+        return $row['type'] ?? null;
     }
 
     public static function hasOverlap(int $employeeId, int $tenantId, string $start, string $end, ?int $excludeId = null): bool {

@@ -32,6 +32,8 @@ try {
     error_log('SmartAlert payroll generate: ' . $e->getMessage());
 }
 
+PayrollCache::invalidate($tenantId);
+
 Response::success([
     'month' => $month,
     'generated_count' => count($results),

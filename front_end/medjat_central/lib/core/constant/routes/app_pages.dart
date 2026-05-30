@@ -76,6 +76,9 @@ import '../../../view/screen/letter/letters_hub_screen.dart';
 import '../../../view/screen/letter/letter_template_edit_screen.dart';
 import '../../../view/screen/dashboard/status_employees_screen.dart';
 import '../../../logic/controller/dashboard/status_employees_controller.dart';
+import '../../../view/screen/dashboard/expiring_compliance_screen.dart';
+import '../../../logic/controller/dashboard/expiring_compliance_controller.dart';
+import '../../../data/data_source/remote/compliance_data/compliance_data.dart';
 import '../../../data/data_source/remote/live_attendance_data/live_attendance_data.dart';
 import '../../../data/data_source/remote/letter_data/letter_data.dart';
 import '../../../logic/controller/letter/letter_request_controller.dart';
@@ -583,6 +586,18 @@ List<GetPage<dynamic>> getPages = [
       Get.lazyPut<ShiftData>(() => ShiftData());
       Get.lazyPut<CategoryData>(() => CategoryData());
       Get.lazyPut<StatusEmployeesController>(() => StatusEmployeesController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.expiringCompliance,
+    page: () => const ExpiringComplianceScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<ComplianceData>(() => ComplianceData());
+      Get.lazyPut<ExpiringComplianceController>(
+          () => ExpiringComplianceController());
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,

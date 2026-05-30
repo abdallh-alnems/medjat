@@ -37,18 +37,4 @@ class LeaveData {
     return await _crud.getData(AppLinks.leaveBalance,
         queryParameters: params);
   }
-
-  Future<Map<String, dynamic>> convertAbsenceToLeave({
-    required int employeeId,
-    required String date,
-    required String type,
-    required String reason,
-  }) async {
-    return await _crud.postData(AppLinks.leaveConvertAbsence, {
-      'employee_id': employeeId,
-      'date': date,
-      'type': type,
-      'reason': reason,
-    });
-  }
 }

@@ -237,19 +237,25 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final (label, color) = _badgeData(colors);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s2, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppRadius.full),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontFamily: 'IBM Plex Sans Arabic',
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: color,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 140),
+      child: Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: AppSpacing.s2, vertical: 3),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(AppRadius.full),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'IBM Plex Sans Arabic',
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
     );
@@ -264,13 +270,23 @@ class _StatusBadge extends StatelessWidget {
         return ('status_out'.tr, colors.textSecondary);
       case LiveStatus.notIn:
         return ('status_not_in'.tr, colors.accentWarm);
+      case LiveStatus.preShift:
+        return ('status_pre_shift'.tr, colors.textTertiary);
       case LiveStatus.absent:
         return ('status_absent'.tr, colors.error);
       case LiveStatus.leave:
-        return ('status_leave'.tr, colors.accentWarm);
+        return (_leaveLabel(entry), colors.accentWarm);
       case LiveStatus.unknown:
         return ('unknown'.tr, colors.textTertiary);
     }
+  }
+
+  static String _leaveLabel(LiveAttendanceEntry entry) {
+    if (entry.attendanceStatus == 'holiday') return 'status_holiday'.tr;
+    if (entry.attendanceStatus == 'weekly_off') return 'status_weekly_off'.tr;
+    final reason = entry.leaveReason?.trim();
+    if (reason != null && reason.isNotEmpty) return reason;
+    return 'status_leave'.tr;
   }
 }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/class/crud.dart';
 import '../../../core/class/status_request.dart';
@@ -8,13 +9,14 @@ import '../../../data/data_source/remote/employee_data/employee_data.dart';
 import '../../../data/data_source/remote/attendance_data/attendance_data.dart';
 import '../../../data/data_source/remote/document_data/document_data.dart';
 import '../../../data/data_source/remote/payroll_data/payroll_data.dart';
-import '../../../data/data_source/remote/leave_data/leave_data.dart';
+import '../../../data/data_source/remote/letter_data/letter_data.dart';
 import '../../../data/data_source/remote/performance_data/performance_data.dart';
 import '../../../data/model/employee_model.dart';
 import '../../../data/model/attendance_model.dart';
 import '../../../data/model/document_model.dart';
 import '../../../data/model/warning_model.dart';
 import '../../../data/model/performance_review_model.dart';
+import '../../../data/model/financial_summary_model.dart';
 import '../../controller/auth/auth_controller.dart';
 
 class EmployeeDetailController extends GetxController {
@@ -22,7 +24,7 @@ class EmployeeDetailController extends GetxController {
   final AttendanceData _attendanceData = Get.find<AttendanceData>();
   final DocumentData _documentData = Get.find<DocumentData>();
   final PayrollData _payrollData = Get.find<PayrollData>();
-  final LeaveData _leaveData = Get.find<LeaveData>();
+  final LetterData _letterData = Get.find<LetterData>();
   final PerformanceData _performanceData = Get.find<PerformanceData>();
   final CRUD _crud = Get.find<CRUD>();
 
@@ -34,9 +36,100 @@ class EmployeeDetailController extends GetxController {
   StatusRequest warningStatus = StatusRequest.none;
   StatusRequest conversionStatus = StatusRequest.none;
   StatusRequest reviewStatus = StatusRequest.none;
+  StatusRequest financialStatus = StatusRequest.none;
 
   EmployeeModel? employee;
   List<AttendanceRecordModel> attendanceRecords = [];
+  Map<String, int> attendanceSummary = {
+    'present': 0,
+    'absent': 0,
+    'late': 0,
+    'leave': 0,
+    'holiday': 0,
+    'weekly_off': 0,
+    'worked_minutes': 0,
+    'overtime_minutes': 0,
+    'late_minutes': 0,
+  };
+  // Attendance filter: either a whole month (use [attendanceMonth]) or a
+  // custom range (use [attendanceFrom]/[attendanceTo]). When in range mode,
+  // [attendanceMonth] is the calendar's anchor month for display.
+  DateTime attendanceMonth = DateTime(DateTime.now().year, DateTime.now().month);
+  DateTime? attendanceFrom;
+  DateTime? attendanceTo;
+  bool get attendanceIsRange =>
+      attendanceFrom != null && attendanceTo != null;
+
+  // Attendance cycle start day (1-28). 1 = normal calendar month. Otherwise a
+  // cycle runs from [cycleStartDay] of one month to [cycleStartDay-1] of the
+  // next. The cycle is named after whichever month holds most of its days:
+  // when it starts on day >= 17 the bulk of the days fall in the *next* month,
+  // so it is labeled by the end month; when it starts on day <= 16 most days
+  // are in the starting month, so it is labeled by the start month.
+  int cycleStartDay = 1;
+  bool _attendanceInitialized = false;
+  bool _financialInitialized = false;
+
+  /// True when the cycle should carry the name of its end month (most of its
+  /// days fall there). With a 30/31-day month this is the case once the cycle
+  /// starts on day 17 or later (days in the end month = cycleStartDay - 1 > 15).
+  bool get cycleLabeledByEndMonth => cycleStartDay >= 17;
+
+  /// Effective window start for the current selection (custom range or cycle).
+  DateTime get periodFrom => attendanceIsRange
+      ? attendanceFrom!
+      : cycleWindowFrom(attendanceMonth);
+
+  /// Effective window end (inclusive) for the current selection.
+  DateTime get periodTo =>
+      attendanceIsRange ? attendanceTo! : cycleWindowTo(attendanceMonth);
+
+  /// Start date of the cycle whose label (majority) month is [labelMonth].
+  DateTime cycleWindowFrom(DateTime labelMonth) {
+    if (cycleStartDay <= 1) return DateTime(labelMonth.year, labelMonth.month, 1);
+    // End-labeled: cycle ends in [labelMonth], so it starts in the prior month.
+    // Start-labeled: cycle starts in [labelMonth].
+    final startMonthOffset = cycleLabeledByEndMonth ? -1 : 0;
+    return DateTime(labelMonth.year, labelMonth.month + startMonthOffset, cycleStartDay);
+  }
+
+  /// Inclusive end date of the cycle whose label (majority) month is [labelMonth].
+  DateTime cycleWindowTo(DateTime labelMonth) {
+    if (cycleStartDay <= 1) return DateTime(labelMonth.year, labelMonth.month + 1, 0);
+    // End-labeled: cycle ends in [labelMonth] on cycleStartDay-1.
+    // Start-labeled: cycle ends in the month after [labelMonth] on cycleStartDay-1.
+    final endMonthOffset = cycleLabeledByEndMonth ? 0 : 1;
+    return DateTime(labelMonth.year, labelMonth.month + endMonthOffset, cycleStartDay - 1);
+  }
+
+  /// The label (majority) month of the cycle that contains today.
+  DateTime currentCycleLabelMonth() => cycleLabelContaining(DateTime.now());
+
+  /// Label month of the cycle that contains an arbitrary date.
+  DateTime cycleLabelContaining(DateTime date) {
+    if (cycleStartDay <= 1) return DateTime(date.year, date.month);
+    final startMonthOffset = date.day >= cycleStartDay ? 0 : -1;
+    final labelOffset = cycleLabeledByEndMonth ? 1 : 0;
+    return DateTime(date.year, date.month + startMonthOffset + labelOffset);
+  }
+
+  /// Earliest label month the financial picker can land on — the cycle
+  /// containing the employee's hire date. Null when no hire date is set.
+  DateTime? minFinancialMonth() {
+    final h = employee?.hireDate;
+    if (h == null) return null;
+    return cycleLabelContaining(h);
+  }
+
+  FinancialMonthSummary? financialCurrent;
+  List<FinancialHistoryEntry> financialHistory = [];
+  List<LoanSummary> financialLoans = [];
+  EosbInfo? eosb;
+  List<Map<String, dynamic>> letterTemplates = [];
+  List<Allowance> allowances = [];
+  List<SalaryChange> salaryHistory = [];
+  DateTime financialMonth = DateTime(DateTime.now().year, DateTime.now().month);
+
   List<DocumentModel> documents = [];
   List<WarningModel> warnings = [];
   List<PerformanceReviewModel> reviews = [];
@@ -64,11 +157,21 @@ class EmployeeDetailController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    // Attendance loads once we know the employee's cycle start day (in
+    // loadEmployee). Mark it loading up-front so the tab shows a spinner.
+    attendanceStatus = StatusRequest.loading;
     loadEmployee();
-    loadAttendance();
     loadDocuments();
     loadReviews();
+    // Financial month is anchored on the current cycle once we know the cycle
+    // start day (in loadEmployee), so it is not loaded here.
   }
+
+  String _formatMonth(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}';
+
+  String _formatDate(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   Future<void> loadEmployee() async {
     status = StatusRequest.loading;
@@ -105,28 +208,68 @@ class EmployeeDetailController extends GetxController {
               .whereType<Map<String, dynamic>>()
               .toList();
         }
+        cycleStartDay = (data['cycle_start_day'] as num?)?.toInt() ?? 1;
       }
       status = StatusRequest.success;
+      // First time we know the cycle: anchor on the current cycle and load.
+      if (!_attendanceInitialized) {
+        _attendanceInitialized = true;
+        attendanceFrom = null;
+        attendanceTo = null;
+        attendanceMonth = currentCycleLabelMonth();
+        loadAttendanceMonth();
+      }
+      // Anchor the financial tab on the current cycle too.
+      if (!_financialInitialized && canManagePayroll) {
+        _financialInitialized = true;
+        financialMonth = currentCycleLabelMonth();
+        loadFinancialMonth();
+        loadEosb();
+        loadLetterTemplates();
+        loadAllowances();
+      }
     } else {
       status = (response['status'] as StatusRequest?) ?? StatusRequest.failure;
     }
     update();
   }
 
-  Future<void> loadAttendance() async {
+  Future<void> loadAttendanceMonth() async {
     attendanceStatus = StatusRequest.loading;
     update();
 
-    final response = await _attendanceData.getAttendance(
-      employeeId: employeeId,
+    // Always send an explicit window so custom cycles (e.g. 25→24) are honored.
+    final response = await _employeeData.getAttendanceHistory(
+      employeeId,
+      from: _formatDate(periodFrom),
+      to: _formatDate(periodTo),
     );
 
     if (response['status'] == StatusRequest.success) {
-      final data = response['data'];
-      if (data is List) {
-        attendanceRecords = data
-            .map((e) => AttendanceRecordModel.fromJson(e as Map<String, dynamic>))
-            .toList();
+      dynamic data = response['data'];
+      if (data is Map && data['data'] is Map) {
+        data = data['data'];
+      }
+      if (data is Map<String, dynamic>) {
+        if (data['records'] is List) {
+          attendanceRecords = (data['records'] as List)
+              .map((e) => AttendanceRecordModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+        if (data['summary'] is Map<String, dynamic>) {
+          final s = data['summary'] as Map<String, dynamic>;
+          attendanceSummary = {
+            'present': (s['present'] as num?)?.toInt() ?? 0,
+            'absent': (s['absent'] as num?)?.toInt() ?? 0,
+            'late': (s['late'] as num?)?.toInt() ?? 0,
+            'leave': (s['leave'] as num?)?.toInt() ?? 0,
+            'holiday': (s['holiday'] as num?)?.toInt() ?? 0,
+            'weekly_off': (s['weekly_off'] as num?)?.toInt() ?? 0,
+            'worked_minutes': (s['worked_minutes'] as num?)?.toInt() ?? 0,
+            'overtime_minutes': (s['overtime_minutes'] as num?)?.toInt() ?? 0,
+            'late_minutes': (s['late_minutes'] as num?)?.toInt() ?? 0,
+          };
+        }
       }
       attendanceStatus = StatusRequest.success;
     } else {
@@ -134,6 +277,239 @@ class EmployeeDetailController extends GetxController {
           (response['status'] as StatusRequest?) ?? StatusRequest.failure;
     }
     update();
+  }
+
+  void changeAttendanceMonth(DateTime newMonth) {
+    attendanceMonth = DateTime(newMonth.year, newMonth.month);
+    attendanceFrom = null;
+    attendanceTo = null;
+    loadAttendanceMonth();
+  }
+
+  /// Switches to a custom date range. The calendar anchor is set to the start
+  /// month so the calendar still renders meaningful colors for ranges that
+  /// stay within a single month.
+  void changeAttendanceRange(DateTime from, DateTime to) {
+    attendanceFrom = DateTime(from.year, from.month, from.day);
+    attendanceTo = DateTime(to.year, to.month, to.day);
+    attendanceMonth = DateTime(from.year, from.month);
+    loadAttendanceMonth();
+  }
+
+  Future<void> loadFinancialMonth() async {
+    if (!canManagePayroll) return;
+    financialStatus = StatusRequest.loading;
+    update();
+
+    final response = await _employeeData.getFinancialSummary(
+      employeeId,
+      _formatMonth(financialMonth),
+    );
+
+    if (response['status'] == StatusRequest.success) {
+      dynamic data = response['data'];
+      if (data is Map && data['data'] is Map) {
+        data = data['data'];
+      }
+      if (data is Map<String, dynamic>) {
+        if (data['current'] is Map<String, dynamic>) {
+          financialCurrent = FinancialMonthSummary.fromJson(
+            data['current'] as Map<String, dynamic>,
+          );
+        }
+        if (data['history'] is List) {
+          financialHistory = (data['history'] as List)
+              .whereType<Map<String, dynamic>>()
+              .map(FinancialHistoryEntry.fromJson)
+              .toList();
+        }
+        if (data['loans'] is List) {
+          financialLoans = (data['loans'] as List)
+              .whereType<Map<String, dynamic>>()
+              .map(LoanSummary.fromJson)
+              .toList();
+        } else {
+          financialLoans = [];
+        }
+        if (data['salary_history'] is List) {
+          salaryHistory = (data['salary_history'] as List)
+              .whereType<Map<String, dynamic>>()
+              .map(SalaryChange.fromJson)
+              .toList();
+        } else {
+          salaryHistory = [];
+        }
+      }
+      financialStatus = StatusRequest.success;
+    } else {
+      financialStatus =
+          (response['status'] as StatusRequest?) ?? StatusRequest.failure;
+    }
+    update();
+  }
+
+  void changeFinancialMonth(DateTime newMonth) {
+    financialMonth = DateTime(newMonth.year, newMonth.month);
+    loadFinancialMonth();
+  }
+
+  /// Loads accumulated End-of-Service Benefits for this employee from hire
+  /// date to now. Silent on failure (the card simply stays hidden when EOSB
+  /// is disabled or unavailable).
+  Future<void> loadEosb() async {
+    if (!canManagePayroll) return;
+    final response = await _payrollData.getEosb(employeeId);
+    if (response['status'] == StatusRequest.success) {
+      dynamic data = response['data'];
+      if (data is Map && data['data'] is Map) {
+        data = data['data'];
+      }
+      if (data is Map<String, dynamic>) {
+        eosb = EosbInfo.fromJson(data);
+        update();
+      }
+    }
+  }
+
+  /// Loads the active letter/certificate templates so the financial tab can
+  /// render quick-issue buttons (salary cert, bank letter, etc.). Silent on
+  /// failure.
+  Future<void> loadLetterTemplates() async {
+    if (!canManagePayroll) return;
+    final response = await _letterData.getTemplates();
+    if (response['status'] == StatusRequest.success) {
+      dynamic data = response['data'];
+      if (data is Map && data['data'] is Map) {
+        data = data['data'];
+      }
+      if (data is Map<String, dynamic> && data['templates'] is List) {
+        letterTemplates = (data['templates'] as List)
+            .whereType<Map<String, dynamic>>()
+            .where((t) => (t['is_active'] as num?)?.toInt() == 1)
+            .toList();
+        update();
+      }
+    }
+  }
+
+  /// Issues a new document request for [templateId] (auto-approved server-
+  /// side) and opens the generated PDF in the native print/share sheet.
+  /// [extraFields] feeds template placeholders such as `addressed_to` for the
+  /// bank letter template.
+  Future<void> issueAndOpenLetter(int templateId,
+      {Map<String, String>? extraFields}) async {
+    Get.snackbar('letter_issuing'.tr, '',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 1));
+    final response = await _letterData.issueDocument(
+      employeeId: employeeId,
+      templateId: templateId,
+      extraFields: extraFields,
+    );
+    if (response['status'] != StatusRequest.success) {
+      Get.snackbar('error'.tr, 'letter_issue_failed'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    dynamic data = response['data'];
+    if (data is Map && data['data'] is Map) data = data['data'];
+    final requestId = data is Map ? (data['request_id'] as num?)?.toInt() : null;
+    if (requestId == null) {
+      Get.snackbar('error'.tr, 'letter_issue_failed'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    final pdf = await _letterData.downloadPdf(requestId);
+    if (pdf['status'] == StatusRequest.success && pdf['bytes'] is Uint8List) {
+      final bytes = pdf['bytes'] as Uint8List;
+      await Printing.layoutPdf(
+        onLayout: (_) async => bytes,
+        name: 'letter_$requestId.pdf',
+      );
+    } else {
+      Get.snackbar('error'.tr, 'letter_pdf_failed'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  /// Loads the employee's recurring monthly allowances (every history row,
+  /// active and inactive). The card uses [Allowance.isActive] to badge each.
+  Future<void> loadAllowances() async {
+    if (!canManagePayroll) return;
+    final response = await _payrollData.listAllowances(employeeId);
+    if (response['status'] == StatusRequest.success) {
+      dynamic data = response['data'];
+      if (data is Map && data['data'] is Map) data = data['data'];
+      if (data is Map<String, dynamic> && data['allowances'] is List) {
+        allowances = (data['allowances'] as List)
+            .whereType<Map<String, dynamic>>()
+            .map(Allowance.fromJson)
+            .toList();
+        update();
+      }
+    }
+  }
+
+  Future<bool> saveAllowance({
+    int? id,
+    required String type,
+    required num amount,
+    required String startMonth,
+    String? endMonth,
+    String? label,
+  }) async {
+    adjustmentStatus = StatusRequest.loading;
+    update();
+    final response = id == null
+        ? await _payrollData.createAllowance(
+            employeeId: employeeId,
+            type: type,
+            amount: amount,
+            startMonth: startMonth,
+            endMonth: endMonth,
+            label: label,
+          )
+        : await _payrollData.updateAllowance(
+            id: id,
+            type: type,
+            amount: amount,
+            startMonth: startMonth,
+            endMonth: endMonth,
+            label: label,
+          );
+    if (response['status'] == StatusRequest.success) {
+      adjustmentStatus = StatusRequest.success;
+      Get.snackbar('done'.tr,
+          id == null ? 'allowance_added'.tr : 'allowance_updated'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      await loadAllowances();
+      await loadFinancialMonth();
+      return true;
+    }
+    adjustmentStatus = StatusRequest.failure;
+    Get.snackbar('error'.tr, 'allowance_save_failed'.tr,
+        snackPosition: SnackPosition.BOTTOM);
+    update();
+    return false;
+  }
+
+  Future<bool> deleteAllowance(int id) async {
+    adjustmentStatus = StatusRequest.loading;
+    update();
+    final response = await _payrollData.deleteAllowance(id);
+    if (response['status'] == StatusRequest.success) {
+      adjustmentStatus = StatusRequest.success;
+      Get.snackbar('done'.tr, 'allowance_deleted'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      await loadAllowances();
+      await loadFinancialMonth();
+      return true;
+    }
+    adjustmentStatus = StatusRequest.failure;
+    Get.snackbar('error'.tr, 'allowance_delete_failed'.tr,
+        snackPosition: SnackPosition.BOTTOM);
+    update();
+    return false;
   }
 
   Future<void> loadDocuments() async {
@@ -181,10 +557,8 @@ class EmployeeDetailController extends GetxController {
 
   /// Regenerates the activation code.
   ///
-  /// For employees who are already `active`, this revokes their current
-  /// device token (PRD §3.6 device-change flow) and resets status to
-  /// `pending_activation` on the backend. Callers should confirm with the
-  /// admin before invoking in that case.
+  /// For active employees this also revokes the existing device token —
+  /// caller should confirm with the admin before invoking in that case.
   Future<bool> generateActivationCode() async {
     activationStatus = StatusRequest.loading;
     update();
@@ -199,8 +573,6 @@ class EmployeeDetailController extends GetxController {
       if (payload is Map<String, dynamic>) {
         _applyActivationPayload(payload);
         if (payload['device_revoked'] == true && employee != null) {
-          // Backend flipped status back to pending_activation; refresh the
-          // local employee so the UI matches.
           await loadEmployee();
           return true;
         }
@@ -319,8 +691,24 @@ class EmployeeDetailController extends GetxController {
     }
   }
 
-  /// Updates the per-employee annual leave override.
-  /// Pass [days] = null to clear it (employee inherits the company default).
+  /// Updates one or more editable fields on the employee profile.
+  /// Pass a string value for text fields; pass `''` (empty string) to clear
+  /// optional/date fields back to NULL.
+  Future<bool> updateEmployeeInfo(Map<String, dynamic> changes) async {
+    if (changes.isEmpty) return true;
+    final response = await _employeeData.updateEmployee(employeeId, changes);
+    if (response['status'] == StatusRequest.success) {
+      Get.snackbar('done'.tr, 'saved_successfully'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      await loadEmployee();
+      return true;
+    }
+    Get.snackbar('error'.tr,
+        (response['message'] as String?) ?? 'error'.tr,
+        snackPosition: SnackPosition.BOTTOM);
+    return false;
+  }
+
   Future<void> updateAnnualLeaveDays(int? days) async {
     final response = await _employeeData.updateEmployee(employeeId, {
       'annual_leave_days': days,
@@ -372,33 +760,60 @@ class EmployeeDetailController extends GetxController {
     }
   }
 
-  Future<void> convertAbsenceToLeave({
+  bool get canManageAttendance {
+    try {
+      final auth = Get.find<AuthController>();
+      return auth.user?.canManageAttendance ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Unified day-status editor: sets a single calendar day to
+  /// `present` / `absent` / `leave`. Pass times only for `present`, and
+  /// [leaveType] only for `leave`. Reloads attendance + employee (so the
+  /// leave balance refreshes) on success.
+  Future<bool> setDayStatus({
     required String date,
-    required String type,
-    required String reason,
+    required String status,
+    String? checkInTime,
+    String? checkOutTime,
+    String? leaveType,
+    String? reason,
+    String? deductionMode,
+    num? deductionValue,
   }) async {
     conversionStatus = StatusRequest.loading;
     update();
 
-    final response = await _leaveData.convertAbsenceToLeave(
+    final response = await _attendanceData.setDayStatus(
       employeeId: employeeId,
       date: date,
-      type: type,
+      status: status,
+      checkInTime: checkInTime,
+      checkOutTime: checkOutTime,
+      leaveType: leaveType,
       reason: reason,
+      deductionMode: deductionMode,
+      deductionValue: deductionValue,
     );
 
     if (response['status'] == StatusRequest.success) {
       conversionStatus = StatusRequest.success;
-      Get.snackbar('done'.tr, 'absence_converted'.tr,
+      Get.snackbar('done'.tr, 'day_status_changed'.tr,
           snackPosition: SnackPosition.BOTTOM);
-      await loadAttendance();
+      await loadAttendanceMonth();
       await loadEmployee();
-    } else {
-      conversionStatus = StatusRequest.failure;
-      Get.snackbar('error'.tr, 'absence_conversion_failed'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      update();
+      return true;
     }
+
+    conversionStatus = StatusRequest.failure;
+    Get.snackbar('error'.tr,
+        (response['message'] as String?) ?? 'day_status_change_failed'.tr,
+        snackPosition: SnackPosition.BOTTOM);
     update();
+    return false;
   }
 
   Future<void> addManualDeduction({
@@ -418,6 +833,7 @@ class EmployeeDetailController extends GetxController {
       adjustmentStatus = StatusRequest.success;
       Get.snackbar('done'.tr, 'deduction_added'.tr,
           snackPosition: SnackPosition.BOTTOM);
+      await loadFinancialMonth();
     } else {
       adjustmentStatus = StatusRequest.failure;
       Get.snackbar('error'.tr, 'deduction_add_failed'.tr,
@@ -443,12 +859,149 @@ class EmployeeDetailController extends GetxController {
       adjustmentStatus = StatusRequest.success;
       Get.snackbar('done'.tr, 'bonus_added'.tr,
           snackPosition: SnackPosition.BOTTOM);
+      await loadFinancialMonth();
     } else {
       adjustmentStatus = StatusRequest.failure;
       Get.snackbar('error'.tr, 'bonus_add_failed'.tr,
           snackPosition: SnackPosition.BOTTOM);
     }
     update();
+  }
+
+  /// Edits an existing manual deduction or bonus line. [isDeduction] picks
+  /// which endpoint to hit; both expect the manual_* row id from the summary.
+  Future<bool> updateManualAdjustment({
+    required int id,
+    required bool isDeduction,
+    required num amount,
+    required String reason,
+  }) async {
+    adjustmentStatus = StatusRequest.loading;
+    update();
+    final response = isDeduction
+        ? await _payrollData.updateManualDeduction(
+            id: id, amount: amount, reason: reason)
+        : await _payrollData.updateManualBonus(
+            id: id, amount: amount, reason: reason);
+    if (response['status'] == StatusRequest.success) {
+      adjustmentStatus = StatusRequest.success;
+      Get.snackbar('done'.tr, 'adjustment_updated'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      await loadFinancialMonth();
+      return true;
+    }
+    adjustmentStatus = StatusRequest.failure;
+    Get.snackbar('error'.tr, 'adjustment_update_failed'.tr,
+        snackPosition: SnackPosition.BOTTOM);
+    update();
+    return false;
+  }
+
+  /// Approve the current month's payroll slip (draft → approved). No-op if
+  /// the slip doesn't exist yet (admin must run the monthly generate first).
+  Future<bool> approveCurrentSlip() async {
+    final id = financialCurrent?.payrollId;
+    if (id == null) return false;
+    adjustmentStatus = StatusRequest.loading;
+    update();
+    final response = await _payrollData.approveSlip(id);
+    if (response['status'] == StatusRequest.success) {
+      adjustmentStatus = StatusRequest.success;
+      Get.snackbar('done'.tr, 'payroll_approved'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      await loadFinancialMonth();
+      return true;
+    }
+    adjustmentStatus = StatusRequest.failure;
+    Get.snackbar('error'.tr, 'payroll_approve_failed'.tr,
+        snackPosition: SnackPosition.BOTTOM);
+    update();
+    return false;
+  }
+
+  /// Mark the current month's slip as paid (approved → paid).
+  Future<bool> markCurrentSlipPaid({String? paidAt}) async {
+    final id = financialCurrent?.payrollId;
+    if (id == null) return false;
+    adjustmentStatus = StatusRequest.loading;
+    update();
+    final response = await _payrollData.markSlipPaid(id, paidAt: paidAt);
+    if (response['status'] == StatusRequest.success) {
+      adjustmentStatus = StatusRequest.success;
+      Get.snackbar('done'.tr, 'payroll_marked_paid'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      await loadFinancialMonth();
+      return true;
+    }
+    adjustmentStatus = StatusRequest.failure;
+    Get.snackbar('error'.tr, 'payroll_mark_paid_failed'.tr,
+        snackPosition: SnackPosition.BOTTOM);
+    update();
+    return false;
+  }
+
+  /// Step the current slip one state back (paid → approved, or approved →
+  /// draft) so corrections can be made.
+  Future<bool> revertCurrentSlip() async {
+    final id = financialCurrent?.payrollId;
+    if (id == null) return false;
+    adjustmentStatus = StatusRequest.loading;
+    update();
+    final response = await _payrollData.revertSlip(id);
+    if (response['status'] == StatusRequest.success) {
+      adjustmentStatus = StatusRequest.success;
+      Get.snackbar('done'.tr, 'payroll_reverted'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      await loadFinancialMonth();
+      return true;
+    }
+    adjustmentStatus = StatusRequest.failure;
+    Get.snackbar('error'.tr, 'payroll_revert_failed'.tr,
+        snackPosition: SnackPosition.BOTTOM);
+    update();
+    return false;
+  }
+
+  /// Downloads the payslip PDF for the currently-selected financial month.
+  /// Returns the local file path on success (so the UI can open/share it),
+  /// or null on failure. Toasts both outcomes.
+  Future<String?> downloadPayslipPdf() async {
+    Get.snackbar('payslip_downloading'.tr, '',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2));
+    final monthStr =
+        '${financialMonth.year}-${financialMonth.month.toString().padLeft(2, '0')}';
+    final path =
+        await _payrollData.downloadPayslipPdf(employeeId, monthStr);
+    if (path == null) {
+      Get.snackbar('error'.tr, 'payslip_download_failed'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return null;
+    }
+    return path;
+  }
+
+  Future<bool> deleteManualAdjustment({
+    required int id,
+    required bool isDeduction,
+  }) async {
+    adjustmentStatus = StatusRequest.loading;
+    update();
+    final response = isDeduction
+        ? await _payrollData.deleteManualDeduction(id)
+        : await _payrollData.deleteManualBonus(id);
+    if (response['status'] == StatusRequest.success) {
+      adjustmentStatus = StatusRequest.success;
+      Get.snackbar('done'.tr, 'adjustment_deleted'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      await loadFinancialMonth();
+      return true;
+    }
+    adjustmentStatus = StatusRequest.failure;
+    Get.snackbar('error'.tr, 'adjustment_delete_failed'.tr,
+        snackPosition: SnackPosition.BOTTOM);
+    update();
+    return false;
   }
 
   Future<void> loadReviews() async {
@@ -520,4 +1073,3 @@ class EmployeeDetailController extends GetxController {
     }
   }
 }
-

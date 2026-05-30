@@ -12,7 +12,7 @@ void main() {
         'year': 2024,
         'base_salary': 10000.0,
         'total_deductions': 500.0,
-        'total_overtime': 200.0,
+        'total_bonuses': 200.0,
         'net_salary': 9700.0,
         'status': 'approved',
         'generated_at': '2024-06-30T23:59:59',
@@ -27,7 +27,7 @@ void main() {
       expect(p.year, 2024);
       expect(p.baseSalary, 10000.0);
       expect(p.totalDeductions, 500.0);
-      expect(p.totalOvertime, 200.0);
+      expect(p.totalBonuses, 200.0);
       expect(p.netSalary, 9700.0);
       expect(p.status, 'approved');
       expect(p.generatedAt, DateTime(2024, 6, 30, 23, 59, 59));
@@ -43,7 +43,7 @@ void main() {
       expect(p.year, 2026);
       expect(p.baseSalary, 0);
       expect(p.totalDeductions, 0);
-      expect(p.totalOvertime, 0);
+      expect(p.totalBonuses, 0);
       expect(p.netSalary, 0);
       expect(p.status, 'draft');
       expect(p.generatedAt, isNull);
@@ -53,13 +53,13 @@ void main() {
       final p = PayrollModel.fromJson({
         'base_salary': 10000,
         'total_deductions': 500,
-        'total_overtime': 200,
+        'total_bonuses': 200,
         'net_salary': 9700,
       });
 
       expect(p.baseSalary, 10000.0);
       expect(p.totalDeductions, 500.0);
-      expect(p.totalOvertime, 200.0);
+      expect(p.totalBonuses, 200.0);
       expect(p.netSalary, 9700.0);
     });
   });

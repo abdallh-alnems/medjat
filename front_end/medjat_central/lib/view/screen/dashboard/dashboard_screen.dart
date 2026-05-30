@@ -15,6 +15,11 @@ import '../../../core/services/locale_service.dart';
 import '../../../logic/controller/dashboard/status_employees_controller.dart';
 import '../../widget/dashboard/stat_card.dart';
 
+/// Formats a money amount with thousands separators + the currency label.
+/// Latin digits (en) keep it consistent with the rest of the numeric UI.
+final NumberFormat _kMoneyFmt = NumberFormat('#,##0', 'en');
+String _money(num v) => '${_kMoneyFmt.format(v)} ${'currency_egp'.tr}';
+
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
 
@@ -365,12 +370,12 @@ class _DashboardContent extends StatelessWidget {
       colors.error,
       route: AppRoutes.assets,
     );
-    // Compliance alert is informational (no dedicated screen yet).
     add(
       d?.expiringCompliance ?? 0,
       'expiring_compliance',
       Icons.event_busy_outlined,
       colors.error,
+      route: AppRoutes.expiringCompliance,
       subtitleKey: 'expiring_soon',
     );
 
@@ -448,8 +453,7 @@ class _DashboardContent extends StatelessWidget {
       if (hasExpenses)
         StatCard(
           title: 'monthly_expenses'.tr,
-          value:
-              '${(d?.monthlyExpenses ?? 0).toStringAsFixed(0)} ${'currency_egp'.tr}',
+          value: _money(d?.monthlyExpenses ?? 0),
           icon: Icons.receipt_long_outlined,
           color: colors.accentWarm,
           compact: true,
@@ -1314,8 +1318,6 @@ class _PayrollSummaryCard extends StatelessWidget {
   final PayrollSummary payroll;
   const _PayrollSummaryCard({required this.payroll});
 
-  String _money(double v) => '${v.toStringAsFixed(0)} ${'currency_egp'.tr}';
-
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
@@ -1672,7 +1674,7 @@ class _BarChart extends StatelessWidget {
       case BranchMetric.lateRate:
         return '${val.toStringAsFixed(1)}%';
       case BranchMetric.totalPayroll:
-        return '${val.toStringAsFixed(0)} ${'currency_egp'.tr}';
+        return _money(val);
       case BranchMetric.employeesCount:
         return '${val.toInt()} ${'employees_label'.tr}';
     }
@@ -1841,11 +1843,7 @@ class _BranchSummaryTable extends StatelessWidget {
                     ),
                   ),
                   DataCell(Text('${b.attendanceRate.toStringAsFixed(1)}%')),
-                  DataCell(
-                    Text(
-                      '${b.totalPayroll.toStringAsFixed(0)} ${'currency_egp'.tr}',
-                    ),
-                  ),
+                  DataCell(Text(_money(b.totalPayroll))),
                   DataCell(Text('${b.effectiveLateRate.toStringAsFixed(1)}%')),
                   DataCell(Text('${b.totalEmployees}')),
                 ],
