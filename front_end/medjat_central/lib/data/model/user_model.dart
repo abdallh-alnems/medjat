@@ -47,6 +47,31 @@ class UserModel {
     );
   }
 
+  /// Sentinel so [copyWith] can tell "leave phone unchanged" apart from
+  /// "set phone to null" (clearing it).
+  static const Object _unset = Object();
+
+  UserModel copyWith({
+    String? name,
+    Object? phone = _unset,
+    String? photoUrl,
+  }) {
+    return UserModel(
+      id: id,
+      tenantId: tenantId,
+      branchId: branchId,
+      name: name ?? this.name,
+      email: email,
+      phone: identical(phone, _unset) ? this.phone : phone as String?,
+      photoUrl: photoUrl ?? this.photoUrl,
+      roleKey: roleKey,
+      permissions: permissions,
+      employeeCode: employeeCode,
+      jobTitle: jobTitle,
+      branchName: branchName,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'tenant_id': tenantId,

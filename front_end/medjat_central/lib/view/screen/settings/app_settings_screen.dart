@@ -1,9 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../../core/constant/theme/theme.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/services/locale_service.dart';
 import '../../../core/services/dark_light_service.dart';
+import '../../../core/widget/appearance_loading.dart';
+
+/// A forward chevron that respects the current text direction (points left in
+/// RTL, right in LTR) instead of being hard-coded.
+Icon _forwardChevron(BuildContext context) {
+  final isRtl = Directionality.of(context) == TextDirection.rtl;
+  return Icon(
+    isRtl ? Icons.chevron_left : Icons.chevron_right,
+    size: 20,
+    color: AppColors.of(context).textTertiary,
+  );
+}
 
 class AppSettingsScreen extends StatelessWidget {
   const AppSettingsScreen({super.key});
@@ -59,11 +72,41 @@ class AppSettingsScreen extends StatelessWidget {
           _AppSettingTile(
             icon: Icons.notifications_outlined,
             title: 'notifications'.tr,
-            trailing: Icon(Icons.chevron_left, size: 20, color: AppColors.of(context).textTertiary),
+            trailing: _forwardChevron(context),
             onTap: () => Get.toNamed<void>(AppRoutes.notificationPrefs),
           ),
+          const SizedBox(height: AppSpacing.s6),
+          const _VersionFooter(),
         ],
       ),
+    );
+  }
+}
+
+/// Plain app-version label shown at the bottom of the settings list.
+class _VersionFooter extends StatelessWidget {
+  const _VersionFooter();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return FutureBuilder<PackageInfo>(
+      future: PackageInfo.fromPlatform(),
+      builder: (context, snapshot) {
+        final info = snapshot.data;
+        if (info == null) return const SizedBox.shrink();
+        return Center(
+          child: Text(
+            'v${info.version}',
+            style: TextStyle(
+              fontFamily: 'Geist',
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: colors.textTertiary,
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -154,8 +197,9 @@ class _ThemeOption extends StatelessWidget {
             ? Icon(Icons.check_rounded, size: 22, color: colors.brand)
             : null,
         onTap: () {
-          themeSvc.setMode(mode);
           Navigator.pop(context);
+          if (themeSvc.mode == mode) return;
+          runWithAppearanceOverlay(() => themeSvc.setMode(mode));
         },
       );
     });
@@ -241,8 +285,9 @@ class _LanguageOption extends StatelessWidget {
             ? Icon(Icons.check_rounded, size: 22, color: colors.brand)
             : null,
         onTap: () {
-          localeSvc.setLocale(code);
           Navigator.pop(context);
+          if (localeSvc.locale.value.languageCode == code) return;
+          runWithAppearanceOverlay(() async => localeSvc.setLocale(code));
         },
       );
     });
@@ -293,7 +338,7 @@ class _AppSettingTile extends StatelessWidget {
             if (trailing != null)
               trailing!
             else
-              Icon(Icons.chevron_left, size: 20, color: colors.textTertiary),
+              _forwardChevron(context),
           ],
         ),
       ),

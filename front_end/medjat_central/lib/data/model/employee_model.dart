@@ -19,7 +19,7 @@ class EmployeeModel {
   final String? shiftName;
   final String? shiftStart;
   final String? shiftEnd;
-  final String? shiftColor;
+  final List<int> categoryIds;
   final String? activationCode;
   final String? activationExpiresAt;
   final String biometricEnrollmentStatus;
@@ -61,7 +61,7 @@ class EmployeeModel {
     this.shiftName,
     this.shiftStart,
     this.shiftEnd,
-    this.shiftColor,
+    this.categoryIds = const [],
     this.activationCode,
     this.activationExpiresAt,
     this.biometricEnrollmentStatus = 'not_enrolled',
@@ -117,7 +117,10 @@ class EmployeeModel {
       shiftName: json['shift_name'] as String?,
       shiftStart: json['shift_start'] as String?,
       shiftEnd: json['shift_end'] as String?,
-      shiftColor: json['shift_color'] as String?,
+      categoryIds: (json['category_ids'] as List?)
+              ?.map((e) => (e as num).toInt())
+              .toList() ??
+          const [],
       activationCode: json['activation_code'] as String?,
       activationExpiresAt: json['activation_expires_at'] as String?,
       biometricEnrollmentStatus: (json['biometric_enrollment_status'] as String?) ?? 'not_enrolled',
@@ -154,6 +157,28 @@ class EmployeeModel {
       contractStart != null ||
       contractEnd != null ||
       healthInsuranceExpiry != null;
+
+  /// The most urgent legal-document expiry among iqama / passport / work
+  /// permit, or null if none are set. [daysLeft] is negative when expired.
+  ({String docKey, DateTime date, int daysLeft})? get soonestDocExpiry {
+    final today = DateTime.now();
+    final candidates = <(String, DateTime?)>[
+      ('iqama', iqamaExpiry),
+      ('passport', passportExpiry),
+      ('work_permit', workPermitExpiry),
+    ];
+    ({String docKey, DateTime date, int daysLeft})? soonest;
+    for (final (key, date) in candidates) {
+      if (date == null) continue;
+      final days = DateTime(date.year, date.month, date.day)
+          .difference(DateTime(today.year, today.month, today.day))
+          .inDays;
+      if (soonest == null || days < soonest.daysLeft) {
+        soonest = (docKey: key, date: date, daysLeft: days);
+      }
+    }
+    return soonest;
+  }
 
   String get statusLabel {
     switch (status) {

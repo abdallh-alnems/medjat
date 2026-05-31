@@ -57,4 +57,29 @@ class DocumentData {
   Future<Map<String, dynamic>> getMissingDocuments(int employeeId) async {
     return await _crud.getData(AppLinks.employeeMissingDocuments(employeeId));
   }
+
+  /// Requests an existing company document type from one specific employee.
+  /// The backend attaches the employee to that type's required-document scope.
+  Future<Map<String, dynamic>> requestDocument(
+      int employeeId, int requiredDocumentId) async {
+    return await _crud.postData(AppLinks.employeeRequestDocument, {
+      'employee_id': employeeId,
+      'required_document_id': requiredDocumentId,
+    });
+  }
+
+  /// Requests a custom, ad-hoc document from one employee with hand-entered
+  /// details — not tied to the company document catalog.
+  Future<Map<String, dynamic>> requestCustomDocument(
+    int employeeId, {
+    required String name,
+    String? description,
+  }) async {
+    return await _crud.postData(AppLinks.employeeRequestDocument, {
+      'employee_id': employeeId,
+      'name': name,
+      if (description != null && description.isNotEmpty)
+        'description': description,
+    });
+  }
 }

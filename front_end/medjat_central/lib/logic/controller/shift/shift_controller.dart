@@ -33,14 +33,12 @@ class ShiftController extends GetxController {
     required String startTime,
     required String endTime,
     int? branchId,
-    String? color,
   }) async {
     final response = await _data.createShift({
       'name': name,
       'start_time': startTime,
       'end_time': endTime,
       if (branchId != null) 'branch_id': branchId,
-      if (color != null) 'color': color,
     });
     if (response['status'] == StatusRequest.success) {
       await loadShifts();
@@ -76,6 +74,20 @@ class ShiftController extends GetxController {
       final data = response['data'];
       if (data is Map && data['data'] is Map) {
         return (data['data']['assigned'] as num?)?.toInt() ?? 0;
+      }
+    }
+    return 0;
+  }
+
+  Future<int> unassignEmployees(int shiftId, List<int> employeeIds) async {
+    final response = await _data.unassignEmployees(
+      shiftId: shiftId,
+      employeeIds: employeeIds,
+    );
+    if (response['status'] == StatusRequest.success) {
+      final data = response['data'];
+      if (data is Map && data['data'] is Map) {
+        return (data['data']['unassigned'] as num?)?.toInt() ?? 0;
       }
     }
     return 0;

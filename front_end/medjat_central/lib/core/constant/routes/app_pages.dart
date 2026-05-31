@@ -55,6 +55,7 @@ import '../../../view/screen/settings/account_settings_screen.dart';
 import '../../../view/screen/settings/app_settings_screen.dart';
 import '../../../view/screen/shift/shifts_screen.dart';
 import '../../../view/screen/shift/assign_shift_screen.dart';
+import '../../../view/screen/shift/shift_members_screen.dart';
 import '../../../view/screen/schedule/weekly_schedule_screen.dart';
 import '../../../data/data_source/remote/schedule_data/schedule_data.dart';
 import '../../../logic/controller/schedule/schedule_controller.dart';
@@ -194,6 +195,7 @@ List<GetPage<dynamic>> getPages = [
       Get.lazyPut<EmployeeData>(() => EmployeeData());
       Get.lazyPut<BranchData>(() => BranchData());
       Get.lazyPut<DocumentData>(() => DocumentData());
+      Get.lazyPut<RequiredDocumentsData>(() => RequiredDocumentsData());
       Get.lazyPut<PerformanceData>(() => PerformanceData());
     }),
     middlewares: [AuthMiddleware()],
@@ -377,6 +379,19 @@ List<GetPage<dynamic>> getPages = [
       Get.lazyPut<ShiftData>(() => ShiftData());
       Get.lazyPut<ShiftController>(() => ShiftController());
       Get.lazyPut<EmployeeData>(() => EmployeeData());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.shiftMembers,
+    page: () => const ShiftMembersScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<ShiftData>(() => ShiftData());
+      Get.lazyPut<ShiftController>(() => ShiftController());
+      Get.lazyPut<EmployeeData>(() => EmployeeData());
+      Get.lazyPut<CategoryData>(() => CategoryData());
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,

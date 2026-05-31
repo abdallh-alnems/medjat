@@ -6,7 +6,6 @@ class ShiftModel {
   final String name;
   final String startTime;
   final String endTime;
-  final String? color;
   final bool isActive;
   final int employeeCount;
 
@@ -18,7 +17,6 @@ class ShiftModel {
     required this.name,
     required this.startTime,
     required this.endTime,
-    this.color,
     this.isActive = true,
     this.employeeCount = 0,
   });
@@ -31,7 +29,6 @@ class ShiftModel {
         name: json['name'] as String? ?? '',
         startTime: json['start_time'] as String? ?? '',
         endTime: json['end_time'] as String? ?? '',
-        color: json['color'] as String?,
         isActive: (json['is_active'] as num?)?.toInt() == 1,
         employeeCount: (json['employee_count'] as num?)?.toInt() ?? 0,
       );
@@ -43,7 +40,6 @@ class ShiftModel {
         'name': name,
         'start_time': startTime,
         'end_time': endTime,
-        'color': color,
         'is_active': isActive ? 1 : 0,
       };
 }

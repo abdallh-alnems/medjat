@@ -25,15 +25,14 @@ final class ShiftModel {
 
     public static function create(array $data): int {
         Database::execute(
-            "INSERT INTO shifts (tenant_id, branch_id, name, start_time, end_time, color)
-             VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO shifts (tenant_id, branch_id, name, start_time, end_time)
+             VALUES (?, ?, ?, ?, ?)",
             [
                 $data['tenant_id'],
                 $data['branch_id'] ?? null,
                 $data['name'],
                 $data['start_time'],
                 $data['end_time'],
-                $data['color'] ?? null,
             ]
         );
         return (int) Database::lastInsertId();
@@ -42,7 +41,7 @@ final class ShiftModel {
     public static function update(int $id, int $tenantId, array $data): void {
         $fields = [];
         $values = [];
-        foreach (['name', 'branch_id', 'start_time', 'end_time', 'color', 'is_active'] as $key) {
+        foreach (['name', 'branch_id', 'start_time', 'end_time', 'is_active'] as $key) {
             if (array_key_exists($key, $data)) {
                 $fields[] = "{$key} = ?";
                 $values[] = $data[$key];
@@ -70,6 +69,17 @@ final class ShiftModel {
         $params = array_merge([$shiftId, $tenantId], $employeeIds);
         Database::execute(
             "UPDATE employees SET shift_id = ? WHERE tenant_id = ? AND id IN ({$placeholders})",
+            $params
+        );
+        return count($employeeIds);
+    }
+
+    public static function unassignEmployees(int $shiftId, array $employeeIds, int $tenantId): int {
+        if (empty($employeeIds)) return 0;
+        $placeholders = implode(',', array_fill(0, count($employeeIds), '?'));
+        $params = array_merge([$tenantId, $shiftId], $employeeIds);
+        Database::execute(
+            "UPDATE employees SET shift_id = NULL WHERE tenant_id = ? AND shift_id = ? AND id IN ({$placeholders})",
             $params
         );
         return count($employeeIds);

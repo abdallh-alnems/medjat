@@ -41,6 +41,7 @@ class AuthController extends GetxController {
   final isSendingVerification = false.obs;
   final isEmailVerified = false.obs;
   final isDeletingAccount = false.obs;
+  final isUpdatingProfile = false.obs;
 
   UserModel? user;
   bool _googleInitialized = false;
@@ -474,6 +475,51 @@ class AuthController extends GetxController {
   /// Permanently deletes the account from the backend (DB + Firebase) and then
   /// clears the local session. If the caller is the last general_manager, the
   /// backend deletes the whole company too.
+  /// Updates the signed-in user's own name and/or phone. Persists to the
+  /// backend, mirrors the name to the Firebase display name, then refreshes
+  /// the cached [user] so the UI reflects the change immediately.
+  Future<bool> updateProfile({
+    required String name,
+    String? phone,
+  }) async {
+    if (isUpdatingProfile.value) return false;
+    isUpdatingProfile.value = true;
+    try {
+      final response = await _authData.updateProfile(name: name, phone: phone);
+      if (response.containsKey('error')) {
+        Get.snackbar('error'.tr, 'profile_update_error'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+        return false;
+      }
+
+      // Best-effort: keep Firebase display name in sync (non-blocking).
+      try {
+        await _auth.currentUser?.updateDisplayName(name);
+      } catch (_) {}
+
+      if (user != null) {
+        user = user!.copyWith(
+          name: name,
+          phone: (phone == null || phone.isEmpty) ? null : phone,
+        );
+        await TokenStorageService.saveUserData(jsonEncode(user!.toJson()));
+        update();
+      }
+
+      Get.back<void>();
+      Get.snackbar('done'.tr, 'profile_updated'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return true;
+    } catch (e) {
+      debugPrint('updateProfile error: $e');
+      Get.snackbar('error'.tr, 'profile_update_error'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return false;
+    } finally {
+      isUpdatingProfile.value = false;
+    }
+  }
+
   Future<void> deleteAccount() async {
     if (isDeletingAccount.value) return;
     isDeletingAccount.value = true;

@@ -15,8 +15,14 @@ if (!$employee) {
     Response::fail('Employee profile not found', 404);
 }
 
+// Lazily auto-reactivate if a definite suspension elapsed, then re-read so the
+// returned status reflects the reactivation.
+EmployeeSuspensionModel::reconcileExpired($tenantId, date('Y-m-d'));
+$employee = EmployeeModel::findById($id, $tenantId) ?? $employee;
+
 $documents = DocumentModel::getByEmployee($employee['id'], $tenantId);
 $warnings = WarningModel::getByEmployee($employee['id'], $tenantId);
+$activeSuspension = EmployeeSuspensionModel::getActiveForEmployee((int) $employee['id'], $tenantId);
 $leavesBalance = LeaveModel::getBalance($employee['id'], $tenantId, (int) date('Y'));
 
 $activationCode = null;
@@ -50,4 +56,5 @@ Response::success([
     'expires_at' => $activationExpiresAt,
     'categories' => $categories,
     'cycle_start_day' => $cycleStartDay,
+    'active_suspension' => $activeSuspension,
 ]);

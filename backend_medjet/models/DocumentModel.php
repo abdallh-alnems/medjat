@@ -106,6 +106,18 @@ final class DocumentModel {
         }
     }
 
+    /**
+     * Adds a single employee to a required document's employee-scope without
+     * disturbing the rest of the list. Used when an admin requests an existing
+     * document type from one specific employee from their profile.
+     */
+    public static function addEmployeeToScope(int $requiredDocumentId, int $tenantId, int $employeeId): void {
+        Database::execute(
+            "INSERT IGNORE INTO required_document_employees (required_document_id, employee_id, tenant_id) VALUES (?, ?, ?)",
+            [$requiredDocumentId, $employeeId, $tenantId]
+        );
+    }
+
     public static function getEmployeeScope(int $requiredDocumentId, int $tenantId): array {
         $rows = Database::fetchAll(
             "SELECT employee_id FROM required_document_employees WHERE required_document_id = ? AND tenant_id = ?",

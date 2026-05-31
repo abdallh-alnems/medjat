@@ -98,6 +98,23 @@ $slip = Database::fetchOne(
     [$employeeId, $month, $tenantId]
 );
 
+// Once a slip is approved/paid it is LOCKED: surface the frozen snapshot
+// captured at approval (stored in payroll.breakdown) instead of the live
+// recalculation, so what HR sees matches exactly what was approved/paid.
+// Drafts (and months with no slip yet) keep showing the live estimate.
+$status = $slip['status'] ?? 'draft';
+$locked = $slip && in_array($status, ['approved', 'paid'], true);
+$frozen = [];
+if ($locked && !empty($slip['breakdown'])) {
+    $decoded = json_decode($slip['breakdown'], true);
+    if (is_array($decoded)) {
+        $frozen = $decoded;
+    }
+}
+// Source for the money figures + line-item breakdown: frozen snapshot when
+// locked, otherwise the live calculation.
+$src = ($locked && $frozen) ? $frozen : $breakdown;
+
 // History of stored slips for this employee (most-recent first).
 $history = Database::fetchAll(
     "SELECT id, month, base_salary, total_deductions, total_bonuses,
@@ -117,25 +134,26 @@ Response::success([
         'base_salary'  => (float) ($employee['base_salary'] ?? 0),
     ],
     'current'  => [
-        'base_salary'      => $breakdown['base_salary'] ?? 0,
-        'total_deductions' => $breakdown['total_deductions'] ?? 0,
-        'total_bonuses'    => $breakdown['total_bonuses'] ?? 0,
-        'net_salary'       => $breakdown['net_salary'] ?? 0,
-        'deductions'       => $breakdown['deductions_breakdown'] ?? [],
-        'bonuses'          => $breakdown['bonuses_breakdown'] ?? [],
-        'statutory'        => $breakdown['statutory_breakdown'] ?? null,
-        'status'           => $slip['status'] ?? 'draft',
+        'base_salary'      => $src['base_salary'] ?? 0,
+        'total_deductions' => $src['total_deductions'] ?? 0,
+        'total_bonuses'    => $src['total_bonuses'] ?? 0,
+        'net_salary'       => $src['net_salary'] ?? 0,
+        'deductions'       => $src['deductions_breakdown'] ?? [],
+        'bonuses'          => $src['bonuses_breakdown'] ?? [],
+        'statutory'        => $src['statutory_breakdown'] ?? null,
+        'status'           => $status,
+        'locked'           => $locked,
         'payroll_id'       => isset($slip['id']) ? (int) $slip['id'] : null,
         'approved_at'      => $slip['approved_at'] ?? null,
         'approved_by_name' => $slip['approved_by_name'] ?? null,
         'paid_at'          => $slip['paid_at'] ?? null,
         'cycle_start_day'      => $cycleStartDay,
-        'cycle_from'           => $breakdown['cycle_start'] ?? null,
-        'cycle_to'             => $breakdown['cycle_end'] ?? null,
-        'days_in_month'        => $breakdown['days_in_cycle'] ?? 0,
-        'days_elapsed'         => $breakdown['days_elapsed'] ?? 0,
-        'prorated_base_salary' => $breakdown['prorated_base_salary'] ?? 0,
-        'earned_to_date'       => $breakdown['earned_to_date'] ?? 0,
+        'cycle_from'           => $src['cycle_start'] ?? null,
+        'cycle_to'             => $src['cycle_end'] ?? null,
+        'days_in_month'        => $src['days_in_cycle'] ?? 0,
+        'days_elapsed'         => $src['days_elapsed'] ?? 0,
+        'prorated_base_salary' => $src['prorated_base_salary'] ?? 0,
+        'earned_to_date'       => $src['earned_to_date'] ?? 0,
         'attendance'           => $attendance,
         'rules'                => $rulesPublic,
     ],

@@ -26,6 +26,7 @@ abstract class AppRoutes {
   static const String forgotPassword = '/forgot-password';
   static const String shifts = '/shifts';
   static const String assignShift = '/shifts/assign';
+  static const String shiftMembers = '/shifts/members';
   static const String weeklySchedule = '/shifts/schedule';
   static const String settingsCompany = '/settings/company-hub';
   static const String settingsAccount = '/settings/account';

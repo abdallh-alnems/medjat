@@ -62,6 +62,8 @@ require_once __DIR__ . '/../models/AllowanceModel.php';
 require_once __DIR__ . '/../models/DocumentTemplateModel.php';
 require_once __DIR__ . '/../models/DocumentRequestModel.php';
 require_once __DIR__ . '/../models/AssetModel.php';
+require_once __DIR__ . '/../models/EmployeeSuspensionModel.php';
+require_once __DIR__ . '/../models/PayrollLineOverrideModel.php';
 
 setCorsHeaders();
 

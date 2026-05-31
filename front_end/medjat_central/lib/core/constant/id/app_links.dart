@@ -10,6 +10,7 @@ class AppLinks {
   static String get logout => '$base/app/auth/logout.php'; // TODO: backend endpoint missing
   static String get me => '$base/app/auth/login.php'; // login.php returns user info
   static String get deleteAccount => '$base/app/auth/delete_account.php';
+  static String get updateProfile => '$base/app/auth/update_profile.php';
   static String get updateFcmToken => '$base/app/auth/update_fcm_token.php';
   static String get sendVerification =>
       '$base/app/auth/send_verification.php';
@@ -36,6 +37,11 @@ class AppLinks {
   static String get employeeCreate => '$base/app/employees/create.php';
   static String get employeeUpdate => '$base/app/employees/update.php';
   static String get employeeDelete => '$base/app/employees/delete.php';
+  static String get employeeSuspend => '$base/app/employees/suspend.php';
+  static String get employeeEndSuspension =>
+      '$base/app/employees/end_suspension.php';
+  static String employeeSuspensions(int id) =>
+      '$base/app/employees/get_suspensions.php?employee_id=$id';
   static String get expiringCompliance =>
       '$base/app/employees/expiring_compliance.php';
   static String employeeDocuments(int id) =>
@@ -50,6 +56,8 @@ class AppLinks {
       '$base/app/employees/verify_document.php';
   static String get employeeRejectDocument =>
       '$base/app/employees/reject_document.php';
+  static String get employeeRequestDocument =>
+      '$base/app/employees/request_document.php';
   static String employeeMissingDocuments(int id) =>
       '$base/app/employees/get_missing_documents.php?employee_id=$id';
   static String employeeActivationCode(int id) =>
@@ -120,6 +128,8 @@ class AppLinks {
   static String get payrollMarkPaid =>
       '$base/app/payroll/mark_paid.php';
   static String get payrollGenerate => '$base/app/payroll/generate.php';
+  static String get payrollOverrideLine =>
+      '$base/app/payroll/override_line.php';
   static String payrollSlipPdf(int employeeId, String month) =>
       '$base/app/payroll/get_slip_pdf.php?employee_id=$employeeId&month=$month';
   static String payrollEosb(int employeeId) =>
@@ -210,6 +220,7 @@ class AppLinks {
 
   // ── Warnings ───────────────────────────────────────────
   static String get warningAdd => '$base/app/warnings/add.php';
+  static String get warningDelete => '$base/app/warnings/delete.php';
 
   // ── Performance Reviews ────────────────────────────────
   static String employeeReviews(int employeeId) =>
@@ -247,6 +258,7 @@ class AppLinks {
   static String shiftUpdate(int id) => '$base/app/shifts/update.php?id=$id';
   static String shiftDelete(int id) => '$base/app/shifts/delete.php?id=$id';
   static String get shiftAssign => '$base/app/shifts/assign.php';
+  static String get shiftUnassign => '$base/app/shifts/unassign.php';
 
   // Weekly rotating-shift schedule
   static String get scheduleWeek => '$base/app/schedule/week.php';

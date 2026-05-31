@@ -9,6 +9,7 @@ class RosterEmployee {
   final int? branchId;
   final String? branchName;
   final String shiftType; // 'fixed' | 'rotating'
+  final int? shiftId; // the employee's home/base shift, used for filtering
 
   RosterEmployee({
     required this.id,
@@ -17,6 +18,7 @@ class RosterEmployee {
     this.branchId,
     this.branchName,
     this.shiftType = 'fixed',
+    this.shiftId,
   });
 
   factory RosterEmployee.fromJson(Map<String, dynamic> json) => RosterEmployee(
@@ -26,6 +28,7 @@ class RosterEmployee {
         branchId: (json['branch_id'] as num?)?.toInt(),
         branchName: json['branch_name'] as String?,
         shiftType: json['shift_type'] as String? ?? 'fixed',
+        shiftId: (json['shift_id'] as num?)?.toInt(),
       );
 }
 
@@ -37,7 +40,6 @@ class ScheduleCell {
   final String? shiftName;
   final String? startTime;
   final String? endTime;
-  final String? color;
 
   ScheduleCell({
     required this.employeeId,
@@ -47,7 +49,6 @@ class ScheduleCell {
     this.shiftName,
     this.startTime,
     this.endTime,
-    this.color,
   });
 
   bool get isRest => shiftId == null;
@@ -61,6 +62,5 @@ class ScheduleCell {
         shiftName: json['shift_name'] as String?,
         startTime: json['start_time'] as String?,
         endTime: json['end_time'] as String?,
-        color: json['color'] as String?,
       );
 }

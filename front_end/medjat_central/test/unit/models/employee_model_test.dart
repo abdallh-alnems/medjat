@@ -23,7 +23,6 @@ void main() {
         'shift_name': 'الوردية الصباحية',
         'shift_start': '08:00:00',
         'shift_end': '16:00:00',
-        'shift_color': '#FF0000',
         'activation_code': 'ABC123',
         'activation_expires_at': '2024-12-31',
         'biometric_enrollment_status': 'enrolled',
@@ -65,7 +64,6 @@ void main() {
       expect(emp.shiftName, 'الوردية الصباحية');
       expect(emp.shiftStart, '08:00:00');
       expect(emp.shiftEnd, '16:00:00');
-      expect(emp.shiftColor, '#FF0000');
       expect(emp.activationCode, 'ABC123');
       expect(emp.biometricEnrollmentStatus, 'enrolled');
       expect(emp.bankName, 'الراجحي');

@@ -1,9 +1,10 @@
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:printing/printing.dart';
 import '../../../core/class/handling_data_request.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/theme/app_colors.dart';
@@ -16,11 +17,12 @@ import '../../../data/model/employee_model.dart';
 import '../../../logic/controller/employee/employee_detail_controller.dart';
 import '../../../logic/controller/payroll/payroll_controller.dart';
 import '../../../data/model/document_model.dart';
+import '../../../data/model/required_document_model.dart';
 import '../../../data/model/warning_model.dart';
+import '../../../data/model/suspension_model.dart';
 import '../../../data/model/performance_review_model.dart';
 import '../../../data/model/attendance_model.dart';
 import '../../../data/model/financial_summary_model.dart';
-import '../../../core/constant/routes/app_routes.dart';
 
 class EmployeeDetailScreen extends StatelessWidget {
   const EmployeeDetailScreen({super.key});
@@ -57,6 +59,49 @@ class EmployeeDetailScreen extends StatelessWidget {
                     pinned: true,
                     expandedHeight: 220,
                     title: Text('employee_profile'.tr),
+                    actions: [
+                      if (ctrl.canManageEmployees &&
+                          ctrl.employee != null &&
+                          ctrl.employee!.status != 'terminated')
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert),
+                          onSelected: (value) {
+                            switch (value) {
+                              case 'suspend':
+                                _showSuspendSheet(context, ctrl);
+                                break;
+                              case 'end_suspension':
+                                _confirmEndSuspension(context, ctrl);
+                                break;
+                            }
+                          },
+                          itemBuilder: (_) => [
+                            if (!ctrl.isSuspended)
+                              PopupMenuItem(
+                                value: 'suspend',
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.block, size: 20),
+                                    const SizedBox(width: AppSpacing.s2),
+                                    Text('suspend_employee'.tr),
+                                  ],
+                                ),
+                              ),
+                            if (ctrl.isSuspended)
+                              PopupMenuItem(
+                                value: 'end_suspension',
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.play_circle_outline,
+                                        size: 20),
+                                    const SizedBox(width: AppSpacing.s2),
+                                    Text('end_suspension'.tr),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        ),
+                    ],
                     flexibleSpace: FlexibleSpaceBar(
                       background: _ProfileHeader(ctrl: ctrl),
                     ),
@@ -246,6 +291,10 @@ class _OverviewTab extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(AppSpacing.s4),
         children: [
+          if (ctrl.isSuspended) ...[
+            _SuspensionBanner(ctrl: ctrl),
+            const SizedBox(height: AppSpacing.s4),
+          ],
           if (ctrl.employee != null &&
               ctrl.employee!.status != 'terminated')
             _ActivationCard(ctrl: ctrl),
@@ -3738,6 +3787,11 @@ class _FinancialTab extends StatelessWidget {
     final f = ctrl.financialCurrent;
     final firstLoad = ctrl.financialStatus == StatusRequest.loading && f == null;
 
+    // New layout: one always-visible summary card carrying the net amount,
+    // status and the primary payroll actions, followed by an accordion of
+    // collapsible sections so the page reads as a short list rather than a
+    // long stack of cards. Every section is preserved — just folded away by
+    // default (the breakdown stays open as the most-used detail).
     return RefreshIndicator(
       onRefresh: ctrl.loadFinancialMonth,
       child: ListView(
@@ -3751,32 +3805,21 @@ class _FinancialTab extends StatelessWidget {
             maxMonth: ctrl.currentCycleLabelMonth(),
             minMonth: ctrl.minFinancialMonth(),
           ),
-          const SizedBox(height: AppSpacing.s3),
-          _YearToDateButton(employeeId: ctrl.employeeId),
           const SizedBox(height: AppSpacing.s4),
           if (firstLoad)
             const _FinancialLoading()
           else ...[
+            // ── Hero: net amount + status + primary actions + payslip ──
+            _FinancialSummaryCard(ctrl: ctrl),
+            const SizedBox(height: AppSpacing.s4),
+
+            // ── Salary detail (kept open) ──
             _FinancialBreakdownCard(ctrl: ctrl),
-            if (_hasBankInfo(ctrl.employee)) ...[
-              const SizedBox(height: AppSpacing.s4),
-              _BankPaymentCard(ctrl: ctrl),
-            ],
-            const SizedBox(height: AppSpacing.s4),
-            _PayrollActionsCard(ctrl: ctrl),
-            if (f?.statutory?.hasAny ?? false) ...[
-              const SizedBox(height: AppSpacing.s4),
-              _StatutoryCard(ctrl: ctrl),
-            ],
-            if (ctrl.financialLoans.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.s4),
-              _LoansCard(ctrl: ctrl),
-            ],
-            const SizedBox(height: AppSpacing.s4),
+            const SizedBox(height: AppSpacing.s3),
             _FinancialAttendanceCard(ctrl: ctrl),
-            const SizedBox(height: AppSpacing.s4),
-            _AdjustmentActionsCard(ctrl: ctrl),
-            const SizedBox(height: AppSpacing.s4),
+
+            // ── Adjustments (add lives in each section header) ──
+            const SizedBox(height: AppSpacing.s3),
             _AdjustmentListCard(
               ctrl: ctrl,
               title: 'deductions_details'.tr,
@@ -3784,7 +3827,7 @@ class _FinancialTab extends StatelessWidget {
               emptyKey: 'no_deductions_this_month',
               isDeduction: true,
             ),
-            const SizedBox(height: AppSpacing.s4),
+            const SizedBox(height: AppSpacing.s3),
             _AdjustmentListCard(
               ctrl: ctrl,
               title: 'bonuses_details'.tr,
@@ -3796,32 +3839,50 @@ class _FinancialTab extends StatelessWidget {
               emptyKey: 'no_bonuses_this_month',
               isDeduction: false,
             ),
-            const SizedBox(height: AppSpacing.s4),
+            const SizedBox(height: AppSpacing.s3),
             _AllowancesCard(ctrl: ctrl),
-            const SizedBox(height: AppSpacing.s4),
-            _PayslipDownloadButton(ctrl: ctrl),
+
+            // ── Statutory / loans / bank (only when relevant) ──
+            if (f?.statutory?.hasAny ?? false) ...[
+              const SizedBox(height: AppSpacing.s3),
+              _StatutoryCard(ctrl: ctrl),
+            ],
+            if (ctrl.financialLoans.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.s3),
+              _LoansCard(ctrl: ctrl),
+            ],
+            if (_hasBankInfo(ctrl.employee)) ...[
+              const SizedBox(height: AppSpacing.s3),
+              _BankPaymentCard(ctrl: ctrl),
+            ],
+
+            // ── Documents & long-horizon info ──
             if (ctrl.letterTemplates.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.s4),
+              const SizedBox(height: AppSpacing.s3),
               _LettersCard(ctrl: ctrl),
             ],
             if (ctrl.eosb?.enabled ?? false) ...[
-              const SizedBox(height: AppSpacing.s4),
+              const SizedBox(height: AppSpacing.s3),
               _EosbCard(ctrl: ctrl),
             ],
             if (f?.rules?.hasAny ?? false) ...[
-              const SizedBox(height: AppSpacing.s4),
+              const SizedBox(height: AppSpacing.s3),
               _RulesCard(ctrl: ctrl),
             ],
+
+            // ── History & reports ──
             if (ctrl.financialHistory.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.s4),
+              const SizedBox(height: AppSpacing.s3),
               _SalaryTrendCard(ctrl: ctrl),
             ],
             if (ctrl.salaryHistory.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.s4),
+              const SizedBox(height: AppSpacing.s3),
               _SalaryHistoryCard(ctrl: ctrl),
             ],
-            const SizedBox(height: AppSpacing.s4),
+            const SizedBox(height: AppSpacing.s3),
             _PayrollHistoryCard(ctrl: ctrl),
+            const SizedBox(height: AppSpacing.s4),
+            _YearToDateButton(employeeId: ctrl.employeeId),
           ],
           const SizedBox(height: AppSpacing.s7),
         ],
@@ -3863,9 +3924,38 @@ String _statusLabel(String s) {
 
 /* ── BREAKDOWN: how the amount is composed ──────────────────────────────── */
 
-class _FinancialBreakdownCard extends StatelessWidget {
+/// Hero summary: the single most-important card. Shows the earned/net amount,
+/// the payroll status, the pay-period meta, the context-aware primary actions
+/// (approve / mark-paid / revert) and the payslip download — everything an
+/// admin needs at a glance, consolidated so nothing is scattered.
+class _FinancialSummaryCard extends StatelessWidget {
   final EmployeeDetailController ctrl;
-  const _FinancialBreakdownCard({required this.ctrl});
+  const _FinancialSummaryCard({required this.ctrl});
+
+  Future<void> _confirmRevert(BuildContext context) async {
+    final colors = AppColors.of(context);
+    final ok = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('payroll_revert_confirm_title'.tr),
+        content: Text('payroll_revert_confirm_message'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back<bool>(result: false),
+            child: Text('cancel'.tr),
+          ),
+          ElevatedButton(
+            onPressed: () => Get.back<bool>(result: true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colors.warning,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('payroll_revert'.tr),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) await ctrl.revertCurrentSlip();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -3883,13 +3973,16 @@ class _FinancialBreakdownCard extends StatelessWidget {
         ? colors.success
         : (f.status == 'approved' ? colors.brand : colors.warning);
 
-    return _SectionCard(
-      icon: Icons.calculate_outlined,
-      title: 'financial_breakdown'.tr,
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s4),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: colors.borderHairline),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Headline: the earned (or net) amount, formerly the hero card.
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -3897,7 +3990,8 @@ class _FinancialBreakdownCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(resultLabel, style: AppTextStyles.bodySecondary(context)),
+                    Text(resultLabel,
+                        style: AppTextStyles.bodySecondary(context)),
                     const SizedBox(height: 2),
                     FittedBox(
                       fit: BoxFit.scaleDown,
@@ -3907,7 +4001,7 @@ class _FinancialBreakdownCard extends StatelessWidget {
                           text: _money(resultAmount),
                           style: TextStyle(
                             fontFamily: 'Geist',
-                            fontSize: 30,
+                            fontSize: 32,
                             fontWeight: FontWeight.w800,
                             color: colors.brand,
                             height: 1.0,
@@ -3963,10 +4057,180 @@ class _FinancialBreakdownCard extends StatelessWidget {
               text: 'work_days_value'.trParams({'days': '${f.daysElapsed}'}),
             ),
           ],
+          // Draft = live estimate that can still change; approved/paid is the
+          // frozen, locked figure. Make that explicit so the number isn't
+          // mistaken for final before approval.
+          if (!f.locked) ...[
+            const SizedBox(height: AppSpacing.s1),
+            _MetaLine(
+              icon: Icons.info_outline,
+              text: 'payroll_estimate_hint'.tr,
+            ),
+          ],
           Padding(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
             child: Divider(height: 1, color: colors.borderHairline),
           ),
+          _buildActions(context, colors, f),
+          const SizedBox(height: AppSpacing.s3),
+          _PayslipDownloadButton(ctrl: ctrl),
+        ],
+      ),
+    );
+  }
+
+  /// Context-aware payroll workflow buttons (draft → approved → paid + revert),
+  /// or a quiet hint when no slip has been generated yet.
+  Widget _buildActions(
+      BuildContext context, AppColorScheme colors, FinancialMonthSummary f) {
+    if (f.payrollId == null) {
+      return Container(
+        padding: const EdgeInsets.all(AppSpacing.s3),
+        decoration: BoxDecoration(
+          color: colors.sunken.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: colors.borderHairline),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline, size: 16, color: colors.textTertiary),
+            const SizedBox(width: AppSpacing.s2),
+            Expanded(
+              child: Text(
+                'payroll_no_slip_yet'.tr,
+                style: AppTextStyles.bodySecondary(context),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final loading = ctrl.adjustmentStatus == StatusRequest.loading;
+    final status = f.status;
+    final isDraft = status == 'draft';
+    final isApproved = status == 'approved';
+    final isPaid = status == 'paid';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (isApproved && (f.approvedAt ?? '').isNotEmpty) ...[
+          _MetaLine(
+            icon: Icons.verified_outlined,
+            text: '${'payroll_approved_at'.tr} ${_adjDate(f.approvedAt)}',
+            mono: true,
+          ),
+          if ((f.approvedByName ?? '').isNotEmpty)
+            _MetaLine(
+              icon: Icons.person_outline,
+              text: 'audit_approved_by'.trParams({'name': f.approvedByName!}),
+            ),
+          const SizedBox(height: AppSpacing.s3),
+        ],
+        if (isPaid && (f.paidAt ?? '').isNotEmpty) ...[
+          _MetaLine(
+            icon: Icons.check_circle_outline,
+            text: '${'payroll_paid_at'.tr} ${_adjDate(f.paidAt)}',
+            mono: true,
+          ),
+          if ((f.approvedByName ?? '').isNotEmpty)
+            _MetaLine(
+              icon: Icons.person_outline,
+              text: 'audit_approved_by'.trParams({'name': f.approvedByName!}),
+            ),
+          const SizedBox(height: AppSpacing.s3),
+        ],
+        Row(
+          children: [
+            if (isDraft)
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: loading ? null : ctrl.approveCurrentSlip,
+                  icon: const Icon(Icons.verified_outlined, size: 18),
+                  label: Text('payroll_approve'.tr),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.brand,
+                    foregroundColor: Colors.white,
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+                  ),
+                ),
+              ),
+            if (isApproved) ...[
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: loading ? null : () => ctrl.markCurrentSlipPaid(),
+                  icon: const Icon(Icons.payments_outlined, size: 18),
+                  label: Text('payroll_mark_paid'.tr),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colors.success,
+                    foregroundColor: Colors.white,
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s3),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: loading ? null : () => _confirmRevert(context),
+                  icon: const Icon(Icons.undo, size: 18),
+                  label: Text('payroll_revert'.tr),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: colors.warning,
+                    side: BorderSide(color: colors.warning),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+                  ),
+                ),
+              ),
+            ],
+            if (isPaid)
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: loading ? null : () => _confirmRevert(context),
+                  icon: const Icon(Icons.undo, size: 18),
+                  label: Text('payroll_revert'.tr),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: colors.warning,
+                    side: BorderSide(color: colors.warning),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Collapsed salary breakdown (base → prorated → bonuses → deductions → net).
+/// The headline amount now lives in [_FinancialSummaryCard]; this section keeps
+/// the line-by-line composition for when the admin wants the detail.
+class _FinancialBreakdownCard extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _FinancialBreakdownCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final f = ctrl.financialCurrent;
+    if (f == null) return const SizedBox.shrink();
+    final currency = 'currency_egp'.tr;
+
+    final daysIn = f.daysInMonth;
+    final partial = daysIn > 0 && f.daysElapsed > 0 && f.daysElapsed < daysIn;
+
+    return _CollapsibleSection(
+      icon: Icons.calculate_outlined,
+      title: 'financial_breakdown'.tr,
+      initiallyExpanded: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           _BreakdownRow(
             label: 'base_salary_label'.tr,
             amount: '${_money(f.baseSalary)} $currency',
@@ -3993,14 +4257,17 @@ class _FinancialBreakdownCard extends StatelessWidget {
             amount: '-${_money(f.totalDeductions)} $currency',
             color: colors.error,
           ),
-          if (partial) ...[
-            const SizedBox(height: AppSpacing.s2),
-            _BreakdownRow(
-              label: 'full_cycle_net_label'.tr,
-              amount: '${_money(f.netSalary)} $currency',
-              color: colors.textTertiary,
-            ),
-          ],
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+            child: Divider(height: 1, color: colors.borderHairline),
+          ),
+          _BreakdownRow(
+            label: partial
+                ? 'full_cycle_net_label'.tr
+                : 'net_salary_full_label'.tr,
+            amount: '${_money(f.netSalary)} $currency',
+            color: colors.brand,
+          ),
         ],
       ),
     );
@@ -4080,175 +4347,6 @@ class _BreakdownRow extends StatelessWidget {
   }
 }
 
-/* ── PAYROLL APPROVAL ACTIONS (draft → approved → paid + revert) ───────── */
-
-class _PayrollActionsCard extends StatelessWidget {
-  final EmployeeDetailController ctrl;
-  const _PayrollActionsCard({required this.ctrl});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final f = ctrl.financialCurrent;
-    if (f == null) return const SizedBox.shrink();
-
-    // Without a generated slip there's nothing to approve. Show a quiet hint
-    // so the admin understands why no actions are visible.
-    if (f.payrollId == null) {
-      return Container(
-        padding: const EdgeInsets.all(AppSpacing.s3),
-        decoration: BoxDecoration(
-          color: colors.sunken.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: colors.borderHairline),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.info_outline, size: 16, color: colors.textTertiary),
-            const SizedBox(width: AppSpacing.s2),
-            Expanded(
-              child: Text(
-                'payroll_no_slip_yet'.tr,
-                style: AppTextStyles.bodySecondary(context),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final loading = ctrl.adjustmentStatus == StatusRequest.loading;
-    final status = f.status;
-    final isDraft = status == 'draft';
-    final isApproved = status == 'approved';
-    final isPaid = status == 'paid';
-
-    Future<void> confirmRevert() async {
-      final ok = await Get.dialog<bool>(
-        AlertDialog(
-          title: Text('payroll_revert_confirm_title'.tr),
-          content: Text('payroll_revert_confirm_message'.tr),
-          actions: [
-            TextButton(
-              onPressed: () => Get.back<bool>(result: false),
-              child: Text('cancel'.tr),
-            ),
-            ElevatedButton(
-              onPressed: () => Get.back<bool>(result: true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colors.warning,
-                foregroundColor: Colors.white,
-              ),
-              child: Text('payroll_revert'.tr),
-            ),
-          ],
-        ),
-      );
-      if (ok == true) await ctrl.revertCurrentSlip();
-    }
-
-    return _SectionCard(
-      icon: Icons.task_alt_outlined,
-      title: 'payroll_actions_title'.tr,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (isApproved && (f.approvedAt ?? '').isNotEmpty) ...[
-            _MetaLine(
-              icon: Icons.verified_outlined,
-              text: '${'payroll_approved_at'.tr} ${_adjDate(f.approvedAt)}',
-              mono: true,
-            ),
-            if ((f.approvedByName ?? '').isNotEmpty)
-              _MetaLine(
-                icon: Icons.person_outline,
-                text: 'audit_approved_by'
-                    .trParams({'name': f.approvedByName!}),
-              ),
-          ],
-          if (isPaid && (f.paidAt ?? '').isNotEmpty) ...[
-            _MetaLine(
-              icon: Icons.check_circle_outline,
-              text: '${'payroll_paid_at'.tr} ${_adjDate(f.paidAt)}',
-              mono: true,
-            ),
-            if ((f.approvedByName ?? '').isNotEmpty)
-              _MetaLine(
-                icon: Icons.person_outline,
-                text: 'audit_approved_by'
-                    .trParams({'name': f.approvedByName!}),
-              ),
-          ],
-          if (isApproved || isPaid) const SizedBox(height: AppSpacing.s3),
-          Row(
-            children: [
-              if (isDraft)
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed:
-                        loading ? null : ctrl.approveCurrentSlip,
-                    icon: const Icon(Icons.verified_outlined, size: 18),
-                    label: Text('payroll_approve'.tr),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colors.brand,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.s3),
-                    ),
-                  ),
-                ),
-              if (isApproved) ...[
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed:
-                        loading ? null : () => ctrl.markCurrentSlipPaid(),
-                    icon: const Icon(Icons.payments_outlined, size: 18),
-                    label: Text('payroll_mark_paid'.tr),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colors.success,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.s3),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.s3),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: loading ? null : confirmRevert,
-                    icon: const Icon(Icons.undo, size: 18),
-                    label: Text('payroll_revert'.tr),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: colors.warning,
-                      side: BorderSide(color: colors.warning),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.s3),
-                    ),
-                  ),
-                ),
-              ],
-              if (isPaid)
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: loading ? null : confirmRevert,
-                    icon: const Icon(Icons.undo, size: 18),
-                    label: Text('payroll_revert'.tr),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: colors.warning,
-                      side: BorderSide(color: colors.warning),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.s3),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /* ── BANK PAYMENT CARD (account info + payment status for this period) ── */
 
 bool _hasBankInfo(EmployeeModel? e) {
@@ -4281,7 +4379,7 @@ class _BankPaymentCard extends StatelessWidget {
     final ibanLast4 = _last4(e.bankIban);
     final isPaid = f?.status == 'paid' && (f?.paidAt ?? '').isNotEmpty;
 
-    return _SectionCard(
+    return _CollapsibleSection(
       icon: Icons.account_balance_wallet_outlined,
       title: 'bank_card_title'.tr,
       trailing: Container(
@@ -4360,7 +4458,7 @@ class _StatutoryCard extends StatelessWidget {
     if (s == null) return const SizedBox.shrink();
     final currency = 'currency_egp'.tr;
 
-    return _SectionCard(
+    return _CollapsibleSection(
       icon: Icons.gavel_outlined,
       title: 'statutory_title'.tr,
       child: Column(
@@ -4437,7 +4535,7 @@ class _LoansCard extends StatelessWidget {
     final totalRemaining =
         loans.fold<double>(0, (sum, l) => sum + l.remainingAmount);
 
-    return _SectionCard(
+    return _CollapsibleSection(
       icon: Icons.account_balance_outlined,
       title: 'loans_title'.tr,
       trailing: Container(
@@ -4673,7 +4771,7 @@ class _FinancialAttendanceCard extends StatelessWidget {
         f.attOvertimeMinutes > 0 ||
         f.attLateMinutes > 0;
 
-    return _SectionCard(
+    return _CollapsibleSection(
       icon: Icons.event_note_outlined,
       title: 'attendance_in_period'.tr,
       child: total == 0 && !hasHours
@@ -4830,98 +4928,89 @@ class _MetricDivider extends StatelessWidget {
   }
 }
 
-/* ── Reusable section card shell ────────────────────────────────────────── */
-
-class _SectionCard extends StatelessWidget {
+/// A bordered card whose body folds away behind a tappable header (with a
+/// rotating chevron). Takes the same `icon` / `title` / `trailing` / `child`
+/// as a plain section card, plus [initiallyExpanded]; used across the
+/// financial tab so the page reads as a compact accordion instead of a long
+/// card stack.
+class _CollapsibleSection extends StatefulWidget {
   final IconData icon;
   final String title;
   final Widget child;
   final Widget? trailing;
-  const _SectionCard({
+  final bool initiallyExpanded;
+  const _CollapsibleSection({
     required this.icon,
     required this.title,
     required this.child,
     this.trailing,
+    this.initiallyExpanded = false,
   });
+
+  @override
+  State<_CollapsibleSection> createState() => _CollapsibleSectionState();
+}
+
+class _CollapsibleSectionState extends State<_CollapsibleSection> {
+  late bool _expanded = widget.initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.s4),
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: colors.borderHairline),
       ),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: colors.brand),
-              const SizedBox(width: AppSpacing.s2),
-              Expanded(
-                child: Text(title, style: AppTextStyles.h3(context)),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => setState(() => _expanded = !_expanded),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.s4),
+                child: Row(
+                  children: [
+                    Icon(widget.icon, size: 18, color: colors.brand),
+                    const SizedBox(width: AppSpacing.s2),
+                    Expanded(
+                      child: Text(widget.title,
+                          style: AppTextStyles.h3(context)),
+                    ),
+                    if (widget.trailing != null) ...[
+                      widget.trailing!,
+                      const SizedBox(width: AppSpacing.s2),
+                    ],
+                    AnimatedRotation(
+                      turns: _expanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(Icons.keyboard_arrow_down,
+                          size: 22, color: colors.textTertiary),
+                    ),
+                  ],
+                ),
               ),
-              ?trailing,
-            ],
+            ),
           ),
-          const SizedBox(height: AppSpacing.s3),
-          child,
+          AnimatedCrossFade(
+            firstChild: const SizedBox(width: double.infinity),
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s4, 0, AppSpacing.s4, AppSpacing.s4),
+              child: widget.child,
+            ),
+            crossFadeState: _expanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+            sizeCurve: Curves.easeInOut,
+          ),
         ],
       ),
-    );
-  }
-}
-
-/* ── Add deduction / bonus ──────────────────────────────────────────────── */
-
-class _AdjustmentActionsCard extends StatelessWidget {
-  final EmployeeDetailController ctrl;
-  const _AdjustmentActionsCard({required this.ctrl});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () =>
-                _showAdjustmentSheet(context, ctrl, isDeduction: true),
-            icon: Icon(Icons.remove_circle_outline,
-                size: 18, color: colors.error),
-            label: Text('add_deduction'.tr),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: colors.error,
-              side: BorderSide(color: colors.error),
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.s3),
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () =>
-                _showAdjustmentSheet(context, ctrl, isDeduction: false),
-            icon:
-                Icon(Icons.add_circle_outline, size: 18, color: colors.success),
-            label: Text('add_bonus'.tr),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: colors.success,
-              side: BorderSide(color: colors.success),
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -5219,14 +5308,18 @@ class _AdjustmentListCardState extends State<_AdjustmentListCard> {
       );
     }
 
-    return _SectionCard(
+    return _CollapsibleSection(
       icon: widget.isDeduction
           ? Icons.remove_circle_outline
           : Icons.add_circle_outline,
       title: widget.title,
-      trailing: all.isEmpty
-          ? null
-          : Container(
+      // The add action now lives in the section header — next to the running
+      // total — so deductions/bonuses are created where they're listed.
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (all.isNotEmpty)
+            Container(
               padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.s2, vertical: 3),
               decoration: BoxDecoration(
@@ -5243,6 +5336,17 @@ class _AdjustmentListCardState extends State<_AdjustmentListCard> {
                 ),
               ),
             ),
+          IconButton(
+            onPressed: () => _showAdjustmentSheet(context, widget.ctrl,
+                isDeduction: widget.isDeduction),
+            icon: Icon(Icons.add, size: 20, color: accent),
+            tooltip: widget.isDeduction ? 'add_deduction'.tr : 'add_bonus'.tr,
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          ),
+        ],
+      ),
       child: body,
     );
   }
@@ -5299,6 +5403,26 @@ class _AdjustmentTile extends StatelessWidget {
                   ),
                 ),
               ),
+              if (adjustment.overridden) ...[
+                const SizedBox(width: AppSpacing.s1),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s1, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: colors.warning.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                  ),
+                  child: Text(
+                    'adjustment_overridden_badge'.tr,
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: colors.warning,
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(width: AppSpacing.s3),
               Expanded(
                 child: Column(
@@ -5367,6 +5491,8 @@ void _showAdjustmentDetailSheet(
 }) {
   final colors = AppColors.of(context);
   final isDeduction = sign == '-';
+  // Approved/paid slips are locked snapshots — no in-place editing.
+  final locked = ctrl.financialCurrent?.locked ?? false;
 
   Get.bottomSheet<void>(
     Container(
@@ -5460,6 +5586,12 @@ void _showAdjustmentDetailSheet(
               label: 'adjustment_description_label'.tr,
               value: adjustment.description,
             ),
+          if (adjustment.overridden && adjustment.originalAmount != null)
+            _DetailRow(
+              label: 'adjustment_original_amount_label'.tr,
+              value:
+                  '${_money(adjustment.originalAmount!)} ${'currency_egp'.tr}',
+            ),
           if ((adjustment.createdByName ?? '').isNotEmpty) ...[
             const SizedBox(height: AppSpacing.s1),
             _MetaLine(
@@ -5468,7 +5600,27 @@ void _showAdjustmentDetailSheet(
                   .trParams({'name': adjustment.createdByName!}),
             ),
           ],
-          if (adjustment.isManual) ...[
+          // ── Actions ──
+          if (locked) ...[
+            const SizedBox(height: AppSpacing.s4),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.s3),
+              decoration: BoxDecoration(
+                color: colors.sunken.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.lock_outline, size: 16, color: colors.textTertiary),
+                  const SizedBox(width: AppSpacing.s2),
+                  Expanded(
+                    child: Text('adjustment_locked_hint'.tr,
+                        style: AppTextStyles.bodySecondary(context)),
+                  ),
+                ],
+              ),
+            ),
+          ] else if (adjustment.isManual) ...[
             const SizedBox(height: AppSpacing.s4),
             Row(
               children: [
@@ -5537,12 +5689,169 @@ void _showAdjustmentDetailSheet(
                 ),
               ],
             ),
+          ] else if (adjustment.isOverridable) ...[
+            // Derived line (absence / late / loan / insurance / tax / overtime):
+            // edit its amount or remove it for this month via an override.
+            const SizedBox(height: AppSpacing.s4),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Get.back<void>();
+                      _showOverrideAmountDialog(context, ctrl, adjustment,
+                          isDeduction: isDeduction);
+                    },
+                    icon: const Icon(Icons.tune, size: 18),
+                    label: Text('adjustment_override_value'.tr),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colors.brand,
+                      side: BorderSide(color: colors.brand),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.s3),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final confirmed = await Get.dialog<bool>(
+                        AlertDialog(
+                          title: Text('adjustment_waive_confirm_title'.tr),
+                          content:
+                              Text('adjustment_waive_confirm_message'.tr),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Get.back<bool>(result: false),
+                              child: Text('cancel'.tr),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => Get.back<bool>(result: true),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: colors.error,
+                                foregroundColor: Colors.white,
+                              ),
+                              child: Text('adjustment_waive'.tr),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed == true) {
+                        Get.back<void>();
+                        await ctrl.overrideAdjustmentLine(
+                          line: adjustment,
+                          isDeduction: isDeduction,
+                          action: 'waive',
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.block, size: 18),
+                    label: Text('adjustment_waive'.tr),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: colors.error,
+                      side: BorderSide(color: colors.error),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (adjustment.overridden) ...[
+              const SizedBox(height: AppSpacing.s2),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
+                  onPressed: () async {
+                    Get.back<void>();
+                    await ctrl.overrideAdjustmentLine(
+                      line: adjustment,
+                      isDeduction: isDeduction,
+                      action: 'clear',
+                    );
+                  },
+                  icon: const Icon(Icons.restore, size: 18),
+                  label: Text('adjustment_restore'.tr),
+                ),
+              ),
+            ],
           ],
         ],
       ),
     ),
     isScrollControlled: true,
   );
+}
+
+/// Prompt for a replacement amount for a computed (non-manual) line, then save
+/// it as a per-line override for the current financial month.
+Future<void> _showOverrideAmountDialog(
+  BuildContext context,
+  EmployeeDetailController ctrl,
+  FinancialAdjustment adjustment, {
+  required bool isDeduction,
+}) async {
+  final colors = AppColors.of(context);
+  final amountCtrl = TextEditingController(
+    text: adjustment.amount == adjustment.amount.roundToDouble()
+        ? adjustment.amount.toInt().toString()
+        : adjustment.amount.toString(),
+  );
+  final result = await Get.dialog<num>(
+    AlertDialog(
+      title: Text('adjustment_override_value'.tr),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(adjustment.typeLabel,
+              style: AppTextStyles.bodySecondary(context)),
+          const SizedBox(height: AppSpacing.s3),
+          TextField(
+            controller: amountCtrl,
+            autofocus: true,
+            keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: 'amount'.tr,
+              suffixText: 'currency_egp'.tr,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+            ),
+            style: const TextStyle(fontFamily: 'Geist', fontSize: 16),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back<num>(),
+          child: Text('cancel'.tr),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final v = num.tryParse(amountCtrl.text.trim());
+            if (v == null || v < 0) return;
+            Get.back<num>(result: v);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: colors.brand,
+            foregroundColor: Colors.white,
+          ),
+          child: Text('save'.tr),
+        ),
+      ],
+    ),
+  );
+  if (result != null) {
+    await ctrl.overrideAdjustmentLine(
+      line: adjustment,
+      isDeduction: isDeduction,
+      action: 'set',
+      amount: result,
+    );
+  }
 }
 
 class _DetailRow extends StatelessWidget {
@@ -5613,24 +5922,17 @@ class _PayslipDownloadButtonState extends State<_PayslipDownloadButton> {
     if (!mounted) return;
     setState(() => _busy = false);
     if (path == null) return;
-    final colors = AppColors.of(context);
-    // url_launcher can open file:// URIs on iOS/desktop; on Android the OS
-    // file viewer may handle it depending on the device. Always show the saved
-    // path so the user can locate the file manually as a fallback.
-    Get.snackbar(
-      'done'.tr,
-      '${'payslip_saved_to'.tr} $path',
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(seconds: 6),
-      mainButton: TextButton(
-        onPressed: () => launchUrl(Uri.file(path)),
-        child: Text('payslip_open'.tr,
-            style: TextStyle(
-              color: colors.brand,
-              fontWeight: FontWeight.w700,
-            )),
-      ),
-    );
+    try {
+      final bytes = await File(path).readAsBytes();
+      // Hand the PDF to the platform share / preview sheet. Printing uses a
+      // content:// URI (via a FileProvider) under the hood, so it avoids the
+      // Android FileUriExposedException that a raw file:// launch throws.
+      await Printing.sharePdf(bytes: bytes, filename: path.split('/').last);
+    } catch (_) {
+      if (!mounted) return;
+      Get.snackbar('error'.tr, 'payslip_download_failed'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    }
   }
 
   @override
@@ -5681,7 +5983,7 @@ class _AllowancesCard extends StatelessWidget {
         .where((a) => a.isActive(currentMonth))
         .fold<double>(0, (s, a) => s + a.amount);
 
-    return _SectionCard(
+    return _CollapsibleSection(
       icon: Icons.workspace_premium_outlined,
       title: 'allowances_title'.tr,
       trailing: items.isEmpty
@@ -6239,7 +6541,7 @@ class _LettersCard extends StatelessWidget {
     final colors = AppColors.of(context);
     final templates = ctrl.letterTemplates;
 
-    return _SectionCard(
+    return _CollapsibleSection(
       icon: Icons.assignment_outlined,
       title: 'letters_card_title'.tr,
       child: Column(
@@ -6314,7 +6616,7 @@ class _EosbCard extends StatelessWidget {
     if (e == null || !e.enabled) return const SizedBox.shrink();
     final currency = 'currency_egp'.tr;
 
-    return _SectionCard(
+    return _CollapsibleSection(
       icon: Icons.savings_outlined,
       title: 'eosb_title'.tr,
       child: Column(
@@ -6507,7 +6809,7 @@ class _RulesCard extends StatelessWidget {
       ));
     }
 
-    return _SectionCard(
+    return _CollapsibleSection(
       icon: Icons.rule_outlined,
       title: 'rule_transparency_title'.tr,
       child: Column(
@@ -6604,7 +6906,7 @@ class _SalaryTrendCard extends StatelessWidget {
         ordered.length;
     final currency = 'currency_egp'.tr;
 
-    return _SectionCard(
+    return _CollapsibleSection(
       icon: Icons.bar_chart_outlined,
       title: 'trend_card_title'.tr,
       trailing: Container(
@@ -6756,7 +7058,7 @@ class _SalaryHistoryCard extends StatelessWidget {
     final currentBase = ctrl.employee?.baseSalary ?? 0;
     final currency = 'currency_egp'.tr;
 
-    return _SectionCard(
+    return _CollapsibleSection(
       icon: Icons.timeline_outlined,
       title: 'salary_history_title'.tr,
       child: Column(
@@ -6865,7 +7167,7 @@ class _PayrollHistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final history = ctrl.financialHistory;
-    return _SectionCard(
+    return _CollapsibleSection(
       icon: Icons.receipt_long_outlined,
       title: 'payroll_history'.tr,
       child: history.isEmpty
@@ -7010,6 +7312,15 @@ class _DocumentsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final e = ctrl.employee;
+    final required = ctrl.requiredDocuments;
+    // Uploaded records not tied to any current requirement (kept visible so
+    // nothing silently disappears).
+    final extraDocs = ctrl.documents
+        .where((d) =>
+            d.status != 'rejected' &&
+            !required.any((r) => r.id == d.requiredDocumentId))
+        .toList();
+    final hasAny = required.isNotEmpty || extraDocs.isNotEmpty;
 
     return RefreshIndicator(
       onRefresh: ctrl.loadDocuments,
@@ -7031,53 +7342,55 @@ class _DocumentsTab extends StatelessWidget {
                     Icon(Icons.folder_outlined,
                         size: 18, color: colors.brand),
                     const SizedBox(width: AppSpacing.s2),
-                    Text('documents'.tr, style: AppTextStyles.h3(context)),
+                    Text('requested_documents'.tr,
+                        style: AppTextStyles.h3(context)),
                     const Spacer(),
-                    Text(
-                      '${ctrl.documents.where((d) => d.status == 'uploaded').length}/${ctrl.documents.length}',
-                      style: TextStyle(
-                        fontFamily: 'Geist',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: colors.brand,
+                    if (required.isNotEmpty)
+                      Text(
+                        '${ctrl.uploadedRequiredCount}/${required.length}',
+                        style: TextStyle(
+                          fontFamily: 'Geist',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: colors.brand,
+                        ),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.s3),
                 if (ctrl.documentsStatus == StatusRequest.loading)
                   const Center(child: CircularProgressIndicator.adaptive())
-                else if (ctrl.documents.isEmpty)
+                else if (!hasAny)
                   Padding(
                     padding:
                         const EdgeInsets.symmetric(vertical: AppSpacing.s5),
                     child: Center(
-                      child: Text('no_documents'.tr,
-                          style: AppTextStyles.bodySecondary(context)),
+                      child: Text('no_requested_documents'.tr,
+                          style: AppTextStyles.bodySecondary(context),
+                          textAlign: TextAlign.center),
                     ),
                   )
-                else
-                  ...ctrl.documents.map((doc) => _DocumentTile(
+                else ...[
+                  ...required.map((req) => _RequiredDocTile(
+                        requiredDoc: req,
+                        document: ctrl.documentForRequired(req.id),
+                      )),
+                  ...extraDocs.map((doc) => _DocumentTile(
                         document: doc,
                         onDelete: () => ctrl.deleteDocument(doc.id),
                       )),
-                if (e != null) ...[
+                ],
+                if (e != null && ctrl.canManageDocuments) ...[
                   const SizedBox(height: AppSpacing.s3),
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () => Get.toNamed<void>(
-                        AppRoutes.employeeDocuments,
-                        arguments: {
-                          'employee_id': e.id,
-                          'employee_name': e.name
-                        },
-                      ),
-                      icon: const Icon(Icons.folder_open_outlined, size: 18),
-                      label: Text('manage_documents_button'.tr),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: colors.brand,
-                        side: BorderSide(color: colors.brand),
+                    child: ElevatedButton.icon(
+                      onPressed: () => _showRequestDocumentSheet(context, ctrl),
+                      icon: const Icon(Icons.note_add_outlined, size: 18),
+                      label: Text('request_document'.tr),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.brand,
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
                             vertical: AppSpacing.s3),
                       ),
@@ -7088,6 +7401,402 @@ class _DocumentsTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.s7),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bottom sheet to request a document from this employee — either by picking
+/// from the tenant's document-type catalog, or by entering a custom, ad-hoc
+/// document specific to this employee.
+void _showRequestDocumentSheet(
+    BuildContext context, EmployeeDetailController ctrl) {
+  if (ctrl.documentCatalog.isEmpty) {
+    ctrl.loadDocumentCatalog();
+  }
+  final selected = <int>{};
+  final nameCtrl = TextEditingController();
+  final descCtrl = TextEditingController();
+  String mode = 'catalog';
+  String? nameError;
+
+  Get.bottomSheet(
+    GetBuilder<EmployeeDetailController>(
+      builder: (_) {
+        final colors = AppColors.of(context);
+        final options = ctrl.requestableDocuments;
+        final loading = ctrl.documentCatalogStatus == StatusRequest.loading;
+
+        return StatefulBuilder(
+          builder: (sheetCtx, setSheetState) {
+            Widget modeTab(String value, String labelKey, IconData icon) {
+              final isSel = mode == value;
+              return Expanded(
+                child: InkWell(
+                  onTap: () => setSheetState(() => mode = value),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+                    decoration: BoxDecoration(
+                      color: isSel ? colors.brand : colors.surface,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(
+                        color: isSel ? colors.brand : colors.borderHairline,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(icon,
+                            size: 16,
+                            color: isSel ? Colors.white : colors.textTertiary),
+                        const SizedBox(width: AppSpacing.s2),
+                        Text(
+                          labelKey.tr,
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 13,
+                            fontWeight:
+                                isSel ? FontWeight.w600 : FontWeight.w400,
+                            color: isSel ? Colors.white : colors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            final bool canSend =
+                mode == 'catalog' ? selected.isNotEmpty : true;
+
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.82,
+              ),
+              padding: EdgeInsets.only(
+                left: AppSpacing.s4,
+                right: AppSpacing.s4,
+                top: AppSpacing.s4,
+                bottom:
+                    MediaQuery.of(context).viewInsets.bottom + AppSpacing.s4,
+              ),
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.lg)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: AppSpacing.s3),
+                      decoration: BoxDecoration(
+                        color: colors.borderHairline,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Text('request_document_title'.tr,
+                      style: AppTextStyles.h2(context)),
+                  const SizedBox(height: AppSpacing.s1),
+                  Text(ctrl.employee?.name ?? '',
+                      style: AppTextStyles.bodySecondary(context)),
+                  const SizedBox(height: AppSpacing.s3),
+                  Row(
+                    children: [
+                      modeTab('catalog', 'request_from_catalog',
+                          Icons.list_alt_outlined),
+                      const SizedBox(width: AppSpacing.s2),
+                      modeTab('custom', 'request_custom',
+                          Icons.edit_note_outlined),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.s3),
+                  if (mode == 'catalog') ...[
+                    if (loading)
+                      const Padding(
+                        padding:
+                            EdgeInsets.symmetric(vertical: AppSpacing.s6),
+                        child: Center(
+                            child: CircularProgressIndicator.adaptive()),
+                      )
+                    else if (options.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.s6),
+                        child: Center(
+                          child: Text('no_requestable_documents'.tr,
+                              style: AppTextStyles.bodySecondary(context),
+                              textAlign: TextAlign.center),
+                        ),
+                      )
+                    else
+                      Flexible(
+                        child: ListView(
+                          shrinkWrap: true,
+                          children: options.map((opt) {
+                            final isSel = selected.contains(opt.id);
+                            return Padding(
+                              padding: const EdgeInsets.only(
+                                  bottom: AppSpacing.s2),
+                              child: InkWell(
+                                onTap: () => setSheetState(() {
+                                  if (isSel) {
+                                    selected.remove(opt.id);
+                                  } else {
+                                    selected.add(opt.id);
+                                  }
+                                }),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.md),
+                                child: Container(
+                                  padding:
+                                      const EdgeInsets.all(AppSpacing.s3),
+                                  decoration: BoxDecoration(
+                                    color: isSel
+                                        ? colors.brandSubtle
+                                        : colors.surface,
+                                    borderRadius:
+                                        BorderRadius.circular(AppRadius.md),
+                                    border: Border.all(
+                                      color: isSel
+                                          ? colors.brand
+                                          : colors.borderHairline,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        isSel
+                                            ? Icons.check_box
+                                            : Icons.check_box_outline_blank,
+                                        size: 20,
+                                        color: isSel
+                                            ? colors.brand
+                                            : colors.textTertiary,
+                                      ),
+                                      const SizedBox(width: AppSpacing.s3),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              opt.name,
+                                              style: TextStyle(
+                                                fontFamily:
+                                                    'IBM Plex Sans Arabic',
+                                                fontSize: 14,
+                                                fontWeight: isSel
+                                                    ? FontWeight.w600
+                                                    : FontWeight.w400,
+                                                color: isSel
+                                                    ? colors.brand
+                                                    : colors.textPrimary,
+                                              ),
+                                            ),
+                                            if (opt.description != null &&
+                                                opt.description!
+                                                    .isNotEmpty) ...[
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                opt.description!,
+                                                style: TextStyle(
+                                                  fontFamily:
+                                                      'IBM Plex Sans Arabic',
+                                                  fontSize: 12,
+                                                  color: colors.textTertiary,
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                  ] else ...[
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            TextField(
+                              controller: nameCtrl,
+                              textInputAction: TextInputAction.next,
+                              onChanged: (_) {
+                                if (nameError != null) {
+                                  setSheetState(() => nameError = null);
+                                }
+                              },
+                              decoration: InputDecoration(
+                                labelText: 'custom_document_name'.tr,
+                                hintText: 'custom_document_name_hint'.tr,
+                                errorText: nameError,
+                                border: OutlineInputBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.md),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.s3),
+                            TextField(
+                              controller: descCtrl,
+                              maxLines: 3,
+                              decoration: InputDecoration(
+                                labelText: 'custom_document_description'.tr,
+                                border: OutlineInputBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.md),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.s4),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: !canSend
+                          ? null
+                          : () async {
+                              if (mode == 'catalog') {
+                                final ids = selected.toList();
+                                Get.back<void>();
+                                for (final id in ids) {
+                                  await ctrl.requestDocument(id);
+                                }
+                              } else {
+                                final name = nameCtrl.text.trim();
+                                if (name.isEmpty) {
+                                  setSheetState(() => nameError =
+                                      'custom_document_name_required'.tr);
+                                  return;
+                                }
+                                Get.back<void>();
+                                await ctrl.requestCustomDocument(
+                                  name: name,
+                                  description: descCtrl.text.trim(),
+                                );
+                              }
+                            },
+                      icon: const Icon(Icons.send_outlined, size: 18),
+                      label: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.s2),
+                        child: Text(
+                          mode == 'catalog' && selected.isNotEmpty
+                              ? '${'send_request'.tr} (${selected.length})'
+                              : 'send_request'.tr,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    ),
+    isScrollControlled: true,
+  );
+}
+
+/// A single required-document row in the profile tab: shows the document the
+/// company asked for and whether the employee has provided it.
+class _RequiredDocTile extends StatelessWidget {
+  final RequiredDocumentModel requiredDoc;
+  final DocumentModel? document;
+  const _RequiredDocTile({required this.requiredDoc, this.document});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final has = document != null;
+    final status = document?.status ?? 'required';
+    final statusColor = has ? _docStatusColor(status, colors) : colors.warning;
+    final statusLabel =
+        has ? document!.statusLabel : 'document_missing'.tr;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.s2),
+      padding: const EdgeInsets.all(AppSpacing.s3),
+      decoration: BoxDecoration(
+        color: colors.sunken.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            !has
+                ? Icons.error_outline
+                : (status == 'uploaded'
+                    ? Icons.check_circle_outline
+                    : Icons.description_outlined),
+            size: 22,
+            color: statusColor,
+          ),
+          const SizedBox(width: AppSpacing.s3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  requiredDoc.name,
+                  style: const TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (document?.expiryDate != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '${'expires'.tr} ${document!.expiryDate!.year}-${document!.expiryDate!.month.toString().padLeft(2, '0')}-${document!.expiryDate!.day.toString().padLeft(2, '0')}',
+                    style: TextStyle(
+                      fontFamily: 'Geist',
+                      fontSize: 12,
+                      color: colors.textTertiary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.s2, vertical: 2),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadius.full),
+            ),
+            child: Text(
+              statusLabel,
+              style: TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: statusColor,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -7196,19 +7905,49 @@ Color _docStatusColor(String status, AppColorScheme colors) {
 /*  WARNINGS TAB                                                            */
 /* ─────────────────────────────────────────────────────────────────────── */
 
-class _WarningsTab extends StatelessWidget {
+class _WarningsTab extends StatefulWidget {
   final EmployeeDetailController ctrl;
   const _WarningsTab({required this.ctrl});
+
+  @override
+  State<_WarningsTab> createState() => _WarningsTabState();
+}
+
+class _WarningsTabState extends State<_WarningsTab> {
+  EmployeeDetailController get ctrl => widget.ctrl;
+
+  /// Warnings shown before the "show all" toggle is expanded.
+  static const int _collapsedCount = 5;
+  bool _showAllWarnings = false;
+
+  /// System-generated alerts are part of the audit trail and cannot be removed.
+  static const _deletableTypes = {'verbal', 'written', 'final'};
+
+  @override
+  void initState() {
+    super.initState();
+    // The disciplinary tab also shows the work-suspension log. Defer the load
+    // to after the first frame: loadSuspensionHistory calls update() up-front
+    // to show its loading state, which is illegal during the build phase.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ctrl.loadSuspensionHistory();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
 
     return RefreshIndicator(
-      onRefresh: ctrl.loadEmployee,
+      onRefresh: () async {
+        await ctrl.loadEmployee();
+        await ctrl.loadSuspensionHistory();
+      },
       child: ListView(
         padding: const EdgeInsets.all(AppSpacing.s4),
         children: [
+          _SuspensionsCard(ctrl: ctrl),
+          const SizedBox(height: AppSpacing.s4),
           Container(
             padding: const EdgeInsets.all(AppSpacing.s4),
             decoration: BoxDecoration(
@@ -7265,13 +8004,101 @@ class _WarningsTab extends StatelessWidget {
                           style: AppTextStyles.bodySecondary(context)),
                     ),
                   )
-                else
-                  ...ctrl.warnings.map((w) => _WarningTile(warning: w)),
+                else ...[
+                  ...(_showAllWarnings
+                          ? ctrl.warnings
+                          : ctrl.warnings.take(_collapsedCount))
+                      .map((w) => _WarningTile(
+                            warning: w,
+                            onDelete: ctrl.canManageEmployees &&
+                                    _deletableTypes.contains(w.type)
+                                ? () => _confirmDeleteWarning(context, ctrl, w.id)
+                                : null,
+                          )),
+                  if (ctrl.warnings.length > _collapsedCount)
+                    _ShowMoreButton(
+                      expanded: _showAllWarnings,
+                      total: ctrl.warnings.length,
+                      onTap: () => setState(
+                          () => _showAllWarnings = !_showAllWarnings),
+                    ),
+                ],
               ],
             ),
           ),
           const SizedBox(height: AppSpacing.s7),
         ],
+      ),
+    );
+  }
+}
+
+void _confirmDeleteWarning(
+    BuildContext context, EmployeeDetailController ctrl, int warningId) async {
+  final confirmed = await Get.dialog<bool>(
+    AlertDialog(
+      title: Text('delete_warning'.tr),
+      content: Text('confirm_delete_warning'.tr),
+      actions: [
+        TextButton(
+          onPressed: () => Get.back(result: false),
+          child: Text('cancel'.tr),
+        ),
+        ElevatedButton(
+          onPressed: () => Get.back(result: true),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.of(context).error,
+            foregroundColor: Colors.white,
+          ),
+          child: Text('delete'.tr),
+        ),
+      ],
+    ),
+  );
+  if (confirmed == true) {
+    await ctrl.deleteWarning(warningId);
+  }
+}
+
+/// A compact "Show all (N) / Show less" toggle used by the collapsible logs in
+/// the disciplinary tab.
+class _ShowMoreButton extends StatelessWidget {
+  final bool expanded;
+  final int total;
+  final VoidCallback onTap;
+  const _ShowMoreButton({
+    required this.expanded,
+    required this.total,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: TextButton.icon(
+        onPressed: onTap,
+        icon: Icon(
+          expanded ? Icons.expand_less : Icons.expand_more,
+          size: 18,
+          color: colors.brand,
+        ),
+        label: Text(
+          expanded ? 'show_less'.tr : '${'show_all'.tr} ($total)',
+          style: TextStyle(
+            fontFamily: 'IBM Plex Sans Arabic',
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: colors.brand,
+          ),
+        ),
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.s2, vertical: AppSpacing.s1),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
       ),
     );
   }
@@ -7435,7 +8262,7 @@ void _showAddWarningSheet(BuildContext context, EmployeeDetailController ctrl) {
       },
     ),
     isScrollControlled: true,
-  );
+  ).whenComplete(reasonCtrl.dispose);
 }
 
 String _warningTypeLabel(String type) {
@@ -7451,9 +8278,761 @@ String _warningTypeLabel(String type) {
   }
 }
 
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  WORK SUSPENSION ("موقوف عن العمل")                                       */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+String _fmtSuspensionDate(DateTime? d) {
+  if (d == null) return '';
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${d.year}-${two(d.month)}-${two(d.day)}';
+}
+
+String _suspensionPayModeLabel(String mode) {
+  switch (mode) {
+    case 'unpaid':
+      return 'suspension_pay_unpaid'.tr;
+    case 'partial':
+      return 'suspension_pay_partial'.tr;
+    case 'full':
+      return 'suspension_pay_full'.tr;
+    default:
+      return mode;
+  }
+}
+
+void _showSuspendSheet(BuildContext context, EmployeeDetailController ctrl) {
+  final reasonCtrl = TextEditingController();
+  final percentCtrl = TextEditingController();
+  final formKey = GlobalKey<FormState>();
+  String payMode = 'unpaid';
+  DateTime startDate = DateTime.now();
+  DateTime? endDate;
+  bool openEnded = true;
+
+  Get.bottomSheet(
+    StatefulBuilder(
+      builder: (sheetCtx, setSheetState) {
+        final colors = AppColors.of(context);
+        final isLoading = ctrl.suspensionStatus == StatusRequest.loading;
+
+        Future<void> pickStart() async {
+          final picked = await showDatePicker(
+            context: context,
+            initialDate: startDate,
+            firstDate: DateTime(2020),
+            lastDate: DateTime(2100),
+          );
+          if (picked != null) {
+            setSheetState(() {
+              startDate = picked;
+              if (endDate != null && endDate!.isBefore(startDate)) {
+                endDate = startDate;
+              }
+            });
+          }
+        }
+
+        Future<void> pickEnd() async {
+          final picked = await showDatePicker(
+            context: context,
+            initialDate: endDate ?? startDate,
+            firstDate: startDate,
+            lastDate: DateTime(2100),
+          );
+          if (picked != null) setSheetState(() => endDate = picked);
+        }
+
+        Widget payOption(String mode, IconData icon) {
+          final selected = payMode == mode;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+            child: InkWell(
+              onTap: () => setSheetState(() => payMode = mode),
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.s3),
+                decoration: BoxDecoration(
+                  color: selected ? colors.brandSubtle : colors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(
+                    color: selected ? colors.brand : colors.borderHairline,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      selected
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_unchecked,
+                      size: 20,
+                      color: selected ? colors.brand : colors.textTertiary,
+                    ),
+                    const SizedBox(width: AppSpacing.s2),
+                    Icon(icon,
+                        size: 18,
+                        color: selected ? colors.brand : colors.textTertiary),
+                    const SizedBox(width: AppSpacing.s2),
+                    Expanded(
+                      child: Text(
+                        _suspensionPayModeLabel(mode),
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Sans Arabic',
+                          fontSize: 14,
+                          fontWeight:
+                              selected ? FontWeight.w600 : FontWeight.w400,
+                          color: selected ? colors.brand : colors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        return Container(
+          padding: EdgeInsets.only(
+            left: AppSpacing.s4,
+            right: AppSpacing.s4,
+            top: AppSpacing.s4,
+            bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s4,
+          ),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+          ),
+          child: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: AppSpacing.s3),
+                      decoration: BoxDecoration(
+                        color: colors.borderHairline,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Text('suspend_employee'.tr, style: AppTextStyles.h2(context)),
+                  const SizedBox(height: AppSpacing.s2),
+                  Text(ctrl.employee?.name ?? '',
+                      style: AppTextStyles.bodySecondary(context)),
+                  const SizedBox(height: AppSpacing.s4),
+
+                  // Reason
+                  TextFormField(
+                    controller: reasonCtrl,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      labelText: 'suspension_reason'.tr,
+                      hintText: 'suspension_reason_hint'.tr,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                    ),
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'reason_required'.tr
+                        : null,
+                  ),
+                  const SizedBox(height: AppSpacing.s4),
+
+                  // Pay treatment
+                  Text('suspension_pay_treatment'.tr,
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 13,
+                        color: colors.textTertiary,
+                      )),
+                  const SizedBox(height: AppSpacing.s2),
+                  payOption('unpaid', Icons.money_off),
+                  payOption('partial', Icons.percent),
+                  payOption('full', Icons.payments_outlined),
+
+                  if (payMode == 'partial') ...[
+                    const SizedBox(height: AppSpacing.s1),
+                    TextFormField(
+                      controller: percentCtrl,
+                      keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true),
+                      decoration: InputDecoration(
+                        labelText: 'suspension_pay_percentage'.tr,
+                        hintText: '50',
+                        suffixText: '%',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                      ),
+                      validator: (v) {
+                        if (payMode != 'partial') return null;
+                        final n = double.tryParse((v ?? '').trim());
+                        if (n == null || n <= 0 || n >= 100) {
+                          return 'suspension_pay_percentage_invalid'.tr;
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.s4),
+
+                  // Dates
+                  _SuspensionDateField(
+                    label: 'suspension_start_date'.tr,
+                    value: _fmtSuspensionDate(startDate),
+                    onTap: pickStart,
+                  ),
+                  const SizedBox(height: AppSpacing.s3),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text('suspension_open_ended'.tr,
+                        style: const TextStyle(
+                          fontFamily: 'IBM Plex Sans Arabic',
+                          fontSize: 14,
+                        )),
+                    subtitle: Text('suspension_open_ended_hint'.tr,
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Sans Arabic',
+                          fontSize: 12,
+                          color: colors.textTertiary,
+                        )),
+                    value: openEnded,
+                    activeThumbColor: colors.brand,
+                    onChanged: (v) => setSheetState(() {
+                      openEnded = v;
+                      if (v) {
+                        endDate = null;
+                      } else {
+                        endDate ??= startDate;
+                      }
+                    }),
+                  ),
+                  if (!openEnded) ...[
+                    const SizedBox(height: AppSpacing.s2),
+                    _SuspensionDateField(
+                      label: 'suspension_end_date'.tr,
+                      value: _fmtSuspensionDate(endDate),
+                      onTap: pickEnd,
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.s6),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colors.error,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: isLoading
+                          ? null
+                          : () async {
+                              if (!formKey.currentState!.validate()) return;
+                              final reason = reasonCtrl.text.trim();
+                              final pct = payMode == 'partial'
+                                  ? double.tryParse(percentCtrl.text.trim())
+                                  : null;
+                              final ok = await ctrl.suspendEmployee(
+                                reason: reason,
+                                payMode: payMode,
+                                payPercentage: pct,
+                                startDate: startDate,
+                                endDate: openEnded ? null : endDate,
+                              );
+                              if (ok) Get.back();
+                            },
+                      icon: isLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator.adaptive(
+                                  strokeWidth: 2),
+                            )
+                          : const Icon(Icons.block),
+                      label: Padding(
+                        padding:
+                            const EdgeInsets.symmetric(vertical: AppSpacing.s2),
+                        child: Text('suspend_confirm'.tr),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    ),
+    isScrollControlled: true,
+  ).whenComplete(() {
+    reasonCtrl.dispose();
+    percentCtrl.dispose();
+  });
+}
+
+void _confirmEndSuspension(BuildContext context, EmployeeDetailController ctrl) {
+  final noteCtrl = TextEditingController();
+  final colors = AppColors.of(context);
+  Get.bottomSheet(
+    Container(
+      padding: EdgeInsets.only(
+        left: AppSpacing.s4,
+        right: AppSpacing.s4,
+        top: AppSpacing.s4,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s4,
+      ),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: AppSpacing.s3),
+              decoration: BoxDecoration(
+                color: colors.borderHairline,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Text('end_suspension'.tr, style: AppTextStyles.h2(context)),
+          const SizedBox(height: AppSpacing.s2),
+          Text('end_suspension_hint'.tr,
+              style: AppTextStyles.bodySecondary(context)),
+          const SizedBox(height: AppSpacing.s4),
+          TextField(
+            controller: noteCtrl,
+            maxLines: 2,
+            decoration: InputDecoration(
+              labelText: 'suspension_end_note'.tr,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s5),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                final note = noteCtrl.text.trim();
+                final ok = await ctrl.endSuspension(
+                    endNote: note.isEmpty ? null : note);
+                if (ok) Get.back();
+              },
+              icon: const Icon(Icons.play_circle_outline),
+              label: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
+                child: Text('end_suspension'.tr),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+    isScrollControlled: true,
+  ).whenComplete(noteCtrl.dispose);
+}
+
+class _SuspensionDateField extends StatelessWidget {
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+  const _SuspensionDateField({
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          suffixIcon: const Icon(Icons.calendar_today_outlined, size: 18),
+        ),
+        child: Text(
+          value.isEmpty ? '—' : value,
+          style: TextStyle(
+            fontFamily: 'IBM Plex Sans Arabic',
+            fontSize: 14,
+            color: colors.textPrimary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SuspensionsCard extends StatefulWidget {
+  final EmployeeDetailController ctrl;
+  const _SuspensionsCard({required this.ctrl});
+
+  @override
+  State<_SuspensionsCard> createState() => _SuspensionsCardState();
+}
+
+class _SuspensionsCardState extends State<_SuspensionsCard> {
+  static const int _collapsedCount = 5;
+  bool _showAll = false;
+
+  EmployeeDetailController get ctrl => widget.ctrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final suspended = ctrl.isSuspended;
+    final actionColor = suspended ? colors.success : colors.error;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s4),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.block, size: 18, color: colors.error),
+              const SizedBox(width: AppSpacing.s2),
+              Expanded(
+                child: Text(
+                  'suspension_history'.tr,
+                  style: AppTextStyles.h3(context),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (ctrl.canManageEmployees &&
+                  ctrl.employee != null &&
+                  ctrl.employee!.status != 'terminated')
+                OutlinedButton.icon(
+                  onPressed: () => suspended
+                      ? _confirmEndSuspension(context, ctrl)
+                      : _showSuspendSheet(context, ctrl),
+                  icon: Icon(
+                    suspended ? Icons.play_circle_outline : Icons.block,
+                    size: 16,
+                    color: actionColor,
+                  ),
+                  label: Text(suspended
+                      ? 'end_suspension'.tr
+                      : 'suspend_employee'.tr),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: actionColor,
+                    side: BorderSide(color: actionColor),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s3,
+                      vertical: AppSpacing.s1,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          if (suspended && ctrl.activeSuspension != null) ...[
+            const SizedBox(height: AppSpacing.s3),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s2, vertical: AppSpacing.s1),
+              decoration: BoxDecoration(
+                color: colors.error.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(AppRadius.full),
+              ),
+              child: Text(
+                'suspension_active_title'.tr,
+                style: TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: colors.error,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.s3),
+          if (ctrl.suspensionHistory.isEmpty &&
+              (ctrl.suspensionHistoryStatus == StatusRequest.loading ||
+                  ctrl.suspensionHistoryStatus == StatusRequest.none))
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.s5),
+              child: Center(child: CircularProgressIndicator.adaptive()),
+            )
+          else if (ctrl.suspensionHistory.isEmpty &&
+              (ctrl.suspensionHistoryStatus == StatusRequest.failure ||
+                  ctrl.suspensionHistoryStatus ==
+                      StatusRequest.serverFailure ||
+                  ctrl.suspensionHistoryStatus == StatusRequest.offline))
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s4),
+              child: Center(
+                child: Column(
+                  children: [
+                    Text('suspension_history_load_failed'.tr,
+                        style: AppTextStyles.bodySecondary(context)),
+                    const SizedBox(height: AppSpacing.s2),
+                    TextButton.icon(
+                      onPressed: ctrl.loadSuspensionHistory,
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: Text('retry'.tr),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else if (ctrl.suspensionHistory.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s5),
+              child: Center(
+                child: Text('no_suspensions'.tr,
+                    style: AppTextStyles.bodySecondary(context)),
+              ),
+            )
+          else ...[
+            ...(_showAll
+                    ? ctrl.suspensionHistory
+                    : ctrl.suspensionHistory.take(_collapsedCount))
+                .map((s) => _SuspensionTile(item: s)),
+            if (ctrl.suspensionHistory.length > _collapsedCount)
+              _ShowMoreButton(
+                expanded: _showAll,
+                total: ctrl.suspensionHistory.length,
+                onTap: () => setState(() => _showAll = !_showAll),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SuspensionBanner extends StatelessWidget {
+  final EmployeeDetailController ctrl;
+  const _SuspensionBanner({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final s = ctrl.activeSuspension;
+    final period = s == null
+        ? ''
+        : s.isOpenEnded
+            ? '${_fmtSuspensionDate(s.startDate)} — ${'suspension_open_ended_short'.tr}'
+            : '${_fmtSuspensionDate(s.startDate)} → ${_fmtSuspensionDate(s.endDate)}';
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s4),
+      decoration: BoxDecoration(
+        color: colors.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: colors.error.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.block, color: colors.error, size: 20),
+              const SizedBox(width: AppSpacing.s2),
+              Expanded(
+                child: Text(
+                  'suspension_active_title'.tr,
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: colors.error,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (s != null) ...[
+            const SizedBox(height: AppSpacing.s3),
+            _SuspensionRow(label: 'suspension_pay_treatment'.tr, value: s.payModeLabel),
+            if (s.payMode == 'partial' && s.payPercentage != null)
+              _SuspensionRow(
+                  label: 'suspension_pay_percentage'.tr,
+                  value: '${s.payPercentage!.toStringAsFixed(0)}%'),
+            _SuspensionRow(label: 'suspension_period'.tr, value: period),
+            if (s.reason.isNotEmpty)
+              _SuspensionRow(label: 'suspension_reason'.tr, value: s.reason),
+          ],
+          if (ctrl.canManageEmployees) ...[
+            const SizedBox(height: AppSpacing.s3),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _confirmEndSuspension(context, ctrl),
+                icon: const Icon(Icons.play_circle_outline, size: 18),
+                label: Text('end_suspension'.tr),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SuspensionRow extends StatelessWidget {
+  final String label;
+  final String value;
+  const _SuspensionRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.s1),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 96,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 12,
+                color: colors.textTertiary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SuspensionTile extends StatelessWidget {
+  final SuspensionModel item;
+  const _SuspensionTile({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final statusColor = item.isActive ? colors.error : colors.textTertiary;
+    final period = item.isOpenEnded
+        ? '${_fmtSuspensionDate(item.startDate)} — ${'suspension_open_ended_short'.tr}'
+        : '${_fmtSuspensionDate(item.startDate)} → ${_fmtSuspensionDate(item.endDate)}';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.s2),
+      padding: const EdgeInsets.all(AppSpacing.s3),
+      decoration: BoxDecoration(
+        color: colors.sunken.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s2, vertical: AppSpacing.s1),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                ),
+                child: Text(
+                  item.isActive
+                      ? 'suspension_status_active'.tr
+                      : 'suspension_status_ended'.tr,
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s2),
+              Text(
+                item.payModeLabel +
+                    (item.payMode == 'partial' && item.payPercentage != null
+                        ? ' (${item.payPercentage!.toStringAsFixed(0)}%)'
+                        : ''),
+                style: TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 12,
+                  color: colors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s2),
+          Text(period,
+              style: const TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              )),
+          if (item.reason.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(item.reason,
+                style: TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 12,
+                  color: colors.textSecondary,
+                )),
+          ],
+          if (item.createdByName != null) ...[
+            const SizedBox(height: 2),
+            Text('${'suspension_issued_by'.tr}: ${item.createdByName}',
+                style: TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 11,
+                  color: colors.textTertiary,
+                )),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _WarningTile extends StatelessWidget {
   final WarningModel warning;
-  const _WarningTile({required this.warning});
+  final VoidCallback? onDelete;
+  const _WarningTile({required this.warning, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -7536,6 +9115,16 @@ class _WarningTile extends StatelessWidget {
               ],
             ),
           ),
+          if (onDelete != null)
+            IconButton(
+              onPressed: onDelete,
+              icon: Icon(Icons.delete_outline,
+                  size: 18, color: colors.textTertiary),
+              tooltip: 'delete_warning'.tr,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              visualDensity: VisualDensity.compact,
+            ),
         ],
       ),
     );
@@ -8096,8 +9685,12 @@ class _YearToDateSheetState extends State<_YearToDateSheet> {
     }
   }
 
-  String _money(num v) {
-    final s = v.toStringAsFixed(0);
+  String _money(dynamic v) {
+    // The YTD endpoint returns money fields as JSON strings (e.g. "12500.00"),
+    // so coerce strings/nums/null to a number before formatting.
+    final num n =
+        v is num ? v : (v is String ? (num.tryParse(v) ?? 0) : 0);
+    final s = n.toStringAsFixed(0);
     final buf = StringBuffer();
     for (int i = 0; i < s.length; i++) {
       if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
@@ -8243,7 +9836,7 @@ class _YearToDateSheetState extends State<_YearToDateSheet> {
               )),
           const SizedBox(height: 2),
           Text(
-            '${_money((t['total_net'] as num?) ?? 0)} $cur',
+            '${_money(t['total_net'])} $cur',
             style: const TextStyle(
               fontFamily: 'IBM Plex Sans Arabic',
               fontSize: 26,
@@ -8255,15 +9848,15 @@ class _YearToDateSheetState extends State<_YearToDateSheet> {
           Row(
             children: [
               Expanded(child: _miniStat('ytd_total_base'.tr,
-                  _money((t['total_base'] as num?) ?? 0),
+                  _money(t['total_base']),
                   Icons.account_balance_wallet_outlined)),
               const SizedBox(width: AppSpacing.s2),
               Expanded(child: _miniStat('ytd_total_bonuses'.tr,
-                  _money((t['total_bonuses'] as num?) ?? 0),
+                  _money(t['total_bonuses']),
                   Icons.north_rounded)),
               const SizedBox(width: AppSpacing.s2),
               Expanded(child: _miniStat('ytd_total_deductions'.tr,
-                  _money((t['total_deductions'] as num?) ?? 0),
+                  _money(t['total_deductions']),
                   Icons.south_rounded)),
             ],
           ),
@@ -8361,7 +9954,7 @@ class _YearToDateSheetState extends State<_YearToDateSheet> {
                 )),
           ),
           Text(
-            '${_money((r['net_salary'] as num?) ?? 0)} $cur',
+            '${_money(r['net_salary'])} $cur',
             style: TextStyle(
               fontFamily: 'IBM Plex Sans Arabic',
               fontSize: 14,

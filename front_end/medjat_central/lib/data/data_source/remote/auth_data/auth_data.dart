@@ -45,6 +45,18 @@ class AuthData {
     return await _crud.postData(AppLinks.logout, {});
   }
 
+  /// Updates the signed-in admin's own name and/or phone in the backend.
+  /// Sending an empty phone clears it.
+  Future<Map<String, dynamic>> updateProfile({
+    String? name,
+    String? phone,
+  }) async {
+    return await _crud.postData(AppLinks.updateProfile, {
+      if (name != null) 'name': name,
+      if (phone != null) 'phone': phone,
+    });
+  }
+
   /// Permanently deletes the account (and the company, if the caller is the
   /// last general_manager) from the backend DB and Firebase.
   Future<Map<String, dynamic>> deleteAccount() async {

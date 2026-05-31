@@ -104,12 +104,16 @@ class LeaveController extends GetxController {
     required DateTime startDate,
     DateTime? endDate,
     String? reason,
+    bool autoApprove = false,
+    String onExceed = 'split',
   }) async {
     final data = <String, dynamic>{
       'employee_id': employeeId,
       'type': type,
       'start_date': _fmt(startDate),
       'end_date': _fmt(endDate ?? startDate),
+      'auto_approve': autoApprove,
+      'on_exceed': onExceed,
     };
     if (reason != null && reason.trim().isNotEmpty) {
       data['reason'] = reason.trim();

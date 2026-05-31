@@ -52,7 +52,7 @@ final class EmployeeModel {
     public static function findById(int $id, int $tenantId): ?array {
         return Database::fetchOne(
             "SELECT e.*, s.start_time AS shift_start, s.end_time AS shift_end,
-                    s.name AS shift_name, s.color AS shift_color
+                    s.name AS shift_name
              FROM employees e
              LEFT JOIN shifts s ON s.id = e.shift_id
              WHERE e.id = ? AND e.tenant_id = ? LIMIT 1",
@@ -260,9 +260,30 @@ final class EmployeeModel {
         );
     }
 
-    public static function getByTenant(int $tenantId, int $page = 1, int $limit = 20, ?int $branchId = null, ?string $search = null): array {
+    /** Employment statuses that can be filtered on (terminated is hidden by default). */
+    public const FILTERABLE_STATUSES = ['active', 'suspended', 'on_leave', 'pending_activation'];
+
+    /** Whitelisted sort keys → safe ORDER BY clause. */
+    private const SORT_CLAUSES = [
+        'name' => 'e.name ASC',
+        'hire_date' => 'e.hire_date DESC, e.name ASC',
+        'status' => 'e.status ASC, e.name ASC',
+    ];
+
+    public static function getByTenant(
+        int $tenantId,
+        int $page = 1,
+        int $limit = 20,
+        ?int $branchId = null,
+        ?string $search = null,
+        ?string $status = null,
+        string $sort = 'name',
+        ?int $shiftId = null,
+        ?int $categoryId = null,
+        ?int $expiringWithin = null
+    ): array {
         $sql = "SELECT e.*, s.start_time AS shift_start, s.end_time AS shift_end,
-                       s.name AS shift_name, s.color AS shift_color
+                       s.name AS shift_name
                 FROM employees e
                 LEFT JOIN shifts s ON s.id = e.shift_id
                 WHERE e.tenant_id = ? AND e.status != 'terminated'";
@@ -271,6 +292,39 @@ final class EmployeeModel {
         if ($branchId) {
             $sql .= " AND branch_id = ?";
             $params[] = $branchId;
+        }
+
+        if ($shiftId) {
+            $sql .= " AND e.shift_id = ?";
+            $params[] = $shiftId;
+        }
+
+        // Many-to-many: keep only employees assigned to the given category.
+        if ($categoryId) {
+            $sql .= " AND EXISTS (SELECT 1 FROM employee_category_assignments eca
+                                  WHERE eca.employee_id = e.id
+                                    AND eca.category_id = ?
+                                    AND eca.tenant_id = e.tenant_id)";
+            $params[] = $categoryId;
+        }
+
+        // Filter by a specific employment status (terminated is never listed).
+        if ($status !== null && $status !== '' && in_array($status, self::FILTERABLE_STATUSES, true)) {
+            $sql .= " AND e.status = ?";
+            $params[] = $status;
+        }
+
+        // "Expiring documents" filter: any of iqama / passport / work permit
+        // expiring within the given number of days (already-expired included).
+        if ($expiringWithin !== null && $expiringWithin > 0) {
+            $sql .= " AND (
+                (e.iqama_expiry IS NOT NULL AND e.iqama_expiry <= DATE_ADD(CURDATE(), INTERVAL ? DAY))
+                OR (e.passport_expiry IS NOT NULL AND e.passport_expiry <= DATE_ADD(CURDATE(), INTERVAL ? DAY))
+                OR (e.work_permit_expiry IS NOT NULL AND e.work_permit_expiry <= DATE_ADD(CURDATE(), INTERVAL ? DAY))
+            )";
+            $params[] = $expiringWithin;
+            $params[] = $expiringWithin;
+            $params[] = $expiringWithin;
         }
 
         if ($search) {
@@ -282,13 +336,47 @@ final class EmployeeModel {
             $params[] = $searchParam;
         }
 
+        $orderBy = self::SORT_CLAUSES[$sort] ?? self::SORT_CLAUSES['name'];
         $offset = ($page - 1) * $limit;
-        $sql .= " ORDER BY name ASC LIMIT ? OFFSET ?";
+        $sql .= " ORDER BY {$orderBy} LIMIT ? OFFSET ?";
         $params[] = $limit;
         $params[] = $offset;
 
         $items = Database::fetchAll($sql, $params);
         return ['items' => $items, 'page' => $page];
+    }
+
+    /**
+     * Headcount grouped by employment status (terminated excluded), honouring
+     * an optional branch scope. Powers the employees list stats header.
+     * Always returns the full set of keys so the UI can render fixed chips.
+     */
+    public static function statusCounts(int $tenantId, ?int $branchId = null): array {
+        $sql = "SELECT status, COUNT(*) AS c FROM employees
+                WHERE tenant_id = ? AND status != 'terminated'";
+        $params = [$tenantId];
+        if ($branchId) {
+            $sql .= " AND branch_id = ?";
+            $params[] = $branchId;
+        }
+        $sql .= " GROUP BY status";
+
+        $counts = [
+            'total' => 0,
+            'active' => 0,
+            'on_leave' => 0,
+            'pending_activation' => 0,
+            'suspended' => 0,
+        ];
+        foreach (Database::fetchAll($sql, $params) as $row) {
+            $key = $row['status'];
+            $c = (int) $row['c'];
+            if (array_key_exists($key, $counts)) {
+                $counts[$key] = $c;
+            }
+            $counts['total'] += $c;
+        }
+        return $counts;
     }
 
     public static function countByTenant(int $tenantId, ?int $branchId = null): int {

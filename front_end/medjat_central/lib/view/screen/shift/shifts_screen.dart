@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/class/handling_data_request.dart';
 import '../../../core/constant/theme/theme.dart';
+import '../../../core/constant/routes/app_routes.dart';
 import '../../../data/model/shift_model.dart';
 import '../../../logic/controller/shift/shift_controller.dart';
 
@@ -67,6 +68,10 @@ class ShiftsScreen extends StatelessWidget {
                           const SizedBox(height: AppSpacing.s3),
                       itemBuilder: (_, i) => _ShiftTile(
                         shift: ctrl.shifts[i],
+                        onView: () => Get.toNamed<void>(
+                          AppRoutes.shiftMembers,
+                          arguments: ctrl.shifts[i],
+                        ),
                         onEdit: () => _showAddEditSheet(
                           context,
                           ctrl,
@@ -123,16 +128,6 @@ class ShiftsScreen extends StatelessWidget {
     TimeOfDay endTime = existing != null
         ? _parseTimeOfDay(existing.endTime)
         : const TimeOfDay(hour: 17, minute: 0);
-    String? selectedColor = existing?.color;
-
-    final colorPalette = [
-      '#0D7377',
-      '#27AE60',
-      '#E67E22',
-      '#8E44AD',
-      '#C0392B',
-      '#2980B9',
-    ];
 
     Get.bottomSheet<void>(
       StatefulBuilder(
@@ -211,41 +206,6 @@ class ShiftsScreen extends StatelessWidget {
                       }
                     },
                   ),
-                  const SizedBox(height: AppSpacing.s3),
-                  Text('shift_color'.tr,
-                      style: const TextStyle(
-                        fontFamily: 'IBM Plex Sans Arabic',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      )),
-                  const SizedBox(height: AppSpacing.s2),
-                  Wrap(
-                    spacing: 8,
-                    children: colorPalette.map((c) {
-                      final isSelected = selectedColor == c;
-                      return GestureDetector(
-                        onTap: () {
-                          selectedColor = c;
-                          setModalState(() {});
-                        },
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: _hexToColor(c),
-                            shape: BoxShape.circle,
-                            border: isSelected
-                                ? Border.all(width: 3, color: Colors.black54)
-                                : null,
-                          ),
-                          child: isSelected
-                              ? const Icon(Icons.check,
-                                  color: Colors.white, size: 18)
-                              : null,
-                        ),
-                      );
-                    }).toList(),
-                  ),
                   const SizedBox(height: AppSpacing.s5),
                   Obx(() => SizedBox(
                         height: 48,
@@ -266,14 +226,12 @@ class ShiftsScreen extends StatelessWidget {
                                       'name': nameCtrl.text.trim(),
                                       'start_time': startStr,
                                       'end_time': endStr,
-                                      'color': selectedColor,
                                     });
                                   } else {
                                     ok = await ctrl.createShift(
                                       name: nameCtrl.text.trim(),
                                       startTime: startStr,
                                       endTime: endStr,
-                                      color: selectedColor,
                                     );
                                   }
                                   isLoading.value = false;
@@ -335,20 +293,17 @@ class ShiftsScreen extends StatelessWidget {
       minute: int.tryParse(parts[1]) ?? 0,
     );
   }
-
-  Color _hexToColor(String hex) {
-    final code = hex.replaceAll('#', '');
-    return Color(int.parse('FF$code', radix: 16));
-  }
 }
 
 class _ShiftTile extends StatelessWidget {
   final ShiftModel shift;
+  final VoidCallback onView;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _ShiftTile({
     required this.shift,
+    required this.onView,
     required this.onEdit,
     required this.onDelete,
   });
@@ -356,9 +311,7 @@ class _ShiftTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final badgeColor = shift.color != null
-        ? _hexToColor(shift.color!)
-        : colors.brand;
+    final badgeColor = colors.brand;
 
     return Dismissible(
       key: ValueKey(shift.id),
@@ -374,7 +327,7 @@ class _ShiftTile extends StatelessWidget {
         child: Icon(Icons.delete_outline, color: colors.error),
       ),
       child: InkWell(
-        onTap: onEdit,
+        onTap: onView,
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.s4),
@@ -463,6 +416,12 @@ class _ShiftTile extends StatelessWidget {
                 ),
               ),
               IconButton(
+                icon: Icon(Icons.edit_outlined, size: 20, color: colors.textSecondary),
+                onPressed: onEdit,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+              ),
+              IconButton(
                 icon: Icon(Icons.delete_outline, size: 20, color: colors.error),
                 onPressed: onDelete,
                 padding: EdgeInsets.zero,
@@ -478,10 +437,5 @@ class _ShiftTile extends StatelessWidget {
   String _formatTime(String t) {
     final parts = t.split(':');
     return '${parts[0]}:${parts[1]}';
-  }
-
-  Color _hexToColor(String hex) {
-    final code = hex.replaceAll('#', '');
-    return Color(int.parse('FF$code', radix: 16));
   }
 }

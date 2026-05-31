@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import '../../../core/class/status_request.dart';
 import '../../../data/data_source/remote/employee_data/employee_data.dart';
@@ -22,6 +23,34 @@ class EmployeeController extends GetxController {
   int? branchFilter;
   int? shiftFilter;
   int? categoryFilter;
+  String? statusFilter;
+  int? expiringFilter; // null | 30 | 60 (days)
+  String sortBy = 'name';
+
+  /// Headcount per status for the stats header (from the list endpoint).
+  Map<String, int> statusCounts = {
+    'total': 0,
+    'active': 0,
+    'on_leave': 0,
+    'pending_activation': 0,
+    'suspended': 0,
+  };
+
+  /// Supported "documents expiring within N days" windows.
+  static const List<int> expiringWindows = [30, 60];
+
+  /// Employment statuses that can be filtered on (matches the backend).
+  static const List<String> filterableStatuses = [
+    'active',
+    'suspended',
+    'on_leave',
+    'pending_activation',
+  ];
+
+  /// Supported sort keys (matches the backend whitelist).
+  static const List<String> sortOptions = ['name', 'hire_date', 'status'];
+
+  Timer? _searchDebounce;
 
   List<BranchModel> branches = [];
   List<ShiftModel> shifts = [];
@@ -34,6 +63,12 @@ class EmployeeController extends GetxController {
     loadFilterOptions();
   }
 
+  @override
+  void onClose() {
+    _searchDebounce?.cancel();
+    super.onClose();
+  }
+
   Future<void> loadEmployees() async {
     status = StatusRequest.loading;
     update();
@@ -43,10 +78,14 @@ class EmployeeController extends GetxController {
       shiftId: shiftFilter,
       categoryId: categoryFilter,
       search: searchQuery.isNotEmpty ? searchQuery : null,
+      status: statusFilter,
+      sort: sortBy,
+      expiringWithin: expiringFilter,
     );
 
     if (response['status'] == StatusRequest.success) {
       employees = _extractItems(response['data']);
+      _extractStats(response['data']);
       status = StatusRequest.success;
     } else {
       status = (response['status'] as StatusRequest?) ?? StatusRequest.failure;
@@ -137,15 +176,54 @@ class EmployeeController extends GetxController {
         .toList();
   }
 
+  /// Debounced search: waits 400ms after the last keystroke before querying,
+  /// so we don't fire a request per character.
   void onSearch(String query) {
     searchQuery = query;
-    loadEmployees();
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 400), loadEmployees);
   }
 
-  void applyFilters({int? branchId, int? shiftId, int? categoryId}) {
+  void _extractStats(dynamic raw) {
+    dynamic payload = raw;
+    if (payload is Map && payload['data'] != null) payload = payload['data'];
+    if (payload is Map && payload['stats'] is Map) {
+      final s = payload['stats'] as Map;
+      statusCounts = {
+        'total': (s['total'] as num?)?.toInt() ?? 0,
+        'active': (s['active'] as num?)?.toInt() ?? 0,
+        'on_leave': (s['on_leave'] as num?)?.toInt() ?? 0,
+        'pending_activation': (s['pending_activation'] as num?)?.toInt() ?? 0,
+        'suspended': (s['suspended'] as num?)?.toInt() ?? 0,
+      };
+    }
+  }
+
+  void applyFilters({
+    int? branchId,
+    int? shiftId,
+    int? categoryId,
+    String? status,
+    int? expiringWithin,
+  }) {
     branchFilter = branchId;
     shiftFilter = shiftId;
     categoryFilter = categoryId;
+    statusFilter = status;
+    expiringFilter = expiringWithin;
+    loadEmployees();
+  }
+
+  /// Toggle a status from the stats header chips (tapping the active one or
+  /// "total" clears the status filter). Keeps the other filters intact.
+  void selectStatus(String? status) {
+    statusFilter = (status == null || status == statusFilter) ? null : status;
+    loadEmployees();
+  }
+
+  void setSort(String sort) {
+    if (!sortOptions.contains(sort) || sort == sortBy) return;
+    sortBy = sort;
     loadEmployees();
   }
 
@@ -153,11 +231,32 @@ class EmployeeController extends GetxController {
     branchFilter = null;
     shiftFilter = null;
     categoryFilter = null;
+    statusFilter = null;
+    expiringFilter = null;
     loadEmployees();
   }
 
   bool get hasActiveFilters =>
-      branchFilter != null || shiftFilter != null || categoryFilter != null;
+      branchFilter != null ||
+      shiftFilter != null ||
+      categoryFilter != null ||
+      statusFilter != null ||
+      expiringFilter != null;
+
+  String statusLabel(String status) {
+    switch (status) {
+      case 'active':
+        return 'employee_active'.tr;
+      case 'suspended':
+        return 'employee_suspended'.tr;
+      case 'on_leave':
+        return 'employee_on_leave'.tr;
+      case 'pending_activation':
+        return 'pending_activation'.tr;
+      default:
+        return status;
+    }
+  }
 
   String? branchName(int? id) {
     if (id == null) return null;

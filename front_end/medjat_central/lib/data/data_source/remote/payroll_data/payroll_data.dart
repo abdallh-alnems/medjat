@@ -85,6 +85,33 @@ class PayrollData {
     });
   }
 
+  /// Edit the amount of, remove, or restore any computed payroll line
+  /// (absence/late/loan/insurance/tax/overtime…) for one employee+month.
+  /// [action] is 'set' (with [amount]), 'waive', or 'clear'.
+  Future<Map<String, dynamic>> overrideLine({
+    required int employeeId,
+    required String month,
+    required String kind, // 'deduction' | 'bonus'
+    required String type,
+    String? date,
+    required String description,
+    required String action, // 'set' | 'waive' | 'clear'
+    num? amount,
+    String? reason,
+  }) async {
+    return await _crud.postData(AppLinks.payrollOverrideLine, {
+      'employee_id': employeeId,
+      'month': month,
+      'line_kind': kind,
+      'line_type': type,
+      if (date != null) 'line_date': date,
+      'line_desc': description,
+      'action': action,
+      if (amount != null) 'amount': amount,
+      if (reason != null) 'reason': reason,
+    });
+  }
+
   Future<Map<String, dynamic>> getEosb(int employeeId) async {
     return await _crud.getData(AppLinks.payrollEosb(employeeId));
   }

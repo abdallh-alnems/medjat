@@ -153,7 +153,13 @@ class _HubTile extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.chevron_left, size: 20, color: colors.textTertiary),
+            Icon(
+              Directionality.of(context) == TextDirection.rtl
+                  ? Icons.chevron_left
+                  : Icons.chevron_right,
+              size: 20,
+              color: colors.textTertiary,
+            ),
           ],
         ),
       ),

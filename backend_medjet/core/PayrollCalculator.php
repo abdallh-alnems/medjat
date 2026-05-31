@@ -37,10 +37,21 @@ final class PayrollCalculator {
         $deductions = self::calculateDeductions($employeeId, $month, $tenantId, $baseSalary, $cycleStart, $effectiveEnd);
         $bonuses = self::calculateBonuses($employeeId, $month, $tenantId, $cycleStart, $effectiveEnd, $baseSalary);
 
-        $totalBonuses = array_sum(array_column($bonuses, 'amount'));
-
         $statutory = self::applyStatutory($baseSalary, $deductions, $tenantId);
 
+        // Manual per-line overrides: edit the amount of, or remove, ANY computed
+        // line (absence, late, loan, insurance, tax, overtime…) for this
+        // employee+month. Applied to the final line sets so totals + net follow.
+        $overrides = PayrollLineOverrideModel::getMap($employeeId, $month, $tenantId);
+        if (!empty($overrides)) {
+            $deductions = self::applyLineOverrides($deductions, 'deduction', $overrides);
+            $bonuses = self::applyLineOverrides($bonuses, 'bonus', $overrides);
+            if (!empty($statutory)) {
+                $statutory = self::reconcileStatutory($statutory, $deductions);
+            }
+        }
+
+        $totalBonuses = array_sum(array_column($bonuses, 'amount'));
         $totalDeductions = array_sum(array_column($deductions, 'amount'));
         $netSalary = $baseSalary - $totalDeductions + $totalBonuses;
 
@@ -79,6 +90,57 @@ final class PayrollCalculator {
         }
 
         return $result;
+    }
+
+    /**
+     * Apply per-line overrides to a computed line list. Drops waived lines and
+     * replaces the amount of overridden ones (annotating them so the client can
+     * badge them). Lines are matched by sha1(type|date|description); manual
+     * lines are skipped (they have their own edit/delete path).
+     */
+    private static function applyLineOverrides(array $lines, string $kind, array $overrides): array {
+        $out = [];
+        foreach ($lines as $line) {
+            if (($line['type'] ?? '') === 'manual') {
+                $out[] = $line;
+                continue;
+            }
+            $hash = PayrollLineOverrideModel::hash(
+                (string) ($line['type'] ?? ''),
+                $line['date'] ?? null,
+                (string) ($line['description'] ?? '')
+            );
+            $ov = $overrides[$kind . '|' . $hash] ?? null;
+            if ($ov === null) {
+                $out[] = $line;
+                continue;
+            }
+            if ($ov['waived']) {
+                continue; // line removed for this month
+            }
+            if ($ov['amount'] !== null) {
+                $line['original_amount'] = $line['amount'] ?? 0;
+                $line['amount'] = round((float) $ov['amount'], 2);
+                $line['overridden'] = true;
+            }
+            $out[] = $line;
+        }
+        return $out;
+    }
+
+    /**
+     * Keep the statutory_breakdown card consistent with overridden/waived
+     * social_insurance & income_tax lines so the displayed figures match the
+     * deductions actually applied.
+     */
+    private static function reconcileStatutory(array $statutory, array $deductions): array {
+        $byType = [];
+        foreach ($deductions as $d) {
+            $byType[$d['type'] ?? ''] = $d['amount'] ?? 0;
+        }
+        $statutory['insurance_employee'] = (float) ($byType['social_insurance'] ?? 0);
+        $statutory['income_tax'] = (float) ($byType['income_tax'] ?? 0);
+        return $statutory;
     }
 
     /**
@@ -137,7 +199,27 @@ final class PayrollCalculator {
         $dailyRate = $baseSalary / 30;
         $hourlyRate = $dailyRate / 8;
 
+        // Work suspensions overlapping this cycle. Their days are handled by a
+        // dedicated suspension deduction below, so attendance-based absence/late
+        // deductions are skipped for any day inside a suspension to avoid double
+        // counting.
+        $suspensions = $effectiveEnd === null
+            ? []
+            : EmployeeSuspensionModel::getOverlappingForPayroll($employeeId, $tenantId, $cycleStart, $effectiveEnd);
+        $isSuspendedOn = static function (string $date) use ($suspensions, $effectiveEnd): bool {
+            foreach ($suspensions as $sp) {
+                $end = $sp['end_date'] ?? $effectiveEnd;
+                if ($date >= $sp['start_date'] && $date <= $end) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
         foreach ($attendances as $att) {
+            if ($isSuspendedOn($att['date'])) {
+                continue;
+            }
             if ($att['status'] === 'absent') {
                 // Per-day override: 'amount' = fixed money, 'days' = value × daily
                 // rate, 'auto' (default) = company absence_multiplier rule.
@@ -207,6 +289,43 @@ final class PayrollCalculator {
                 'date' => $month,
                 'amount' => (float) $inst['amount'],
                 'description' => "{$label} (قسط {$inst['seq']})",
+            ];
+        }
+
+        // Work-suspension deduction. For each day within a suspension that falls
+        // in this cycle, deduct the unpaid fraction of the daily rate:
+        //   unpaid  → full daily rate            (factor 1)
+        //   partial → (100 - pay_percentage)%    (factor 1 - pct/100)
+        //   full    → nothing                    (factor 0, precautionary)
+        foreach ($suspensions as $sp) {
+            $spStart = $sp['start_date'] > $cycleStart ? $sp['start_date'] : $cycleStart;
+            $spEnd = ($sp['end_date'] === null || $sp['end_date'] > $effectiveEnd)
+                ? $effectiveEnd : $sp['end_date'];
+            if ($spEnd < $spStart) {
+                continue;
+            }
+            $days = self::daysBetween($spStart, $spEnd) + 1;
+            $mode = $sp['pay_mode'];
+            if ($mode === 'full') {
+                $factor = 0.0;
+            } elseif ($mode === 'partial') {
+                $pct = max(0.0, min(100.0, (float) ($sp['pay_percentage'] ?? 0)));
+                $factor = 1 - $pct / 100;
+            } else {
+                $factor = 1.0;
+            }
+            $amount = round($dailyRate * $days * $factor, 2);
+            if ($amount <= 0) {
+                continue;
+            }
+            $desc = $mode === 'partial'
+                ? "إيقاف عن العمل ({$days} يوم) براتب جزئي"
+                : "إيقاف عن العمل ({$days} يوم) بدون راتب";
+            $deductions[] = [
+                'type' => 'suspension',
+                'date' => $spStart,
+                'amount' => $amount,
+                'description' => $desc,
             ];
         }
 

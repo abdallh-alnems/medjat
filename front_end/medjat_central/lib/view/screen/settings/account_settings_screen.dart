@@ -20,58 +20,74 @@ class AccountSettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.s4),
         children: [
-          Container(
-            margin: const EdgeInsets.only(bottom: AppSpacing.s5),
-            padding: const EdgeInsets.all(AppSpacing.s4),
-            decoration: BoxDecoration(
-              color: colors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: colors.borderHairline),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: colors.brandSubtle,
-                  child: Text(
-                    (auth.user != null && auth.user!.name.isNotEmpty)
-                        ? auth.user!.name[0]
-                        : '?',
-                    style: TextStyle(
-                      fontFamily: 'Geist',
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: colors.brand,
+          GetBuilder<AuthController>(
+            builder: (auth) => Container(
+              margin: const EdgeInsets.only(bottom: AppSpacing.s5),
+              padding: const EdgeInsets.all(AppSpacing.s4),
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: colors.borderHairline),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: colors.brandSubtle,
+                    child: Text(
+                      (auth.user != null && auth.user!.name.isNotEmpty)
+                          ? auth.user!.name[0]
+                          : '?',
+                      style: TextStyle(
+                        fontFamily: 'Geist',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: colors.brand,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: AppSpacing.s3),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        auth.user?.name ?? 'admin'.tr,
-                        style: const TextStyle(
-                          fontFamily: 'IBM Plex Sans Arabic',
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
+                  const SizedBox(width: AppSpacing.s3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          auth.user?.name ?? 'admin'.tr,
+                          style: const TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      Text(
-                        auth.user?.email ?? '',
-                        style: AppTextStyles.sm(context),
-                      ),
-                    ],
+                        Text(
+                          auth.user?.email ?? '',
+                          style: AppTextStyles.sm(context),
+                        ),
+                        if (auth.user?.phone != null &&
+                            auth.user!.phone!.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            auth.user!.phone!,
+                            style: AppTextStyles.sm(context),
+                            textDirection: TextDirection.ltr,
+                          ),
+                        ],
+                        if (auth.user != null &&
+                            auth.user!.roleKey.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.s2),
+                          _RoleChip(roleKey: auth.user!.roleKey),
+                        ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           _AccountTile(
             icon: Icons.edit_outlined,
             title: 'change_personal_info'.tr,
-            onTap: () => _showEditProfileSheet(context),
+            onTap: () => _showEditProfileSheet(context, auth),
           ),
           const SizedBox(height: AppSpacing.s2),
           _AccountTile(
@@ -195,9 +211,124 @@ void _confirmDeleteAccount(BuildContext context, AuthController auth) {
   );
 }
 
-void _showEditProfileSheet(BuildContext context) {
-  Get.snackbar('coming_soon'.tr, '',
-      snackPosition: SnackPosition.BOTTOM);
+/// Localized label for an admin role key (falls back to the raw key).
+String _roleLabel(String roleKey) {
+  const map = {
+    'general_manager': 'role_general_manager',
+    'hr': 'role_hr',
+    'branch_manager': 'role_branch_manager',
+    'attendance': 'role_attendance',
+    'viewer': 'role_viewer',
+    'pending': 'role_pending',
+  };
+  final key = map[roleKey];
+  return key != null ? key.tr : roleKey;
+}
+
+/// Bottom sheet to edit the signed-in user's own name and phone.
+void _showEditProfileSheet(BuildContext context, AuthController auth) {
+  final colors = AppColors.of(context);
+  final nameCtrl = TextEditingController(text: auth.user?.name ?? '');
+  final phoneCtrl = TextEditingController(text: auth.user?.phone ?? '');
+  final formKey = GlobalKey<FormState>();
+
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+    ),
+    builder: (_) => Padding(
+      padding: EdgeInsets.only(
+        left: AppSpacing.s4,
+        right: AppSpacing.s4,
+        top: AppSpacing.s5,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.s4,
+      ),
+      child: Form(
+        key: formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'change_personal_info'.tr,
+              style: TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: colors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s5),
+            TextFormField(
+              controller: nameCtrl,
+              textInputAction: TextInputAction.next,
+              decoration: InputDecoration(
+                labelText: 'name'.tr,
+                border: const OutlineInputBorder(),
+              ),
+              validator: (v) {
+                if (v == null || v.trim().isEmpty) return 'enter_name'.tr;
+                return null;
+              },
+            ),
+            const SizedBox(height: AppSpacing.s3),
+            TextFormField(
+              controller: phoneCtrl,
+              keyboardType: TextInputType.phone,
+              textDirection: TextDirection.ltr,
+              decoration: InputDecoration(
+                labelText: 'phone_optional'.tr,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s5),
+            Obx(() => SizedBox(
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: auth.isUpdatingProfile.value
+                        ? null
+                        : () async {
+                            if (!formKey.currentState!.validate()) return;
+                            await auth.updateProfile(
+                              name: nameCtrl.text.trim(),
+                              phone: phoneCtrl.text.trim(),
+                            );
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colors.brand,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                    ),
+                    child: auth.isUpdatingProfile.value
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator.adaptive(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Text(
+                            'save_changes'.tr,
+                            style: const TextStyle(
+                              fontFamily: 'IBM Plex Sans Arabic',
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                )),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 void _showChangePasswordSheet(BuildContext context) {
@@ -316,6 +447,35 @@ void _showChangePasswordSheet(BuildContext context) {
   );
 }
 
+/// Small pill showing the user's role next to their name.
+class _RoleChip extends StatelessWidget {
+  final String roleKey;
+
+  const _RoleChip({required this.roleKey});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Container(
+      padding:
+          const EdgeInsets.symmetric(horizontal: AppSpacing.s2, vertical: 2),
+      decoration: BoxDecoration(
+        color: colors.brandSubtle,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Text(
+        _roleLabel(roleKey),
+        style: TextStyle(
+          fontFamily: 'IBM Plex Sans Arabic',
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: colors.brand,
+        ),
+      ),
+    );
+  }
+}
+
 class _AccountTile extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -372,7 +532,13 @@ class _AccountTile extends StatelessWidget {
               ),
             ),
             if (showChevron)
-              Icon(Icons.chevron_left, size: 20, color: colors.textTertiary),
+              Icon(
+                Directionality.of(context) == TextDirection.rtl
+                    ? Icons.chevron_left
+                    : Icons.chevron_right,
+                size: 20,
+                color: colors.textTertiary,
+              ),
           ],
         ),
       ),

@@ -12,7 +12,6 @@ void main() {
         'name': 'الوردية الصباحية',
         'start_time': '08:00:00',
         'end_time': '16:00:00',
-        'color': '#FF5733',
         'is_active': 1,
         'employee_count': 25,
       };
@@ -26,7 +25,6 @@ void main() {
       expect(shift.name, 'الوردية الصباحية');
       expect(shift.startTime, '08:00:00');
       expect(shift.endTime, '16:00:00');
-      expect(shift.color, '#FF5733');
       expect(shift.isActive, isTrue);
       expect(shift.employeeCount, 25);
     });
@@ -45,7 +43,6 @@ void main() {
       expect(shift.name, '');
       expect(shift.startTime, '');
       expect(shift.endTime, '');
-      expect(shift.color, isNull);
       expect(shift.isActive, isFalse);
       expect(shift.employeeCount, 0);
     });
@@ -68,7 +65,6 @@ void main() {
         'name': 'صباحية',
         'start_time': '08:00',
         'end_time': '16:00',
-        'color': '#FFF',
         'is_active': 1,
       });
 
@@ -80,7 +76,6 @@ void main() {
       expect(json['name'], 'صباحية');
       expect(json['start_time'], '08:00');
       expect(json['end_time'], '16:00');
-      expect(json['color'], '#FFF');
       expect(json['is_active'], 1);
     });
 

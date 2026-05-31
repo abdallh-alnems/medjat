@@ -177,7 +177,7 @@ class _SummaryCards extends StatelessWidget {
             Expanded(
                 child: _StatCard(
                     label: 'total_deductions'.tr,
-                    value: '${summary.totalDeductions.toStringAsFixed(0)}',
+                    value: summary.totalDeductions.toStringAsFixed(0),
                     color: colors.error,
                     colors: colors)),
           ],
@@ -188,7 +188,7 @@ class _SummaryCards extends StatelessWidget {
             Expanded(
                 child: _StatCard(
                     label: 'total_bonuses'.tr,
-                    value: '${summary.totalBonuses.toStringAsFixed(0)}',
+                    value: summary.totalBonuses.toStringAsFixed(0),
                     color: colors.success,
                     colors: colors)),
             const SizedBox(width: AppSpacing.s2),

@@ -10,12 +10,18 @@ class EmployeeData {
     int? shiftId,
     int? categoryId,
     String? search,
+    String? status,
+    String? sort,
+    int? expiringWithin,
   }) async {
     final params = <String, dynamic>{};
     if (branchId != null) params['branch_id'] = branchId;
     if (shiftId != null) params['shift_id'] = shiftId;
     if (categoryId != null) params['category_id'] = categoryId;
     if (search != null && search.isNotEmpty) params['search'] = search;
+    if (status != null && status.isNotEmpty) params['status'] = status;
+    if (sort != null && sort.isNotEmpty) params['sort'] = sort;
+    if (expiringWithin != null) params['expiring_within'] = expiringWithin;
     return await _crud.getData(AppLinks.employees, queryParameters: params);
   }
 
@@ -33,6 +39,38 @@ class EmployeeData {
 
   Future<Map<String, dynamic>> deleteEmployee(int id) async {
     return await _crud.postData(AppLinks.employeeDelete, {'id': id});
+  }
+
+  Future<Map<String, dynamic>> suspendEmployee(
+    int employeeId, {
+    required String reason,
+    required String payMode,
+    double? payPercentage,
+    required String startDate,
+    String? endDate,
+  }) async {
+    final data = <String, dynamic>{
+      'employee_id': employeeId,
+      'reason': reason,
+      'pay_mode': payMode,
+      'start_date': startDate,
+    };
+    if (payPercentage != null) data['pay_percentage'] = payPercentage;
+    if (endDate != null && endDate.isNotEmpty) data['end_date'] = endDate;
+    return await _crud.postData(AppLinks.employeeSuspend, data);
+  }
+
+  Future<Map<String, dynamic>> endSuspension(
+    int employeeId, {
+    String? endNote,
+  }) async {
+    final data = <String, dynamic>{'employee_id': employeeId};
+    if (endNote != null && endNote.isNotEmpty) data['end_note'] = endNote;
+    return await _crud.postData(AppLinks.employeeEndSuspension, data);
+  }
+
+  Future<Map<String, dynamic>> getSuspensions(int employeeId) async {
+    return await _crud.getData(AppLinks.employeeSuspensions(employeeId));
   }
 
   Future<Map<String, dynamic>> getActivationCode(int employeeId) async {

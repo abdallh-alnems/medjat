@@ -7,6 +7,7 @@ import '../../../core/constant/theme/theme.dart';
 import '../../../core/shared/input_fields/primary_input.dart';
 import '../../../core/shared/input_fields/password_input.dart';
 import '../../../core/services/locale_service.dart';
+import '../../../core/widget/appearance_loading.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
 
 class LoginScreen extends StatelessWidget {
@@ -37,7 +38,8 @@ class LoginScreen extends StatelessWidget {
                   Align(
                     alignment: Alignment.topRight,
                     child: Obx(() => GestureDetector(
-                          onTap: localeSvc.toggleLocale,
+                          onTap: () => runWithAppearanceOverlay(
+                              () async => localeSvc.toggleLocale()),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: AppSpacing.s4, vertical: AppSpacing.s2),

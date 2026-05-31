@@ -19,6 +19,13 @@ class FinancialAdjustment {
   /// entries like late/absence/overtime/statutory).
   final String? createdByName;
 
+  /// True when a per-line override changed this computed line's amount.
+  final bool overridden;
+
+  /// The original computed amount before an override was applied (null unless
+  /// [overridden]).
+  final double? originalAmount;
+
   FinancialAdjustment({
     this.id,
     required this.type,
@@ -26,9 +33,15 @@ class FinancialAdjustment {
     required this.amount,
     required this.description,
     this.createdByName,
+    this.overridden = false,
+    this.originalAmount,
   });
 
   bool get isManual => type == 'manual' && id != null;
+
+  /// Derived (computed) lines — absence/late/loan/insurance/tax/overtime… —
+  /// can be edited or removed for the month via per-line overrides.
+  bool get isOverridable => type != 'manual';
 
   factory FinancialAdjustment.fromJson(Map<String, dynamic> json) {
     return FinancialAdjustment(
@@ -38,6 +51,10 @@ class FinancialAdjustment {
       amount: _toDouble(json['amount']),
       description: (json['description'] as String?) ?? '',
       createdByName: json['created_by_name'] as String?,
+      overridden: (json['overridden'] as bool?) ?? false,
+      originalAmount: json['original_amount'] != null
+          ? _toDouble(json['original_amount'])
+          : null,
     );
   }
 
@@ -71,6 +88,10 @@ class FinancialMonthSummary {
   final List<FinancialAdjustment> deductions;
   final List<FinancialAdjustment> bonuses;
   final String status;
+  /// True once the slip is approved/paid: the figures above are the frozen
+  /// snapshot captured at approval, not a live recalculation. Drafts are live
+  /// estimates and are not locked.
+  final bool locked;
   final int daysInMonth;
   final int daysElapsed;
   final double proratedBaseSalary;
@@ -104,6 +125,7 @@ class FinancialMonthSummary {
     required this.deductions,
     required this.bonuses,
     required this.status,
+    this.locked = false,
     required this.daysInMonth,
     required this.daysElapsed,
     required this.proratedBaseSalary,
@@ -154,6 +176,8 @@ class FinancialMonthSummary {
           .map(FinancialAdjustment.fromJson)
           .toList(),
       status: (json['status'] as String?) ?? 'draft',
+      locked: (json['locked'] as bool?) ??
+          (json['status'] == 'approved' || json['status'] == 'paid'),
     );
   }
 }

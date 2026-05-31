@@ -47,6 +47,8 @@ if ($method === 'GET') {
         'manual_attendance_admin_ids' => $manualAdminIds,
         'allow_offline_attendance' => (bool) ($tenant['allow_offline_attendance'] ?? true),
         'cycle_start_day' => (int) ($tenant['cycle_start_day'] ?? 1),
+        'currency' => $tenant['currency'] ?? 'EGP',
+        'timezone' => $tenant['timezone'] ?? 'Africa/Cairo',
         'branches' => $branchList,
         // Letter/certificate branding & company text data
         'commercial_register' => $tenant['commercial_register'] ?? '',
@@ -69,13 +71,23 @@ if ($method === 'PUT' || $method === 'POST') {
     }
 
     $updateData = [];
-    // Only real `tenants` columns may go here. (address/phone/email are not
-    // columns — they have dedicated branding fields handled further below — so
-    // including them would make the whole UPDATE fail.)
-    foreach (['name', 'timezone', 'currency'] as $field) {
-        if (isset($input[$field])) {
-            $updateData[$field] = $input[$field];
+    // Only real `tenants` columns may go here.
+    if (isset($input['name'])) {
+        $updateData['name'] = trim((string) $input['name']);
+    }
+    if (isset($input['currency'])) {
+        $currency = strtoupper(trim((string) $input['currency']));
+        if (!preg_match('/^[A-Z]{3}$/', $currency)) {
+            Response::fail('currency must be a 3-letter ISO code (e.g. EGP)', 422);
         }
+        $updateData['currency'] = $currency;
+    }
+    if (isset($input['timezone'])) {
+        $timezone = trim((string) $input['timezone']);
+        if (!in_array($timezone, timezone_identifiers_list(), true)) {
+            Response::fail('Invalid timezone identifier', 422);
+        }
+        $updateData['timezone'] = $timezone;
     }
 
     if (isset($input['attendance_methods'])) {

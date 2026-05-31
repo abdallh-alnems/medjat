@@ -31,4 +31,14 @@ class ShiftData {
       'employee_ids': employeeIds,
     });
   }
+
+  Future<Map<String, dynamic>> unassignEmployees({
+    required int shiftId,
+    required List<int> employeeIds,
+  }) async {
+    return await _crud.postData(AppLinks.shiftUnassign, {
+      'shift_id': shiftId,
+      'employee_ids': employeeIds,
+    });
+  }
 }

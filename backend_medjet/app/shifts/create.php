@@ -12,7 +12,6 @@ $name = trim($input['name'] ?? '');
 $startTime = $input['start_time'] ?? '';
 $endTime = $input['end_time'] ?? '';
 $branchId = $input['branch_id'] ?? null;
-$color = $input['color'] ?? null;
 
 if ($name === '' || $startTime === '' || $endTime === '') {
     Response::fail('Name, start time, and end time are required', 422);
@@ -24,7 +23,6 @@ $id = ShiftModel::create([
     'name' => $name,
     'start_time' => $startTime,
     'end_time' => $endTime,
-    'color' => $color,
 ]);
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'shift.create', 'shift', $id);

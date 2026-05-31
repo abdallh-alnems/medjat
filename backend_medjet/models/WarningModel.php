@@ -31,6 +31,13 @@ final class WarningModel {
         return ['items' => $items, 'page' => $page];
     }
 
+    public static function findById(int $id, int $tenantId): ?array {
+        return Database::fetchOne(
+            "SELECT * FROM warnings WHERE id = ? AND tenant_id = ?",
+            [$id, $tenantId]
+        );
+    }
+
     public static function delete(int $id, int $tenantId): bool {
         return Database::execute(
             "DELETE FROM warnings WHERE id = ? AND tenant_id = ?",

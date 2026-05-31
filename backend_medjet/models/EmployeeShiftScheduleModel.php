@@ -25,7 +25,7 @@ final class EmployeeShiftScheduleModel {
     /** All schedule cells in a date range, with the joined shift details for rendering. */
     public static function getCells(int $tenantId, string $startDate, string $endDate, ?int $branchId = null): array {
         $sql = "SELECT ess.id, ess.employee_id, ess.shift_id, ess.work_date, ess.status,
-                       s.name AS shift_name, s.start_time, s.end_time, s.color
+                       s.name AS shift_name, s.start_time, s.end_time
                 FROM employee_shift_schedule ess
                 JOIN employees e ON e.id = ess.employee_id
                 LEFT JOIN shifts s ON s.id = ess.shift_id

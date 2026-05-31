@@ -8,13 +8,16 @@ import '../../../core/constant/id/app_links.dart';
 import '../../../data/data_source/remote/employee_data/employee_data.dart';
 import '../../../data/data_source/remote/attendance_data/attendance_data.dart';
 import '../../../data/data_source/remote/document_data/document_data.dart';
+import '../../../data/data_source/remote/required_documents_data/required_documents_data.dart';
 import '../../../data/data_source/remote/payroll_data/payroll_data.dart';
 import '../../../data/data_source/remote/letter_data/letter_data.dart';
 import '../../../data/data_source/remote/performance_data/performance_data.dart';
 import '../../../data/model/employee_model.dart';
 import '../../../data/model/attendance_model.dart';
 import '../../../data/model/document_model.dart';
+import '../../../data/model/required_document_model.dart';
 import '../../../data/model/warning_model.dart';
+import '../../../data/model/suspension_model.dart';
 import '../../../data/model/performance_review_model.dart';
 import '../../../data/model/financial_summary_model.dart';
 import '../../controller/auth/auth_controller.dart';
@@ -23,6 +26,7 @@ class EmployeeDetailController extends GetxController {
   final EmployeeData _employeeData = Get.find<EmployeeData>();
   final AttendanceData _attendanceData = Get.find<AttendanceData>();
   final DocumentData _documentData = Get.find<DocumentData>();
+  final RequiredDocumentsData _requiredData = Get.find<RequiredDocumentsData>();
   final PayrollData _payrollData = Get.find<PayrollData>();
   final LetterData _letterData = Get.find<LetterData>();
   final PerformanceData _performanceData = Get.find<PerformanceData>();
@@ -31,12 +35,15 @@ class EmployeeDetailController extends GetxController {
   StatusRequest status = StatusRequest.none;
   StatusRequest attendanceStatus = StatusRequest.none;
   StatusRequest documentsStatus = StatusRequest.none;
+  StatusRequest documentCatalogStatus = StatusRequest.none;
   StatusRequest activationStatus = StatusRequest.none;
   StatusRequest adjustmentStatus = StatusRequest.none;
   StatusRequest warningStatus = StatusRequest.none;
   StatusRequest conversionStatus = StatusRequest.none;
   StatusRequest reviewStatus = StatusRequest.none;
   StatusRequest financialStatus = StatusRequest.none;
+  StatusRequest suspensionStatus = StatusRequest.none;
+  StatusRequest suspensionHistoryStatus = StatusRequest.none;
 
   EmployeeModel? employee;
   List<AttendanceRecordModel> attendanceRecords = [];
@@ -130,8 +137,19 @@ class EmployeeDetailController extends GetxController {
   List<SalaryChange> salaryHistory = [];
   DateTime financialMonth = DateTime(DateTime.now().year, DateTime.now().month);
 
+  // Uploaded/known document records for the employee.
   List<DocumentModel> documents = [];
+  // The full list of documents the company requires from THIS employee
+  // (resolved across all scopes), shown with per-item status in the tab.
+  List<RequiredDocumentModel> requiredDocuments = [];
+  // The tenant's whole document-type catalog, loaded lazily for the
+  // "request a document from this employee" picker.
+  List<RequiredDocumentModel> documentCatalog = [];
   List<WarningModel> warnings = [];
+  SuspensionModel? activeSuspension;
+  List<SuspensionModel> suspensionHistory = [];
+  bool get isSuspended =>
+      activeSuspension != null || employee?.status == 'suspended';
   List<PerformanceReviewModel> reviews = [];
   List<Map<String, dynamic>> categories = [];
 
@@ -194,6 +212,10 @@ class EmployeeDetailController extends GetxController {
               .map((e) => WarningModel.fromJson(e as Map<String, dynamic>))
               .toList();
         }
+        activeSuspension = data['active_suspension'] is Map<String, dynamic>
+            ? SuspensionModel.fromJson(
+                data['active_suspension'] as Map<String, dynamic>)
+            : null;
         if (data['leave_balance'] is Map<String, dynamic>) {
           final lb = data['leave_balance'] as Map<String, dynamic>;
           leaveYear = (lb['year'] as num?)?.toInt() ?? 0;
@@ -519,8 +541,24 @@ class EmployeeDetailController extends GetxController {
     final response = await _documentData.getDocuments(employeeId);
 
     if (response['status'] == StatusRequest.success) {
-      final data = response['data'];
-      if (data is List) {
+      dynamic data = response['data'];
+      if (data is Map && data['data'] is Map) {
+        data = data['data'];
+      }
+      if (data is Map) {
+        if (data['documents'] is List) {
+          documents = (data['documents'] as List)
+              .map((e) => DocumentModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+        if (data['required_documents'] is List) {
+          requiredDocuments = (data['required_documents'] as List)
+              .map((e) =>
+                  RequiredDocumentModel.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+      } else if (data is List) {
+        // Backwards-compatible with an older flat-list response shape.
         documents = data
             .map((e) => DocumentModel.fromJson(e as Map<String, dynamic>))
             .toList();
@@ -531,6 +569,110 @@ class EmployeeDetailController extends GetxController {
           (response['status'] as StatusRequest?) ?? StatusRequest.failure;
     }
     update();
+  }
+
+  /// The uploaded record (if any) for a given required-document type.
+  /// Rejected records are ignored so the type still reads as outstanding.
+  DocumentModel? documentForRequired(int requiredDocumentId) {
+    try {
+      return documents.firstWhere((d) =>
+          d.requiredDocumentId == requiredDocumentId && d.status != 'rejected');
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Count of required documents this employee has actually uploaded.
+  int get uploadedRequiredCount => requiredDocuments
+      .where((r) => documentForRequired(r.id)?.status == 'uploaded')
+      .length;
+
+  /// Loads the tenant's full document-type catalog (active types only),
+  /// used to populate the request picker. Cheap and lazy.
+  Future<void> loadDocumentCatalog() async {
+    documentCatalogStatus = StatusRequest.loading;
+    update();
+
+    final response = await _requiredData.getRequired();
+
+    if (response['status'] == StatusRequest.success) {
+      dynamic data = response['data'];
+      if (data is Map && data['data'] is Map) {
+        data = data['data'];
+      }
+      if (data is Map && data['required_documents'] is List) {
+        documentCatalog = (data['required_documents'] as List)
+            .map((e) => RequiredDocumentModel.fromJson(e as Map<String, dynamic>))
+            .where((r) => r.isActive)
+            .toList();
+      } else if (data is List) {
+        documentCatalog = data
+            .map((e) => RequiredDocumentModel.fromJson(e as Map<String, dynamic>))
+            .where((r) => r.isActive)
+            .toList();
+      }
+      documentCatalogStatus = StatusRequest.success;
+    } else {
+      documentCatalogStatus =
+          (response['status'] as StatusRequest?) ?? StatusRequest.failure;
+    }
+    update();
+  }
+
+  /// Catalog document types that are not yet required for this employee —
+  /// i.e. the ones an admin can still request from this person.
+  List<RequiredDocumentModel> get requestableDocuments {
+    final alreadyRequired = requiredDocuments.map((r) => r.id).toSet();
+    return documentCatalog
+        .where((r) => !alreadyRequired.contains(r.id))
+        .toList();
+  }
+
+  /// Requests a document type from this employee specifically. Reloads the
+  /// employee's document list so the new requirement appears immediately.
+  Future<bool> requestDocument(int requiredDocumentId) async {
+    final response =
+        await _documentData.requestDocument(employeeId, requiredDocumentId);
+    if (response['status'] == StatusRequest.success) {
+      Get.snackbar('done'.tr, 'document_requested'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      await loadDocuments();
+      return true;
+    }
+    Get.snackbar('error'.tr, 'request_document_failed'.tr,
+        snackPosition: SnackPosition.BOTTOM);
+    return false;
+  }
+
+  /// Requests a custom document (hand-entered name/description) from this
+  /// employee, independent of the company document catalog.
+  Future<bool> requestCustomDocument({
+    required String name,
+    String? description,
+  }) async {
+    final response = await _documentData.requestCustomDocument(
+      employeeId,
+      name: name,
+      description: description,
+    );
+    if (response['status'] == StatusRequest.success) {
+      Get.snackbar('done'.tr, 'document_requested'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      await loadDocuments();
+      return true;
+    }
+    Get.snackbar('error'.tr, 'request_document_failed'.tr,
+        snackPosition: SnackPosition.BOTTOM);
+    return false;
+  }
+
+  bool get canManageDocuments {
+    try {
+      final auth = Get.find<AuthController>();
+      return auth.user?.canManageDocuments ?? false;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> loadActivationCode() async {
@@ -751,6 +893,107 @@ class EmployeeDetailController extends GetxController {
     update();
   }
 
+  /// Suspend the employee from work. [payMode] is `unpaid`, `partial`, or
+  /// `full`; [payPercentage] is required (0–100) only for `partial`. Pass a
+  /// null/empty [endDate] for an open-ended suspension. Returns true on success.
+  Future<bool> suspendEmployee({
+    required String reason,
+    required String payMode,
+    double? payPercentage,
+    required DateTime startDate,
+    DateTime? endDate,
+  }) async {
+    suspensionStatus = StatusRequest.loading;
+    update();
+
+    final response = await _employeeData.suspendEmployee(
+      employeeId,
+      reason: reason,
+      payMode: payMode,
+      payPercentage: payMode == 'partial' ? payPercentage : null,
+      startDate: _formatDate(startDate),
+      endDate: endDate != null ? _formatDate(endDate) : null,
+    );
+
+    if (response['status'] == StatusRequest.success) {
+      suspensionStatus = StatusRequest.success;
+      Get.snackbar('done'.tr, 'suspension_done'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      await loadEmployee();
+      update();
+      return true;
+    }
+    suspensionStatus = StatusRequest.failure;
+    Get.snackbar('error'.tr, 'suspension_failed'.tr,
+        snackPosition: SnackPosition.BOTTOM);
+    update();
+    return false;
+  }
+
+  /// Lift the active suspension and restore the employee's prior status.
+  Future<bool> endSuspension({String? endNote}) async {
+    suspensionStatus = StatusRequest.loading;
+    update();
+
+    final response =
+        await _employeeData.endSuspension(employeeId, endNote: endNote);
+
+    if (response['status'] == StatusRequest.success) {
+      suspensionStatus = StatusRequest.success;
+      Get.snackbar('done'.tr, 'suspension_ended'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      await loadEmployee();
+      update();
+      return true;
+    }
+    suspensionStatus = StatusRequest.failure;
+    Get.snackbar('error'.tr, 'suspension_end_failed'.tr,
+        snackPosition: SnackPosition.BOTTOM);
+    update();
+    return false;
+  }
+
+  /// Load the full suspension history (newest first) for the disciplinary tab.
+  Future<void> loadSuspensionHistory() async {
+    suspensionHistoryStatus = StatusRequest.loading;
+    update();
+
+    final response = await _employeeData.getSuspensions(employeeId);
+    if (response['status'] == StatusRequest.success) {
+      dynamic data = response['data'];
+      if (data is Map && data['data'] is Map) data = data['data'];
+      if (data is Map<String, dynamic>) {
+        if (data['suspensions'] is List) {
+          suspensionHistory = (data['suspensions'] as List)
+              .whereType<Map<String, dynamic>>()
+              .map(SuspensionModel.fromJson)
+              .toList();
+        }
+        activeSuspension = data['active'] is Map<String, dynamic>
+            ? SuspensionModel.fromJson(data['active'] as Map<String, dynamic>)
+            : activeSuspension;
+      }
+      suspensionHistoryStatus = StatusRequest.success;
+    } else {
+      suspensionHistoryStatus =
+          (response['status'] as StatusRequest?) ?? StatusRequest.failure;
+    }
+    update();
+  }
+
+  Future<void> deleteWarning(int id) async {
+    final response = await _crud.postData(AppLinks.warningDelete, {'id': id});
+
+    if (response['status'] == StatusRequest.success) {
+      Get.snackbar('done'.tr, 'warning_deleted'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      await loadEmployee();
+    } else {
+      Get.snackbar('error'.tr, 'warning_delete_failed'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
   bool get canManageLeaves {
     try {
       final auth = Get.find<AuthController>();
@@ -887,6 +1130,50 @@ class EmployeeDetailController extends GetxController {
       adjustmentStatus = StatusRequest.success;
       Get.snackbar('done'.tr, 'adjustment_updated'.tr,
           snackPosition: SnackPosition.BOTTOM);
+      await loadFinancialMonth();
+      return true;
+    }
+    adjustmentStatus = StatusRequest.failure;
+    Get.snackbar('error'.tr, 'adjustment_update_failed'.tr,
+        snackPosition: SnackPosition.BOTTOM);
+    update();
+    return false;
+  }
+
+  /// Edit the amount of, remove, or restore any computed (non-manual) payroll
+  /// line — absence, late, loan, insurance, tax, overtime… — for the current
+  /// financial month. [action] is 'set' (with [amount]), 'waive' or 'clear'.
+  Future<bool> overrideAdjustmentLine({
+    required FinancialAdjustment line,
+    required bool isDeduction,
+    required String action,
+    num? amount,
+    String? reason,
+  }) async {
+    adjustmentStatus = StatusRequest.loading;
+    update();
+    final response = await _payrollData.overrideLine(
+      employeeId: employeeId,
+      month: _formatMonth(financialMonth),
+      kind: isDeduction ? 'deduction' : 'bonus',
+      type: line.type,
+      date: line.date,
+      description: line.description,
+      action: action,
+      amount: amount,
+      reason: reason,
+    );
+    if (response['status'] == StatusRequest.success) {
+      adjustmentStatus = StatusRequest.success;
+      Get.snackbar(
+        'done'.tr,
+        action == 'clear'
+            ? 'adjustment_override_cleared'.tr
+            : (action == 'waive'
+                ? 'adjustment_deleted'.tr
+                : 'adjustment_updated'.tr),
+        snackPosition: SnackPosition.BOTTOM,
+      );
       await loadFinancialMonth();
       return true;
     }

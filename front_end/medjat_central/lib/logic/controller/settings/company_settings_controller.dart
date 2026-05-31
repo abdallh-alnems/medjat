@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/class/status_request.dart';
@@ -11,9 +12,19 @@ class CompanySettingsController extends GetxController {
   Map<String, dynamic> companyData = {};
 
   final nameController = TextEditingController();
-  final addressController = TextEditingController();
-  final phoneController = TextEditingController();
-  final emailController = TextEditingController();
+  final commercialRegisterController = TextEditingController();
+
+  // Localization preferences (sent to the backend on save).
+  String currency = 'EGP';
+  String timezone = 'Africa/Cairo';
+
+  // Whether each letterhead asset has been uploaded (drives the UI state).
+  bool hasLogo = false;
+  bool hasStamp = false;
+  bool hasSignature = false;
+
+  // The branding asset currently uploading (logo/stamp/signature), or null.
+  String? uploadingType;
 
   // Company default attendance cycle start day (1-28). Branches may override.
   int cycleStartDay = 1;
@@ -27,9 +38,7 @@ class CompanySettingsController extends GetxController {
   @override
   void onClose() {
     nameController.dispose();
-    addressController.dispose();
-    phoneController.dispose();
-    emailController.dispose();
+    commercialRegisterController.dispose();
     super.onClose();
   }
 
@@ -48,9 +57,13 @@ class CompanySettingsController extends GetxController {
       if (data is Map<String, dynamic>) {
         companyData = data;
         nameController.text = (data['name'] as String?) ?? '';
-        addressController.text = (data['address'] as String?) ?? '';
-        phoneController.text = (data['phone'] as String?) ?? '';
-        emailController.text = (data['email'] as String?) ?? '';
+        commercialRegisterController.text =
+            (data['commercial_register'] as String?) ?? '';
+        currency = (data['currency'] as String?)?.toUpperCase() ?? 'EGP';
+        timezone = (data['timezone'] as String?) ?? 'Africa/Cairo';
+        hasLogo = data['has_logo'] == true;
+        hasStamp = data['has_stamp'] == true;
+        hasSignature = data['has_signature'] == true;
         cycleStartDay = (data['cycle_start_day'] as num?)?.toInt() ?? 1;
       }
       status = StatusRequest.success;
@@ -65,15 +78,25 @@ class CompanySettingsController extends GetxController {
     update();
   }
 
+  void setCurrency(String value) {
+    currency = value;
+    update();
+  }
+
+  void setTimezone(String value) {
+    timezone = value;
+    update();
+  }
+
   Future<void> saveSettings() async {
     status = StatusRequest.loading;
     update();
 
     final data = {
       'name': nameController.text.trim(),
-      'address': addressController.text.trim(),
-      'phone': phoneController.text.trim(),
-      'email': emailController.text.trim(),
+      'commercial_register': commercialRegisterController.text.trim(),
+      'currency': currency,
+      'timezone': timezone,
       'cycle_start_day': cycleStartDay.clamp(1, 28),
     };
 
@@ -89,6 +112,37 @@ class CompanySettingsController extends GetxController {
           snackPosition: SnackPosition.BOTTOM);
       status = (response['status'] as StatusRequest?) ?? StatusRequest.failure;
     }
+    update();
+  }
+
+  /// Uploads a branding asset ([type] = logo/stamp/signature) and reflects the
+  /// new state in the UI on success.
+  Future<void> uploadBranding(String type, File file) async {
+    uploadingType = type;
+    update();
+
+    final response = await _companySettingsData.uploadBranding(type, file);
+
+    if (response['status'] == StatusRequest.success) {
+      switch (type) {
+        case 'logo':
+          hasLogo = true;
+          break;
+        case 'stamp':
+          hasStamp = true;
+          break;
+        case 'signature':
+          hasSignature = true;
+          break;
+      }
+      Get.snackbar('done'.tr, 'branding_uploaded'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    } else {
+      Get.snackbar(
+          'error'.tr, (response['message'] as String?) ?? 'an_error_occurred'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    }
+    uploadingType = null;
     update();
   }
 }

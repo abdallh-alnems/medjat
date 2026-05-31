@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:get/get.dart';
 import '../../../../core/class/crud.dart';
 import '../../../../core/constant/id/app_links.dart';
@@ -12,6 +13,15 @@ class CompanySettingsData {
   Future<Map<String, dynamic>> updateCompanySettings(
       Map<String, dynamic> data) async {
     return await _crud.putData(AppLinks.companySettings, data);
+  }
+
+  /// Uploads a company branding asset. [type] is one of logo/stamp/signature.
+  Future<Map<String, dynamic>> uploadBranding(String type, File file) async {
+    return await _crud.postFile(
+      AppLinks.companyUploadBranding,
+      file,
+      fields: {'type': type},
+    );
   }
 
   Future<Map<String, dynamic>> updateAttendanceConfig({

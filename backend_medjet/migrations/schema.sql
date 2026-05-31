@@ -830,7 +830,6 @@ CREATE TABLE IF NOT EXISTS `shifts` (
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'e.g. "Morning", "Evening", "Night"',
   `start_time` time NOT NULL,
   `end_time` time NOT NULL,
-  `color` varchar(7) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Hex color for UI badge',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
