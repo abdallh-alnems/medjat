@@ -50,6 +50,7 @@ void main() {
     test('attendanceRate يحسب النسبة', () {
       final dashboard = DashboardModel.fromJson({
         'total_employees': 100,
+        'active_in_scope': 100,
         'present_today': 80,
       });
 

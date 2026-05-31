@@ -26,9 +26,11 @@ void main() {
             'status': StatusRequest.success,
             'data': {
               'name': 'شركة الاختبار',
-              'address': 'الرياض',
-              'phone': '0501234567',
-              'email': 'info@test.com',
+              'commercial_register': '1234567890',
+              'currency': 'SAR',
+              'timezone': 'Asia/Riyadh',
+              'has_logo': true,
+              'cycle_start_day': 5,
             },
           });
 
@@ -37,7 +39,11 @@ void main() {
 
       expect(controller.status, StatusRequest.success);
       expect(controller.nameController.text, 'شركة الاختبار');
-      expect(controller.addressController.text, 'الرياض');
+      expect(controller.commercialRegisterController.text, '1234567890');
+      expect(controller.currency, 'SAR');
+      expect(controller.timezone, 'Asia/Riyadh');
+      expect(controller.hasLogo, true);
+      expect(controller.cycleStartDay, 5);
     });
 
     test('loadSettings — فشل', () async {
@@ -54,7 +60,7 @@ void main() {
       await pumpSnackbarHost(tester);
       when(() => mockData.getCompanySettings()).thenAnswer((_) async => {
             'status': StatusRequest.success,
-            'data': {'name': '', 'address': '', 'phone': '', 'email': ''},
+            'data': {'name': '', 'currency': 'EGP', 'timezone': 'Africa/Cairo'},
           });
       when(() => mockData.updateCompanySettings(any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
