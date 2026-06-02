@@ -37,6 +37,47 @@ void main() {
       expect(user.branchName, 'الفرع الرئيسي');
     });
 
+    test('fromJson reads profile_image over photo_url', () {
+      final user = UserModel.fromJson({
+        'id': 1,
+        'tenant_id': 1,
+        'branch_id': 1,
+        'name': 'test',
+        'email': '',
+        'role_key': 'employee',
+        'profile_image': 'https://img.example.com/me.jpg',
+        'photo_url': 'https://old.example.com/me.jpg',
+      });
+
+      expect(user.photoUrl, 'https://img.example.com/me.jpg');
+    });
+
+    test('fromJson falls back to photo_url when profile_image is null', () {
+      final user = UserModel.fromJson({
+        'id': 1,
+        'tenant_id': 1,
+        'branch_id': 1,
+        'name': 'test',
+        'email': '',
+        'role_key': 'employee',
+        'photo_url': 'https://old.example.com/me.jpg',
+      });
+
+      expect(user.photoUrl, 'https://old.example.com/me.jpg');
+    });
+
+    test('fromJson email defaults to empty string', () {
+      final user = UserModel.fromJson({
+        'id': 1,
+        'tenant_id': 1,
+        'branch_id': 1,
+        'name': 'test',
+        'role_key': 'employee',
+      });
+
+      expect(user.email, '');
+    });
+
     test('fromJson handles missing fields with defaults', () {
       final user = UserModel.fromJson({});
 

@@ -1,6 +1,7 @@
 import 'dart:convert';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
 import 'package:get/get.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../../../core/class/crud.dart';
 import '../../../../core/class/status_request.dart';
 import '../../../../core/constant/id/app_links.dart';
@@ -10,27 +11,44 @@ import '../../../model/user_model.dart';
 class AuthData {
   final CRUD _crud = Get.find<CRUD>();
 
-  Future<Map<String, dynamic>> activateEmployee({
+  Future<Map<String, dynamic>> login({
+    required String phone,
     required String activationCode,
   }) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      return {'status': StatusRequest.failure, 'message': 'غير مسجل الدخول'};
-    }
+    final deviceId = await TokenStorageService.getOrCreateDeviceId();
+    String deviceModel = '';
+    String platform = 'android';
+    try {
+      if (Platform.isIOS) {
+        platform = 'ios';
+      }
+      deviceModel = '${Platform.operatingSystem} ${Platform.operatingSystemVersion}';
+    } catch (_) {}
 
-    final idToken = await user.getIdToken();
+    String appVersion = '';
+    try {
+      final info = await PackageInfo.fromPlatform();
+      appVersion = '${info.version}+${info.buildNumber}';
+    } catch (_) {}
 
     final response = await _crud.postData(
-      AppLinks.activateEmployee,
+      AppLinks.employeeLogin,
       {
-        'token': idToken,
-        'activation_code': activationCode,
+        'phone': phone,
+        'activation_code': activationCode.toUpperCase(),
+        'device_id': deviceId,
+        'device_model': deviceModel,
+        'platform': platform,
+        'app_version': appVersion,
       },
       auth: false,
     );
 
     if (response['status'] == StatusRequest.success) {
       final data = response['data'] as Map<String, dynamic>?;
+      if (data?['token'] != null) {
+        await TokenStorageService.saveToken(data!['token'] as String);
+      }
       if (data?['employee'] != null) {
         final employee = data!['employee'] as Map<String, dynamic>;
         final Map<String, dynamic> userData = {
@@ -41,7 +59,8 @@ class AuthData {
           'branch_id': employee['branch_id'],
           'branch_name': employee['branch_name'],
           'job_title': employee['job_title'],
-          'email': user.email,
+          'phone': employee['phone'],
+          'profile_image': employee['profile_image'],
         };
         await TokenStorageService.saveUserData(jsonEncode(userData));
       }
@@ -50,13 +69,10 @@ class AuthData {
     return response;
   }
 
-  Future<Map<String, dynamic>> getProfile() async {
-    return await _crud.getData(AppLinks.me);
-  }
-
-  Future<void> logout() async {
-    await FirebaseAuth.instance.signOut();
-    await TokenStorageService.clearAll();
+  Future<Map<String, dynamic>> logout() async {
+    final response = await _crud.postData(AppLinks.employeeLogout, {});
+    await TokenStorageService.clearSession();
+    return response;
   }
 
   Future<UserModel?> getCachedUser() async {
@@ -67,5 +83,9 @@ class AuthData {
     } catch (_) {
       return null;
     }
+  }
+
+  Future<Map<String, dynamic>> getProfile() async {
+    return await _crud.getData(AppLinks.myProfile);
   }
 }

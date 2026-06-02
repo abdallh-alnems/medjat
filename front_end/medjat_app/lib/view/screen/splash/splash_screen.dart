@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constant/routes/app_routes.dart';
@@ -25,8 +24,14 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future<void>.delayed(const Duration(milliseconds: 1500));
     if (!mounted) return;
 
-    final firebaseUser = FirebaseAuth.instance.currentUser;
-    if (firebaseUser == null) {
+    final stationToken = await TokenStorageService.getStationToken();
+    if (stationToken != null && stationToken.isNotEmpty) {
+      Get.offAllNamed<void>(AppRoutes.kioskHome);
+      return;
+    }
+
+    final hasToken = await TokenStorageService.hasToken();
+    if (!hasToken) {
       Get.offAllNamed<void>(AppRoutes.login);
       return;
     }

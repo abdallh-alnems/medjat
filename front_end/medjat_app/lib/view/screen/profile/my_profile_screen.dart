@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/class/handling_data_request.dart';
-import '../../../../core/class/status_request.dart';
 import '../../../../core/constant/routes/app_routes.dart';
 import '../../../../core/constant/theme/app_colors.dart';
 import '../../../../core/constant/theme/app_text_styles.dart';
@@ -17,17 +16,6 @@ class MyProfileScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('بياناتي'),
-        actions: [
-          GetBuilder<ProfileController>(
-            builder: (ctrl) {
-              if (ctrl.profileData == null) return const SizedBox.shrink();
-              return IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: () => _showEditDialog(context, ctrl),
-              );
-            },
-          ),
-        ],
       ),
       body: GetBuilder<ProfileController>(
         builder: (controller) {
@@ -292,55 +280,4 @@ class MyProfileScreen extends StatelessWidget {
     );
   }
 
-  void _showEditDialog(BuildContext context, ProfileController controller) {
-    final nameController = TextEditingController(
-      text: controller.profileData?['name']?.toString() ?? '',
-    );
-
-    Get.dialog<void>(
-      AlertDialog(
-        title: const Text('تعديل البيانات'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'الاسم',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back<void>(),
-            child: const Text('إلغاء'),
-          ),
-          GetBuilder<ProfileController>(
-            builder: (ctrl) {
-              return TextButton(
-                onPressed: ctrl.updateStatus == StatusRequest.loading
-                    ? null
-                    : () async {
-                        final name = nameController.text.trim();
-                        if (name.isEmpty) {
-                          Get.snackbar('خطأ', 'الاسم مطلوب',
-                              snackPosition: SnackPosition.BOTTOM);
-                          return;
-                        }
-                        final success =
-                            await ctrl.updateProfile(name: name);
-                        if (success) {
-                          Get.back<void>();
-                        }
-                      },
-                child: const Text('حفظ'),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
 }

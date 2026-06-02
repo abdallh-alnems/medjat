@@ -6,7 +6,7 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     RateLimiter::enforceIpLimit();
     Auth::requireGet();
-    $auth = Auth::authenticateUser(db());
+    $auth = Auth::authenticateEmployee(db());
 
     $row = Database::fetchOne(
         "SELECT prefs FROM admin_notification_prefs WHERE admin_id = ? LIMIT 1",
@@ -34,7 +34,7 @@ if ($method === 'GET') {
 } elseif ($method === 'POST') {
     RateLimiter::enforceIpLimit();
     Auth::requirePost();
-    $auth = Auth::authenticateUser(db());
+    $auth = Auth::authenticateEmployee(db());
 
     $input = $auth['input'];
     $prefs = $input['prefs'] ?? null;

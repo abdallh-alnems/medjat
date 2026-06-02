@@ -26,6 +26,9 @@ import '../../../view/screen/payroll/payroll_screen.dart';
 import '../../../view/screen/leave/leave_screen.dart';
 import '../../../view/screen/notifications/notifications_screen.dart';
 import '../../../view/screen/settings/settings_screen.dart';
+import '../../../view/screen/kiosk/kiosk_pair_screen.dart';
+import '../../../view/screen/kiosk/kiosk_home_screen.dart';
+import '../../../logic/bindings/station_binding.dart';
 import '../../../core/shared/layout/tab_shell.dart';
 import '../../services/connectivity_service.dart';
 import '../../services/location_service.dart';
@@ -116,5 +119,17 @@ List<GetPage<dynamic>> getPages = [
   GetPage(
     name: AppRoutes.settings,
     page: () => const SettingsScreen(),
+  ),
+  GetPage(
+    name: AppRoutes.kioskPair,
+    page: () => const KioskPairScreen(),
+    binding: StationBinding(),
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.kioskHome,
+    page: () => const KioskHomeScreen(),
+    binding: StationBinding(),
   ),
 ];

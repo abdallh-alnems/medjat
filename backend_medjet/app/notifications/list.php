@@ -3,7 +3,7 @@ require_once __DIR__ . '/../../config/bootstrap.php';
 
 RateLimiter::enforceIpLimit();
 Auth::requireGet();
-$auth = Auth::authenticateUser(db());
+$auth = Auth::authenticateEmployee(db());
 
 $limit = min((int) ($_GET['limit'] ?? 50), 100);
 $offset = (int) ($_GET['offset'] ?? 0);

@@ -57,11 +57,13 @@ void main() {
     });
 
     test('activation with valid code returns success', () async {
-      when(() => mockAuthData.activateEmployee(
+      when(() => mockAuthData.login(
+            phone: any(named: 'phone'),
             activationCode: any(named: 'activationCode'),
           )).thenAnswer((_) async => {
             'status': StatusRequest.success,
             'data': {
+              'token': 'test-token-123',
               'employee': {
                 'id': 5,
                 'name': 'سارة',
@@ -74,8 +76,9 @@ void main() {
             },
           });
 
-      final response = await mockAuthData.activateEmployee(
-        activationCode: 'VALID123',
+      final response = await mockAuthData.login(
+        phone: '0501234567',
+        activationCode: 'VALID1',
       );
 
       expect(response['status'], StatusRequest.success);
@@ -84,7 +87,7 @@ void main() {
 
       final user = UserModel.fromJson({
         ...employee,
-        'email': 'sara@test.com',
+        'email': '',
         'role_key': 'employee',
       });
 
@@ -94,7 +97,8 @@ void main() {
     });
 
     test('activation with invalid code returns failure', () async {
-      when(() => mockAuthData.activateEmployee(
+      when(() => mockAuthData.login(
+            phone: any(named: 'phone'),
             activationCode: any(named: 'activationCode'),
           )).thenAnswer((_) async => {
             'status': StatusRequest.failure,
@@ -102,7 +106,8 @@ void main() {
             'message': 'كود التفعيل غير صالح أو منتهي',
           });
 
-      final response = await mockAuthData.activateEmployee(
+      final response = await mockAuthData.login(
+        phone: '0501234567',
         activationCode: 'INVALID',
       );
 
@@ -111,7 +116,7 @@ void main() {
     });
 
     test('logout flow clears state', () async {
-      when(() => mockAuthData.logout()).thenAnswer((_) async {});
+      when(() => mockAuthData.logout()).thenAnswer((_) async => <String, dynamic>{});
 
       await mockAuthData.logout();
 
@@ -163,7 +168,7 @@ void main() {
           tenantId: 0,
           branchId: 0,
           name: 'أحمد',
-          email: 'ahmed@test.com',
+          email: '',
           roleKey: 'employee',
         );
       });

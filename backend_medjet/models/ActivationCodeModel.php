@@ -45,6 +45,15 @@ final class ActivationCodeModel {
         );
     }
 
+    public static function markUsedByDevice(int $codeId, string $deviceId): void {
+        Database::execute(
+            "UPDATE employee_activation_codes
+             SET used_at = NOW(), used_by_firebase_uid = ?
+             WHERE id = ?",
+            ['device:' . $deviceId, $codeId]
+        );
+    }
+
     private static function invalidateExistingForEmployee(int $employeeId): void {
         Database::execute(
             "UPDATE employee_activation_codes

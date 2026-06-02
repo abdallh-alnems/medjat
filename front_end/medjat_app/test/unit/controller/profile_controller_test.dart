@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
@@ -11,8 +10,6 @@ import 'package:medjat_app/logic/controller/profile/profile_controller.dart';
 import '../../helpers/test_helpers.dart';
 
 class MockProfileData extends Mock implements ProfileData {}
-
-Widget _testApp() => GetMaterialApp(home: const SizedBox());
 
 void main() {
   late MockProfileData mockProfileData;
@@ -104,67 +101,6 @@ void main() {
       await untilCalled(() => mockProfileData.getProfile());
 
       expect(controller.status, StatusRequest.failure);
-    });
-
-    testWidgets('updateProfile returns true on success', (tester) async {
-      await tester.pumpWidget(_testApp());
-      await tester.pumpAndSettle();
-
-      when(() => mockProfileData.getProfile()).thenAnswer((_) async =>
-          <String, dynamic>{
-            'status': StatusRequest.success,
-            'data': <String, dynamic>{
-              'employee': <String, dynamic>{'id': 1, 'name': 'محمد'},
-            },
-          });
-      when(() => mockProfileData.updateProfile(
-            name: any(named: 'name'),
-            phone: any(named: 'phone'),
-          )).thenAnswer((_) async =>
-              <String, dynamic>{'status': StatusRequest.success});
-
-      final controller = Get.put<ProfileController>(ProfileController());
-      await untilCalled(() => mockProfileData.getProfile());
-      await tester.pumpAndSettle();
-
-      final result = await controller.updateProfile(name: 'محمد');
-      await tester.pump(const Duration(seconds: 4));
-      await tester.pumpAndSettle();
-
-      expect(result, true);
-      expect(controller.updateStatus, StatusRequest.success);
-      verify(() => mockProfileData.updateProfile(name: 'محمد')).called(1);
-    });
-
-    testWidgets('updateProfile returns false on failure', (tester) async {
-      await tester.pumpWidget(_testApp());
-      await tester.pumpAndSettle();
-
-      when(() => mockProfileData.getProfile()).thenAnswer((_) async =>
-          <String, dynamic>{
-            'status': StatusRequest.success,
-            'data': <String, dynamic>{
-              'employee': <String, dynamic>{'id': 1, 'name': 'أحمد'},
-            },
-          });
-      when(() => mockProfileData.updateProfile(
-            name: any(named: 'name'),
-            phone: any(named: 'phone'),
-          )).thenAnswer((_) async => <String, dynamic>{
-            'status': StatusRequest.failure,
-            'message': 'فشل التحديث',
-          });
-
-      final controller = Get.put<ProfileController>(ProfileController());
-      await untilCalled(() => mockProfileData.getProfile());
-      await tester.pumpAndSettle();
-
-      final result = await controller.updateProfile(name: 'محمد');
-      await tester.pump(const Duration(seconds: 4));
-      await tester.pumpAndSettle();
-
-      expect(result, false);
-      expect(controller.updateStatus, StatusRequest.failure);
     });
   });
 }

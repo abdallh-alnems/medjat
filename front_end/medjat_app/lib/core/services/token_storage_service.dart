@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class TokenStorageService {
@@ -5,8 +6,9 @@ class TokenStorageService {
   static const _storage = FlutterSecureStorage();
 
   static const _tokenKey = 'auth_token';
-  static const _refreshTokenKey = 'refresh_token';
   static const _userKey = 'user_data';
+  static const _deviceIdKey = 'device_id';
+  static const _stationTokenKey = 'station_token';
 
   static Future<void> saveToken(String token) async {
     await _storage.write(key: _tokenKey, value: token);
@@ -14,14 +16,6 @@ class TokenStorageService {
 
   static Future<String?> getToken() async {
     return await _storage.read(key: _tokenKey);
-  }
-
-  static Future<void> saveRefreshToken(String token) async {
-    await _storage.write(key: _refreshTokenKey, value: token);
-  }
-
-  static Future<String?> getRefreshToken() async {
-    return await _storage.read(key: _refreshTokenKey);
   }
 
   static Future<void> saveUserData(String json) async {
@@ -37,7 +31,49 @@ class TokenStorageService {
     return token != null && token.isNotEmpty;
   }
 
+  static Future<String> getOrCreateDeviceId() async {
+    var deviceId = await _storage.read(key: _deviceIdKey);
+    if (deviceId != null && deviceId.isNotEmpty) return deviceId;
+    deviceId = _generateUuid();
+    await _storage.write(key: _deviceIdKey, value: deviceId);
+    return deviceId;
+  }
+
+  static Future<String?> getDeviceId() async {
+    return await _storage.read(key: _deviceIdKey);
+  }
+
+  static Future<void> clearSession() async {
+    await _storage.delete(key: _tokenKey);
+    await _storage.delete(key: _userKey);
+  }
+
   static Future<void> clearAll() async {
+    final deviceId = await _storage.read(key: _deviceIdKey);
     await _storage.deleteAll();
+    if (deviceId != null) {
+      await _storage.write(key: _deviceIdKey, value: deviceId);
+    }
+  }
+
+  static Future<void> saveStationToken(String token) async {
+    await _storage.write(key: _stationTokenKey, value: token);
+  }
+
+  static Future<String?> getStationToken() async {
+    return await _storage.read(key: _stationTokenKey);
+  }
+
+  static Future<void> clearStationToken() async {
+    await _storage.delete(key: _stationTokenKey);
+  }
+
+  static String _generateUuid() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0F) | 0x40;
+    bytes[8] = (bytes[8] & 0x3F) | 0x80;
+    final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
   }
 }

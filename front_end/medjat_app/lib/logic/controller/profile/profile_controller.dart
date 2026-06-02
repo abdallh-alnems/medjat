@@ -6,7 +6,6 @@ class ProfileController extends GetxController {
   final ProfileData _profileData = Get.find<ProfileData>();
 
   StatusRequest status = StatusRequest.none;
-  StatusRequest updateStatus = StatusRequest.none;
   Map<String, dynamic>? profileData;
   List<Map<String, dynamic>> documents = [];
   List<Map<String, dynamic>> warnings = [];
@@ -52,26 +51,5 @@ class ProfileController extends GetxController {
     }
 
     update();
-  }
-
-  Future<bool> updateProfile({required String name}) async {
-    updateStatus = StatusRequest.loading;
-    update();
-
-    final response = await _profileData.updateProfile(name: name);
-
-    if (response['status'] == StatusRequest.success) {
-      updateStatus = StatusRequest.success;
-      await loadProfile();
-      Get.snackbar('تم', 'تم تحديث البيانات بنجاح',
-          snackPosition: SnackPosition.BOTTOM);
-      return true;
-    } else {
-      updateStatus = StatusRequest.failure;
-      final msg = (response['message'] as String?) ?? 'فشل تحديث البيانات';
-      Get.snackbar('خطأ', msg, snackPosition: SnackPosition.BOTTOM);
-      update();
-      return false;
-    }
   }
 }

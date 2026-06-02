@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -8,8 +7,12 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../services/token_storage_service.dart';
 import 'status_request.dart';
 
+typedef SessionExpiredCallback = void Function();
+
 class CRUD {
   final http.Client _client;
+
+  static SessionExpiredCallback? onSessionExpired;
 
   CRUD({http.Client? client}) : _client = client ?? http.Client();
   Map<String, String> _baseHeaders() {
@@ -24,26 +27,24 @@ class CRUD {
     };
   }
 
-  Future<Map<String, String>> _headers() async {
+  Future<Map<String, String>> _headers({bool useStationToken = false}) async {
     final headers = _baseHeaders();
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final idToken = await user.getIdToken();
-      if (idToken != null) {
-        headers['X-Firebase-Token'] = idToken;
+    if (useStationToken) {
+      final stationToken = await TokenStorageService.getStationToken();
+      if (stationToken != null && stationToken.isNotEmpty) {
+        headers['X-Station-Token'] = stationToken;
+      }
+    } else {
+      final token = await TokenStorageService.getToken();
+      if (token != null && token.isNotEmpty) {
+        headers['X-Employee-Token'] = token;
       }
     }
-    final userData = await TokenStorageService.getUserData();
-    if (userData != null) {
-      try {
-        final json = jsonDecode(userData);
-        final tenantId = json['tenant_id'];
-        if (tenantId != null && tenantId != 0) {
-          headers['X-Tenant-Id'] = tenantId.toString();
-        }
-      } catch (_) {}
-    }
     return headers;
+  }
+
+  bool _isStationTokenRequest({bool useStationToken = false}) {
+    return useStationToken;
   }
 
   Future<StatusRequest> _checkConnectivity() async {
@@ -53,7 +54,7 @@ class CRUD {
   }
 
   Future<Map<String, dynamic>> getData(String url,
-      {Map<String, dynamic>? queryParameters}) async {
+      {Map<String, dynamic>? queryParameters, bool useStationToken = false}) async {
     final connectivity = await _checkConnectivity();
     if (connectivity == StatusRequest.offline) {
       return {'status': StatusRequest.offline};
@@ -61,33 +62,16 @@ class CRUD {
 
     try {
       final uri = Uri.parse(url);
-      final headers = await _headers();
+      final headers = await _headers(useStationToken: useStationToken);
       final params = <String, String>{};
       if (queryParameters != null) {
         queryParameters.forEach((k, v) => params[k] = v.toString());
-      }
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final idToken = await user.getIdToken();
-        if (idToken != null && !headers.containsKey('X-Firebase-Token')) {
-          params['token'] = idToken;
-        }
-      }
-      final userData = await TokenStorageService.getUserData();
-      if (userData != null && !headers.containsKey('X-Tenant-Id')) {
-        try {
-          final json = jsonDecode(userData);
-          final tenantId = json['tenant_id'];
-          if (tenantId != null && tenantId != 0) {
-            params['tenant_id'] = tenantId.toString();
-          }
-        } catch (_) {}
       }
       final response = await _client
           .get(uri.replace(queryParameters: params), headers: headers)
           .timeout(const Duration(seconds: 15));
 
-      return handleResponse(response);
+      return handleResponse(response, useStationToken: useStationToken);
     } catch (e) {
       debugPrint('GET Error: $e');
       return {'status': StatusRequest.failure};
@@ -95,7 +79,7 @@ class CRUD {
   }
 
   Future<Map<String, dynamic>> getBytes(String url,
-      {Map<String, dynamic>? queryParameters}) async {
+      {Map<String, dynamic>? queryParameters, bool useStationToken = false}) async {
     final connectivity = await _checkConnectivity();
     if (connectivity == StatusRequest.offline) {
       return {'status': StatusRequest.offline};
@@ -103,27 +87,10 @@ class CRUD {
 
     try {
       final uri = Uri.parse(url);
-      final headers = await _headers();
+      final headers = await _headers(useStationToken: useStationToken);
       final params = <String, String>{};
       if (queryParameters != null) {
         queryParameters.forEach((k, v) => params[k] = v.toString());
-      }
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final idToken = await user.getIdToken();
-        if (idToken != null && !headers.containsKey('X-Firebase-Token')) {
-          params['token'] = idToken;
-        }
-      }
-      final userData = await TokenStorageService.getUserData();
-      if (userData != null && !headers.containsKey('X-Tenant-Id')) {
-        try {
-          final json = jsonDecode(userData);
-          final tenantId = json['tenant_id'];
-          if (tenantId != null && tenantId != 0) {
-            params['tenant_id'] = tenantId.toString();
-          }
-        } catch (_) {}
       }
       final response = await _client
           .get(uri.replace(queryParameters: params), headers: headers)
@@ -132,10 +99,7 @@ class CRUD {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return {'status': StatusRequest.success, 'bytes': response.bodyBytes};
       }
-      return {
-        'status': StatusRequest.failure,
-        'statusCode': response.statusCode,
-      };
+      return _errorFromStatus(response.statusCode);
     } catch (e) {
       debugPrint('GET BYTES Error: $e');
       return {'status': StatusRequest.failure};
@@ -143,14 +107,15 @@ class CRUD {
   }
 
   Future<Map<String, dynamic>> postData(String url, Map<String, dynamic> data,
-      {bool auth = true}) async {
+      {bool auth = true, bool useStationToken = false}) async {
     final connectivity = await _checkConnectivity();
     if (connectivity == StatusRequest.offline) {
       return {'status': StatusRequest.offline};
     }
 
     try {
-      final headers = auth ? await _headers() : _baseHeaders();
+      final headers =
+          auth ? await _headers(useStationToken: useStationToken) : _baseHeaders();
       final response = await _client
           .post(
             Uri.parse(url),
@@ -159,7 +124,7 @@ class CRUD {
           )
           .timeout(const Duration(seconds: 15));
 
-      return handleResponse(response);
+      return handleResponse(response, useStationToken: useStationToken);
     } catch (e) {
       debugPrint('POST Error: $e');
       return {'status': StatusRequest.failure};
@@ -244,8 +209,15 @@ class CRUD {
     }
   }
 
+  Map<String, dynamic> _errorFromStatus(int statusCode) {
+    return {
+      'status': StatusRequest.failure,
+      'statusCode': statusCode,
+    };
+  }
+
   @visibleForTesting
-  Map<String, dynamic> handleResponse(http.Response response) {
+  Map<String, dynamic> handleResponse(http.Response response, {bool useStationToken = false}) {
     final statusCode = response.statusCode;
 
     if (statusCode >= 200 && statusCode < 300) {
@@ -264,6 +236,9 @@ class CRUD {
     }
 
     if (statusCode == 401) {
+      if (!useStationToken) {
+        onSessionExpired?.call();
+      }
       return {
         'status': StatusRequest.failure,
         'statusCode': 401,

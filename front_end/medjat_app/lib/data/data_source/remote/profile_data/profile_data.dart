@@ -6,16 +6,6 @@ class ProfileData {
   final CRUD _crud = Get.find<CRUD>();
 
   Future<Map<String, dynamic>> getProfile() async {
-    return await _crud.getData(AppLinks.me);
-  }
-
-  Future<Map<String, dynamic>> updateProfile({
-    String? name,
-    String? phone,
-  }) async {
-    final data = <String, dynamic>{};
-    if (name != null) data['name'] = name;
-    if (phone != null) data['phone'] = phone;
-    return await _crud.postData(AppLinks.updateProfile, data);
+    return await _crud.getData(AppLinks.myProfile);
   }
 }

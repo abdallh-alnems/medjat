@@ -5,11 +5,12 @@ class AppLinks {
 
   static String get base => dotenv.env['API_HOST'] ?? '';
 
-  static String get activateEmployee =>
-      '$base/app/auth/activate_employee.php';
+  static String get employeeLogin =>
+      '$base/app/auth/employee_login.php';
+  static String get employeeLogout =>
+      '$base/app/auth/employee_logout.php';
 
-  static String get me => '$base/app/employees/get_profile.php';
-  static String get updateProfile => '$base/app/auth/update_profile.php';
+  static String get myProfile => '$base/app/employees/my_profile.php';
 
   static String get checkIn => '$base/app/attendance/check_in.php';
   static String get checkOut => '$base/app/attendance/check_out.php';
@@ -24,7 +25,7 @@ class AppLinks {
       '$base/app/payroll/get_slip.php?month=$month&format=pdf';
 
   static String get leaveApply => '$base/app/leaves/apply.php';
-  static String get leaveBalance => '$base/app/leaves/get_balance.php';
+  static String get leaveBalance => '$base/app/leaves/my_balance.php';
 
   static String get notifications => '$base/app/notifications/list.php';
   static String notificationRead(int id) =>

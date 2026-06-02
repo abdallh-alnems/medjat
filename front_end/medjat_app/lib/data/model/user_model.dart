@@ -38,7 +38,7 @@ class UserModel {
       name: (json['name'] as String?) ?? '',
       email: (json['email'] as String?) ?? '',
       phone: json['phone'] as String?,
-      photoUrl: json['photo_url'] as String?,
+      photoUrl: (json['profile_image'] as String?) ?? (json['photo_url'] as String?),
       roleKey: (json['role_key'] as String?) ?? '',
       permissions: (json['permissions'] as List<dynamic>?)
               ?.map((e) => e.toString())

@@ -14,7 +14,9 @@ import 'core/constant/routes/app_routes.dart';
 import 'core/constant/routes/app_pages.dart';
 import 'core/constant/theme/theme.dart';
 import 'core/constant/firebase_options.dart';
+import 'core/class/crud.dart';
 import 'core/services/push_notification_service.dart';
+import 'core/services/token_storage_service.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -45,8 +47,6 @@ void main() async {
   final analytics = FirebaseAnalytics.instance;
   await analytics.setAnalyticsCollectionEnabled(true);
 
-  FirebaseAnalytics.instance.logAppOpen();
-
   final remoteConfig = FirebaseRemoteConfig.instance;
   await remoteConfig.setConfigSettings(RemoteConfigSettings(
     fetchTimeout: const Duration(seconds: 10),
@@ -63,6 +63,16 @@ void main() async {
   ]);
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  CRUD.onSessionExpired = () {
+    TokenStorageService.clearSession();
+    Get.offAllNamed<void>(AppRoutes.login);
+    Get.snackbar(
+      'انتهت الجلسة',
+      'يرجى تسجيل الدخول مجدداً',
+      snackPosition: SnackPosition.BOTTOM,
+    );
+  };
 
   runApp(const MedjatEmployeeApp());
 }

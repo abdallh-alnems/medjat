@@ -29,15 +29,16 @@ void main() {
 
   group('AuthController — logout', () {
     test('clears user state', () async {
-      when(() => mockAuthData.logout()).thenAnswer((_) async {});
+      when(() => mockAuthData.logout()).thenAnswer((_) async => <String, dynamic>{});
     });
   });
 
   group('AuthData integration', () {
-    test('activateEmployee response parses correctly into UserModel', () async {
-      final activationPayload = {
+    test('login response parses correctly into UserModel', () async {
+      final loginPayload = {
         'status': StatusRequest.success,
         'data': {
+          'token': 'test-token-123',
           'employee': {
             'id': 5,
             'name': 'سارة',
@@ -51,7 +52,7 @@ void main() {
       };
 
       final employee =
-          (activationPayload['data'] as Map<String, dynamic>)['employee']
+          (loginPayload['data'] as Map<String, dynamic>)['employee']
               as Map<String, dynamic>;
 
       final user = UserModel(
@@ -59,7 +60,7 @@ void main() {
         tenantId: (employee['tenant_id'] as int?) ?? 0,
         branchId: (employee['branch_id'] as int?) ?? 0,
         name: (employee['name'] as String?) ?? '',
-        email: 'sara@noor.com',
+        email: '',
         branchName: employee['branch_name'] as String?,
         jobTitle: employee['job_title'] as String?,
         roleKey: 'employee',

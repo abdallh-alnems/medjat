@@ -3,8 +3,8 @@ require_once __DIR__ . '/../../config/bootstrap.php';
 
 RateLimiter::enforceIpLimit();
 Auth::requirePost();
-$auth = Auth::authenticateUser(db());
-$tenantId = TenantMiddleware::requireTenant();
+$auth = Auth::authenticateEmployee(db());
+$tenantId = $auth['tenant_id'];
 
 $input = $auth['input'];
 $branchId = (int) ($input['branch_id'] ?? 0);
@@ -14,10 +14,7 @@ $qrCode = $input['qr_code'] ?? null;
 
 Validator::required($branchId, 'branch_id');
 
-$employee = EmployeeModel::findByAdminId($auth['admin_id'], $tenantId);
-if (!$employee) {
-    Response::fail('Employee profile not found', 404);
-}
+$employee = $auth['employee'];
 
 $branch = BranchModel::findById($branchId, $tenantId);
 if (!$branch) {

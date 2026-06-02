@@ -1,6 +1,8 @@
 <?php
 
 require_once __DIR__ . '/../config/firebase.php';
+require_once __DIR__ . '/../models/EmployeeAuthTokenModel.php';
+require_once __DIR__ . '/../models/EmployeeModel.php';
 
 use Kreait\Firebase\Exception\Auth\FailedToVerifyToken;
 
@@ -55,6 +57,41 @@ final class Auth {
             'role' => $admin['role'],
             'uid' => $uid,
             'input' => $input,
+        ];
+    }
+
+    public static function authenticateEmployee(PDO $con): array {
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!$input) {
+            $input = [];
+        }
+
+        $token = $_SERVER['HTTP_X_EMPLOYEE_TOKEN'] ?? $input['employee_token'] ?? $_GET['employee_token'] ?? null;
+        if (!$token) {
+            Response::fail('Employee token is required', 401);
+        }
+
+        $activeToken = EmployeeAuthTokenModel::findActiveByPlain($token);
+        if (!$activeToken) {
+            Response::fail('جلستك انتهت، يرجى تسجيل الدخول مجدداً', 401);
+        }
+
+        $employee = EmployeeModel::findById((int) $activeToken['employee_id'], (int) $activeToken['tenant_id']);
+        if (!$employee) {
+            Response::fail('Employee not found', 404);
+        }
+
+        if (($employee['status'] ?? '') === 'terminated') {
+            Response::fail('الحساب موقوف', 403);
+        }
+
+        return [
+            'employee_id' => (int) $employee['id'],
+            'employee'    => $employee,
+            'tenant_id'   => (int) $activeToken['tenant_id'],
+            'branch_id'   => (int) ($employee['branch_id'] ?? 0),
+            'admin_id'    => $employee['admin_id'] ? (int) $employee['admin_id'] : null,
+            'input'       => $input,
         ];
     }
 

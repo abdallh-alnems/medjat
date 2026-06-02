@@ -3,8 +3,8 @@ require_once __DIR__ . '/../../config/bootstrap.php';
 
 RateLimiter::enforceIpLimit();
 Auth::requirePost();
-$auth = Auth::authenticateUser(db());
-$tenantId = TenantMiddleware::requireTenant();
+$auth = Auth::authenticateEmployee(db());
+$tenantId = $auth['tenant_id'];
 
 $input = $auth['input'];
 $records = $input['records'] ?? [];
@@ -13,10 +13,7 @@ if (empty($records) || !is_array($records)) {
     Response::fail('Records array is required', 400);
 }
 
-$employee = EmployeeModel::findByAdminId($auth['admin_id'], $tenantId);
-if (!$employee) {
-    Response::fail('Employee profile not found', 404);
-}
+$employee = $auth['employee'];
 
 $employeeId = $employee['id'];
 

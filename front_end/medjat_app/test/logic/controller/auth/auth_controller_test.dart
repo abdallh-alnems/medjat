@@ -39,68 +39,131 @@ void main() {
       final result = await controller.checkAuth();
 
       expect(result, false);
-      expect(controller.isLoggedIn.value, false);
+      expect(controller.isLoggedInObs.value, false);
+    });
+
+    test('checkAuth returns true with cached user', () async {
+      when(() => mockAuthData.getCachedUser())
+          .thenAnswer((_) async => createTestUser());
+
+      final controller = Get.put<TestableAuthController>(
+        TestableAuthController(),
+      );
+
+      final result = await controller.checkAuth();
+
+      expect(result, true);
+      expect(controller.isLoggedInObs.value, true);
+      expect(controller.user, isNotNull);
     });
   });
 
   group('AuthController — logout', () {
     test('logout clears state', () async {
-      when(() => mockAuthData.logout()).thenAnswer((_) async {});
+      when(() => mockAuthData.logout()).thenAnswer((_) async => {});
 
       final controller = Get.put<TestableAuthController>(
         TestableAuthController(),
       );
-      controller.isLoggedIn.value = true;
-      controller.isActivated.value = true;
+      controller.isLoggedInObs.value = true;
       controller.user = createTestUser();
 
       await controller.logout();
 
       expect(controller.user, isNull);
-      expect(controller.isLoggedIn.value, false);
-      expect(controller.isActivated.value, false);
+      expect(controller.isLoggedInObs.value, false);
       verify(() => mockAuthData.logout()).called(1);
     });
   });
 
-  group('AuthController — activateWithCode', () {
-    test('activateWithCode sets failure on error response', () async {
-      when(() => mockAuthData.activateEmployee(activationCode: any(named: 'activationCode')))
-          .thenAnswer((_) async => {
-                'status': StatusRequest.failure,
-                'statusCode': 404,
-                'message': 'كود التفعيل غير صالح أو منتهي',
-              });
+  group('AuthController — login', () {
+    test('login success saves token and user', () async {
+      when(() => mockAuthData.login(
+            phone: any(named: 'phone'),
+            activationCode: any(named: 'activationCode'),
+          )).thenAnswer((_) async => {
+            'status': StatusRequest.success,
+            'data': {
+              'token': 'test-token-123',
+              'employee': {
+                'id': 1,
+                'name': 'أحمد',
+                'tenant_id': 2,
+                'tenant_name': 'شركة',
+                'branch_id': 3,
+                'branch_name': 'فرع',
+                'job_title': 'مهندس',
+                'phone': '0501234567',
+                'profile_image': null,
+              },
+            },
+          });
+      when(() => mockAuthData.getCachedUser())
+          .thenAnswer((_) async => UserModel.fromJson({
+                'id': 1,
+                'name': 'أحمد',
+                'tenant_id': 2,
+                'tenant_name': 'شركة',
+                'branch_id': 3,
+                'branch_name': 'فرع',
+                'job_title': 'مهندس',
+                'phone': '0501234567',
+                'email': '',
+                'role_key': 'employee',
+              }));
 
       final controller = Get.put<TestableAuthController>(
         TestableAuthController(),
       );
 
-      await controller.activateWithCode('BADCODE');
+      await controller.login(phone: '0501234567', code: 'AB23CD');
+
+      expect(controller.status.value, StatusRequest.success);
+      expect(controller.isLoggedInObs.value, true);
+      expect(controller.user, isNotNull);
+    });
+
+    test('login 403 maps to phone mismatch message', () async {
+      when(() => mockAuthData.login(
+            phone: any(named: 'phone'),
+            activationCode: any(named: 'activationCode'),
+          )).thenAnswer((_) async => {
+            'status': StatusRequest.failure,
+            'statusCode': 403,
+            'message': 'رقم الهاتف لا يطابق كود التفعيل',
+          });
+
+      final controller = Get.put<TestableAuthController>(
+        TestableAuthController(),
+      );
+
+      await controller.login(phone: '0000000000', code: 'AB23CD');
 
       expect(controller.status.value, StatusRequest.failure);
     });
 
-    test('activateWithCode sets failure on 422', () async {
-      when(() => mockAuthData.activateEmployee(activationCode: any(named: 'activationCode')))
-          .thenAnswer((_) async => {
-                'status': StatusRequest.failure,
-                'statusCode': 422,
-                'message': 'كود التفعيل مطلوب',
-              });
+    test('login 404 maps to invalid code message', () async {
+      when(() => mockAuthData.login(
+            phone: any(named: 'phone'),
+            activationCode: any(named: 'activationCode'),
+          )).thenAnswer((_) async => {
+            'status': StatusRequest.failure,
+            'statusCode': 404,
+            'message': 'كود التفعيل غير صالح أو منتهي',
+          });
 
       final controller = Get.put<TestableAuthController>(
         TestableAuthController(),
       );
 
-      await controller.activateWithCode('');
+      await controller.login(phone: '0501234567', code: 'BADCOD');
 
       expect(controller.status.value, StatusRequest.failure);
     });
   });
 
   group('AuthController — data parsing', () {
-    test('UserModel from activation response round-trips', () {
+    test('UserModel from login response round-trips', () {
       final userData = {
         'id': 5,
         'name': 'سارة',
@@ -109,7 +172,7 @@ void main() {
         'branch_id': 2,
         'branch_name': 'فرع الرياض',
         'job_title': 'محاسبة',
-        'email': 'sara@noor.com',
+        'email': '',
         'role_key': 'employee',
       };
 
@@ -133,8 +196,7 @@ class TestableAuthController extends GetxController {
   final AuthData _authData = Get.find<AuthData>();
 
   final status = StatusRequest.none.obs;
-  final isLoggedIn = false.obs;
-  final isActivated = false.obs;
+  final isLoggedInObs = false.obs;
   UserModel? user;
 
   @override
@@ -146,8 +208,7 @@ class TestableAuthController extends GetxController {
     final cached = await _authData.getCachedUser();
     if (cached != null) {
       user = cached;
-      isLoggedIn.value = true;
-      isActivated.value = cached.tenantId != 0;
+      isLoggedInObs.value = true;
       return true;
     }
     return false;
@@ -156,36 +217,32 @@ class TestableAuthController extends GetxController {
   Future<void> logout() async {
     await _authData.logout();
     user = null;
-    isLoggedIn.value = false;
-    isActivated.value = false;
+    isLoggedInObs.value = false;
   }
 
-  Future<void> activateWithCode(String activationCode) async {
+  Future<void> login({
+    required String phone,
+    required String code,
+  }) async {
     status.value = StatusRequest.loading;
 
-    final response = await _authData.activateEmployee(
-      activationCode: activationCode.trim(),
-    );
+    try {
+      final response = await _authData.login(
+        phone: phone.trim(),
+        activationCode: code.trim(),
+      );
 
-    if (response['status'] == StatusRequest.success) {
-      final data = response['data'] as Map<String, dynamic>?;
-      if (data?['employee'] != null) {
-        final employee = data!['employee'] as Map<String, dynamic>;
-        user = UserModel(
-          id: (employee['id'] as int?) ?? 0,
-          tenantId: (employee['tenant_id'] as int?) ?? 0,
-          branchId: (employee['branch_id'] as int?) ?? 0,
-          name: (employee['name'] as String?) ?? '',
-          email: '',
-          branchName: employee['branch_name'] as String?,
-          jobTitle: employee['job_title'] as String?,
-          roleKey: 'employee',
-        );
-        isActivated.value = true;
-        isLoggedIn.value = true;
-        status.value = StatusRequest.success;
+      if (response['status'] == StatusRequest.success) {
+        final cached = await _authData.getCachedUser();
+        if (cached != null) {
+          user = cached;
+          isLoggedInObs.value = true;
+          status.value = StatusRequest.success;
+        }
+      } else {
+        status.value = StatusRequest.failure;
       }
-    } else {
+    } catch (e) {
       status.value = StatusRequest.failure;
     }
   }

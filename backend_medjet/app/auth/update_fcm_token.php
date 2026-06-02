@@ -4,7 +4,7 @@ require_once __DIR__ . '/../../config/bootstrap.php';
 RateLimiter::enforceIpLimit();
 Auth::requirePost();
 
-$auth = Auth::authenticateUser(db());
+$auth = Auth::authenticateEmployee(db());
 $adminId = $auth['admin_id'];
 $input = $auth['input'];
 

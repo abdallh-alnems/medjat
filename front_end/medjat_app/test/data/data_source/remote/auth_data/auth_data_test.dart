@@ -74,11 +74,12 @@ void main() {
     });
   });
 
-  group('AuthData — activateEmployee response handling', () {
+  group('AuthData — login response handling', () {
     test('success response with employee data', () {
       final response = {
         'status': StatusRequest.success,
         'data': {
+          'token': 'test-token-123',
           'employee': {
             'id': 5,
             'name': 'سارة',
@@ -97,7 +98,7 @@ void main() {
 
       final user = UserModel.fromJson({
         ...employee,
-        'email': 'sara@noor.com',
+        'email': '',
         'role_key': 'employee',
       });
 

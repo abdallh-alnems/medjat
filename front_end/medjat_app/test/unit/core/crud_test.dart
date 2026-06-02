@@ -164,6 +164,29 @@ void main() {
         expect(result['message'], 'جلستك انتهت، يرجى تسجيل الدخول مجدداً');
       });
 
+      test('401 invokes onSessionExpired callback exactly once', () {
+        int callCount = 0;
+        CRUD.onSessionExpired = () {
+          callCount++;
+        };
+
+        final response = fakeResponse(statusCode: 401);
+        crud.handleResponse(response);
+
+        expect(callCount, 1);
+
+        CRUD.onSessionExpired = null;
+      });
+
+      test('401 does not invoke onSessionExpired when callback is null', () {
+        CRUD.onSessionExpired = null;
+
+        final response = fakeResponse(statusCode: 401);
+        final result = crud.handleResponse(response);
+
+        expect(result['status'], StatusRequest.failure);
+      });
+
       test('403 returns Arabic permission denied message', () {
         final response = fakeResponse(statusCode: 403);
         final result = crud.handleResponse(response);

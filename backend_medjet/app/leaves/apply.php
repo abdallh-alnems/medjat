@@ -3,8 +3,8 @@ require_once __DIR__ . '/../../config/bootstrap.php';
 
 RateLimiter::enforceIpLimit();
 Auth::requirePost();
-$auth = Auth::authenticateUser(db());
-$tenantId = TenantMiddleware::requireTenant();
+$auth = Auth::authenticateEmployee(db());
+$tenantId = $auth['tenant_id'];
 
 $input = $auth['input'];
 $date = $input['date'] ?? null;
@@ -15,10 +15,7 @@ Validator::required($date, 'date');
 Validator::required($type, 'type');
 Validator::enum($type, ['annual', 'sick', 'personal', 'unpaid'], 'type');
 
-$employee = EmployeeModel::findByAdminId($auth['admin_id'], $tenantId);
-if (!$employee) {
-    Response::fail('Employee profile not found', 404);
-}
+$employee = $auth['employee'];
 
 $startDateInput = $input['start_date'] ?? $date;
 $endDateInput = $input['end_date'] ?? $startDateInput;

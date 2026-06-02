@@ -4,7 +4,6 @@ import 'package:get/get.dart';
 
 import 'package:medjat_app/core/class/status_request.dart';
 import 'package:medjat_app/core/constant/theme/app_theme.dart';
-import 'package:medjat_app/data/data_source/remote/auth_data/auth_data.dart';
 import 'package:medjat_app/data/model/user_model.dart';
 import 'package:medjat_app/logic/controller/auth/auth_controller.dart';
 import 'package:medjat_app/view/screen/auth/login_screen.dart';
@@ -16,25 +15,16 @@ class FakeAuthController extends GetxController implements AuthController {
   final Rx<StatusRequest> status = StatusRequest.none.obs;
 
   @override
-  final RxBool isLoggedIn = false.obs;
-
-  @override
-  final RxBool isActivated = false.obs;
+  final RxBool isLoggedInObs = false.obs;
 
   @override
   UserModel? user;
 
   @override
-  Future<void> signInWithEmailPassword({
-    required String email,
-    required String password,
-  }) async {}
+  Future<void> login({required String phone, required String code}) async {}
 
   @override
-  Future<void> signInWithGoogle() async {}
-
-  @override
-  Future<void> activateWithCode(String activationCode) async {}
+  bool isLoggedIn() => isLoggedInObs.value && user != null;
 
   @override
   Future<void> loadProfile() async {}
@@ -64,16 +54,50 @@ void main() {
   });
 
   group('LoginScreen', () {
-    testWidgets('renders login form with expected fields',
+    testWidgets('renders phone and activation code fields',
         (WidgetTester tester) async {
       await tester.pumpWidget(_createTestApp());
       await tester.pumpAndSettle();
 
       expect(find.text('تسجيل الدخول'), findsNWidgets(2));
-      expect(find.text('سجّل دخولك بحسابك لتفعيل التطبيق'), findsOneWidget);
-      expect(find.text('البريد الإلكتروني'), findsOneWidget);
-      expect(find.text('كلمة المرور'), findsOneWidget);
+      expect(find.text('رقم الهاتف'), findsOneWidget);
+      expect(find.text('كود التفعيل'), findsOneWidget);
       expect(find.byType(TextFormField), findsNWidgets(2));
+    });
+
+    testWidgets('shows helper text about requesting credentials',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(_createTestApp());
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('اطلب رقم هاتفك وكود التفعيل من إدارة الشركة'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows kiosk mode button', (WidgetTester tester) async {
+      await tester.pumpWidget(_createTestApp());
+      await tester.pumpAndSettle();
+
+      expect(find.text('وضع الكيوسك'), findsOneWidget);
+    });
+
+    testWidgets('shows fingerprint icon', (WidgetTester tester) async {
+      await tester.pumpWidget(_createTestApp());
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.fingerprint), findsOneWidget);
+    });
+
+    testWidgets('no email or password or Google controls',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(_createTestApp());
+      await tester.pumpAndSettle();
+
+      expect(find.text('البريد الإلكتروني'), findsNothing);
+      expect(find.text('كلمة المرور'), findsNothing);
+      expect(find.text('الدخول بحساب Google'), findsNothing);
     });
 
     testWidgets('shows validation errors on empty submit',
@@ -86,94 +110,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('مطلوب'), findsWidgets);
-    });
-
-    testWidgets('shows validation error for invalid email',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(_createTestApp());
-      await tester.pumpAndSettle();
-
-      await tester.enterText(
-        find.byType(TextFormField).first,
-        'invalid-email',
-      );
-      await tester.tap(find.byType(ElevatedButton));
-      await tester.pumpAndSettle();
-
-      expect(find.text('بريد غير صالح'), findsOneWidget);
-    });
-
-    testWidgets('shows validation error for short password',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(_createTestApp());
-      await tester.pumpAndSettle();
-
-      await tester.enterText(
-        find.byType(TextFormField).last,
-        '12345',
-      );
-      await tester.tap(find.byType(ElevatedButton));
-      await tester.pumpAndSettle();
-
-      expect(find.text('6 أحرف على الأقل'), findsOneWidget);
-    });
-
-    testWidgets('toggles to activation form', (WidgetTester tester) async {
-      await tester.pumpWidget(_createTestApp());
-      await tester.pumpAndSettle();
-
-      expect(find.text('كود التفعيل'), findsNothing);
-
-      final toggleButton = find.text('لديّ كود تفعيل');
-      await tester.tap(toggleButton);
-      await tester.pumpAndSettle();
-
-      expect(find.text('أدخل كود التفعيل'), findsOneWidget);
-      expect(find.text('كود التفعيل'), findsOneWidget);
-      expect(find.text('تفعيل'), findsOneWidget);
-    });
-
-    testWidgets('toggles back to login form', (WidgetTester tester) async {
-      await tester.pumpWidget(_createTestApp());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('لديّ كود تفعيل'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('العودة لتسجيل الدخول'), findsOneWidget);
-
-      await tester.tap(find.text('العودة لتسجيل الدخول'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('البريد الإلكتروني'), findsOneWidget);
-    });
-
-    testWidgets('activation form validates empty code',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(_createTestApp());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('لديّ كود تفعيل'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('تفعيل'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('مطلوب'), findsOneWidget);
-    });
-
-    testWidgets('shows Google sign-in button', (WidgetTester tester) async {
-      await tester.pumpWidget(_createTestApp());
-      await tester.pumpAndSettle();
-
-      expect(find.text('الدخول بحساب Google'), findsOneWidget);
-    });
-
-    testWidgets('shows fingerprint icon', (WidgetTester tester) async {
-      await tester.pumpWidget(_createTestApp());
-      await tester.pumpAndSettle();
-
-      expect(find.byIcon(Icons.fingerprint), findsOneWidget);
     });
   });
 }

@@ -11,4 +11,6 @@ abstract class AppRoutes {
   static const String leaves = '/leaves';
   static const String notifications = '/notifications';
   static const String settings = '/settings';
+  static const String kioskPair = '/kiosk-pair';
+  static const String kioskHome = '/kiosk-home';
 }
