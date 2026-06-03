@@ -34,23 +34,25 @@ class StationData {
   }
 
   Future<Map<String, dynamic>> checkInOut({
-    required int employeeId,
+    int? employeeId,
     required String method,
     double? confidence,
     double? gpsLat,
     double? gpsLng,
     String? capturedImageBase64,
+    String? qrToken,
   }) async {
     final data = <String, dynamic>{
-      'employee_id': employeeId,
       'method': method,
     };
+    if (employeeId != null) data['employee_id'] = employeeId;
     if (confidence != null) data['confidence'] = confidence;
     if (gpsLat != null) data['gps_lat'] = gpsLat;
     if (gpsLng != null) data['gps_lng'] = gpsLng;
     if (capturedImageBase64 != null) {
       data['captured_image_base64'] = capturedImageBase64;
     }
+    if (qrToken != null) data['qr_token'] = qrToken;
 
     return await _crud.postData(
       _stationUrl('/app/station/check_in_out.php'),
@@ -72,21 +74,27 @@ class StationData {
   Future<Map<String, dynamic>> enrollBiometric({
     required String adminPin,
     required int employeeId,
-    String? faceEmbedding,
-    String? fingerprintTemplate,
+    List<double>? faceEmbedding,
   }) async {
     final data = <String, dynamic>{
       'admin_pin': adminPin,
       'employee_id': employeeId,
     };
     if (faceEmbedding != null) data['face_embedding'] = faceEmbedding;
-    if (fingerprintTemplate != null) {
-      data['fingerprint_template'] = fingerprintTemplate;
-    }
 
     return await _crud.postData(
       _stationUrl('/app/station/enroll_employee_biometric.php'),
       data,
+      useStationToken: true,
+    );
+  }
+
+  Future<Map<String, dynamic>> matchFace({
+    required List<double> embedding,
+  }) async {
+    return await _crud.postData(
+      _stationUrl('/app/station/match_face.php'),
+      {'embedding': embedding},
       useStationToken: true,
     );
   }
@@ -103,6 +111,12 @@ class StationData {
       _stationUrl('/app/station/heartbeat.php'),
       data,
       useStationToken: true,
+    );
+  }
+
+  Future<Map<String, dynamic>> getMyStationQr() async {
+    return await _crud.getData(
+      AppLinks.myStationQr,
     );
   }
 

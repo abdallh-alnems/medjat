@@ -41,6 +41,35 @@ final class NotificationService {
         return $success ? count($tokens) : 0;
     }
 
+    /**
+     * Push to the tenant's managers only (everyone who isn't a plain employee
+     * or a still-pending admin). Used for admin-facing alerts such as an
+     * employee activating their account.
+     */
+    public static function sendToTenantManagers(int $tenantId, string $title, string $body, ?array $data = null): int {
+        $tokens = Database::fetchAll(
+            "SELECT ud.fcm_token FROM admin_devices ud
+             JOIN admins a ON a.id = ud.admin_id
+             WHERE a.tenant_id = ?
+               AND a.role NOT IN ('employee', 'pending')
+               AND ud.is_active = 1",
+            [$tenantId]
+        );
+
+        if (empty($tokens)) {
+            return 0;
+        }
+
+        $success = self::sendMulticast(
+            array_column($tokens, 'fcm_token'),
+            $title,
+            $body,
+            $data
+        );
+
+        return $success ? count($tokens) : 0;
+    }
+
     public static function sendToBranch(int $branchId, int $tenantId, string $title, string $body, ?array $data = null): int {
         $tokens = Database::fetchAll(
             "SELECT ud.fcm_token FROM admin_devices ud

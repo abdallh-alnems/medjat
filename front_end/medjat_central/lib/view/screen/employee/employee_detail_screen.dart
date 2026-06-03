@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:printing/printing.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../../core/class/handling_data_request.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/theme/app_colors.dart';
@@ -655,6 +656,38 @@ class _ActivationCodeBody extends StatelessWidget {
               ],
             ),
           ),
+
+          // QR + link: same single-use token as the code above.
+          if (ctrl.activationJoinLink != null &&
+              ctrl.activationJoinLink!.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.s4),
+            Center(
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.s3),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: colors.borderHairline),
+                ),
+                child: QrImageView(
+                  data: ctrl.activationJoinLink!,
+                  version: QrVersions.auto,
+                  size: 160,
+                  backgroundColor: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s2),
+            Center(
+              child: OutlinedButton.icon(
+                onPressed: ctrl.copyJoinLinkToClipboard,
+                icon: const Icon(Icons.link, size: 16),
+                label: Text('copy_link'.tr),
+                style:
+                    OutlinedButton.styleFrom(foregroundColor: colors.brand),
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.s4),
 
           // Expiry indicator with progress bar
@@ -699,7 +732,12 @@ class _ActivationCodeBody extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: isBusy ? null : ctrl.generateActivationCode,
+              onPressed: isBusy
+                  ? null
+                  : () async {
+                      final ok = await ctrl.generateActivationCode();
+                      if (ok) _showCodeShareSheet(ctrl);
+                    },
               icon: const Icon(Icons.refresh_rounded, size: 16),
               label: Text(
                 'regenerate_code'.tr,
@@ -811,7 +849,12 @@ class _ActivationEmptyBody extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: isBusy ? null : ctrl.generateActivationCode,
+              onPressed: isBusy
+                  ? null
+                  : () async {
+                      final ok = await ctrl.generateActivationCode();
+                      if (ok) _showCodeShareSheet(ctrl);
+                    },
               icon: isBusy
                   ? const SizedBox(
                       width: 16,
@@ -852,8 +895,201 @@ Future<void> _confirmDeviceReset(
     ),
   );
   if (confirmed == true) {
-    await ctrl.generateActivationCode();
+    final ok = await ctrl.generateActivationCode();
+    if (ok) _showCodeShareSheet(ctrl);
   }
+}
+
+/// Shows the freshly generated activation code with its QR and one-tap sharing
+/// actions, so the admin knows exactly how to hand it to the employee. Reuses
+/// the controller's copy / WhatsApp helpers. Safe to call from any trigger
+/// (reset, regenerate, or first-time create).
+void _showCodeShareSheet(EmployeeDetailController ctrl) {
+  final code = ctrl.activationCode;
+  if (code == null || code.isEmpty) return;
+  final joinLink = ctrl.activationJoinLink;
+  final phone = ctrl.employee?.phone;
+
+  Get.bottomSheet(
+    Builder(
+      builder: (context) {
+        final colors = AppColors.of(context);
+        return Container(
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppRadius.lg),
+            ),
+          ),
+          child: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.s5, AppSpacing.s3, AppSpacing.s5, AppSpacing.s5),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: colors.borderHairline,
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s4),
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: colors.success.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                    ),
+                    child: Icon(Icons.check_circle_outline,
+                        size: 32, color: colors.success),
+                  ),
+                  const SizedBox(height: AppSpacing.s3),
+                  Text('code_regenerated'.tr, style: AppTextStyles.h2(context)),
+                  const SizedBox(height: AppSpacing.s2),
+                  Text(
+                    'share_code_with_employee'.tr,
+                    style: AppTextStyles.sm(context),
+                    textAlign: TextAlign.center,
+                  ),
+                  // Login phone
+                  if (phone != null && phone.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.s5),
+                    Text('login_phone'.tr,
+                        style: AppTextStyles.bodySecondary(context)),
+                    const SizedBox(height: AppSpacing.s2),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.s5,
+                        vertical: AppSpacing.s3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.sunken,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(color: colors.borderHairline),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.phone_iphone, size: 18, color: colors.brand),
+                          const SizedBox(width: AppSpacing.s2),
+                          Text(
+                            phone,
+                            textDirection: TextDirection.ltr,
+                            style: TextStyle(
+                              fontFamily: 'Geist',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: colors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.s5),
+                  // Activation code
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.s4, vertical: AppSpacing.s4),
+                    decoration: BoxDecoration(
+                      color: colors.brandSubtle,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: colors.brand, width: 2),
+                    ),
+                    child: SelectableText(
+                      code,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Geist',
+                        fontSize: 34,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 6,
+                        color: colors.brand,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s3),
+                  Text(
+                    'single_use_hint'.tr,
+                    style: AppTextStyles.sm(context),
+                    textAlign: TextAlign.center,
+                  ),
+                  // QR for the join link (same single-use token as the code)
+                  if (joinLink != null && joinLink.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.s5),
+                    Text('join_qr'.tr,
+                        style: AppTextStyles.bodySecondary(context)),
+                    const SizedBox(height: AppSpacing.s3),
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.s3),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(color: colors.borderHairline),
+                      ),
+                      child: QrImageView(
+                        data: joinLink,
+                        version: QrVersions.auto,
+                        size: 180,
+                        backgroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.s5),
+                  Wrap(
+                    spacing: AppSpacing.s3,
+                    runSpacing: AppSpacing.s3,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: ctrl.copyCodeToClipboard,
+                        icon: const Icon(Icons.copy, size: 18),
+                        label: Text('copy_code'.tr),
+                      ),
+                      if (joinLink != null && joinLink.isNotEmpty)
+                        OutlinedButton.icon(
+                          onPressed: ctrl.copyJoinLinkToClipboard,
+                          icon: const Icon(Icons.link, size: 18),
+                          label: Text('copy_link'.tr),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.s3),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: ctrl.shareCodeViaWhatsApp,
+                      icon: const Icon(Icons.chat_bubble_outline, size: 18),
+                      label: Text('share_via_whatsapp'.tr),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF25D366),
+                        foregroundColor: Colors.white,
+                        padding:
+                            const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s2),
+                  TextButton(
+                    onPressed: () => Get.back(),
+                    child: Text('done'.tr),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    ),
+    isScrollControlled: true,
+  );
 }
 
 /* ─────────────────────────────────────────────────────────────────────── */
@@ -1146,8 +1382,20 @@ class _InfoCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.s3),
+          if ((e.jobTitle ?? '').isNotEmpty)
+            _InfoRow(label: 'job_title'.tr, value: e.jobTitle!),
+          if ((e.employeeCode ?? '').isNotEmpty)
+            _InfoRow(label: 'employee_code'.tr, value: e.employeeCode!),
           _InfoRow(label: 'phone_number'.tr, value: e.phone ?? '—'),
           _InfoRow(label: 'branch'.tr, value: e.branchName ?? '—'),
+          if (ctrl.categories.isNotEmpty)
+            _InfoRow(
+              label: 'category'.tr,
+              value: ctrl.categories
+                  .map((c) => (c['name'] as String?) ?? '')
+                  .where((n) => n.isNotEmpty)
+                  .join('، '),
+            ),
           _InfoRow(
             label: 'work_time'.tr,
             value: () {
@@ -1161,6 +1409,22 @@ class _InfoCard extends StatelessWidget {
                   : range;
             }(),
           ),
+          if (e.weeklyOffDays.isNotEmpty)
+            _InfoRow(
+              label: 'weekly_day_off'.tr,
+              value: const [
+                'saturday',
+                'sunday',
+                'monday',
+                'tuesday',
+                'wednesday',
+                'thursday',
+                'friday',
+              ]
+                  .where((d) => e.weeklyOffDays.contains(d))
+                  .map((d) => 'day_$d'.tr)
+                  .join('، '),
+            ),
           _InfoRow(
             label: 'base_salary'.tr,
             value:
@@ -1172,6 +1436,9 @@ class _InfoCard extends StatelessWidget {
                 ? '${e.hireDate!.year}-${e.hireDate!.month.toString().padLeft(2, '0')}-${e.hireDate!.day.toString().padLeft(2, '0')}'
                 : '—',
           ),
+          if (e.autoTerminateAt != null)
+            _ComplianceRow(
+                label: 'employment_ends_on'.tr, expiry: e.autoTerminateAt),
           if (hasBank) ...[
             const SizedBox(height: AppSpacing.s3),
             const Divider(height: 1),
@@ -1219,45 +1486,18 @@ class _InfoCard extends StatelessWidget {
               _InfoRow(
                   label: 'contract_type'.tr,
                   value: 'contract_${e.contractType}'.tr),
+            if (e.contractStart != null)
+              _InfoRow(
+                label: 'contract_start'.tr,
+                value:
+                    '${e.contractStart!.year}-${e.contractStart!.month.toString().padLeft(2, '0')}-${e.contractStart!.day.toString().padLeft(2, '0')}',
+              ),
             if (e.contractEnd != null)
               _ComplianceRow(label: 'contract_end'.tr, expiry: e.contractEnd),
             if (e.healthInsuranceExpiry != null)
               _ComplianceRow(
                   label: 'health_insurance_expiry'.tr,
                   expiry: e.healthInsuranceExpiry),
-          ],
-          if (ctrl.categories.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.s3),
-            const Divider(height: 1),
-            const SizedBox(height: AppSpacing.s3),
-            Text('employee_categories'.tr,
-                style: AppTextStyles.h3(context).copyWith(fontSize: 15)),
-            const SizedBox(height: AppSpacing.s2),
-            Wrap(
-              spacing: AppSpacing.s2,
-              runSpacing: AppSpacing.s2,
-              children: ctrl.categories.map((cat) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.s3,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colors.brandSubtle,
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                  ),
-                  child: Text(
-                    (cat['name'] as String?) ?? '',
-                    style: TextStyle(
-                      fontFamily: 'IBM Plex Sans Arabic',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: colors.brand,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
           ],
         ],
       ),

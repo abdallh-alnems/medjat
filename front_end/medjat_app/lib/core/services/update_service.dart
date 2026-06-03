@@ -87,21 +87,37 @@ class UpdateService extends GetxService {
     await _performAndroidImmediate();
   }
 
+  // Google Play's update check can hang indefinitely (no success/failure
+  // callback) when the app isn't "owned" by the Play Store — e.g. debug /
+  // sideloaded builds, or devices with a limited Play Store. A hang is not a
+  // PlatformException, so it would never be caught and would block the UI
+  // (UpdateGate spins forever). Bound every Play call with a timeout and
+  // swallow any error so the app always proceeds.
+  static const _playCheckTimeout = Duration(seconds: 8);
+
   Future<void> _performAndroidImmediate() async {
+    // In-app updates only work for Play-installed release builds; skip the call
+    // entirely in debug so development on a sideloaded build never waits on it.
+    if (kDebugMode) return;
     try {
-      final info = await InAppUpdate.checkForUpdate();
+      final info =
+          await InAppUpdate.checkForUpdate().timeout(_playCheckTimeout);
       if (info.updateAvailability == UpdateAvailability.updateAvailable &&
           info.immediateUpdateAllowed) {
         await InAppUpdate.performImmediateUpdate();
       }
     } on PlatformException {
       await _openStore();
+    } catch (_) {
+      // timeout or any other failure — skip the in-app update
     }
   }
 
   Future<UpdateAction> _checkAndroidOptional() async {
+    if (kDebugMode) return UpdateAction.none;
     try {
-      final info = await InAppUpdate.checkForUpdate();
+      final info =
+          await InAppUpdate.checkForUpdate().timeout(_playCheckTimeout);
       if (info.updateAvailability == UpdateAvailability.updateAvailable) {
         final availableCode = info.availableVersionCode;
         _lastAvailableVersionCode = availableCode;
@@ -111,7 +127,8 @@ class UpdateService extends GetxService {
         }
         return UpdateAction.optional;
       }
-    } on PlatformException {
+    } catch (_) {
+      // PlatformException (sideloaded), timeout (hang), or anything else
       return UpdateAction.none;
     }
     return UpdateAction.none;
@@ -146,7 +163,7 @@ class UpdateService extends GetxService {
     if (ctx == null) return;
     ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(
-        content: const Text(UpdateStrings.updateReady),
+        content: Text(UpdateStrings.updateReady),
         action: SnackBarAction(
           label: UpdateStrings.installNow,
           onPressed: () => completeFlexibleUpdate(),

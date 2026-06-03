@@ -1,0 +1,36 @@
+:root { --brand: #2E7D6B; }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f4f6f5;
+  font-family: -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
+  color: #1c2421;
+  padding: 24px;
+}
+.card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.08);
+  max-width: 420px;
+  width: 100%;
+  padding: 32px 24px;
+  text-align: center;
+}
+h1 { color: var(--brand); font-size: 22px; margin: 0 0 16px; }
+p { line-height: 1.7; font-size: 15px; color: #4a544f; margin: 0 0 24px; }
+.stores { display: flex; flex-direction: column; gap: 12px; }
+.btn {
+  display: block;
+  background: var(--brand);
+  color: #fff;
+  text-decoration: none;
+  padding: 14px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 15px;
+}
+.btn:active { opacity: .85; }

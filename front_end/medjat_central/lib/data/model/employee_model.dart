@@ -19,6 +19,7 @@ class EmployeeModel {
   final String? shiftName;
   final String? shiftStart;
   final String? shiftEnd;
+  final List<String> weeklyOffDays;
   final List<int> categoryIds;
   final String? activationCode;
   final String? activationExpiresAt;
@@ -61,6 +62,7 @@ class EmployeeModel {
     this.shiftName,
     this.shiftStart,
     this.shiftEnd,
+    this.weeklyOffDays = const [],
     this.categoryIds = const [],
     this.activationCode,
     this.activationExpiresAt,
@@ -86,6 +88,25 @@ class EmployeeModel {
 
   static DateTime? _parseDate(dynamic value) =>
       value is String && value.isNotEmpty ? DateTime.tryParse(value) : null;
+
+  /// MySQL SET columns (e.g. weekly_off_days) arrive as a comma-separated
+  /// string like "friday,saturday"; accept a JSON list too, just in case.
+  static List<String> _parseStringList(dynamic value) {
+    if (value is List) {
+      return value
+          .map((e) => e.toString().trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+    }
+    if (value is String && value.isNotEmpty) {
+      return value
+          .split(',')
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+    }
+    return const [];
+  }
 
   /// DECIMAL columns come back from the API as strings (e.g. "4500.50"),
   /// so accept both numbers and numeric strings.
@@ -117,6 +138,7 @@ class EmployeeModel {
       shiftName: json['shift_name'] as String?,
       shiftStart: json['shift_start'] as String?,
       shiftEnd: json['shift_end'] as String?,
+      weeklyOffDays: _parseStringList(json['weekly_off_days']),
       categoryIds: (json['category_ids'] as List?)
               ?.map((e) => (e as num).toInt())
               .toList() ??

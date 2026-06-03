@@ -27,6 +27,10 @@ if ($method === 'GET') {
 
     Response::success([
         'activation_code' => $existing['code'] ?? null,
+        'activation_token' => $existing['token'] ?? null,
+        'join_link' => isset($existing['token'])
+            ? ActivationCodeModel::buildJoinLink($existing['token'])
+            : null,
         'expires_at' => isset($existing['expires_at'])
             ? gmdate('Y-m-d\TH:i:s\Z', strtotime($existing['expires_at']))
             : null,
@@ -67,7 +71,7 @@ if ($wasActive) {
     );
 }
 
-$code = ActivationCodeModel::generate($tenantId, $employeeId);
+$activation = ActivationCodeModel::generate($tenantId, $employeeId);
 $expiresAt = gmdate('Y-m-d\TH:i:s\Z', strtotime('+24 hours'));
 
 AuditLogModel::log(
@@ -79,7 +83,9 @@ AuditLogModel::log(
 );
 
 Response::success([
-    'activation_code' => $code,
+    'activation_code' => $activation['code'],
+    'activation_token' => $activation['token'],
+    'join_link' => ActivationCodeModel::buildJoinLink($activation['token']),
     'expires_at' => $expiresAt,
     'activation_expires_in_hours' => 24,
     'device_revoked' => $wasActive,

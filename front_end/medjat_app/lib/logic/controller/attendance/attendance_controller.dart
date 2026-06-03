@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/services/connectivity_service.dart';
+import '../../../core/services/device_integrity_service.dart';
 import '../../../core/services/location_service.dart';
 import '../../../data/data_source/remote/attendance_data/attendance_data.dart';
 import '../../../data/model/today_status_model.dart';
@@ -27,18 +30,41 @@ class AttendanceController extends GetxController {
     try {
       final position = await LocationService().getCurrentPosition();
       final homeController = Get.find<HomeController>();
+
+      // --- device integrity check ---
+      final integrity = await DeviceIntegrityService.check(position);
+      if (integrity.isBlocking) {
+        errorMessage = integrity.isMockLocation
+            ? 'mock_location_detected'.tr
+            : 'rooted_device_detected'.tr;
+        status = StatusRequest.failure;
+        unawaited(_attendanceData.reportSecurityBlock(
+          branchId: homeController.todayStatus?.branchId ?? _getBranchId() ?? 0,
+          reason: integrity.isMockLocation ? 'mock_location' : 'rooted',
+          latitude: position.latitude,
+          longitude: position.longitude,
+        ));
+        isProcessing = false;
+        update();
+        return;
+      }
+
+      if (integrity.isVpn) {
+        Get.snackbar('vpn_warning'.tr, '');
+      }
+
       final isCheckOut =
           homeController.attendanceStatus == AttendanceStatus.checkedIn;
 
       final isOnline = await ConnectivityService.checkOnline();
 
       if (isOnline) {
-        await _processOnline(qrCode, position, isCheckOut);
+        await _processOnline(qrCode, position, isCheckOut, isVpn: integrity.isVpn);
       } else {
-        await _processOffline(qrCode, position, isCheckOut);
+        await _processOffline(qrCode, position, isCheckOut, isVpn: integrity.isVpn);
       }
     } catch (e) {
-      errorMessage = 'حدث خطأ، حاول مرة أخرى';
+      errorMessage = 'error_try_again'.tr;
       status = StatusRequest.failure;
     }
 
@@ -47,7 +73,7 @@ class AttendanceController extends GetxController {
   }
 
   Future<void> _processOnline(
-      String qrCode, Position position, bool isCheckOut) async {
+      String qrCode, Position position, bool isCheckOut, {bool isVpn = false}) async {
     final homeController = Get.find<HomeController>();
 
     final response = isCheckOut
@@ -59,6 +85,7 @@ class AttendanceController extends GetxController {
             latitude: position.latitude,
             longitude: position.longitude,
             qrCode: qrCode,
+            isVpn: isVpn,
           );
 
     final responseStatus = response['status'];
@@ -75,7 +102,7 @@ class AttendanceController extends GetxController {
         },
       );
     } else if (responseStatus == StatusRequest.offline) {
-      await _processOffline(qrCode, position, isCheckOut);
+      await _processOffline(qrCode, position, isCheckOut, isVpn: isVpn);
     } else {
       final statusCode = response['statusCode'];
       if (statusCode == 422 || statusCode == 400) {
@@ -85,21 +112,21 @@ class AttendanceController extends GetxController {
             msg.contains('بعيد') ||
             msg.contains('نطاق') ||
             errorCode == 'GPS_OUT_OF_RANGE') {
-          errorMessage = 'أنت خارج نطاق الفرع';
+          errorMessage = 'out_of_range'.tr;
         } else if (msg.contains('QR') ||
             msg.contains('qr') ||
             msg.contains('غير صالح')) {
-          errorMessage = 'QR Code غير صالح';
+          errorMessage = 'invalid_qr'.tr;
         } else if (msg.contains('Already') || msg.contains('مسبقاً')) {
-          errorMessage = 'تم تسجيل الحضور مسبقاً';
+          errorMessage = 'already_checked_in'.tr;
         } else {
           errorMessage = msg;
         }
       } else if (statusCode == 409) {
-        errorMessage = 'تم تسجيل الحضور مسبقاً';
+        errorMessage = 'already_checked_in'.tr;
       } else {
         errorMessage =
-            (response['message'] as String?) ?? 'حدث خطأ، حاول مرة أخرى';
+            (response['message'] as String?) ?? 'error_try_again'.tr;
       }
       status = StatusRequest.failure;
     }
@@ -107,7 +134,7 @@ class AttendanceController extends GetxController {
   }
 
   Future<void> _processOffline(
-      String qrCode, Position position, bool isCheckOut) async {
+      String qrCode, Position position, bool isCheckOut, {bool isVpn = false}) async {
     final homeController = Get.find<HomeController>();
     final branch = homeController.todayStatus;
 
@@ -122,7 +149,7 @@ class AttendanceController extends GetxController {
         branch.branchLng!,
       );
       if (distance > branch.branchRadiusMeters!) {
-        errorMessage = 'أنت خارج نطاق الفرع';
+        errorMessage = 'out_of_range'.tr;
         status = StatusRequest.failure;
         update();
         return;
@@ -133,6 +160,7 @@ class AttendanceController extends GetxController {
       qrCode: qrCode,
       position: position,
       isCheckOut: isCheckOut,
+      isVpn: isVpn,
     );
 
       Get.offNamed<void>(
@@ -150,6 +178,7 @@ class AttendanceController extends GetxController {
     required String qrCode,
     required Position position,
     required bool isCheckOut,
+    bool isVpn = false,
   }) async {
     final box = await Hive.openBox<dynamic>('offline_attendance');
     final branchId = _getBranchId() ?? 0;
@@ -166,6 +195,7 @@ class AttendanceController extends GetxController {
       'date': now.toIso8601String().substring(0, 10),
       'captured_at': now.toIso8601String(),
       'qr_code': qrCode,
+      'is_vpn': isVpn ? 1 : 0,
       'check_in_latitude': position.latitude,
       'check_in_longitude': position.longitude,
       if (!isCheckOut) 'check_in_time': '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}',

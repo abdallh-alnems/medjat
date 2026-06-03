@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../constant/id/app_links.dart';
+import '../constant/routes/app_routes.dart';
 import '../class/crud.dart';
 
 class PushNotificationService {
@@ -27,6 +28,7 @@ class PushNotificationService {
       }
 
       FirebaseMessaging.onMessage.listen(_onForegroundMessage);
+      FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
 
       await _registerToken();
 
@@ -75,6 +77,42 @@ class PushNotificationService {
       snackPosition: SnackPosition.TOP,
       duration: const Duration(seconds: 5),
       margin: const EdgeInsets.all(12),
+      mainButton: _actionButton(message.data),
+    );
+  }
+
+  static void _onMessageOpenedApp(RemoteMessage message) {
+    _handleData(message.data);
+  }
+
+  static TextButton? _actionButton(Map<String, dynamic> data) {
+    final type = data['type'] as String? ?? '';
+    if (type == 'support') {
+      final ticketId = int.tryParse(data['ticket_id']?.toString() ?? '');
+      if (ticketId != null) {
+        return TextButton(
+          onPressed: () => _navigateToSupportChat(ticketId),
+          child: const Text('Open'),
+        );
+      }
+    }
+    return null;
+  }
+
+  static void _handleData(Map<String, dynamic> data) {
+    final type = data['type'] as String? ?? '';
+    if (type == 'support') {
+      final ticketId = int.tryParse(data['ticket_id']?.toString() ?? '');
+      if (ticketId != null) {
+        _navigateToSupportChat(ticketId);
+      }
+    }
+  }
+
+  static void _navigateToSupportChat(int ticketId) {
+    Get.toNamed<void>(
+      AppRoutes.supportChat,
+      arguments: {'ticket_id': ticketId},
     );
   }
 }

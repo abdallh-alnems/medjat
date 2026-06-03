@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/class/status_request.dart';
 import '../../../data/data_source/remote/employee_data/employee_data.dart';
 import '../../../data/data_source/remote/branch_data/branch_data.dart';
@@ -22,6 +23,10 @@ class AddEmployeeController extends GetxController {
   List<EmployeeCategoryModel> categories = [];
 
   String? activationCode;
+  String? activationToken;
+  String? joinLink;
+  String? employeePhone;
+  String? employeeName;
   int? createdEmployeeId;
   int? selectedBranchId;
   int? selectedShiftId;
@@ -126,6 +131,7 @@ class AddEmployeeController extends GetxController {
     status.value = StatusRequest.loading;
     update();
 
+    employeeName = (data['name'] as String?)?.trim();
     final response = await _employeeData.createEmployee(data);
 
     if (response['status'] == StatusRequest.success) {
@@ -139,6 +145,13 @@ class AddEmployeeController extends GetxController {
                 ? (payload['employee']['id'] as num?)?.toInt()
                 : null);
         activationCode = payload['activation_code'] as String?;
+        activationToken = payload['activation_token'] as String?;
+        joinLink = payload['join_link'] as String?;
+        employeePhone = payload['phone'] as String?;
+      }
+      // Fall back to the phone submitted in the form if the API didn't echo it.
+      if (employeePhone == null || employeePhone!.isEmpty) {
+        employeePhone = (data['phone'] as String?)?.trim();
       }
 
       status.value = StatusRequest.success;
@@ -167,5 +180,32 @@ class AddEmployeeController extends GetxController {
       Get.snackbar('error'.tr, message, snackPosition: SnackPosition.BOTTOM);
     }
     update();
+  }
+
+  /// Opens WhatsApp pre-filled with the employee's login phone + activation
+  /// code so the admin can hand off both in one message. Targets the employee's
+  /// own number when available, otherwise opens the WhatsApp picker.
+  Future<void> shareViaWhatsApp() async {
+    final code = activationCode;
+    if (code == null || code.isEmpty) return;
+
+    final message = 'activation_code_share_message'.trParams({
+      'code': code,
+      'employee_name': employeeName ?? '',
+      'phone': employeePhone ?? '',
+    });
+
+    final encoded = Uri.encodeComponent(message);
+    final normalizedPhone = employeePhone?.replaceAll(RegExp(r'[^0-9]'), '');
+
+    final uri = normalizedPhone != null && normalizedPhone.isNotEmpty
+        ? Uri.parse('https://wa.me/$normalizedPhone?text=$encoded')
+        : Uri.parse('https://wa.me/?text=$encoded');
+
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok) {
+      Get.snackbar('error'.tr, 'cannot_open_whatsapp'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    }
   }
 }

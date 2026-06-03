@@ -30,6 +30,7 @@ require_once __DIR__ . '/../core/SmartAlertService.php';
 require_once __DIR__ . '/../core/EmailService.php';
 require_once __DIR__ . '/../core/AuthEmail.php';
 require_once __DIR__ . '/../core/LoginAlertService.php';
+require_once __DIR__ . '/../core/EmployeeActivationAlert.php';
 
 require_once __DIR__ . '/../models/TenantModel.php';
 require_once __DIR__ . '/../models/AdminModel.php';
@@ -64,6 +65,10 @@ require_once __DIR__ . '/../models/DocumentRequestModel.php';
 require_once __DIR__ . '/../models/AssetModel.php';
 require_once __DIR__ . '/../models/EmployeeSuspensionModel.php';
 require_once __DIR__ . '/../models/PayrollLineOverrideModel.php';
+require_once __DIR__ . '/../models/KioskPinModel.php';
+require_once __DIR__ . '/../models/AttendanceSecurityModel.php';
+require_once __DIR__ . '/../core/StationQrTokenService.php';
+require_once __DIR__ . '/../models/SupportModel.php';
 
 setCorsHeaders();
 

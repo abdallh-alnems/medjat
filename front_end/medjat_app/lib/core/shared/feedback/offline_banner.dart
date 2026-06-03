@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../constant/theme/app_colors.dart';
 import '../../constant/theme/app_spacing.dart';
 
@@ -23,7 +24,7 @@ class OfflineBanner extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.s2),
           Text(
-            'بدون إنترنت',
+            'no_internet'.tr,
             style: TextStyle(
               fontFamily: 'IBM Plex Sans Arabic',
               fontSize: 12,

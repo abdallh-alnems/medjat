@@ -308,6 +308,12 @@ class _StationTile extends StatelessWidget {
                   label: Text('show_qr'.tr, style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 12)),
                 ),
               TextButton.icon(
+                onPressed: () => _showGeneratePin(context, ctrl, station.id),
+                icon: const Icon(Icons.pin, size: 18),
+                label: Text('generate_pin'.tr, style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 12)),
+                style: TextButton.styleFrom(foregroundColor: colors.brand),
+              ),
+              TextButton.icon(
                 onPressed: () => _confirmDelete(context, ctrl),
                 icon: const Icon(Icons.delete_outline, size: 18),
                 label: Text('delete'.tr, style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 12)),
@@ -365,6 +371,70 @@ class _StationTile extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _showGeneratePin(BuildContext context, StationsController ctrl, int stationId) async {
+    try {
+      final result = await ctrl.generateKioskPin(stationId);
+      if (result != null) {
+        final pin = result['pin'] as String? ?? '';
+        final expiresAt = result['expires_at'] as String? ?? '';
+        Get.dialog<void>(
+          Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.s5),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('kiosk_pin'.tr, style: AppTextStyles.h2(context)),
+                  const SizedBox(height: AppSpacing.s4),
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.s4),
+                    decoration: BoxDecoration(
+                      color: AppColors.of(context).brand.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: Text(
+                      pin,
+                      style: const TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 8,
+                        fontFamily: 'Geist',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.s3),
+                  Text(
+                    '${'expires'.tr}: $expiresAt',
+                    style: TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 12, color: AppColors.of(context).textTertiary),
+                  ),
+                  const SizedBox(height: AppSpacing.s2),
+                  Text(
+                    'pin_one_time_warning'.tr,
+                    style: TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 11, color: AppColors.of(context).warning),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: AppSpacing.s4),
+                  ElevatedButton(
+                    onPressed: () => Get.back<void>(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.of(context).brand,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                    ),
+                    child: Text('done'.tr, style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic')),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+    } catch (_) {
+      Get.snackbar('error'.tr, 'failed_generate_pin'.tr, snackPosition: SnackPosition.BOTTOM);
+    }
   }
 
   Color _statusColor(String status, AppColorScheme colors) {

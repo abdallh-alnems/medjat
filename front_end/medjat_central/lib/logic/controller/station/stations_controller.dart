@@ -128,4 +128,14 @@ class StationsController extends GetxController {
     }
     return false;
   }
+
+  Future<Map<String, dynamic>?> generateKioskPin(int stationId) async {
+    final response = await _data.generateKioskPin(stationId);
+    if (response['status'] == StatusRequest.success) {
+      dynamic payload = response['data'];
+      if (payload is Map && payload['data'] is Map) payload = payload['data'];
+      return payload as Map<String, dynamic>?;
+    }
+    return null;
+  }
 }

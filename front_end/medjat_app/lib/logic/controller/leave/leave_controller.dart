@@ -54,7 +54,7 @@ class LeaveController extends GetxController {
     applyStatus = responseStatus ?? StatusRequest.failure;
 
     if (responseStatus == StatusRequest.success) {
-      Get.snackbar('تم', 'تم تقديم طلب الإجازة بنجاح',
+      Get.snackbar('success'.tr, 'leave_applied'.tr,
           snackPosition: SnackPosition.BOTTOM);
       await loadBalance();
       update();
@@ -62,11 +62,11 @@ class LeaveController extends GetxController {
     } else {
       final statusCode = response['statusCode'];
       if (statusCode == 409) {
-        Get.snackbar('خطأ', 'يوجد تداخل مع إجازة قائمة',
+        Get.snackbar('error'.tr, 'leave_overlap'.tr,
             snackPosition: SnackPosition.BOTTOM);
       } else {
-        final msg = (response['message'] as String?) ?? 'فشل تقديم الطلب';
-        Get.snackbar('خطأ', msg, snackPosition: SnackPosition.BOTTOM);
+        final msg = (response['message'] as String?) ?? 'leave_apply_failed'.tr;
+        Get.snackbar('error'.tr, msg, snackPosition: SnackPosition.BOTTOM);
       }
       update();
       return false;

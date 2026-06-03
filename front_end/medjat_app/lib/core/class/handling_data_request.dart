@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'status_request.dart';
 
 class HandlingDataRequest extends StatelessWidget {
@@ -26,19 +27,19 @@ class HandlingDataRequest extends StatelessWidget {
       case StatusRequest.offline:
         return _ErrorState(
           icon: Icons.cloud_off_outlined,
-          message: 'لا يوجد اتصال بالإنترنت',
+          message: 'no_internet_connection'.tr,
           onRetry: onRetry,
         );
       case StatusRequest.serverFailure:
         return _ErrorState(
           icon: Icons.error_outline,
-          message: 'حدث خطأ في الخادم',
+          message: 'server_error'.tr,
           onRetry: onRetry,
         );
       case StatusRequest.failure:
         return _ErrorState(
           icon: Icons.error_outline,
-          message: 'حدث خطأ، حاول مرة أخرى',
+          message: 'error_try_again'.tr,
           onRetry: onRetry,
         );
     }
@@ -78,7 +79,7 @@ class _ErrorState extends StatelessWidget {
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 24),
-              OutlinedButton(onPressed: onRetry, child: const Text('إعادة المحاولة')),
+              OutlinedButton(onPressed: onRetry, child: Text('retry'.tr)),
             ],
           ],
         ),

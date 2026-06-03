@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
+import '../../../core/services/locale_service.dart';
 
 class AttendanceSuccessScreen extends StatefulWidget {
   const AttendanceSuccessScreen({super.key});
@@ -68,42 +69,46 @@ class _AttendanceSuccessScreenState extends State<AttendanceSuccessScreen>
     final isLight = Theme.of(context).brightness == Brightness.light;
     final colors = isLight ? AppColors.light : AppColors.dark;
     final now = DateTime.now();
+    final localeSvc = Get.find<LocaleService>();
+    final isAr = localeSvc.isArabic;
 
-    final weekdays = [
-      '',
-      'الإثنين',
-      'الثلاثاء',
-      'الأربعاء',
-      'الخميس',
-      'الجمعة',
-      'السبت',
-      'الأحد'
-    ];
-    final months = [
-      '',
-      'يناير',
-      'فبراير',
-      'مارس',
-      'أبريل',
-      'مايو',
-      'يونيو',
-      'يوليو',
-      'أغسطس',
-      'سبتمبر',
-      'أكتوبر',
-      'نوفمبر',
-      'ديسمبر'
-    ];
+    String dayName;
+    String monthName;
+
+    if (isAr) {
+      final weekdays = [
+        '', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس',
+        'الجمعة', 'السبت', 'الأحد'
+      ];
+      final months = [
+        '', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو',
+        'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر',
+        'نوفمبر', 'ديسمبر'
+      ];
+      dayName = weekdays[now.weekday];
+      monthName = months[now.month];
+    } else {
+      final weekdays = [
+        '', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+        'Friday', 'Saturday', 'Sunday'
+      ];
+      final months = [
+        '', 'January', 'February', 'March', 'April', 'May',
+        'June', 'July', 'August', 'September', 'October',
+        'November', 'December'
+      ];
+      dayName = weekdays[now.weekday];
+      monthName = months[now.month];
+    }
 
     final hour = now.hour;
     final minute = now.minute.toString().padLeft(2, '0');
-    final period = hour >= 12 ? 'م' : 'ص';
+    final period = hour >= 12 ? 'pm'.tr : 'am'.tr;
     final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
     final timeStr = '$displayHour:$minute $period';
-    final dateStr =
-        '${weekdays[now.weekday]} ${now.day} ${months[now.month]} ${now.year}';
+    final dateStr = '$dayName ${now.day} $monthName ${now.year}';
 
-    final title = isCheckOut ? 'تم تسجيل الانصراف' : 'تم تسجيل الحضور';
+    final title = isCheckOut ? 'check_out_registered'.tr : 'check_in_registered'.tr;
 
     return PopScope(
       canPop: false,
@@ -177,7 +182,7 @@ class _AttendanceSuccessScreenState extends State<AttendanceSuccessScreen>
                               size: 18, color: colors.warning),
                           const SizedBox(width: AppSpacing.s2),
                           Text(
-                            'سيتم المزامنة عند الاتصال بالإنترنت',
+                            'will_sync_online'.tr,
                             style: TextStyle(
                               fontFamily: AppTextStyles.arabicFamily,
                               fontSize: 13,
@@ -203,7 +208,7 @@ class _AttendanceSuccessScreenState extends State<AttendanceSuccessScreen>
                           borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                       ),
-                      child: const Text('تمام'),
+                      child: Text('done'.tr),
                     ),
                   ),
                 ],

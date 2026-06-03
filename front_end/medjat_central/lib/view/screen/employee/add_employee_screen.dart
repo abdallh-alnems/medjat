@@ -2,6 +2,7 @@ import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/constant/theme/theme.dart';
@@ -775,11 +776,19 @@ class _ActivationCodeView extends StatelessWidget {
   final AddEmployeeController ctrl;
   const _ActivationCodeView({required this.ctrl});
 
+  void _copy(String? value, String toast) {
+    if (value == null || value.isEmpty) return;
+    Clipboard.setData(ClipboardData(text: value));
+    Get.snackbar('done'.tr, toast, snackPosition: SnackPosition.BOTTOM);
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final joinLink = ctrl.joinLink;
+    final phone = ctrl.employeePhone;
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.s5),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -796,8 +805,75 @@ class _ActivationCodeView extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.s5),
           Text('employee_added_success'.tr, style: AppTextStyles.h2(context)),
-          const SizedBox(height: AppSpacing.s6),
-          Text('activation_code'.tr, style: AppTextStyles.bodySecondary(context)),
+          const SizedBox(height: AppSpacing.s2),
+          Text(
+            'join_methods_hint'.tr,
+            style: AppTextStyles.sm(context),
+            textAlign: TextAlign.center,
+          ),
+
+          // ── QR code ──────────────────────────────────────────
+          if (joinLink != null && joinLink.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.s6),
+            Text('join_qr'.tr, style: AppTextStyles.bodySecondary(context)),
+            const SizedBox(height: AppSpacing.s3),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.s4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: colors.borderHairline),
+              ),
+              child: QrImageView(
+                data: joinLink,
+                version: QrVersions.auto,
+                size: 200,
+                backgroundColor: Colors.white,
+              ),
+            ),
+          ],
+
+          // ── Login phone ──────────────────────────────────────
+          if (phone != null && phone.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.s5),
+            Text('login_phone'.tr,
+                style: AppTextStyles.bodySecondary(context)),
+            const SizedBox(height: AppSpacing.s2),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.s5,
+                vertical: AppSpacing.s3,
+              ),
+              decoration: BoxDecoration(
+                color: colors.sunken,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: colors.borderHairline),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.phone_iphone, size: 18, color: colors.brand),
+                  const SizedBox(width: AppSpacing.s2),
+                  Text(
+                    phone,
+                    textDirection: TextDirection.ltr,
+                    style: TextStyle(
+                      fontFamily: 'Geist',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: colors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // ── Activation code ──────────────────────────────────
+          const SizedBox(height: AppSpacing.s5),
+          Text('activation_code'.tr,
+              style: AppTextStyles.bodySecondary(context)),
           const SizedBox(height: AppSpacing.s3),
           Container(
             padding: const EdgeInsets.symmetric(
@@ -822,22 +898,47 @@ class _ActivationCodeView extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.s3),
           Text(
-            'send_code_hint'.tr,
+            'single_use_hint'.tr,
             style: AppTextStyles.sm(context),
             textAlign: TextAlign.center,
           ),
+
+          // ── Copy actions ─────────────────────────────────────
           const SizedBox(height: AppSpacing.s5),
-          OutlinedButton.icon(
-            onPressed: () {
-              Clipboard.setData(
-                  ClipboardData(text: ctrl.activationCode ?? ''));
-              Get.snackbar('done'.tr, 'code_copied'.tr,
-                  snackPosition: SnackPosition.BOTTOM);
-            },
-            icon: const Icon(Icons.copy, size: 18),
-            label: Text('copy_code'.tr),
+          Wrap(
+            spacing: AppSpacing.s3,
+            runSpacing: AppSpacing.s3,
+            alignment: WrapAlignment.center,
+            children: [
+              OutlinedButton.icon(
+                onPressed: () =>
+                    _copy(ctrl.activationCode, 'code_copied'.tr),
+                icon: const Icon(Icons.copy, size: 18),
+                label: Text('copy_code'.tr),
+              ),
+              if (joinLink != null && joinLink.isNotEmpty)
+                OutlinedButton.icon(
+                  onPressed: () => _copy(joinLink, 'link_copied'.tr),
+                  icon: const Icon(Icons.link, size: 18),
+                  label: Text('copy_link'.tr),
+                ),
+            ],
           ),
-          const SizedBox(height: AppSpacing.s5),
+          const SizedBox(height: AppSpacing.s4),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: ctrl.shareViaWhatsApp,
+              icon: const Icon(Icons.chat_bubble_outline, size: 18),
+              label: Text('share_via_whatsapp'.tr),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF25D366),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s3),
           PrimaryButton(
             text: 'done'.tr,
             onPressed: () => Get.back(result: true),

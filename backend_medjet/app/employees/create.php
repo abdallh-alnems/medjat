@@ -89,12 +89,15 @@ if (!empty($categoryIds)) {
     EmployeeCategoryModel::assignToEmployee($employeeId, $tenantId, $categoryIds);
 }
 
-$activationCode = ActivationCodeModel::generate($tenantId, $employeeId);
+$activation = ActivationCodeModel::generate($tenantId, $employeeId);
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'employee.create', 'employee', $employeeId);
 
 Response::success([
     'employee_id' => $employeeId,
-    'activation_code' => $activationCode,
+    'activation_code' => $activation['code'],
+    'activation_token' => $activation['token'],
+    'join_link' => ActivationCodeModel::buildJoinLink($activation['token']),
+    'phone' => $phone,
     'activation_expires_in_hours' => 24,
 ], 201);

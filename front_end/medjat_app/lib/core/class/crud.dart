@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../services/token_storage_service.dart';
@@ -223,9 +224,19 @@ class CRUD {
     if (statusCode >= 200 && statusCode < 300) {
       try {
         final body = jsonDecode(response.body);
+        // The API wraps success payloads in an envelope:
+        // {"status":"success","data":{...}}. Every consumer expects
+        // response['data'] to be the inner payload, so unwrap it here. Fall
+        // back to the raw body for any endpoint that doesn't use the envelope.
+        dynamic payload = body;
+        if (body is Map<String, dynamic> &&
+            body['status'] == 'success' &&
+            body.containsKey('data')) {
+          payload = body['data'];
+        }
         return {
           'status': StatusRequest.success,
-          'data': body,
+          'data': payload,
         };
       } catch (_) {
         return {
@@ -242,7 +253,7 @@ class CRUD {
       return {
         'status': StatusRequest.failure,
         'statusCode': 401,
-        'message': 'جلستك انتهت، يرجى تسجيل الدخول مجدداً',
+        'message': 'session_expired_server'.tr,
       };
     }
 
@@ -250,12 +261,12 @@ class CRUD {
       return {
         'status': StatusRequest.failure,
         'statusCode': 403,
-        'message': 'ليس لديك صلاحية',
+        'message': 'no_permission'.tr,
       };
     }
 
     if (statusCode == 404) {
-      String message = 'لم يتم العثور على البيانات';
+      String message = 'data_not_found'.tr;
       try {
         final body = jsonDecode(response.body);
         if (body is Map &&
@@ -277,19 +288,19 @@ class CRUD {
         return {
           'status': StatusRequest.failure,
           'statusCode': 422,
-          'message': body['message'] ?? 'البيانات غير صحيحة',
+          'message': body['message'] ?? 'invalid_data'.tr,
           'errors': body['errors'],
         };
       } catch (_) {
         return {
           'status': StatusRequest.failure,
           'statusCode': 422,
-          'message': 'البيانات غير صحيحة',
+          'message': 'invalid_data'.tr,
         };
       }
     }
 
-    String message = 'حدث خطأ، حاول مرة أخرى';
+    String message = 'error_try_again'.tr;
     try {
       final body = jsonDecode(response.body);
       if (body is Map) {

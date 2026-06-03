@@ -16,6 +16,8 @@ import '../../../logic/controller/auth/auth_controller.dart';
 import '../../../logic/bindings/home_binding.dart';
 import '../../../logic/bindings/attendance_binding.dart';
 import '../../../view/screen/auth/login_screen.dart';
+import '../../../view/screen/auth/join_scan_screen.dart';
+import '../../services/deep_link_service.dart';
 import '../../../view/screen/splash/splash_screen.dart';
 import '../../../view/screen/home/home_screen.dart';
 import '../../../view/screen/attendance/scan_qr_screen.dart';
@@ -28,6 +30,10 @@ import '../../../view/screen/notifications/notifications_screen.dart';
 import '../../../view/screen/settings/settings_screen.dart';
 import '../../../view/screen/kiosk/kiosk_pair_screen.dart';
 import '../../../view/screen/kiosk/kiosk_home_screen.dart';
+import '../../../view/screen/kiosk/kiosk_face_checkin_screen.dart';
+import '../../../view/screen/kiosk/kiosk_qr_checkin_screen.dart';
+import '../../../view/screen/kiosk/kiosk_settings_screen.dart';
+import '../../../view/screen/station/my_station_qr_screen.dart';
 import '../../../logic/bindings/station_binding.dart';
 import '../../../core/shared/layout/tab_shell.dart';
 import '../../services/connectivity_service.dart';
@@ -45,6 +51,7 @@ class AppBindings extends Bindings {
     Get.put<ConnectivityService>(ConnectivityService(), permanent: true);
     Get.put<LocationService>(LocationService(), permanent: true);
     Get.put<AuthController>(AuthController(), permanent: true);
+    Get.putAsync<DeepLinkService>(() => DeepLinkService().init());
     Get.put<UpdateService>(UpdateService(), permanent: true);
     Get.put<RateMyAppController>(RateMyAppController(), permanent: true);
   }
@@ -65,7 +72,7 @@ List<GetPage<dynamic>> getPages = [
   ),
   GetPage(
     name: AppRoutes.forceUpdate,
-    page: () => const Scaffold(body: Center(child: Text('تحديث مطلوب'))),
+    page: () => Scaffold(body: Center(child: Text('update_required'.tr))),
   ),
   GetPage(
     name: AppRoutes.home,
@@ -89,6 +96,12 @@ List<GetPage<dynamic>> getPages = [
     name: AppRoutes.scanQr,
     page: () => const ScanQrScreen(),
     binding: AttendanceBinding(),
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.joinScan,
+    page: () => const JoinScanScreen(),
     transition: Transition.fadeIn,
     transitionDuration: AppMotion.transition,
   ),
@@ -130,6 +143,26 @@ List<GetPage<dynamic>> getPages = [
   GetPage(
     name: AppRoutes.kioskHome,
     page: () => const KioskHomeScreen(),
+    binding: StationBinding(),
+  ),
+  GetPage(
+    name: AppRoutes.kioskFaceCheckIn,
+    page: () => const KioskFaceCheckInScreen(),
+    binding: StationBinding(),
+  ),
+  GetPage(
+    name: AppRoutes.kioskQrCheckIn,
+    page: () => const KioskQrCheckInScreen(),
+    binding: StationBinding(),
+  ),
+  GetPage(
+    name: AppRoutes.kioskSettings,
+    page: () => const KioskSettingsScreen(),
+    binding: StationBinding(),
+  ),
+  GetPage(
+    name: AppRoutes.myStationQr,
+    page: () => const MyStationQrScreen(),
     binding: StationBinding(),
   ),
 ];

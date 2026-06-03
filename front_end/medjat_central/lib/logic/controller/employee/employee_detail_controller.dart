@@ -162,6 +162,7 @@ class EmployeeDetailController extends GetxController {
   bool get hasLeaveBalance => leaveTotal > 0;
 
   String? activationCode;
+  String? activationJoinLink;
   DateTime? activationExpiresAt;
   bool deviceBound = false;
   String? deviceModel;
@@ -719,8 +720,6 @@ class EmployeeDetailController extends GetxController {
           return true;
         }
       }
-      Get.snackbar('done'.tr, 'code_regenerated'.tr,
-          snackPosition: SnackPosition.BOTTOM);
       activationStatus = StatusRequest.success;
       update();
       return true;
@@ -737,6 +736,9 @@ class EmployeeDetailController extends GetxController {
   void _applyActivationPayload(Map<String, dynamic> payload) {
     if (payload.containsKey('activation_code')) {
       activationCode = payload['activation_code'] as String?;
+    }
+    if (payload.containsKey('join_link')) {
+      activationJoinLink = payload['join_link'] as String?;
     }
     if (payload.containsKey('expires_at')) {
       final raw = payload['expires_at'];
@@ -766,6 +768,14 @@ class EmployeeDetailController extends GetxController {
         snackPosition: SnackPosition.BOTTOM);
   }
 
+  Future<void> copyJoinLinkToClipboard() async {
+    final link = activationJoinLink;
+    if (link == null || link.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: link));
+    Get.snackbar('done'.tr, 'link_copied'.tr,
+        snackPosition: SnackPosition.BOTTOM);
+  }
+
   Future<void> shareCodeViaWhatsApp() async {
     final code = activationCode;
     final phone = employee?.phone;
@@ -774,6 +784,7 @@ class EmployeeDetailController extends GetxController {
     final message = 'activation_code_share_message'.trParams({
       'code': code,
       'employee_name': employee?.name ?? '',
+      'phone': phone ?? '',
     });
 
     final encoded = Uri.encodeComponent(message);

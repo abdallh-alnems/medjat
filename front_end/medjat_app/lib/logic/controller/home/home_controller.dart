@@ -8,6 +8,7 @@ import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/services/connectivity_service.dart';
 import '../../../core/services/location_service.dart';
+import '../../../core/services/push_notification_service.dart';
 import '../../../data/data_source/remote/home_data/home_data.dart';
 import '../../../data/model/today_status_model.dart';
 import '../attendance/attendance_controller.dart';
@@ -29,6 +30,20 @@ class HomeController extends GetxController {
     loadTodayStatus();
     _listenToConnectivity();
     _tryInitialSync();
+  }
+
+  @override
+  void onReady() {
+    super.onReady();
+    _maybeRequestNotificationPermission();
+  }
+
+  /// Ask for push-notification permission only after the home screen has
+  /// rendered and settled — not the moment the user logs in. onReady fires
+  /// after the first frame; a short delay lets the initial content land first.
+  Future<void> _maybeRequestNotificationPermission() async {
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    await PushNotificationService.enableForUser();
   }
 
   Future<void> _tryInitialSync() async {
@@ -139,21 +154,21 @@ class HomeController extends GetxController {
   bool get isDayDone => attendanceStatus == AttendanceStatus.checkedOut;
 
   String get attendanceButtonText {
-    if (isOffline && canCheckIn) return 'تسجيل الحضور (offline)';
-    if (isOffline && canCheckOut) return 'تسجيل الانصراف (offline)';
-    if (canCheckIn) return 'تسجيل الحضور';
-    if (canCheckOut) return 'تسجيل الانصراف';
-    return 'تم اليوم';
+    if (isOffline && canCheckIn) return 'check_in_offline'.tr;
+    if (isOffline && canCheckOut) return 'check_out_offline'.tr;
+    if (canCheckIn) return 'check_in'.tr;
+    if (canCheckOut) return 'check_out'.tr;
+    return 'day_done'.tr;
   }
 
   String get statusMessage {
     switch (attendanceStatus) {
       case AttendanceStatus.notCheckedIn:
-        return 'لم يتم تسجيل الحضور';
+        return 'not_checked_in'.tr;
       case AttendanceStatus.checkedIn:
-        return 'مسجل الحضور';
+        return 'checked_in'.tr;
       case AttendanceStatus.checkedOut:
-        return 'تم اليوم';
+        return 'day_done'.tr;
     }
   }
 
@@ -164,11 +179,11 @@ class HomeController extends GetxController {
     if (cameraStatus.isDenied) {
       final result = await Permission.camera.request();
       if (result.isDenied || result.isPermanentlyDenied) {
-        _showPermissionDialog('الكاميرا مطلوبة لمسح QR Code');
+        _showPermissionDialog('camera_required'.tr);
         return;
       }
     } else if (cameraStatus.isPermanentlyDenied) {
-      _showPermissionDialog('الكاميرا مطلوبة لمسح QR Code');
+      _showPermissionDialog('camera_required'.tr);
       return;
     }
 
@@ -176,7 +191,7 @@ class HomeController extends GetxController {
     if (!locationGranted) {
       final requested = await LocationService.requestPermission();
       if (!requested) {
-        _showPermissionDialog('الموقع مطلوب لتأكيد حضورك');
+        _showPermissionDialog('location_required'.tr);
         return;
       }
     }
@@ -187,19 +202,19 @@ class HomeController extends GetxController {
   void _showPermissionDialog(String message) {
     Get.dialog<void>(
       AlertDialog(
-        title: const Text('صلاحية مطلوبة'),
+        title: Text('permission_required'.tr),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Get.back<void>(),
-            child: const Text('إلغاء'),
+            child: Text('cancel'.tr),
           ),
           TextButton(
             onPressed: () {
               Get.back<void>();
               openAppSettings();
             },
-            child: const Text('فتح الإعدادات'),
+            child: Text('open_settings'.tr),
           ),
         ],
       ),

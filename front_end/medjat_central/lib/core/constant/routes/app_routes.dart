@@ -50,4 +50,7 @@ abstract class AppRoutes {
   static const String letterTemplateEdit = '/letters/template/edit';
   static const String statusEmployees = '/status-employees';
   static const String expiringCompliance = '/compliance/expiring';
+  static const String support = '/support';
+  static const String supportChat = '/support/chat';
+  static const String supportNew = '/support/new';
 }

@@ -55,10 +55,10 @@ class PayrollController extends GetxController {
         await file.writeAsBytes(response['bytes'] as List<int>);
         await OpenFilex.open(file.path);
       } catch (e) {
-        Get.snackbar('خطأ', 'فشل حفظ الملف');
+        Get.snackbar('error'.tr, 'failed_save_file'.tr);
       }
     } else {
-      Get.snackbar('خطأ', 'فشل تحميل الكشف');
+      Get.snackbar('error'.tr, 'failed_download_slip'.tr);
     }
   }
 }

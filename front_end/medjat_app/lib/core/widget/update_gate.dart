@@ -173,7 +173,7 @@ class _ForceUpdateScreen extends StatelessWidget {
                   child: FilledButton.icon(
                     onPressed: onRetry,
                     icon: const Icon(Icons.shop),
-                    label: const Text(
+                    label: Text(
                       UpdateStrings.updateNow,
                       style: TextStyle(
                         fontFamily: 'IBM Plex Sans Arabic',
@@ -244,7 +244,7 @@ class OptionalUpdateDialog extends StatelessWidget {
             await service.startFlexibleUpdate();
           },
           style: FilledButton.styleFrom(backgroundColor: colors.brand),
-          child: const Text(UpdateStrings.updateNow),
+          child: Text(UpdateStrings.updateNow),
         ),
       ],
     );

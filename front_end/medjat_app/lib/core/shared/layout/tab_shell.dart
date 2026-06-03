@@ -29,26 +29,26 @@ class TabShell extends StatelessWidget {
             child: BottomNavigationBar(
               currentIndex: controller.currentIndex.value,
               onTap: controller.changeTab,
-              items: const [
+              items: [
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.fingerprint_outlined),
-                  activeIcon: Icon(Icons.fingerprint),
-                  label: 'الحضور',
+                  icon: const Icon(Icons.fingerprint_outlined),
+                  activeIcon: const Icon(Icons.fingerprint),
+                  label: 'tab_attendance'.tr,
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.person_outline),
-                  activeIcon: Icon(Icons.person),
-                  label: 'بياناتي',
+                  icon: const Icon(Icons.person_outline),
+                  activeIcon: const Icon(Icons.person),
+                  label: 'tab_profile'.tr,
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.payments_outlined),
-                  activeIcon: Icon(Icons.payments),
-                  label: 'راتبي',
+                  icon: const Icon(Icons.payments_outlined),
+                  activeIcon: const Icon(Icons.payments),
+                  label: 'tab_payroll'.tr,
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.settings_outlined),
-                  activeIcon: Icon(Icons.settings),
-                  label: 'حسابي',
+                  icon: const Icon(Icons.settings_outlined),
+                  activeIcon: const Icon(Icons.settings),
+                  label: 'tab_account'.tr,
                 ),
               ],
             ),

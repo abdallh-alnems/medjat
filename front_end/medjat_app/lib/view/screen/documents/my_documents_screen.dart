@@ -13,7 +13,7 @@ class MyDocumentsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     Get.lazyPut(() => ProfileController());
     return Scaffold(
-      appBar: AppBar(title: const Text('أوراقي')),
+      appBar: AppBar(title: Text('my_documents'.tr)),
       body: GetBuilder<ProfileController>(
         builder: (controller) {
           return HandlingDataRequest(
@@ -34,7 +34,7 @@ class MyDocumentsScreen extends StatelessWidget {
           children: [
             Icon(Icons.folder_open, size: 48, color: AppColors.textTertiary(context)),
             const SizedBox(height: 16),
-            Text('لا توجد مستندات', style: AppTextStyles.bodySecondary(context)),
+            Text('no_documents'.tr, style: AppTextStyles.bodySecondary(context)),
           ],
         ),
       );
@@ -43,7 +43,7 @@ class MyDocumentsScreen extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.all(16),
       itemCount: controller.documents.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final doc = controller.documents[index];
         return _documentCard(context, doc);
@@ -63,15 +63,15 @@ class MyDocumentsScreen extends StatelessWidget {
 
     if (isVerified) {
       statusColor = Colors.green;
-      statusText = 'معتمد';
+      statusText = 'verified'.tr;
       statusIcon = Icons.verified;
     } else if (isExpired) {
       statusColor = Colors.red;
-      statusText = 'منتهي';
+      statusText = 'expired'.tr;
       statusIcon = Icons.error;
     } else if (isPending) {
       statusColor = Colors.orange;
-      statusText = 'مطلوب';
+      statusText = 'required_doc'.tr;
       statusIcon = Icons.pending;
     } else {
       statusColor = Colors.grey;
@@ -94,12 +94,12 @@ class MyDocumentsScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  doc['document_type_name']?.toString() ?? doc['name']?.toString() ?? 'مستند',
+                  doc['document_type_name']?.toString() ?? doc['name']?.toString() ?? 'document'.tr,
                   style: AppTextStyles.body(context),
                 ),
                 if (doc['expiry_date'] != null) ...[
                   const SizedBox(height: 2),
-                  Text('ينتهي: ${doc['expiry_date']}', style: AppTextStyles.xs(context)),
+                  Text('expires_at'.trParams({'date': '${doc['expiry_date']}'}), style: AppTextStyles.xs(context)),
                 ],
               ],
             ),

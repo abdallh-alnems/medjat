@@ -69,6 +69,65 @@ class AuthData {
     return response;
   }
 
+  /// Activate via a join link / QR token. No phone needed — the token is the
+  /// secret. Persists the auth token and cached user exactly like [login].
+  Future<Map<String, dynamic>> activateWithToken({
+    required String token,
+  }) async {
+    final deviceId = await TokenStorageService.getOrCreateDeviceId();
+    String deviceModel = '';
+    String platform = 'android';
+    try {
+      if (Platform.isIOS) {
+        platform = 'ios';
+      }
+      deviceModel =
+          '${Platform.operatingSystem} ${Platform.operatingSystemVersion}';
+    } catch (_) {}
+
+    String appVersion = '';
+    try {
+      final info = await PackageInfo.fromPlatform();
+      appVersion = '${info.version}+${info.buildNumber}';
+    } catch (_) {}
+
+    final response = await _crud.postData(
+      AppLinks.employeeActivateToken,
+      {
+        'token': token,
+        'device_id': deviceId,
+        'device_model': deviceModel,
+        'platform': platform,
+        'app_version': appVersion,
+      },
+      auth: false,
+    );
+
+    if (response['status'] == StatusRequest.success) {
+      final data = response['data'] as Map<String, dynamic>?;
+      if (data?['token'] != null) {
+        await TokenStorageService.saveToken(data!['token'] as String);
+      }
+      if (data?['employee'] != null) {
+        final employee = data!['employee'] as Map<String, dynamic>;
+        final Map<String, dynamic> userData = {
+          'id': employee['id'],
+          'name': employee['name'],
+          'tenant_id': employee['tenant_id'],
+          'tenant_name': employee['tenant_name'],
+          'branch_id': employee['branch_id'],
+          'branch_name': employee['branch_name'],
+          'job_title': employee['job_title'],
+          'phone': employee['phone'],
+          'profile_image': employee['profile_image'],
+        };
+        await TokenStorageService.saveUserData(jsonEncode(userData));
+      }
+    }
+
+    return response;
+  }
+
   Future<Map<String, dynamic>> logout() async {
     final response = await _crud.postData(AppLinks.employeeLogout, {});
     await TokenStorageService.clearSession();

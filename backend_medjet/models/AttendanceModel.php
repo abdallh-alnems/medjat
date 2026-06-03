@@ -18,7 +18,7 @@ final class AttendanceModel {
         return $employee;
     }
 
-    public static function checkIn(int $employeeId, int $branchId, int $tenantId, string $method, ?string $checkInTime = null): int {
+    public static function checkIn(int $employeeId, int $branchId, int $tenantId, string $method, ?string $checkInTime = null, ?float $lat = null, ?float $lng = null, bool $isVpn = false): int {
         $today = date('Y-m-d');
         $time = $checkInTime ?? date('H:i:s');
 
@@ -37,9 +37,9 @@ final class AttendanceModel {
         $lateMinutes = max(0, (strtotime($time) - strtotime($expectedStart)) / 60);
 
         Database::execute(
-            "INSERT INTO attendance (tenant_id, branch_id, employee_id, date, check_in_time, check_in_method, late_minutes, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'present')",
-            [$tenantId, $branchId, $employeeId, $today, $time, $method, (int) $lateMinutes]
+            "INSERT INTO attendance (tenant_id, branch_id, employee_id, date, check_in_time, check_in_method, late_minutes, status, check_in_latitude, check_in_longitude, is_vpn)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'present', ?, ?, ?)",
+            [$tenantId, $branchId, $employeeId, $today, $time, $method, (int) $lateMinutes, $lat, $lng, $isVpn ? 1 : 0]
         );
 
         return (int) Database::lastInsertId();
@@ -714,6 +714,17 @@ final class AttendanceModel {
 
                 $lat = (float) ($rec['check_in_latitude'] ?? 0);
                 $lng = (float) ($rec['check_in_longitude'] ?? 0);
+
+                $recIsMock = !empty($rec['is_mock_location']) && (int) $rec['is_mock_location'] === 1;
+                $recIsVpn = !empty($rec['is_vpn']) && (int) $rec['is_vpn'] === 1;
+
+                if ($recIsMock) {
+                    AttendanceSecurityModel::log($tenantId, $employeeId, $branchId, 'mock_location', 'blocked', $lat ?: null, $lng ?: null);
+                    $results[] = ['client_record_id' => $clientRecordId, 'status' => 'rejected', 'reason' => 'MOCK_LOCATION'];
+                    $failed++;
+                    continue;
+                }
+
                 $gpsResult = GpsService::validateCheckIn($lat, $lng, $branchId, $tenantId);
                 if (!$gpsResult['valid']) {
                     $results[] = ['client_record_id' => $clientRecordId, 'status' => 'rejected', 'reason' => 'GPS_OUT_OF_RANGE'];
@@ -760,8 +771,8 @@ final class AttendanceModel {
 
                 Database::execute(
                     "INSERT INTO attendance (tenant_id, branch_id, employee_id, date, check_in_time, check_out_time,
-                        check_in_latitude, check_in_longitude, check_in_method, status, is_offline, synced_at, late_minutes, worked_minutes, overtime_minutes)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'offline', 'present', 1, NOW(), ?, ?, ?)
+                        check_in_latitude, check_in_longitude, check_in_method, status, is_offline, synced_at, late_minutes, worked_minutes, overtime_minutes, is_vpn)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'offline', 'present', 1, NOW(), ?, ?, ?, ?)
                      ON DUPLICATE KEY UPDATE
                         check_out_time = COALESCE(VALUES(check_out_time), check_out_time),
                         check_out_latitude = COALESCE(VALUES(check_in_latitude), check_out_latitude),
@@ -782,6 +793,7 @@ final class AttendanceModel {
                         (int) $lateMinutes,
                         (int) $workedMinutes,
                         (int) $overtimeMinutes,
+                        $recIsVpn ? 1 : 0,
                     ]
                 );
 

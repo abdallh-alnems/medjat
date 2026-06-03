@@ -45,4 +45,9 @@ class StationData {
       Map<String, dynamic> data) async {
     return await _crud.postData(AppLinks.stationBranchSettings, data);
   }
+
+  Future<Map<String, dynamic>> generateKioskPin(int stationId) async {
+    return await _crud.postData(
+        AppLinks.stationGenerateKioskPin, {'station_id': stationId});
+  }
 }

@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:get/get.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
-import '../../../core/services/push_notification_service.dart';
 import '../../../core/services/token_storage_service.dart';
 import '../../../data/data_source/remote/auth_data/auth_data.dart';
 import '../../../data/model/user_model.dart';
@@ -50,29 +49,75 @@ class AuthController extends GetxController {
           user = cached;
           isLoggedInObs.value = true;
           status.value = StatusRequest.success;
-          PushNotificationService.registerTokenNow();
+          // Notification permission is requested later, once the home screen
+          // has settled (see HomeController), not the instant we navigate.
           Get.offAllNamed<void>(AppRoutes.home);
+        } else {
+          // Login succeeded server-side but the cached user couldn't be read
+          // back (storage/parse failure). Never leave the button spinning.
+          status.value = StatusRequest.failure;
+          Get.snackbar('error'.tr, 'error_try_again'.tr,
+              snackPosition: SnackPosition.BOTTOM);
         }
       } else {
         status.value = StatusRequest.failure;
         final statusCode = response['statusCode'];
         String message =
-            (response['message'] as String?) ?? 'حدث خطأ، حاول مرة أخرى';
+            (response['message'] as String?) ?? 'error_try_again'.tr;
 
         if (statusCode == 403) {
-          message = 'رقم الهاتف لا يطابق كود التفعيل';
+          message = 'phone_code_mismatch'.tr;
         } else if (statusCode == 404) {
-          message = 'كود التفعيل غير صالح أو منتهي';
+          message = 'activation_code_invalid'.tr;
         }
 
-        Get.snackbar('خطأ', message, snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar('error'.tr, message, snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
       status.value = StatusRequest.failure;
-      Get.snackbar('خطأ', 'حدث خطأ، حاول مرة أخرى',
+      Get.snackbar('error'.tr, 'error_try_again'.tr,
           snackPosition: SnackPosition.BOTTOM);
     }
     update();
+  }
+
+  /// Activate from a join link / QR token (no phone). Returns true on success.
+  Future<bool> activateWithToken(String token) async {
+    status.value = StatusRequest.loading;
+    update();
+
+    try {
+      final response = await _authData.activateWithToken(token: token);
+
+      if (response['status'] == StatusRequest.success) {
+        final cached = await _authData.getCachedUser();
+        if (cached != null) {
+          user = cached;
+          isLoggedInObs.value = true;
+          status.value = StatusRequest.success;
+          // Notification permission is requested later, once the home screen
+          // has settled (see HomeController), not the instant we navigate.
+          Get.offAllNamed<void>(AppRoutes.home);
+          update();
+          return true;
+        }
+      }
+
+      status.value = StatusRequest.failure;
+      final statusCode = response['statusCode'];
+      String message =
+          (response['message'] as String?) ?? 'error_try_again'.tr;
+      if (statusCode == 404) {
+        message = 'join_link_invalid'.tr;
+      }
+      Get.snackbar('error'.tr, message, snackPosition: SnackPosition.BOTTOM);
+    } catch (e) {
+      status.value = StatusRequest.failure;
+      Get.snackbar('error'.tr, 'error_try_again'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    }
+    update();
+    return false;
   }
 
   bool isLoggedIn() {

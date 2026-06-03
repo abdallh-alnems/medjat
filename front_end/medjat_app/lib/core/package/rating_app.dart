@@ -28,12 +28,11 @@ class RateMyAppController extends GetxController {
             if (currentContext != null && Navigator.canPop(currentContext)) {
               rateMyApp.showRateDialog(
                 currentContext,
-                title: 'قيّمنا',
-                message:
-                    'أهلاً! نرغب في سماع رأيك حول تطبيقنا\n\nهل يمكنك قضاء بعض الوقت لتقييم التطبيق؟\n\nتعليقاتك مهمة جدًا بالنسبة لنا لتحسين تجربتك',
-                rateButton: 'تقييم',
-                noButton: 'لا شكرًا',
-                laterButton: 'لاحقاً',
+                title: 'rate_us'.tr,
+                message: 'rate_us_message'.tr,
+                rateButton: 'rate'.tr,
+                noButton: 'no_thanks'.tr,
+                laterButton: 'later'.tr,
                 ignoreNativeDialog: true,
                 onDismissed: () =>
                     rateMyApp.callEvent(RateMyAppEventType.laterButtonPressed),

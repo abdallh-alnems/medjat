@@ -42,11 +42,24 @@ if (($employee['status'] ?? '') === 'terminated') {
     Response::fail('الحساب موقوف', 403);
 }
 
-$normalizedInput = preg_replace('/[\s\-\+]/', '', $phone);
-$normalizedDb = preg_replace('/[\s\-\+]/', '', $employee['phone'] ?? '');
-if ($normalizedInput !== $normalizedDb) {
+// Phone is stored in E.164 (+201023809407) but a user might type it locally
+// (01023809407). Compare on digits only and tolerate the local-zero ↔ country-
+// code difference so a correct code is never rejected over formatting. The code
+// is already the secret here — this check is just a sanity guard.
+$inDigits = preg_replace('/\D/', '', $phone);
+$dbDigits = preg_replace('/\D/', '', $employee['phone'] ?? '');
+$inCore = ltrim($inDigits, '0');
+$dbCore = ltrim($dbDigits, '0');
+$phoneMatches = $inDigits === $dbDigits
+    || ($inCore !== '' && $dbCore !== ''
+        && (str_ends_with($dbCore, $inCore) || str_ends_with($inCore, $dbCore)));
+if (!$phoneMatches) {
     Response::fail('رقم الهاتف لا يطابق كود التفعيل', 403);
 }
+
+// Whether the employee had already linked the app before this request. Used to
+// alert managers only on the first activation, not on every subsequent login.
+$wasLinked = ((int) ($employee['has_linked_account'] ?? 0)) === 1;
 
 $pdo = db();
 try {
@@ -98,6 +111,10 @@ try {
     error_log('Employee login failed: ' . $e->getMessage());
     Response::fail('تعذّر تسجيل الدخول', 500);
 }
+
+// Notify the tenant's managers on every login (best-effort). The message
+// distinguishes the first activation from a normal sign-in.
+EmployeeActivationAlert::notify($employee, !$wasLinked);
 
 Response::success([
     'success' => true,

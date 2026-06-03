@@ -11,6 +11,7 @@ $branchId = (int) ($input['branch_id'] ?? 0);
 $latitude = (float) ($input['latitude'] ?? 0);
 $longitude = (float) ($input['longitude'] ?? 0);
 $qrCode = $input['qr_code'] ?? null;
+$isVpn = isset($input['is_vpn']) && (int) $input['is_vpn'] === 1;
 
 Validator::required($branchId, 'branch_id');
 
@@ -30,7 +31,15 @@ if (!$gpsResult['valid']) {
     Response::fail($gpsResult['message'], 400, 'GPS_OUT_OF_RANGE');
 }
 
-AttendanceModel::checkIn($employee['id'], $branchId, $tenantId, 'qr_gps');
+AttendanceModel::checkIn($employee['id'], $branchId, $tenantId, 'qr_gps', null, $latitude ?: null, $longitude ?: null, $isVpn);
+
+if ($isVpn) {
+    try {
+        AttendanceSecurityModel::log($tenantId, (int) $employee['id'], $branchId, 'vpn', 'flagged', $latitude ?: null, $longitude ?: null);
+    } catch (Exception $e) {
+        error_log('VPN security log failed: ' . $e->getMessage());
+    }
+}
 
 Response::success([
     'message' => 'Check-in successful',

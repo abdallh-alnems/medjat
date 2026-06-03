@@ -14,6 +14,5 @@ $input = json_decode(file_get_contents('php://input'), true) ?: [];
 $pin = $input['pin'] ?? null;
 Validator::required($pin, 'pin');
 
-$valid = AttendanceStationModel::verifyAdminPin($station['branch_id'], $pin);
-
-Response::success(['valid' => $valid]);
+$otpValid = KioskPinModel::verify((int) $station['id'], $pin);
+Response::success(['valid' => $otpValid]);

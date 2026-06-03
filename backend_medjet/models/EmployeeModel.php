@@ -52,9 +52,10 @@ final class EmployeeModel {
     public static function findById(int $id, int $tenantId): ?array {
         return Database::fetchOne(
             "SELECT e.*, s.start_time AS shift_start, s.end_time AS shift_end,
-                    s.name AS shift_name
+                    s.name AS shift_name, b.name AS branch_name
              FROM employees e
              LEFT JOIN shifts s ON s.id = e.shift_id
+             LEFT JOIN branches b ON b.id = e.branch_id
              WHERE e.id = ? AND e.tenant_id = ? LIMIT 1",
             [$id, $tenantId]
         );

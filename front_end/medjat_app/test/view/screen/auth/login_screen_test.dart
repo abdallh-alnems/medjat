@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 
 import 'package:medjat_app/core/class/status_request.dart';
+import 'package:medjat_app/core/constant/locale/translations.dart';
 import 'package:medjat_app/core/constant/theme/app_theme.dart';
+import 'package:medjat_app/core/services/locale_service.dart';
 import 'package:medjat_app/data/model/user_model.dart';
 import 'package:medjat_app/logic/controller/auth/auth_controller.dart';
 import 'package:medjat_app/view/screen/auth/login_screen.dart';
@@ -24,6 +28,9 @@ class FakeAuthController extends GetxController implements AuthController {
   Future<void> login({required String phone, required String code}) async {}
 
   @override
+  Future<bool> activateWithToken(String token) async => false;
+
+  @override
   bool isLoggedIn() => isLoggedInObs.value && user != null;
 
   @override
@@ -39,13 +46,30 @@ class FakeAuthController extends GetxController implements AuthController {
 Widget _createTestApp() {
   return GetMaterialApp(
     theme: AppTheme.light(),
+    translations: AppTranslations(),
+    locale: const Locale('ar'),
+    fallbackLocale: const Locale('ar'),
     home: const LoginScreen(),
   );
 }
 
 void main() {
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    // GetStorage.init() needs path_provider, which has no implementation in
+    // widget tests; stub the channel so LocaleService's storage works.
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+      const MethodChannel('plugins.flutter.io/path_provider'),
+      (call) async => '.',
+    );
+    await GetStorage.init();
+  });
+
   setUp(() {
     setupGetTestBindings();
+    Get.put<GetStorage>(GetStorage());
+    Get.put<LocaleService>(LocaleService());
     Get.put<AuthController>(FakeAuthController());
   });
 
@@ -81,13 +105,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('وضع الكيوسك'), findsOneWidget);
-    });
-
-    testWidgets('shows fingerprint icon', (WidgetTester tester) async {
-      await tester.pumpWidget(_createTestApp());
-      await tester.pumpAndSettle();
-
-      expect(find.byIcon(Icons.fingerprint), findsOneWidget);
     });
 
     testWidgets('no email or password or Google controls',

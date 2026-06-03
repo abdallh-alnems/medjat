@@ -7,6 +7,15 @@ RewriteEngine On
 RewriteCond %{HTTP:Authorization} ^(.+)$
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
+# Employee join deep link → web fallback landing page (when app not installed)
+RewriteRule ^join/?$ /join.php [QSA,L]
+
+# App Links / Universal Links association files. Served through PHP so the
+# global "*.json deny" below does not block assetlinks.json, and so the
+# extension-less apple-app-site-association gets an application/json type.
+RewriteRule ^\.well-known/assetlinks\.json$ /well_known.php?f=assetlinks [L]
+RewriteRule ^\.well-known/apple-app-site-association$ /well_known.php?f=aasa [L]
+
 # Security Headers
 <IfModule mod_headers.c>
     Header always append X-Frame-Options SAMEORIGIN

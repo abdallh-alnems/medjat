@@ -15,6 +15,7 @@ final class PermissionMiddleware {
         'manage_assets',
         'add_managers',
         'manage_company_settings',
+        'manage_support',
     ];
 
     private const ROLE_DEFAULTS = [

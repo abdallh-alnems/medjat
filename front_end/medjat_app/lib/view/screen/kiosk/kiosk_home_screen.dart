@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../../core/constant/routes/app_routes.dart';
 import '../../../../core/constant/theme/app_colors.dart';
 import '../../../../core/constant/theme/app_text_styles.dart';
-import '../../../../data/model/station_model.dart';
 import '../../../../logic/controller/station/station_controller.dart';
 
 class KioskHomeScreen extends StatelessWidget {
@@ -24,7 +24,7 @@ class KioskHomeScreen extends StatelessWidget {
                   if (controller.isLocked.value) {
                     return _buildLockedBanner(context);
                   }
-                  return _buildEmployeeGrid(context, controller);
+                  return _buildCheckInOptions(context, controller);
                 }),
               ),
               _buildLastCheckIn(context, controller),
@@ -49,14 +49,18 @@ class KioskHomeScreen extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Obx(() => Text(
-                  controller.station?.branchName ?? 'كيوسك',
+                  controller.station?.branchName ?? 'kiosk'.tr,
                   style: AppTextStyles.h3(context),
                 )),
+          ),
+          IconButton(
+            onPressed: () => Get.toNamed<void>(AppRoutes.kioskSettings),
+            icon: Icon(Icons.settings, color: AppColors.brand(context)),
           ),
           TextButton.icon(
             onPressed: () => _showExitDialog(context, controller),
             icon: const Icon(Icons.logout, size: 18),
-            label: const Text('خروج'),
+            label: Text('exit'.tr),
           ),
         ],
       ),
@@ -70,10 +74,10 @@ class KioskHomeScreen extends StatelessWidget {
         children: [
           Icon(Icons.lock_outline, size: 64, color: Colors.red.shade700),
           const SizedBox(height: 16),
-          Text('الكيوسك مقفل', style: AppTextStyles.h2(context)),
+          Text('kiosk_locked'.tr, style: AppTextStyles.h2(context)),
           const SizedBox(height: 8),
           Text(
-            'تم إيقاف الكيوسك بسبب الخروج من النطاق المسموح',
+            'kiosk_locked_reason'.tr,
             style: AppTextStyles.bodySecondary(context),
             textAlign: TextAlign.center,
           ),
@@ -82,51 +86,86 @@ class KioskHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEmployeeGrid(BuildContext context, StationController controller) {
-    return Obx(() {
-      final employees = controller.employees;
-      if (employees.isEmpty) {
-        return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(height: 16),
-              Text('جاري تحميل الموظفين...',
-                  style: AppTextStyles.bodySecondary(context)),
-            ],
+  Widget _buildCheckInOptions(BuildContext context, StationController controller) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'choose_checkin_method'.tr,
+            style: AppTextStyles.h2(context),
+            textAlign: TextAlign.center,
           ),
-        );
-      }
-
-      return GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          childAspectRatio: 1,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-        ),
-        itemCount: employees.length,
-        itemBuilder: (context, index) {
-          final emp = employees[index];
-          return _EmployeeCard(
-            employee: emp,
-            onTap: () => _handleCheckIn(context, controller, emp),
-          );
-        },
-      );
-    });
+          const SizedBox(height: 32),
+          if (controller.supportsFace) ...[
+            _buildMethodCard(
+              context,
+              icon: Icons.face,
+              title: 'face_checkin'.tr,
+              subtitle: 'face_checkin_desc'.tr,
+              onTap: () => Get.toNamed<void>(AppRoutes.kioskFaceCheckIn),
+            ),
+            const SizedBox(height: 16),
+          ],
+          if (controller.supportsQr) ...[
+            _buildMethodCard(
+              context,
+              icon: Icons.qr_code_scanner,
+              title: 'qr_checkin'.tr,
+              subtitle: 'qr_checkin_desc'.tr,
+              onTap: () => Get.toNamed<void>(AppRoutes.kioskQrCheckIn),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 
-  void _handleCheckIn(
-    BuildContext context,
-    StationController controller,
-    BranchEmployee employee,
-  ) {
-    controller.checkInOut(
-      employeeId: employee.id,
-      method: 'fingerprint',
+  Widget _buildMethodCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.brand(context).withValues(alpha: 0.3)),
+          borderRadius: BorderRadius.circular(16),
+          color: AppColors.brand(context).withValues(alpha: 0.05),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.brand(context).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 28, color: AppColors.brand(context)),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: AppTextStyles.h3(context)),
+                  const SizedBox(height: 4),
+                  Text(subtitle, style: AppTextStyles.bodySecondary(context)),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, color: AppColors.brand(context)),
+          ],
+        ),
+      ),
     );
   }
 
@@ -163,7 +202,7 @@ class KioskHomeScreen extends StatelessWidget {
                     style: AppTextStyles.body(context).copyWith(fontWeight: FontWeight.w600),
                   ),
                   Text(
-                    isIn ? 'تم تسجيل الحضور' : 'تم تسجيل الانصراف',
+                    isIn ? 'check_in_registered'.tr : 'check_out_registered'.tr,
                     style: AppTextStyles.sm(context),
                   ),
                 ],
@@ -180,19 +219,19 @@ class KioskHomeScreen extends StatelessWidget {
 
     Get.dialog<void>(
       AlertDialog(
-        title: const Text('خروج من الكيوسك'),
+        title: Text('exit_kiosk'.tr),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('أدخل رمز المدير للخروج'),
+            Text('enter_admin_code'.tr),
             const SizedBox(height: 16),
             TextField(
               controller: pinController,
               keyboardType: TextInputType.number,
               obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'رمز المدير',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: 'admin_code'.tr,
+                border: const OutlineInputBorder(),
               ),
             ),
           ],
@@ -200,67 +239,16 @@ class KioskHomeScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Get.back<void>(),
-            child: const Text('إلغاء'),
+            child: Text('cancel'.tr),
           ),
           TextButton(
             onPressed: () {
               Get.back<void>();
               controller.exitKiosk(pinController.text);
             },
-            child: Text('خروج', style: TextStyle(color: Colors.red.shade700)),
+            child: Text('exit'.tr, style: TextStyle(color: Colors.red.shade700)),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _EmployeeCard extends StatelessWidget {
-  final BranchEmployee employee;
-  final VoidCallback onTap;
-
-  const _EmployeeCard({required this.employee, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.of(context).borderHairline),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircleAvatar(
-              radius: 24,
-              child: Text(
-                employee.name.isNotEmpty ? employee.name[0] : '?',
-                style: const TextStyle(fontSize: 20),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              employee.name,
-              style: AppTextStyles.sm(context),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (employee.jobTitle != null)
-              Text(
-                employee.jobTitle!,
-                style: AppTextStyles.xs(context).copyWith(
-                  color: AppColors.textTertiary(context),
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-          ],
-        ),
       ),
     );
   }

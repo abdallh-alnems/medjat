@@ -56,7 +56,7 @@ class _KioskPairScreenState extends State<KioskPairScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('تفعيل الكيوسك'),
+        title: Text('activate_kiosk'.tr),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Get.back<void>(),
@@ -75,13 +75,13 @@ class _KioskPairScreenState extends State<KioskPairScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'تفعيل وضع الكيوسك',
+              'activate_kiosk_mode'.tr,
               style: AppTextStyles.h2(context),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              'امسح رمز QR من لوحة الإدارة أو أدخل الرمز يدوياً',
+              'scan_or_enter'.tr,
               style: AppTextStyles.bodySecondary(context),
               textAlign: TextAlign.center,
             ),
@@ -90,7 +90,7 @@ class _KioskPairScreenState extends State<KioskPairScreen> {
               _buildScanner(context)
             else
               PrimaryButton(
-                text: 'مسح رمز QR',
+                text: 'scan_qr_code'.tr,
                 isLoading: _isLoading,
                 onPressed: _isLoading
                     ? () {}
@@ -98,22 +98,22 @@ class _KioskPairScreenState extends State<KioskPairScreen> {
               ),
             const SizedBox(height: 16),
             Text(
-              'أو أدخل الرمز يدوياً',
+              'or_enter_manually'.tr,
               style: AppTextStyles.sm(context),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _codeController,
-              decoration: const InputDecoration(
-                labelText: 'رمز التفعيل',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: 'activation_code_label'.tr,
+                border: const OutlineInputBorder(),
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
             PrimaryButton(
-              text: 'تفعيل',
+              text: 'activate'.tr,
               isLoading: _isLoading,
               onPressed: _isLoading ? () {} : _submit,
             ),

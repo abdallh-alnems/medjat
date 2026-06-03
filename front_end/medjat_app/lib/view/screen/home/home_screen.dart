@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
+import '../../../core/services/locale_service.dart';
 import '../../../data/model/today_status_model.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
 import '../../../logic/controller/home/home_controller.dart';
@@ -57,7 +58,7 @@ class HomeScreen extends StatelessWidget {
       children: [
         GetBuilder<AuthController>(
           builder: (c) => Text(
-            'مرحباً، ${c.user?.name.split(' ').firstOrNull ?? ''}',
+            'welcome'.trParams({'name': c.user?.name.split(' ').firstOrNull ?? ''}),
             style: AppTextStyles.h3(context),
           ),
         ),
@@ -74,33 +75,37 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildDate(BuildContext context) {
     final now = DateTime.now();
-    final weekdays = [
-      '',
-      'الإثنين',
-      'الثلاثاء',
-      'الأربعاء',
-      'الخميس',
-      'الجمعة',
-      'السبت',
-      'الأحد'
-    ];
-    final months = [
-      '',
-      'يناير',
-      'فبراير',
-      'مارس',
-      'أبريل',
-      'مايو',
-      'يونيو',
-      'يوليو',
-      'أغسطس',
-      'سبتمبر',
-      'أكتوبر',
-      'نوفمبر',
-      'ديسمبر'
-    ];
-    final dayName = weekdays[now.weekday];
-    final monthName = months[now.month];
+    final localeSvc = Get.find<LocaleService>();
+    final isAr = localeSvc.isArabic;
+
+    String dayName;
+    String monthName;
+
+    if (isAr) {
+      final weekdays = [
+        '', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس',
+        'الجمعة', 'السبت', 'الأحد'
+      ];
+      final months = [
+        '', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو',
+        'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر',
+        'نوفمبر', 'ديسمبر'
+      ];
+      dayName = weekdays[now.weekday];
+      monthName = months[now.month];
+    } else {
+      final weekdays = [
+        '', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+        'Friday', 'Saturday', 'Sunday'
+      ];
+      final months = [
+        '', 'January', 'February', 'March', 'April', 'May',
+        'June', 'July', 'August', 'September', 'October',
+        'November', 'December'
+      ];
+      dayName = weekdays[now.weekday];
+      monthName = months[now.month];
+    }
 
     return Text(
       '$dayName — ${now.day} $monthName ${now.year}',
@@ -125,23 +130,23 @@ class HomeScreen extends StatelessWidget {
       case AttendanceStatus.notCheckedIn:
         statusColor = colors.warning;
         statusIcon = Icons.schedule_outlined;
-        statusText = 'لم يتم تسجيل الحضور';
+        statusText = 'not_checked_in'.tr;
         timeText = null;
         subText = null;
         break;
       case AttendanceStatus.checkedIn:
         statusColor = isLate ? colors.warning : colors.success;
         statusIcon = isLate ? Icons.warning_amber : Icons.check_circle_outline;
-        statusText = 'مسجل الحضور';
+        statusText = 'checked_in'.tr;
         timeText = _formatTime(todayStatus?.checkInAt);
         subText = isLate
-            ? 'تأخرت ${todayStatus?.lateMinutes ?? 0} دقيقة'
-            : 'لم تنصرف بعد';
+            ? 'late_minutes'.trParams({'minutes': '${todayStatus?.lateMinutes ?? 0}'})
+            : 'not_checked_out'.tr;
         break;
       case AttendanceStatus.checkedOut:
         statusColor = colors.success;
         statusIcon = Icons.check_circle;
-        statusText = 'تم اليوم';
+        statusText = 'day_done'.tr;
         timeText =
             '${_formatTime(todayStatus?.checkInAt)} — ${_formatTime(todayStatus?.checkOutAt)}';
         subText = null;
@@ -158,7 +163,7 @@ class HomeScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text('حالتك اليوم', style: AppTextStyles.xs(context)),
+          Text('your_status_today'.tr, style: AppTextStyles.xs(context)),
           const SizedBox(height: AppSpacing.s2),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -258,7 +263,7 @@ class HomeScreen extends StatelessWidget {
     return Column(
       children: [
         Text(
-          'فرعك: $branchName',
+          'your_branch'.trParams({'name': branchName}),
           textAlign: TextAlign.center,
           style: AppTextStyles.sm(context),
         ),
@@ -297,7 +302,7 @@ class HomeScreen extends StatelessWidget {
           Icon(Icons.cloud_off_outlined, size: 16, color: colors.warning),
           const SizedBox(width: AppSpacing.s2),
           Text(
-            'بدون إنترنت',
+            'no_internet'.tr,
             style: TextStyle(
               fontFamily: AppTextStyles.arabicFamily,
               fontSize: 13,
@@ -314,15 +319,15 @@ class HomeScreen extends StatelessWidget {
     if (dt == null) return null;
     final hour = dt.hour;
     final minute = dt.minute.toString().padLeft(2, '0');
-    final period = hour >= 12 ? 'م' : 'ص';
+    final period = hour >= 12 ? 'pm'.tr : 'am'.tr;
     final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
     return '$displayHour:$minute $period';
   }
 
   String _formatDistance(double meters) {
     if (meters < 1000) {
-      return '${meters.round()}م من الفرع';
+      return 'm_from_branch'.trParams({'distance': '${meters.round()}'});
     }
-    return '${(meters / 1000).toStringAsFixed(1)}كم من الفرع';
+    return 'km_from_branch'.trParams({'distance': '${(meters / 1000).toStringAsFixed(1)}'});
   }
 }

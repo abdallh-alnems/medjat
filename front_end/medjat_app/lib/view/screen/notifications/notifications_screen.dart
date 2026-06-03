@@ -14,7 +14,7 @@ class NotificationsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     Get.lazyPut(() => NotificationController());
     return Scaffold(
-      appBar: AppBar(title: const Text('الإشعارات')),
+      appBar: AppBar(title: Text('notifications'.tr)),
       body: GetBuilder<NotificationController>(
         builder: (controller) {
           return HandlingDataRequest(
@@ -35,7 +35,7 @@ class NotificationsScreen extends StatelessWidget {
           children: [
             Icon(Icons.notifications_none, size: 48, color: AppColors.textTertiary(context)),
             const SizedBox(height: 16),
-            Text('لا توجد إشعارات', style: AppTextStyles.bodySecondary(context)),
+            Text('no_notifications'.tr, style: AppTextStyles.bodySecondary(context)),
           ],
         ),
       );
@@ -46,7 +46,7 @@ class NotificationsScreen extends StatelessWidget {
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: controller.notifications.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 8),
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           final notif = controller.notifications[index];
           final isUnread = notif['read_at'] == null;

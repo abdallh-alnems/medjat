@@ -9,13 +9,15 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'core/constant/locale/translations.dart';
 import 'core/constant/routes/app_routes.dart';
 import 'core/constant/routes/app_pages.dart';
 import 'core/constant/theme/theme.dart';
 import 'core/constant/firebase_options.dart';
 import 'core/class/crud.dart';
-import 'core/services/push_notification_service.dart';
+import 'core/services/locale_service.dart';
 import 'core/services/token_storage_service.dart';
 
 @pragma('vm:entry-point')
@@ -33,6 +35,10 @@ void main() async {
   );
 
   await Hive.initFlutter();
+  await GetStorage.init();
+
+  Get.put<GetStorage>(GetStorage(), permanent: true);
+  Get.put<LocaleService>(LocaleService(), permanent: true);
 
   FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
 
@@ -67,11 +73,8 @@ void main() async {
   CRUD.onSessionExpired = () {
     TokenStorageService.clearSession();
     Get.offAllNamed<void>(AppRoutes.login);
-    Get.snackbar(
-      'انتهت الجلسة',
-      'يرجى تسجيل الدخول مجدداً',
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    Get.snackbar('session_expired'.tr, 'login_again'.tr,
+      snackPosition: SnackPosition.BOTTOM);
   };
 
   runApp(const MedjatEmployeeApp());
@@ -82,6 +85,8 @@ class MedjatEmployeeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localeService = Get.find<LocaleService>();
+
     return GetMaterialApp(
       title: 'Medjat',
       debugShowCheckedModeBanner: false,
@@ -91,39 +96,24 @@ class MedjatEmployeeApp extends StatelessWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: ThemeMode.light,
-      locale: const Locale('ar'),
-      supportedLocales: const [Locale('ar')],
+      translations: AppTranslations(),
+      locale: localeService.currentLocale,
+      fallbackLocale: const Locale('ar'),
+      supportedLocales: const [Locale('ar'), Locale('en')],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      textDirection: TextDirection.rtl,
       builder: (context, child) {
+        final locale = Get.find<LocaleService>().currentLocale;
         return Directionality(
-          textDirection: TextDirection.rtl,
-          child: _AppWrapper(child: child ?? const SizedBox.shrink()),
+          textDirection: locale.languageCode == 'ar'
+              ? TextDirection.rtl
+              : TextDirection.ltr,
+          child: child ?? const SizedBox.shrink(),
         );
       },
     );
   }
-}
-
-class _AppWrapper extends StatefulWidget {
-  final Widget child;
-  const _AppWrapper({required this.child});
-
-  @override
-  State<_AppWrapper> createState() => _AppWrapperState();
-}
-
-class _AppWrapperState extends State<_AppWrapper> {
-  @override
-  void initState() {
-    super.initState();
-    PushNotificationService.init();
-  }
-
-  @override
-  Widget build(BuildContext context) => widget.child;
 }

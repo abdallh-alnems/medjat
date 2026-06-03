@@ -139,11 +139,14 @@ CREATE TABLE IF NOT EXISTS `attendance` (
   `early_leave_minutes` int unsigned DEFAULT '0',
   `check_in_method` enum('qr_gps','qr_gps_face','manual','kiosk','offline') COLLATE utf8mb4_unicode_ci DEFAULT 'qr_gps',
   `check_out_method` enum('qr_gps','qr_gps_face','manual','kiosk','offline','auto') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `recognition_method` enum('manual','qr_gps','station_face','station_fingerprint','station_both') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `recognition_method` enum('manual','qr_gps','station_face','station_fingerprint','station_both','station_qr') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `recognition_confidence` decimal(4,3) DEFAULT NULL,
   `station_id` int unsigned DEFAULT NULL,
   `status` enum('present','absent','leave','holiday','weekly_off') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'present',
   `is_offline` tinyint(1) NOT NULL DEFAULT '0',
+  `is_vpn` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'VPN detected on device at check-in (advisory)',
+  `is_mock_location` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Mock-location flag reported by client (advisory)',
+  `is_rooted_device` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Root/jailbreak flag reported by client (advisory)',
   `synced_at` timestamp NULL DEFAULT NULL COMMENT 'When offline record was synced',
   `recorded_by` int unsigned DEFAULT NULL COMMENT 'User who manually recorded this',
   `deduction_mode` enum('auto','days','amount') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'auto' COMMENT 'How an absent day is deducted: auto=company rule, days=value*daily rate, amount=fixed value',
@@ -195,6 +198,28 @@ CREATE TABLE IF NOT EXISTS `attendance_stations` (
   CONSTRAINT `attendance_stations_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
   CONSTRAINT `attendance_stations_ibfk_2` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
   CONSTRAINT `attendance_stations_ibfk_3` FOREIGN KEY (`created_by_user_id`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE IF NOT EXISTS `attendance_security_logs` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `employee_id` int unsigned NOT NULL,
+  `branch_id` int unsigned DEFAULT NULL,
+  `reason` enum('mock_location','rooted','jailbroken','vpn','gps_out_of_range') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `action` enum('blocked','flagged') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'blocked',
+  `latitude` decimal(10,7) DEFAULT NULL,
+  `longitude` decimal(10,7) DEFAULT NULL,
+  `ip_address` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `platform` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'android | ios',
+  `app_version` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_seclog_tenant_date` (`tenant_id`,`created_at`),
+  KEY `idx_seclog_employee` (`employee_id`),
+  CONSTRAINT `seclog_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `seclog_ibfk_2` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -311,12 +336,14 @@ CREATE TABLE IF NOT EXISTS `employee_activation_codes` (
   `tenant_id` int unsigned NOT NULL,
   `employee_id` int unsigned NOT NULL,
   `code` varchar(12) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `token` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `expires_at` timestamp NOT NULL,
   `used_at` timestamp NULL DEFAULT NULL,
   `used_by_firebase_uid` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_code` (`code`),
+  UNIQUE KEY `uniq_token` (`token`),
   KEY `idx_act_employee` (`employee_id`),
   KEY `idx_act_tenant` (`tenant_id`),
   KEY `idx_act_expires` (`expires_at`),
@@ -1211,5 +1238,43 @@ INSERT IGNORE INTO `plans` (`name`, `name_ar`, `price`, `max_employees`, `max_br
 INSERT IGNORE INTO `super_admins` (`username`, `password_hash`, `display_name`, `role`, `is_active`) VALUES
 ('superadmin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Super Admin', 'superadmin', 1);
 -- Password: password
+
+CREATE TABLE IF NOT EXISTS `support_tickets` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `opened_by_admin_id` int unsigned NOT NULL COMMENT 'admins.id who opened it',
+  `subject` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `category` enum('technical','billing','feature_request','account','other') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'other',
+  `priority` enum('low','normal','high','urgent') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'normal',
+  `status` enum('open','pending_support','pending_user','resolved','closed') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'open',
+  `assigned_super_admin_id` int unsigned DEFAULT NULL COMMENT 'super_admins.id handling it',
+  `last_message_at` timestamp NULL DEFAULT NULL,
+  `last_message_preview` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `unread_for_user` tinyint(1) NOT NULL DEFAULT 0,
+  `unread_for_support` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_support_tickets_tenant` (`tenant_id`,`status`),
+  KEY `idx_support_tickets_opened_by` (`opened_by_admin_id`),
+  KEY `idx_support_tickets_status` (`status`,`last_message_at`),
+  CONSTRAINT `support_tickets_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `support_tickets_ibfk_2` FOREIGN KEY (`opened_by_admin_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `support_messages` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `ticket_id` int unsigned NOT NULL,
+  `sender_type` enum('user','support','system') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `sender_admin_id` int unsigned DEFAULT NULL COMMENT 'admins.id if sender_type=user',
+  `sender_super_admin_id` int unsigned DEFAULT NULL COMMENT 'super_admins.id if sender_type=support',
+  `body` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attachment_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `attachment_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_support_messages_ticket` (`ticket_id`,`id`),
+  CONSTRAINT `support_messages_ibfk_1` FOREIGN KEY (`ticket_id`) REFERENCES `support_tickets` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

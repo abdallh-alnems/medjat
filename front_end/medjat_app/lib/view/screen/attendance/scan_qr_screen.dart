@@ -64,7 +64,7 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: const Text('مسح QR Code'),
+        title: Text('scan_qr'.tr),
         elevation: 0,
       ),
       body: GetBuilder<AttendanceController>(
@@ -140,10 +140,10 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
           top: scanTop + scanSize + AppSpacing.s5,
           left: 0,
           right: 0,
-          child: const Text(
-            'وجّه الكاميرا لـ QR المعلق في الفرع',
+          child: Text(
+            'point_camera_qr'.tr,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               fontFamily: AppTextStyles.arabicFamily,
               fontSize: 16,
               color: Colors.white70,
@@ -157,17 +157,17 @@ class _ScanQrScreenState extends State<ScanQrScreen> {
   Widget _buildLoadingOverlay() {
     return Container(
       color: Colors.black54,
-      child: const Center(
+      child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator.adaptive(
+            const CircularProgressIndicator.adaptive(
               valueColor: AlwaysStoppedAnimation(Colors.white),
             ),
-            SizedBox(height: AppSpacing.s4),
+            const SizedBox(height: AppSpacing.s4),
             Text(
-              'جاري التسجيل...',
-              style: TextStyle(
+              'registering'.tr,
+              style: const TextStyle(
                 fontFamily: AppTextStyles.arabicFamily,
                 fontSize: 16,
                 color: Colors.white,
@@ -338,7 +338,7 @@ class _ErrorBottomSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                   ),
-                  child: const Text('رجوع'),
+                  child: Text('back'.tr),
                 ),
               ),
               const SizedBox(width: AppSpacing.s3),
@@ -353,7 +353,7 @@ class _ErrorBottomSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                   ),
-                  child: const Text('إعادة المحاولة'),
+                  child: Text('retry'.tr),
                 ),
               ),
             ],

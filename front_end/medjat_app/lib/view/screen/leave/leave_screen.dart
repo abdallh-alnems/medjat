@@ -7,10 +7,6 @@ import '../../../../core/constant/theme/app_spacing.dart';
 import '../../../../core/shared/buttons/primary_button.dart';
 import '../../../../logic/controller/leave/leave_controller.dart';
 
-// TODO: Leave history list requires a new backend endpoint (leaves/my_list.php).
-// The existing leaves/list.php requires manage_leaves permission (admin-only).
-// For now this screen shows leave balance + apply form only.
-
 class LeaveScreen extends StatelessWidget {
   const LeaveScreen({super.key});
 
@@ -18,7 +14,7 @@ class LeaveScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     Get.lazyPut(() => LeaveController());
     return Scaffold(
-      appBar: AppBar(title: const Text('الإجازات')),
+      appBar: AppBar(title: Text('leaves'.tr)),
       body: GetBuilder<LeaveController>(
         builder: (controller) {
           return SingleChildScrollView(
@@ -48,19 +44,19 @@ class LeaveScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('رصيد الإجازات', style: AppTextStyles.h3(context)),
+          Text('leave_balance'.tr, style: AppTextStyles.h3(context)),
           const SizedBox(height: 12),
           if (balance != null)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _statItem(context, 'الرصيد', balance['total_days']?.toString() ?? '0'),
-                _statItem(context, 'المستخدم', balance['used_days']?.toString() ?? '0'),
-                _statItem(context, 'المتبقي', balance['remaining_days']?.toString() ?? '0'),
+                _statItem(context, 'balance'.tr, balance['total_days']?.toString() ?? '0'),
+                _statItem(context, 'used'.tr, balance['used_days']?.toString() ?? '0'),
+                _statItem(context, 'remaining'.tr, balance['remaining_days']?.toString() ?? '0'),
               ],
             )
           else
-            Text('جاري التحميل...', style: AppTextStyles.bodySecondary(context)),
+            Text('loading'.tr, style: AppTextStyles.bodySecondary(context)),
         ],
       ),
     );
@@ -85,19 +81,19 @@ class LeaveScreen extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('تقديم إجازة', style: AppTextStyles.h3(context)),
+            Text('apply_leave'.tr, style: AppTextStyles.h3(context)),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               value: selectedType,
-              decoration: const InputDecoration(
-                labelText: 'نوع الإجازة',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: 'leave_type'.tr,
+                border: const OutlineInputBorder(),
               ),
-              items: const [
-                DropdownMenuItem(value: 'annual', child: Text('سنوية')),
-                DropdownMenuItem(value: 'sick', child: Text('مرضية')),
-                DropdownMenuItem(value: 'personal', child: Text('شخصية')),
-                DropdownMenuItem(value: 'unpaid', child: Text('بدون راتب')),
+              items: [
+                DropdownMenuItem(value: 'annual', child: Text('annual'.tr)),
+                DropdownMenuItem(value: 'sick', child: Text('sick'.tr)),
+                DropdownMenuItem(value: 'personal', child: Text('personal'.tr)),
+                DropdownMenuItem(value: 'unpaid', child: Text('unpaid'.tr)),
               ],
               onChanged: (v) {
                 if (v != null) setState(() => selectedType = v);
@@ -107,10 +103,10 @@ class LeaveScreen extends StatelessWidget {
             TextField(
               controller: dateController,
               readOnly: true,
-              decoration: const InputDecoration(
-                labelText: 'التاريخ',
-                border: OutlineInputBorder(),
-                suffixIcon: Icon(Icons.calendar_today),
+              decoration: InputDecoration(
+                labelText: 'date'.tr,
+                border: const OutlineInputBorder(),
+                suffixIcon: const Icon(Icons.calendar_today),
               ),
               onTap: () async {
                 final picked = await showDatePicker(
@@ -129,20 +125,20 @@ class LeaveScreen extends StatelessWidget {
             TextField(
               controller: reasonController,
               maxLines: 2,
-              decoration: const InputDecoration(
-                labelText: 'السبب (اختياري)',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: 'reason_optional'.tr,
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
             GetBuilder<LeaveController>(
               builder: (ctrl) {
                 return PrimaryButton(
-                  text: 'تقديم الطلب',
+                  text: 'submit_request'.tr,
                   isLoading: ctrl.applyStatus == StatusRequest.loading,
                   onPressed: () {
                     if (dateController.text.isEmpty) {
-                      Get.snackbar('خطأ', 'اختر التاريخ',
+                      Get.snackbar('error'.tr, 'choose_date'.tr,
                           snackPosition: SnackPosition.BOTTOM);
                       return;
                     }

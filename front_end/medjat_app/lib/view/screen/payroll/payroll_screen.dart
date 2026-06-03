@@ -13,7 +13,7 @@ class PayrollScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     Get.lazyPut(() => PayrollController());
     return Scaffold(
-      appBar: AppBar(title: const Text('راتبي')),
+      appBar: AppBar(title: Text('my_salary'.tr)),
       body: GetBuilder<PayrollController>(
         builder: (controller) {
           return Column(
@@ -69,7 +69,7 @@ class PayrollScreen extends StatelessWidget {
     final slip = controller.slipData;
     if (slip == null) {
       return Center(
-        child: Text('لا يوجد كشف لهذا الشهر', style: AppTextStyles.bodySecondary(context)),
+        child: Text('no_slip_month'.tr, style: AppTextStyles.bodySecondary(context)),
       );
     }
 
@@ -78,18 +78,18 @@ class PayrollScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _slipRow(context, 'الراتب الأساسي', slip['base_salary']?.toString() ?? '0'),
+          _slipRow(context, 'base_salary'.tr, slip['base_salary']?.toString() ?? '0'),
           if (slip['allowances'] != null)
-            _slipRow(context, 'البدلات', slip['allowances']?.toString() ?? '0'),
+            _slipRow(context, 'allowances'.tr, slip['allowances']?.toString() ?? '0'),
           if (slip['overtime_amount'] != null)
-            _slipRow(context, 'أضافي', slip['overtime_amount']?.toString() ?? '0'),
+            _slipRow(context, 'overtime'.tr, slip['overtime_amount']?.toString() ?? '0'),
           if (slip['deductions'] != null)
-            _slipRow(context, 'الخصومات', slip['deductions']?.toString() ?? '0',
+            _slipRow(context, 'deductions'.tr, slip['deductions']?.toString() ?? '0',
                 valueColor: Colors.red),
           const Divider(height: 32),
           _slipRow(
             context,
-            'الصافي',
+            'net'.tr,
             slip['net_salary']?.toString() ?? slip['total']?.toString() ?? '0',
             isBold: true,
           ),
@@ -99,7 +99,7 @@ class PayrollScreen extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: () => controller.downloadPdf(),
               icon: const Icon(Icons.download),
-              label: const Text('تحميل PDF'),
+              label: Text('download_pdf'.tr),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(

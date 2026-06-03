@@ -14,7 +14,11 @@ import '../services/token_storage_service.dart';
 class PushNotificationService {
   PushNotificationService._();
 
-  static Future<void> init() async {
+  static bool _listenersReady = false;
+
+  /// يُفعّل الإشعارات للموظف المسجّل دخوله فقط: يطلب الإذن، يجهّز المستمعين،
+  /// ويسجّل التوكن. لا يُستدعى أبداً في وضع الكيوسك أو قبل تسجيل الدخول.
+  static Future<void> enableForUser() async {
     try {
       final messaging = FirebaseMessaging.instance;
 
@@ -29,22 +33,32 @@ class PushNotificationService {
         return;
       }
 
-      FirebaseMessaging.onMessage.listen(_onForegroundMessage);
-
-      FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageTap);
-
-      messaging.getInitialMessage().then((message) {
-        if (message != null) {
-          _handleMessageTap(message);
-        }
-      });
-
-      messaging.onTokenRefresh.listen((token) {
-        _sendTokenIfReady(token);
-      });
+      _setupListeners();
+      await registerTokenNow();
     } catch (e) {
-      debugPrint('PushNotificationService init error: $e');
+      debugPrint('PushNotificationService enableForUser error: $e');
     }
+  }
+
+  static void _setupListeners() {
+    if (_listenersReady) return;
+    _listenersReady = true;
+
+    final messaging = FirebaseMessaging.instance;
+
+    FirebaseMessaging.onMessage.listen(_onForegroundMessage);
+
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageTap);
+
+    messaging.getInitialMessage().then((message) {
+      if (message != null) {
+        _handleMessageTap(message);
+      }
+    });
+
+    messaging.onTokenRefresh.listen((token) {
+      _sendTokenIfReady(token);
+    });
   }
 
   static Future<void> registerTokenNow() async {

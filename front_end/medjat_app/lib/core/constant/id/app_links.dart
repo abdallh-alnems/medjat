@@ -7,6 +7,8 @@ class AppLinks {
 
   static String get employeeLogin =>
       '$base/app/auth/employee_login.php';
+  static String get employeeActivateToken =>
+      '$base/app/auth/employee_activate_token.php';
   static String get employeeLogout =>
       '$base/app/auth/employee_logout.php';
 
@@ -33,4 +35,7 @@ class AppLinks {
   static String get registerFcm => '$base/app/auth/update_fcm_token.php';
   static String get notificationPrefs =>
       '$base/app/auth/notification_prefs.php';
+  static String get myStationQr => '$base/app/employees/my_station_qr.php';
+  static String get attendanceSecurityLog =>
+      '$base/app/attendance/security_log.php';
 }

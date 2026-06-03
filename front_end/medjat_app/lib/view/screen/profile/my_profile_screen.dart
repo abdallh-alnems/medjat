@@ -15,7 +15,7 @@ class MyProfileScreen extends StatelessWidget {
     Get.lazyPut(() => ProfileController());
     return Scaffold(
       appBar: AppBar(
-        title: const Text('بياناتي'),
+        title: Text('my_data'.tr),
       ),
       body: GetBuilder<ProfileController>(
         builder: (controller) {
@@ -40,30 +40,30 @@ class MyProfileScreen extends StatelessWidget {
         children: [
           _profileHeader(context, emp),
           const SizedBox(height: 24),
-          _sectionTitle(context, 'البيانات الوظيفية'),
+          _sectionTitle(context, 'employment_data'.tr),
           const SizedBox(height: 8),
           _infoCard(context, [
-            _infoRow(context, 'الوظيفة', emp['job_title']?.toString() ?? '-'),
-            _infoRow(context, 'الفرع', emp['branch_name']?.toString() ?? '-'),
-            _infoRow(context, 'تاريخ التعيين', emp['hire_date']?.toString() ?? '-'),
-            _infoRow(context, 'الراتب الأساسي', emp['base_salary'] != null ? '${emp['base_salary']}' : '-'),
-            _infoRow(context, 'الحالة', emp['status']?.toString() ?? '-'),
+            _infoRow(context, 'job'.tr, emp['job_title']?.toString() ?? '-'),
+            _infoRow(context, 'branch'.tr, emp['branch_name']?.toString() ?? '-'),
+            _infoRow(context, 'hire_date'.tr, emp['hire_date']?.toString() ?? '-'),
+            _infoRow(context, 'base_salary'.tr, emp['base_salary'] != null ? '${emp['base_salary']}' : '-'),
+            _infoRow(context, 'status'.tr, emp['status']?.toString() ?? '-'),
           ]),
           if (controller.warnings.isNotEmpty) ...[
             const SizedBox(height: 24),
-            _sectionTitle(context, 'التحذيرات (${controller.warnings.length})'),
+            _sectionTitle(context, '${'warnings'.tr} (${controller.warnings.length})'),
             const SizedBox(height: 8),
             _warningsCard(context, controller.warnings),
           ],
           if (controller.leaveBalance != null) ...[
             const SizedBox(height: 24),
-            _sectionTitle(context, 'رصيد الإجازات'),
+            _sectionTitle(context, 'leave_balance'.tr),
             const SizedBox(height: 8),
             _balanceCard(context, controller.leaveBalance!),
           ],
           if (controller.categories.isNotEmpty) ...[
             const SizedBox(height: 24),
-            _sectionTitle(context, 'الفئات'),
+            _sectionTitle(context, 'categories'.tr),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -77,7 +77,7 @@ class MyProfileScreen extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 24),
-          _sectionTitle(context, 'خدمات سريعة'),
+          _sectionTitle(context, 'quick_services'.tr),
           const SizedBox(height: 8),
           _quickAccessCards(context, controller),
         ],
@@ -93,7 +93,7 @@ class MyProfileScreen extends StatelessWidget {
             context,
             icon: Icons.folder_outlined,
             activeIcon: Icons.folder,
-            label: 'أوراقي',
+            label: 'my_documents'.tr,
             badge: controller.documents.isNotEmpty ? '${controller.documents.length}' : null,
             onTap: () => Get.toNamed<void>(AppRoutes.myDocuments),
           ),
@@ -104,7 +104,7 @@ class MyProfileScreen extends StatelessWidget {
             context,
             icon: Icons.beach_access_outlined,
             activeIcon: Icons.beach_access,
-            label: 'الإجازات',
+            label: 'leaves'.tr,
             badge: controller.leaveBalance?['remaining_days']?.toString(),
             onTap: () => Get.toNamed<void>(AppRoutes.leaves),
           ),
@@ -263,9 +263,9 @@ class MyProfileScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _balanceItem(context, 'الرصيد', balance['total_days']?.toString() ?? '0'),
-          _balanceItem(context, 'المستخدم', balance['used_days']?.toString() ?? '0'),
-          _balanceItem(context, 'المتبقي', balance['remaining_days']?.toString() ?? '0'),
+          _balanceItem(context, 'balance'.tr, balance['total_days']?.toString() ?? '0'),
+          _balanceItem(context, 'used'.tr, balance['used_days']?.toString() ?? '0'),
+          _balanceItem(context, 'remaining'.tr, balance['remaining_days']?.toString() ?? '0'),
         ],
       ),
     );

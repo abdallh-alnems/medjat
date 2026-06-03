@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/constant/theme/app_colors.dart';
+import '../../../core/services/push_notification_service.dart';
 import '../../../core/services/token_storage_service.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
 
@@ -44,6 +45,7 @@ class _SplashScreenState extends State<SplashScreen> {
         if (tenantId != null && tenantId != 0) {
           final authController = Get.find<AuthController>();
           await authController.checkAuth();
+          PushNotificationService.enableForUser();
           Get.offAllNamed<void>(AppRoutes.home);
           return;
         }
@@ -65,7 +67,7 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Medjat',
+              'medjat'.tr,
               style: TextStyle(
                 fontFamily: 'Geist',
                 fontSize: 36,
@@ -85,7 +87,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'جاري التحميل...',
+              'loading'.tr,
               style: TextStyle(
                 fontFamily: 'IBM Plex Sans Arabic',
                 fontSize: 14,

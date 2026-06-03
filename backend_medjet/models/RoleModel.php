@@ -43,6 +43,7 @@ final class RoleModel {
             'manage_assets',
             'add_managers',
             'manage_company_settings',
+            'manage_support',
         ];
     }
 

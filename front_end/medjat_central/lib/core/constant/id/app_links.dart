@@ -304,6 +304,8 @@ class AppLinks {
   static String get stationLogs => '$base/app/stations/logs.php';
   static String get stationBranchSettings =>
       '$base/app/stations/update_branch_settings.php';
+  static String get stationGenerateKioskPin =>
+      '$base/app/stations/generate_kiosk_pin.php';
 
   // ── Categories ─────────────────────────────────────────
   static String get categories => '$base/app/categories/list.php';
@@ -311,4 +313,14 @@ class AppLinks {
   static String get categoryUpdate => '$base/app/categories/update.php';
   static String get categoryDelete => '$base/app/categories/delete.php';
   static String get categoryAssign => '$base/app/categories/assign.php';
+
+  // ── Support ────────────────────────────────────────────
+  static String get supportTickets => '$base/app/support/list.php';
+  static String get supportCreate => '$base/app/support/create.php';
+  static String supportMessages(int ticketId, {int? afterId}) =>
+      afterId != null
+          ? '$base/app/support/messages.php?ticket_id=$ticketId&after_id=$afterId'
+          : '$base/app/support/messages.php?ticket_id=$ticketId';
+  static String get supportReply => '$base/app/support/reply.php';
+  static String get supportClose => '$base/app/support/close.php';
 }

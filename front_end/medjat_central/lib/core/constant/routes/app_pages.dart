@@ -82,6 +82,11 @@ import '../../../logic/controller/dashboard/expiring_compliance_controller.dart'
 import '../../../data/data_source/remote/compliance_data/compliance_data.dart';
 import '../../../data/data_source/remote/live_attendance_data/live_attendance_data.dart';
 import '../../../data/data_source/remote/letter_data/letter_data.dart';
+import '../../../data/data_source/remote/support_data/support_data.dart';
+import '../../../logic/controller/support/support_controller.dart';
+import '../../../view/screen/support/support_tickets_screen.dart';
+import '../../../view/screen/support/support_chat_screen.dart';
+import '../../../view/screen/support/new_ticket_screen.dart';
 import '../../../logic/controller/letter/letter_request_controller.dart';
 import '../../../logic/controller/letter/letter_template_controller.dart';
 import '../../../logic/controller/notification/notification_controller.dart';
@@ -630,6 +635,39 @@ List<GetPage<dynamic>> getPages = [
   //   transition: Transition.fadeIn,
   //   transitionDuration: AppMotion.transition,
   // ),
+  GetPage(
+    name: AppRoutes.support,
+    page: () => const SupportTicketsScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<SupportData>(() => SupportData());
+      Get.lazyPut<SupportController>(() => SupportController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.supportChat,
+    page: () => const SupportChatScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<SupportData>(() => SupportData());
+      Get.lazyPut<SupportController>(() => SupportController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.supportNew,
+    page: () => const NewTicketScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<SupportData>(() => SupportData());
+      Get.lazyPut<SupportController>(() => SupportController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
 ];
 
 class MoreScreen extends StatelessWidget {
@@ -724,6 +762,12 @@ class MoreScreen extends StatelessWidget {
             title: 'app_settings'.tr,
             subtitle: 'app_settings_hint'.tr,
             onTap: () => Get.toNamed<void>(AppRoutes.settingsApp),
+          ),
+          _MenuTile(
+            icon: Icons.support_agent_outlined,
+            title: 'support_and_help'.tr,
+            subtitle: 'support_hint'.tr,
+            onTap: () => Get.toNamed<void>(AppRoutes.support),
           ),
           const SizedBox(height: AppSpacing.s5),
         ],
