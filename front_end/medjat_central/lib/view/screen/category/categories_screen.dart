@@ -4,6 +4,7 @@ import '../../../core/constant/theme/theme.dart';
 import '../../../core/class/handling_data_request.dart';
 import '../../../data/model/employee_category_model.dart';
 import '../../../logic/controller/category/category_controller.dart';
+import '../../widget/payroll/bulk_adjust_sheet.dart';
 
 class CategoriesScreen extends StatelessWidget {
   const CategoriesScreen({super.key});
@@ -270,9 +271,18 @@ class _CategoryTile extends StatelessWidget {
             onSelected: (v) {
               if (v == 'edit') onEdit();
               if (v == 'delete') onDelete();
+              if (v == 'bulk') {
+                showBulkAdjustSheet(
+                  context,
+                  scopeType: 'category',
+                  scopeId: cat.id,
+                  scopeName: cat.name,
+                );
+              }
             },
             itemBuilder: (_) => [
               PopupMenuItem(value: 'edit', child: Text('update'.tr)),
+              PopupMenuItem(value: 'bulk', child: Text('bulk_adjust'.tr)),
               PopupMenuItem(
                 value: 'delete',
                 child: Text('delete'.tr,

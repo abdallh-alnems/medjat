@@ -268,6 +268,28 @@ final class PayrollCalculator {
             }
         }
 
+        // Approved early-leave permissions (إذن انصراف مبكر) flagged for hourly
+        // deduction. Each window is deducted at the hourly rate for its minutes.
+        $earlyLeaves = $effectiveEnd === null
+            ? []
+            : BreakRequestModel::approvedEarlyLeaveDeductions($employeeId, $tenantId, $cycleStart, $effectiveEnd);
+        foreach ($earlyLeaves as $el) {
+            $minutes = (int) $el['duration_minutes'];
+            if ($minutes <= 0) {
+                continue;
+            }
+            $amount = round($hourlyRate * ($minutes / 60), 2);
+            if ($amount <= 0) {
+                continue;
+            }
+            $deductions[] = [
+                'type' => 'early_leave',
+                'date' => $el['date'],
+                'amount' => $amount,
+                'description' => "انصراف مبكر {$minutes} دقيقة ({$el['date']})",
+            ];
+        }
+
         $manualDeductions = DeductionRuleModel::getManualByEmployeeMonth($employeeId, $month, $tenantId);
         foreach ($manualDeductions as $md) {
             $deductions[] = [

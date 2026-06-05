@@ -14,6 +14,11 @@ class CRUD {
 
   CRUD({http.Client? client}) : _client = client ?? http.Client();
 
+  /// Invoked when the backend reports that this device's session was
+  /// superseded by a login on another device. Registered by AuthController to
+  /// force a sign-out. Static so the low-level client stays decoupled.
+  static void Function()? onSessionSuperseded;
+
   Map<String, String> _baseHeaders() {
     final securityUser = dotenv.env['SECURITY_USER'] ?? '';
     final securityKey = dotenv.env['SECURITY_KEY'] ?? '';
@@ -28,6 +33,7 @@ class CRUD {
 
   Future<Map<String, String>> _headers() async {
     final headers = _baseHeaders();
+    headers['X-Device-Id'] = await TokenStorageService.getOrCreateDeviceId();
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final idToken = await user.getIdToken();
@@ -265,10 +271,24 @@ class CRUD {
     }
 
     if (statusCode == 401) {
+      String message = 'جلستك انتهت، يرجى تسجيل الدخول مجدداً';
+      try {
+        final body = jsonDecode(response.body);
+        if (body is Map) {
+          if (body['error_code'] == 'session_superseded') {
+            // A login on another device invalidated this session.
+            message = (body['message'] is String &&
+                    (body['message'] as String).isNotEmpty)
+                ? body['message'] as String
+                : 'تم تسجيل الدخول من جهاز آخر';
+            onSessionSuperseded?.call();
+          }
+        }
+      } catch (_) {}
       return {
         'status': StatusRequest.failure,
         'statusCode': 401,
-        'message': 'جلستك انتهت، يرجى تسجيل الدخول مجدداً',
+        'message': message,
       };
     }
 

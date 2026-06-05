@@ -153,6 +153,18 @@ class AppLinks {
   static String get payrollBankPreview =>
       '$base/app/payroll/bank_file_preview.php';
 
+  // ── Export Templates (custom CSV) ────────────────────
+  static String get exportTemplateFields =>
+      '$base/app/payroll/export_templates/fields.php';
+  static String get exportTemplatesList =>
+      '$base/app/payroll/export_templates/list.php';
+  static String get exportTemplateCreate =>
+      '$base/app/payroll/export_templates/create.php';
+  static String get exportTemplateUpdate =>
+      '$base/app/payroll/export_templates/update.php';
+  static String get exportTemplateDelete =>
+      '$base/app/payroll/export_templates/delete.php';
+
   // ── Letters & Certificates (document requests + templates) ──
   static String get letterTemplates => '$base/app/letters/templates_list.php';
   static String get letterTemplateCreate =>
@@ -186,6 +198,15 @@ class AppLinks {
   static String get leaveSettings => '$base/app/settings/leave_settings.php';
   static String get leaveRollover => '$base/app/leaves/rollover.php';
 
+  // ── Breaks / Permissions ───────────────────────────────
+  static String get breakRequest   => '$base/app/breaks/request.php';
+  static String get breakMyList    => '$base/app/breaks/my_list.php';
+  static String get breakCancel    => '$base/app/breaks/cancel.php';
+  static String get breakList      => '$base/app/breaks/list.php';
+  static String get breakApprove   => '$base/app/breaks/approve.php';
+  static String get breakReject    => '$base/app/breaks/reject.php';
+  static String get breakPostpone  => '$base/app/breaks/postpone.php';
+
   // ── Deductions / Bonuses ───────────────────────────────
   static String get deductionRules => '$base/app/deductions/get_rules.php';
   static String get deductionManualAdd =>
@@ -197,6 +218,9 @@ class AppLinks {
   static String get bonusManualAdd => '$base/app/bonuses/add_manual.php';
   static String get bonusManualUpdate => '$base/app/bonuses/update_manual.php';
   static String get bonusManualDelete => '$base/app/bonuses/delete_manual.php';
+
+  /// Bulk bonus/deduction applied to every employee in a branch/shift/category.
+  static String get payrollBulkAdjust => '$base/app/payroll/bulk_adjust.php';
 
   // ── Expenses (claims with receipts) ────────────────────
   static String get expenses => '$base/app/expenses/list.php';
@@ -217,6 +241,15 @@ class AppLinks {
   static String loanDetail(int id) => '$base/app/loans/get.php?id=$id';
   static String get loanApprove => '$base/app/loans/approve.php';
   static String get loanCancel => '$base/app/loans/cancel.php';
+
+  // ── End-of-service settlement (تسوية نهاية الخدمة) ──────
+  static String settlement(int employeeId) =>
+      '$base/app/settlements/get.php?employee_id=$employeeId';
+  static String settlementPreview(int employeeId, String lastWorkingDay) =>
+      '$base/app/settlements/preview.php?employee_id=$employeeId&last_working_day=$lastWorkingDay';
+  static String get settlementSave => '$base/app/settlements/save.php';
+  static String get settlementApprove => '$base/app/settlements/approve.php';
+  static String get settlementMarkPaid => '$base/app/settlements/mark_paid.php';
 
   // ── Warnings ───────────────────────────────────────────
   static String get warningAdd => '$base/app/warnings/add.php';

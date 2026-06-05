@@ -107,6 +107,7 @@ CREATE TABLE IF NOT EXISTS `admins` (
   `email_verified_at` timestamp NULL DEFAULT NULL,
   `last_login_at` timestamp NULL DEFAULT NULL,
   `last_login_ip` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `active_device_id` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Most recent device that logged in; other devices are signed out on their next request',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -470,6 +471,7 @@ CREATE TABLE IF NOT EXISTS `employees` (
   `annual_leave_days` int DEFAULT NULL COMMENT 'NULL = inherit tenant default; number = per-employee override',
   `weekly_off_days` set('saturday','sunday','monday','tuesday','wednesday','thursday','friday') COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Recurring weekly days off for this employee',
   `auto_terminate_at` date DEFAULT NULL COMMENT 'Auto-terminate the employee on this date (fixed-term workers); NULL = open-ended',
+  `terminated_at` date DEFAULT NULL COMMENT 'تاريخ إنهاء الخدمة — يُستخدم لحساب الدوران والقوى العاملة',
   `shift_id` int unsigned DEFAULT NULL,
   `shift_type` enum('fixed','rotating') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'fixed',
   `status` enum('pending_activation','active','terminated','on_leave','suspended') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending_activation',
@@ -501,6 +503,7 @@ CREATE TABLE IF NOT EXISTS `employees` (
   KEY `idx_emp_workpermit_expiry` (`tenant_id`,`work_permit_expiry`),
   KEY `idx_emp_contract_end` (`tenant_id`,`contract_end`),
   KEY `idx_emp_health_expiry` (`tenant_id`,`health_insurance_expiry`),
+  KEY `idx_emp_terminated_at` (`tenant_id`,`terminated_at`),
   CONSTRAINT `employees_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
   CONSTRAINT `employees_ibfk_2` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `employees_ibfk_3` FOREIGN KEY (`admin_id`) REFERENCES `admins` (`id`) ON DELETE SET NULL,
@@ -675,7 +678,7 @@ CREATE TABLE IF NOT EXISTS `notifications` (
   `tenant_id` int unsigned DEFAULT NULL COMMENT 'Null = system-wide from super admin',
   `admin_id` int unsigned DEFAULT NULL,
   `employee_id` int unsigned DEFAULT NULL COMMENT 'For Employee-app recipients',
-  `type` enum('general','attendance','payroll','leave','warning','system','subscription','invite') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'general',
+  `type` enum('general','attendance','payroll','leave','warning','system','subscription','invite','support','approval') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'general',
   `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `title_ar` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `body` text COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -1003,6 +1006,7 @@ CREATE TABLE IF NOT EXISTS `tenants` (
   `plan` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'starter' COMMENT 'Denormalized current plan name for fast checks',
   `timezone` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Africa/Cairo',
   `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'EGP',
+  `country_code` CHAR(2) COLLATE utf8mb4_unicode_ci NULL DEFAULT 'EG' COMMENT 'ISO 3166-1 alpha-2; يحدّد مُصدِّر الرواتب الافتراضي',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `email_verified_at` timestamp NULL DEFAULT NULL,
   `trial_ends_at` timestamp NULL DEFAULT NULL,
@@ -1277,4 +1281,618 @@ CREATE TABLE IF NOT EXISTS `support_messages` (
   CONSTRAINT `support_messages_ibfk_1` FOREIGN KEY (`ticket_id`) REFERENCES `support_tickets` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ============ ATS ============
+
+CREATE TABLE IF NOT EXISTS `job_openings` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `branch_id` int unsigned DEFAULT NULL,
+  `title` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `department` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `employment_type` enum('full_time','part_time','contract','temporary') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'full_time',
+  `openings_count` int unsigned NOT NULL DEFAULT '1',
+  `status` enum('open','on_hold','closed') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'open',
+  `created_by` int unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `closed_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_job_tenant_status` (`tenant_id`,`status`),
+  KEY `idx_job_branch` (`branch_id`),
+  CONSTRAINT `job_openings_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `job_openings_ibfk_2` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `job_openings_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `candidates` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `job_opening_id` int unsigned DEFAULT NULL,
+  `name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(190) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `cv_url` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `source` varchar(80) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'referral|walk_in|agency|manual...',
+  `stage` enum('applied','screening','interview','offer','hired','rejected') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'applied',
+  `expected_salary` decimal(12,2) DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `rejection_reason` text COLLATE utf8mb4_unicode_ci,
+  `converted_employee_id` int unsigned DEFAULT NULL COMMENT 'set when stage=hired and converted',
+  `created_by` int unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_cand_tenant_stage` (`tenant_id`,`stage`),
+  KEY `idx_cand_job` (`job_opening_id`),
+  KEY `idx_cand_emp` (`converted_employee_id`),
+  CONSTRAINT `candidates_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `candidates_ibfk_2` FOREIGN KEY (`job_opening_id`) REFERENCES `job_openings` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `candidates_ibfk_3` FOREIGN KEY (`converted_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `candidates_ibfk_4` FOREIGN KEY (`created_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============ ONBOARDING ============
+
+CREATE TABLE IF NOT EXISTS `onboarding_templates` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `title` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title_ar` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `task_type` enum('document','asset','account','generic') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'generic',
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `sort_order` int unsigned NOT NULL DEFAULT '0',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_onbtpl_tenant` (`tenant_id`,`is_active`,`sort_order`),
+  CONSTRAINT `onboarding_templates_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `onboarding_tasks` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `employee_id` int unsigned NOT NULL,
+  `template_id` int unsigned DEFAULT NULL COMMENT 'source template row, NULL for manually added',
+  `title` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `task_type` enum('document','asset','account','generic') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'generic',
+  `status` enum('pending','completed','skipped') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `sort_order` int unsigned NOT NULL DEFAULT '0',
+  `completed_by` int unsigned DEFAULT NULL,
+  `completed_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_onbtask_tenant_emp` (`tenant_id`,`employee_id`,`status`),
+  CONSTRAINT `onboarding_tasks_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `onboarding_tasks_ibfk_2` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `onboarding_tasks_ibfk_3` FOREIGN KEY (`template_id`) REFERENCES `onboarding_templates` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `onboarding_tasks_ibfk_4` FOREIGN KEY (`completed_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============ PERFORMANCE MANAGEMENT ============
+
+CREATE TABLE IF NOT EXISTS `performance_cycles` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name_ar` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `period_type` enum('monthly','quarterly','semi_annual','annual','custom') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'quarterly',
+  `start_date` date NOT NULL,
+  `end_date` date NOT NULL,
+  `status` enum('draft','active','closed') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `created_by` int unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `closed_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_pcycle_tenant_status` (`tenant_id`,`status`),
+  CONSTRAINT `performance_cycles_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `performance_cycles_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `performance_goals` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `employee_id` int unsigned NOT NULL,
+  `cycle_id` int unsigned DEFAULT NULL,
+  `title` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `metric` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `target_value` decimal(14,2) DEFAULT NULL,
+  `current_value` decimal(14,2) NOT NULL DEFAULT '0.00',
+  `weight` tinyint unsigned NOT NULL DEFAULT '0',
+  `progress` tinyint unsigned NOT NULL DEFAULT '0',
+  `status` enum('not_started','in_progress','completed','cancelled') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'not_started',
+  `due_date` date DEFAULT NULL,
+  `created_by` int unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_pgoal_tenant_emp` (`tenant_id`,`employee_id`,`status`),
+  KEY `idx_pgoal_cycle` (`cycle_id`),
+  CONSTRAINT `performance_goals_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `performance_goals_ibfk_2` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `performance_goals_ibfk_3` FOREIGN KEY (`cycle_id`) REFERENCES `performance_cycles` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `performance_goals_ibfk_4` FOREIGN KEY (`created_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `performance_reviews` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `employee_id` int unsigned NOT NULL,
+  `cycle_id` int unsigned DEFAULT NULL,
+  `reviewer_id` int unsigned DEFAULT NULL,
+  `reviewer_type` enum('manager','self','peer','subordinate') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'manager',
+  `rating` decimal(3,2) DEFAULT NULL,
+  `strengths` text COLLATE utf8mb4_unicode_ci,
+  `areas_for_improvement` text COLLATE utf8mb4_unicode_ci,
+  `review` text COLLATE utf8mb4_unicode_ci,
+  `status` enum('draft','submitted') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'submitted',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_prev_tenant_emp` (`tenant_id`,`employee_id`),
+  KEY `idx_prev_cycle` (`cycle_id`),
+  CONSTRAINT `performance_reviews_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `performance_reviews_ibfk_2` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `performance_reviews_ibfk_3` FOREIGN KEY (`cycle_id`) REFERENCES `performance_cycles` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `performance_reviews_ibfk_4` FOREIGN KEY (`reviewer_id`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- ============ ANALYTICS DASHBOARDS ============
+CREATE TABLE IF NOT EXISTS `analytics_dashboards` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `admin_id` int unsigned NOT NULL COMMENT 'صاحب اللوحة — لكل مسؤول لوحته',
+  `name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Default',
+  `layout` json NOT NULL COMMENT 'مصفوفة widgets: [{key,type,filters,position,size}]',
+  `is_default` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_dash_tenant_admin` (`tenant_id`,`admin_id`),
+  CONSTRAINT `analytics_dashboards_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `analytics_dashboards_ibfk_2` FOREIGN KEY (`admin_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ── Payroll Export Templates (custom CSV) ──
+CREATE TABLE IF NOT EXISTS `payroll_export_templates` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'اسم القالب كما يراه المستخدم',
+  `delimiter` varchar(4) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT ',' COMMENT 'الفاصل: , ; | \t',
+  `include_bom` tinyint(1) NOT NULL DEFAULT 1 COMMENT 'إضافة UTF-8 BOM',
+  `include_header_row` tinyint(1) NOT NULL DEFAULT 1 COMMENT 'كتابة صف عناوين الأعمدة',
+  `decimal_places` tinyint unsigned NOT NULL DEFAULT 2 COMMENT 'منازل عشرية للحقول الرقمية',
+  `columns` json NOT NULL COMMENT 'مصفوفة أعمدة: [{"label":"..","field":"net_salary"}]',
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_by` int unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_export_tpl_tenant` (`tenant_id`, `is_active`),
+  CONSTRAINT `fk_export_tpl_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============ SCHEDULING INTELLIGENCE ============
+
+CREATE TABLE IF NOT EXISTS `employee_availability` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `employee_id` int unsigned NOT NULL,
+  `kind` enum('weekly','date') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'weekly',
+  `day_of_week` tinyint unsigned DEFAULT NULL COMMENT '0=Sun..6=Sat',
+  `specific_date` date DEFAULT NULL COMMENT 'for kind=date',
+  `availability` enum('available','preferred','unavailable') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'available',
+  `start_time` time DEFAULT NULL,
+  `end_time` time DEFAULT NULL,
+  `note` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_avail_tenant_emp` (`tenant_id`,`employee_id`,`kind`),
+  KEY `idx_avail_date` (`specific_date`),
+  CONSTRAINT `employee_availability_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `employee_availability_ibfk_2` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `open_shifts` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `branch_id` int unsigned DEFAULT NULL COMMENT 'NULL = all branches eligible',
+  `shift_id` int unsigned NOT NULL,
+  `work_date` date NOT NULL,
+  `slots` tinyint unsigned NOT NULL DEFAULT '1',
+  `slots_filled` tinyint unsigned NOT NULL DEFAULT '0',
+  `status` enum('open','filled','cancelled') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'open',
+  `notes` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_by` int unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_openshift_tenant_status` (`tenant_id`,`status`,`work_date`),
+  KEY `idx_openshift_branch` (`branch_id`),
+  CONSTRAINT `open_shifts_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `open_shifts_ibfk_2` FOREIGN KEY (`shift_id`) REFERENCES `shifts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `open_shifts_ibfk_3` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `open_shifts_ibfk_4` FOREIGN KEY (`created_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `open_shift_claims` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `open_shift_id` int unsigned NOT NULL,
+  `employee_id` int unsigned NOT NULL,
+  `status` enum('pending','approved','rejected','withdrawn') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `decided_by` int unsigned DEFAULT NULL,
+  `decided_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_claim_shift_emp` (`open_shift_id`,`employee_id`),
+  KEY `idx_claim_tenant_status` (`tenant_id`,`status`),
+  KEY `idx_claim_employee` (`employee_id`),
+  CONSTRAINT `open_shift_claims_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `open_shift_claims_ibfk_2` FOREIGN KEY (`open_shift_id`) REFERENCES `open_shifts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `open_shift_claims_ibfk_3` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `open_shift_claims_ibfk_4` FOREIGN KEY (`decided_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `shift_swap_requests` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `requester_employee_id` int unsigned NOT NULL,
+  `requester_date` date NOT NULL,
+  `target_employee_id` int unsigned NOT NULL,
+  `target_date` date NOT NULL,
+  `status` enum('pending_target','pending_manager','approved','rejected','cancelled') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending_target',
+  `requester_note` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `target_responded_at` timestamp NULL DEFAULT NULL,
+  `decided_by` int unsigned DEFAULT NULL,
+  `decided_at` timestamp NULL DEFAULT NULL,
+  `decision_note` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_swap_tenant_status` (`tenant_id`,`status`),
+  KEY `idx_swap_requester` (`requester_employee_id`),
+  KEY `idx_swap_target` (`target_employee_id`),
+  CONSTRAINT `shift_swap_requests_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shift_swap_requests_ibfk_2` FOREIGN KEY (`requester_employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shift_swap_requests_ibfk_3` FOREIGN KEY (`target_employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `shift_swap_requests_ibfk_4` FOREIGN KEY (`decided_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- Engagement Module — Announcements + Kudos + Surveys/eNPS
+-- Mirror of migrations/2026_06_07_engagement.sql
+-- ============================================================
+
+-- ============ ANNOUNCEMENTS ============
+CREATE TABLE IF NOT EXISTS `announcements` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `title` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title_ar` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `body` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `body_ar` text COLLATE utf8mb4_unicode_ci,
+  `category` enum('general','policy','event','celebration','urgent') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'general',
+  `audience_type` enum('all','branch','category','employee') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'all',
+  `audience_id` int unsigned DEFAULT NULL COMMENT 'branch_id | employee_category_id | employee_id depending on audience_type; null for all',
+  `is_pinned` tinyint(1) NOT NULL DEFAULT '0',
+  `status` enum('draft','published','archived') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `published_at` timestamp NULL DEFAULT NULL,
+  `created_by` int unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_ann_tenant_status` (`tenant_id`,`status`,`published_at`),
+  KEY `idx_ann_audience` (`tenant_id`,`audience_type`,`audience_id`),
+  CONSTRAINT `announcements_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `announcements_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============ ANNOUNCEMENT READ RECEIPTS ============
+CREATE TABLE IF NOT EXISTS `announcement_reads` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `announcement_id` int unsigned NOT NULL,
+  `tenant_id` int unsigned NOT NULL,
+  `employee_id` int unsigned NOT NULL,
+  `read_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_ann_emp` (`announcement_id`,`employee_id`),
+  KEY `idx_annread_tenant` (`tenant_id`),
+  CONSTRAINT `announcement_reads_ibfk_1` FOREIGN KEY (`announcement_id`) REFERENCES `announcements` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `announcement_reads_ibfk_2` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `announcement_reads_ibfk_3` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============ KUDOS ============
+CREATE TABLE IF NOT EXISTS `kudos` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `recipient_employee_id` int unsigned NOT NULL,
+  `sender_employee_id` int unsigned DEFAULT NULL COMMENT 'Sender is an employee from the employee app',
+  `sender_admin_id` int unsigned DEFAULT NULL COMMENT 'Sender is an admin from medjat_admin',
+  `badge` enum('teamwork','innovation','leadership','customer_service','above_beyond','reliability','thank_you') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'thank_you',
+  `message` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `visibility` enum('public','private') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'public',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_kudos_tenant_recipient` (`tenant_id`,`recipient_employee_id`),
+  KEY `idx_kudos_tenant_public` (`tenant_id`,`visibility`,`created_at`),
+  CONSTRAINT `kudos_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `kudos_ibfk_2` FOREIGN KEY (`recipient_employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `kudos_ibfk_3` FOREIGN KEY (`sender_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `kudos_ibfk_4` FOREIGN KEY (`sender_admin_id`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============ SURVEYS ============
+CREATE TABLE IF NOT EXISTS `surveys` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `title` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title_ar` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `type` enum('enps','pulse','custom') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'custom',
+  `is_anonymous` tinyint(1) NOT NULL DEFAULT '1',
+  `audience_type` enum('all','branch','category') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'all',
+  `audience_id` int unsigned DEFAULT NULL,
+  `status` enum('draft','active','closed') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `start_date` date DEFAULT NULL,
+  `end_date` date DEFAULT NULL,
+  `created_by` int unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `closed_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_survey_tenant_status` (`tenant_id`,`status`),
+  CONSTRAINT `surveys_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `surveys_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============ SURVEY QUESTIONS ============
+CREATE TABLE IF NOT EXISTS `survey_questions` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `survey_id` int unsigned NOT NULL,
+  `tenant_id` int unsigned NOT NULL,
+  `question` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `question_ar` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `qtype` enum('enps','rating','scale','text','single_choice','multi_choice') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'rating',
+  `options` json DEFAULT NULL COMMENT 'For choice types: ["..","..."]',
+  `is_required` tinyint(1) NOT NULL DEFAULT '1',
+  `sort_order` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_sq_survey` (`survey_id`,`sort_order`),
+  KEY `idx_sq_tenant` (`tenant_id`),
+  CONSTRAINT `survey_questions_ibfk_1` FOREIGN KEY (`survey_id`) REFERENCES `surveys` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `survey_questions_ibfk_2` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============ SURVEY RESPONSES ============
+CREATE TABLE IF NOT EXISTS `survey_responses` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `survey_id` int unsigned NOT NULL,
+  `tenant_id` int unsigned NOT NULL,
+  `employee_id` int unsigned DEFAULT NULL COMMENT 'null for anonymous surveys',
+  `submitted_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_sr_survey` (`survey_id`),
+  KEY `idx_sr_tenant` (`tenant_id`),
+  CONSTRAINT `survey_responses_ibfk_1` FOREIGN KEY (`survey_id`) REFERENCES `surveys` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `survey_responses_ibfk_2` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `survey_responses_ibfk_3` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============ SURVEY ANSWERS ============
+CREATE TABLE IF NOT EXISTS `survey_answers` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `response_id` int unsigned NOT NULL,
+  `question_id` int unsigned NOT NULL,
+  `tenant_id` int unsigned NOT NULL,
+  `answer_value` int DEFAULT NULL COMMENT 'For numeric types: enps 0-10 / rating 1-5 / scale',
+  `answer_text` text COLLATE utf8mb4_unicode_ci COMMENT 'Text or JSON for multi_choice options',
+  PRIMARY KEY (`id`),
+  KEY `idx_sa_response` (`response_id`),
+  KEY `idx_sa_question` (`question_id`),
+  KEY `idx_sa_tenant` (`tenant_id`),
+  CONSTRAINT `survey_answers_ibfk_1` FOREIGN KEY (`response_id`) REFERENCES `survey_responses` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `survey_answers_ibfk_2` FOREIGN KEY (`question_id`) REFERENCES `survey_questions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `survey_answers_ibfk_3` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============ SURVEY COMPLETIONS (prevents duplicate submission while preserving anonymity) ============
+CREATE TABLE IF NOT EXISTS `survey_completions` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `survey_id` int unsigned NOT NULL,
+  `tenant_id` int unsigned NOT NULL,
+  `employee_id` int unsigned NOT NULL,
+  `completed_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_survey_emp` (`survey_id`,`employee_id`),
+  KEY `idx_sc_tenant` (`tenant_id`),
+  CONSTRAINT `survey_completions_ibfk_1` FOREIGN KEY (`survey_id`) REFERENCES `surveys` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `survey_completions_ibfk_2` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `survey_completions_ibfk_3` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============ APPROVAL CHAINS ============
+CREATE TABLE IF NOT EXISTS `approval_chains` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name_ar` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `request_type` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'leave|expense|loan|bonus|warning|document|generic',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `min_amount` decimal(14,2) DEFAULT NULL COMMENT 'Condition: context amount >= this (NULL=no min)',
+  `max_amount` decimal(14,2) DEFAULT NULL COMMENT 'Condition: context amount <= this (NULL=no max)',
+  `branch_id` int unsigned DEFAULT NULL COMMENT 'Condition: request branch = this (NULL=all branches)',
+  `priority` int NOT NULL DEFAULT '0' COMMENT 'Higher wins when multiple chains match',
+  `created_by` int unsigned DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_chain_tenant_type_active` (`tenant_id`,`request_type`,`is_active`),
+  KEY `idx_chain_branch` (`branch_id`),
+  CONSTRAINT `approval_chains_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `approval_chains_ibfk_2` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `approval_chains_ibfk_3` FOREIGN KEY (`created_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============ APPROVAL CHAIN STEPS ============
+CREATE TABLE IF NOT EXISTS `approval_chain_steps` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `chain_id` int unsigned NOT NULL,
+  `step_order` tinyint unsigned NOT NULL COMMENT 'Starts at 1, sequential',
+  `approver_type` enum('role','admin') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'role',
+  `approver_role` varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'When approver_type=role',
+  `approver_admin_id` int unsigned DEFAULT NULL COMMENT 'When approver_type=admin',
+  `label` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Descriptive name for the step',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_chain_step_order` (`chain_id`,`step_order`),
+  KEY `idx_step_tenant` (`tenant_id`),
+  KEY `idx_step_admin` (`approver_admin_id`),
+  CONSTRAINT `approval_chain_steps_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `approval_chain_steps_ibfk_2` FOREIGN KEY (`chain_id`) REFERENCES `approval_chains` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `approval_chain_steps_ibfk_3` FOREIGN KEY (`approver_admin_id`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============ APPROVAL REQUESTS ============
+CREATE TABLE IF NOT EXISTS `approval_requests` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `chain_id` int unsigned DEFAULT NULL COMMENT 'Referential; SET NULL if chain deleted (steps are snapshot)',
+  `entity_type` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `entity_id` int unsigned NOT NULL,
+  `requested_by_admin_id` int unsigned DEFAULT NULL,
+  `requested_by_employee_id` int unsigned DEFAULT NULL,
+  `context_amount` decimal(14,2) DEFAULT NULL COMMENT 'Amount used for conditional matching (audit)',
+  `current_step` tinyint unsigned NOT NULL DEFAULT '1',
+  `total_steps` tinyint unsigned NOT NULL,
+  `status` enum('pending','approved','rejected','cancelled') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `decided_at` timestamp NULL DEFAULT NULL COMMENT 'Final decision timestamp',
+  PRIMARY KEY (`id`),
+  KEY `idx_req_tenant_status` (`tenant_id`,`status`),
+  KEY `idx_req_entity` (`tenant_id`,`entity_type`,`entity_id`),
+  CONSTRAINT `approval_requests_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `approval_requests_ibfk_2` FOREIGN KEY (`chain_id`) REFERENCES `approval_chains` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============ APPROVAL REQUEST STEPS ============
+CREATE TABLE IF NOT EXISTS `approval_request_steps` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `request_id` int unsigned NOT NULL,
+  `step_order` tinyint unsigned NOT NULL,
+  `approver_type` enum('role','admin') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `approver_role` varchar(40) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `approver_admin_id` int unsigned DEFAULT NULL,
+  `label` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` enum('pending','approved','rejected','skipped') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `decided_by` int unsigned DEFAULT NULL COMMENT 'admins.id who decided this step',
+  `decided_at` timestamp NULL DEFAULT NULL,
+  `note` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_reqstep_order` (`request_id`,`step_order`),
+  KEY `idx_reqstep_tenant_status` (`tenant_id`,`status`),
+  KEY `idx_reqstep_admin` (`approver_admin_id`),
+  CONSTRAINT `approval_request_steps_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `approval_request_steps_ibfk_2` FOREIGN KEY (`request_id`) REFERENCES `approval_requests` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `approval_request_steps_ibfk_3` FOREIGN KEY (`approver_admin_id`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============ BREAK REQUESTS ============
+CREATE TABLE IF NOT EXISTS `break_requests` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `employee_id` int unsigned NOT NULL,
+  `date` date NOT NULL COMMENT 'يوم العمل المطلوب فيه الإذن/البريك',
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `duration_minutes` smallint unsigned NOT NULL DEFAULT 0 COMMENT 'محسوبة في PHP وقت الإدراج',
+  `type` enum('break','permission','prayer','errand','medical','early_leave','other')
+        COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'break',
+  `deduct_from_salary` tinyint(1) NOT NULL DEFAULT 0
+        COMMENT 'إذن انصراف مبكر: هل يُخصم بنظام الساعة من الراتب؟ يحدده المدير عند الموافقة',
+  `reason` text COLLATE utf8mb4_unicode_ci,
+  `status` enum('pending','approved','rejected','postponed','cancelled')
+        COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `decided_by` int unsigned DEFAULT NULL COMMENT 'admins.id الذي اتخذ القرار',
+  `decided_at` timestamp NULL DEFAULT NULL,
+  `decision_note` text COLLATE utf8mb4_unicode_ci COMMENT 'سبب الرفض / ملاحظة الموافقة أو التأجيل',
+  `suggested_date` date DEFAULT NULL COMMENT 'وقت بديل مقترح عند التأجيل',
+  `suggested_start_time` time DEFAULT NULL,
+  `suggested_end_time` time DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_break_tenant` (`tenant_id`),
+  KEY `idx_break_emp_date` (`employee_id`,`date`),
+  KEY `idx_break_status` (`status`),
+  KEY `decided_by` (`decided_by`),
+  CONSTRAINT `break_requests_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `break_requests_ibfk_2` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `break_requests_ibfk_3` FOREIGN KEY (`decided_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============ SIGNATURE REQUESTS ============
+CREATE TABLE IF NOT EXISTS `signature_requests` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `entity_type` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'document_request (phase 1)',
+  `entity_id` int unsigned NOT NULL COMMENT 'document_requests.id',
+  `title` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'snapshot of document title at send time',
+  `source_pdf_path` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'unsigned PDF path at open time',
+  `source_hash` char(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'sha256 of original file',
+  `signed_pdf_path` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'filled on completion',
+  `signed_hash` char(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'sha256 of final signed PDF',
+  `verify_code` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'unique public verification code',
+  `signing_order` enum('sequential','parallel') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'sequential',
+  `current_party` tinyint unsigned NOT NULL DEFAULT '1' COMMENT 'current party_order pointer',
+  `total_parties` tinyint unsigned NOT NULL,
+  `status` enum('pending','completed','declined','voided') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `expires_at` timestamp NULL DEFAULT NULL,
+  `created_by` int unsigned DEFAULT NULL COMMENT 'admins.id who sent for signature',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `completed_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_sig_verify_code` (`verify_code`),
+  KEY `idx_sig_tenant_status` (`tenant_id`,`status`),
+  KEY `idx_sig_entity` (`tenant_id`,`entity_type`,`entity_id`),
+  CONSTRAINT `signature_requests_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `signature_requests_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============ SIGNATURE PARTIES ============
+CREATE TABLE IF NOT EXISTS `signature_parties` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `signature_request_id` int unsigned NOT NULL,
+  `party_order` tinyint unsigned NOT NULL COMMENT 'starts from 1',
+  `signer_type` enum('employee','admin','external') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `signer_employee_id` int unsigned DEFAULT NULL,
+  `signer_admin_id` int unsigned DEFAULT NULL,
+  `signer_name` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'snapshot of name at creation',
+  `role_label` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'e.g. Employee / Authorized Manager',
+  `status` enum('pending','signed','declined') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `sign_method` enum('drawn','typed','otp') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `signature_image_path` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'when drawn: saved signature image',
+  `typed_name` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'when typed',
+  `consent_given` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'consented to electronic signature',
+  `otp_hash` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'password_hash of sent OTP',
+  `otp_expires_at` timestamp NULL DEFAULT NULL,
+  `signed_at` timestamp NULL DEFAULT NULL,
+  `signed_ip` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `signed_user_agent` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `decline_reason` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_party_order` (`signature_request_id`,`party_order`),
+  KEY `idx_party_tenant_status` (`tenant_id`,`status`),
+  KEY `idx_party_employee` (`signer_employee_id`),
+  KEY `idx_party_admin` (`signer_admin_id`),
+  CONSTRAINT `signature_parties_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `signature_parties_ibfk_2` FOREIGN KEY (`signature_request_id`) REFERENCES `signature_requests` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `signature_parties_ibfk_3` FOREIGN KEY (`signer_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `signature_parties_ibfk_4` FOREIGN KEY (`signer_admin_id`) REFERENCES `admins` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -5,6 +5,7 @@ import '../../../core/constant/theme/theme.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../data/model/shift_model.dart';
 import '../../../logic/controller/shift/shift_controller.dart';
+import '../../widget/payroll/bulk_adjust_sheet.dart';
 
 class ShiftsScreen extends StatelessWidget {
   const ShiftsScreen({super.key});
@@ -414,6 +415,19 @@ class _ShiftTile extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                icon: Icon(Icons.payments_outlined,
+                    size: 20, color: colors.textSecondary),
+                tooltip: 'bulk_adjust'.tr,
+                onPressed: () => showBulkAdjustSheet(
+                  context,
+                  scopeType: 'shift',
+                  scopeId: shift.id,
+                  scopeName: shift.name,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
               ),
               IconButton(
                 icon: Icon(Icons.edit_outlined, size: 20, color: colors.textSecondary),

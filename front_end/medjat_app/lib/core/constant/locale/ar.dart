@@ -121,6 +121,14 @@ const Map<String, String> ar = {
   'download_pdf': 'تحميل PDF',
   'failed_save_file': 'فشل حفظ الملف',
   'failed_download_slip': 'فشل تحميل الكشف',
+  'total_additions': 'إجمالي الإضافات',
+  'total_deductions': 'إجمالي الخصومات',
+  'additions_details': 'تفاصيل الإضافات',
+  'deductions_details': 'تفاصيل الخصومات',
+  'salary_summary': 'ملخص الراتب',
+  'no_deductions': 'لا توجد خصومات',
+  'no_additions': 'لا توجد إضافات',
+  'payroll_draft_note': 'هذا الكشف مبدئي ولم يُعتمد بعد، وقد تتغيّر القيم',
 
   // Leave
   'apply_leave': 'تقديم إجازة',

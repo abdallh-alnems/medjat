@@ -118,6 +118,14 @@ const Map<String, String> en = {
   'download_pdf': 'Download PDF',
   'failed_save_file': 'Failed to save file',
   'failed_download_slip': 'Failed to download pay slip',
+  'total_additions': 'Total Additions',
+  'total_deductions': 'Total Deductions',
+  'additions_details': 'Additions Details',
+  'deductions_details': 'Deductions Details',
+  'salary_summary': 'Salary Summary',
+  'no_deductions': 'No deductions',
+  'no_additions': 'No additions',
+  'payroll_draft_note': 'This slip is preliminary and not yet approved; values may change',
 
   // Leave
   'apply_leave': 'Apply for Leave',

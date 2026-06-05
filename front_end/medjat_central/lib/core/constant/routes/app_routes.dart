@@ -53,4 +53,7 @@ abstract class AppRoutes {
   static const String support = '/support';
   static const String supportChat = '/support/chat';
   static const String supportNew = '/support/new';
+  static const String exportTemplates = '/payroll/export-templates';
+  static const String breakManage = '/break/manage';
+  static const String employeeSettlement = '/employee/settlement';
 }

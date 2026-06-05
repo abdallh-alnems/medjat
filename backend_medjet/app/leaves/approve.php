@@ -12,6 +12,10 @@ $input = $auth['input'];
 $leaveId = (int) ($input['leave_id'] ?? 0);
 Validator::required($leaveId, 'leave_id');
 
+if (ApprovalEngine::isPending($tenantId, 'leave', $leaveId)) {
+    Response::fail('This leave is managed by a multi-level approval chain. Use approvals/decide.', 409);
+}
+
 LeaveModel::approve($leaveId, $tenantId, $auth['admin_id']);
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'leave.approve', 'leave', $leaveId);

@@ -10,6 +10,7 @@ import '../../widget/maintenance_gate.dart';
 import '../../widget/update_gate.dart';
 import '../../../data/data_source/remote/auth_data/auth_data.dart';
 import '../../../data/data_source/remote/employee_data/employee_data.dart';
+import '../../../data/data_source/remote/break_data/break_data.dart';
 import '../../../data/data_source/remote/performance_data/performance_data.dart';
 import '../../../data/data_source/remote/branch_data/branch_data.dart';
 import '../../../data/data_source/remote/document_data/document_data.dart';
@@ -29,9 +30,12 @@ import '../../../view/screen/dashboard/dashboard_screen.dart';
 import '../../../view/screen/employee/employees_screen.dart';
 import '../../../view/screen/employee/add_employee_screen.dart';
 import '../../../view/screen/employee/employee_detail_screen.dart';
+import '../../../view/screen/employee/employee_settlement_screen.dart';
+import '../../../data/data_source/remote/settlement_data/settlement_data.dart';
 import '../../../view/screen/attendance/attendance_screen.dart';
 import '../../../view/screen/payroll/payroll_screen.dart';
 import '../../../view/screen/leave/leave_screen.dart';
+import '../../../view/screen/break/break_screen.dart';
 import '../../../view/screen/expense/expenses_screen.dart';
 import '../../../view/screen/loan/loans_screen.dart';
 import '../../../data/data_source/remote/expense_data/expense_data.dart';
@@ -84,6 +88,8 @@ import '../../../data/data_source/remote/live_attendance_data/live_attendance_da
 import '../../../data/data_source/remote/letter_data/letter_data.dart';
 import '../../../data/data_source/remote/support_data/support_data.dart';
 import '../../../logic/controller/support/support_controller.dart';
+import '../../../logic/controller/export_template/export_template_controller.dart';
+import '../../../view/screen/payroll/export_templates_screen.dart';
 import '../../../view/screen/support/support_tickets_screen.dart';
 import '../../../view/screen/support/support_chat_screen.dart';
 import '../../../view/screen/support/new_ticket_screen.dart';
@@ -212,6 +218,16 @@ List<GetPage<dynamic>> getPages = [
     page: () => const LeaveScreen(),
     binding: BindingsBuilder<void>(() {
       Get.lazyPut<EmployeeData>(() => EmployeeData());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.breakManage,
+    page: () => const BreakScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<BreakData>(() => BreakData());
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
@@ -668,6 +684,26 @@ List<GetPage<dynamic>> getPages = [
     transition: Transition.fadeIn,
     transitionDuration: AppMotion.transition,
   ),
+  GetPage(
+    name: AppRoutes.exportTemplates,
+    page: () => const ExportTemplatesScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<ExportTemplateController>(() => ExportTemplateController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.employeeSettlement,
+    page: () => const EmployeeSettlementScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<SettlementData>(() => SettlementData());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
 ];
 
 class MoreScreen extends StatelessWidget {
@@ -702,12 +738,24 @@ class MoreScreen extends StatelessWidget {
               title: 'leaves'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.leaveManage),
             ),
+          if (auth.user?.canManageLeaves == true)
+            _MenuTile(
+              icon: Icons.coffee_outlined,
+              title: 'break_requests'.tr,
+              onTap: () => Get.toNamed<void>(AppRoutes.breakManage),
+            ),
           if (auth.user?.canManageDocuments == true)
             _MenuTile(
               icon: Icons.description_outlined,
               title: 'letters'.tr,
               subtitle: 'letters_hint'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.letters),
+            ),
+          if (auth.user?.canManagePayroll == true)
+            _MenuTile(
+              icon: Icons.upload_file_outlined,
+              title: 'export_templates'.tr,
+              onTap: () => Get.toNamed<void>(AppRoutes.exportTemplates),
             ),
           if (auth.user?.canManagePayroll == true)
             _MenuTile(

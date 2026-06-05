@@ -11,6 +11,7 @@ import '../../../core/class/status_request.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
+import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/utils/currency.dart';
 import '../../../core/widget/month_grid_picker.dart';
 import '../../../data/data_source/remote/employee_data/employee_data.dart';
@@ -74,6 +75,15 @@ class EmployeeDetailScreen extends StatelessWidget {
                               case 'end_suspension':
                                 _confirmEndSuspension(context, ctrl);
                                 break;
+                              case 'end_service':
+                                Get.toNamed<void>(
+                                  AppRoutes.employeeSettlement,
+                                  arguments: {
+                                    'employee_id': ctrl.employee!.id,
+                                    'employee_name': ctrl.employee!.name,
+                                  },
+                                )?.then((_) => ctrl.loadEmployee());
+                                break;
                             }
                           },
                           itemBuilder: (_) => [
@@ -100,6 +110,20 @@ class EmployeeDetailScreen extends StatelessWidget {
                                   ],
                                 ),
                               ),
+                            PopupMenuItem(
+                              value: 'end_service',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.logout,
+                                      size: 20,
+                                      color: AppColors.of(context).error),
+                                  const SizedBox(width: AppSpacing.s2),
+                                  Text('end_service'.tr,
+                                      style: TextStyle(
+                                          color: AppColors.of(context).error)),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                     ],

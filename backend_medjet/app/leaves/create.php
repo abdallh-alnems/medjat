@@ -70,6 +70,25 @@ if ($type === 'annual') {
 
             AuditLogModel::log($tenantId, $auth['admin_id'], 'leave.create', 'leave', $leaveId1 ?? $leaveId2);
 
+            if (!$autoApprove) {
+                if ($leaveId1) {
+                    ApprovalEngine::route($tenantId, 'leave', $leaveId1, [
+                        'amount' => null,
+                        'branch_id' => $employee['branch_id'] ?? null,
+                        'by_admin_id' => $auth['admin_id'],
+                        'by_employee_id' => $employeeId,
+                    ]);
+                }
+                if ($leaveId2) {
+                    ApprovalEngine::route($tenantId, 'leave', $leaveId2, [
+                        'amount' => null,
+                        'branch_id' => $employee['branch_id'] ?? null,
+                        'by_admin_id' => $auth['admin_id'],
+                        'by_employee_id' => $employeeId,
+                    ]);
+                }
+            }
+
 try {
     $recipients = SmartAlertService::recipientsForBranch($tenantId, $employee['branch_id'], 'manage_leaves');
     foreach ($recipients as $rid) {
@@ -108,6 +127,15 @@ if ($autoApprove) {
 }
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'leave.create', 'leave', $leaveId);
+
+if (!$autoApprove) {
+    ApprovalEngine::route($tenantId, 'leave', $leaveId, [
+        'amount' => null,
+        'branch_id' => $employee['branch_id'] ?? null,
+        'by_admin_id' => $auth['admin_id'],
+        'by_employee_id' => $employeeId,
+    ]);
+}
 
 try {
     $recipients = SmartAlertService::recipientsForBranch($tenantId, $employee['branch_id'], 'manage_leaves');

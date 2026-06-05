@@ -16,6 +16,9 @@ class PayrollModel {
   final double projectedNet;
   final String status;
   final DateTime? generatedAt;
+  /// When the slip was marked paid, or null if it isn't paid yet. Drives the
+  /// "Paid on …" line shown on paid tiles.
+  final DateTime? paidAt;
   // Cycle-aware fields from the live overview endpoint. Past/legacy rows omit
   // these — daysElapsed defaulting to daysInCycle keeps progress at 100%.
   final int daysInCycle;
@@ -49,6 +52,7 @@ class PayrollModel {
     this.projectedNet = 0,
     this.status = 'draft',
     this.generatedAt,
+    this.paidAt,
     this.daysInCycle = 0,
     this.daysElapsed = 0,
     this.branchId,
@@ -97,6 +101,9 @@ class PayrollModel {
       status: (json['status'] as String?) ?? 'draft',
       generatedAt: json['generated_at'] != null
           ? DateTime.tryParse(json['generated_at'] as String)
+          : null,
+      paidAt: json['paid_at'] is String
+          ? DateTime.tryParse(json['paid_at'] as String)
           : null,
       daysInCycle: (json['days_in_cycle'] as num?)?.toInt() ?? 0,
       daysElapsed: (json['days_elapsed'] as num?)?.toInt() ?? 0,

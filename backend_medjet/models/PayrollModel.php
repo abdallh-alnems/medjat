@@ -100,7 +100,7 @@ final class PayrollModel {
         $employees = Database::fetchAll($sql, $params);
 
         $savedRows = Database::fetchAll(
-            "SELECT employee_id, id, status FROM payroll WHERE tenant_id = ? AND month = ?",
+            "SELECT employee_id, id, status, paid_at FROM payroll WHERE tenant_id = ? AND month = ?",
             [$tenantId, $month]
         );
         $savedByEmployee = [];
@@ -179,6 +179,9 @@ final class PayrollModel {
                 'days_in_cycle' => $calc['days_in_cycle'],
                 'days_elapsed' => $calc['days_elapsed'],
                 'status' => $saved ? $saved['status'] : 'live',
+                // When the slip was marked paid (null until then) — lets the
+                // tile show "Paid on …" next to employees who've been paid.
+                'paid_at' => $saved ? ($saved['paid_at'] ?? null) : null,
                 // Per-event breakdown so the tile can expand and show
                 // *why* the totals look like they do without round-tripping
                 // back to employee profile.
@@ -394,8 +397,10 @@ final class PayrollModel {
 
     public static function getApprovedForBankFile(int $tenantId, string $month, ?int $branchId = null): array {
         $sql = "SELECT e.name AS employee_name, e.id AS employee_id,
-                       e.bank_name, e.bank_account_number, e.bank_iban,
-                       p.net_salary, p.branch_id,
+                       e.national_id, e.iqama_number, e.nationality,
+                       e.bank_name, e.bank_account_number, e.bank_iban, e.bank_swift,
+                       p.base_salary, p.total_bonuses, p.total_deductions,
+                       p.net_salary, p.working_days, p.branch_id,
                        b.name AS branch_name
                 FROM payroll p
                 JOIN employees e ON e.id = p.employee_id

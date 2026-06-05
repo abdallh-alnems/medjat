@@ -34,6 +34,8 @@ foreach ($rows as $row) {
     }
 }
 
+$tenant = TenantModel::findById($tenantId);
+
 Response::success([
     'month' => $month,
     'total_employees' => count($rows),
@@ -41,4 +43,5 @@ Response::success([
     'ready_count' => count($ready),
     'missing_bank_count' => count($missing),
     'missing' => $missing,
+    'available_exporters' => PayrollExporterRegistry::availableFor($tenant),
 ]);

@@ -26,6 +26,13 @@ if (LeaveModel::hasOverlap($employee['id'], $tenantId, $startDateInput, $endDate
 
 $leaveId = LeaveModel::apply($employee['id'], $tenantId, $date, $type, $reason, $startDateInput, $endDateInput);
 
+ApprovalEngine::route($tenantId, 'leave', $leaveId, [
+    'amount'         => null,
+    'branch_id'      => $employee['branch_id'] ?? null,
+    'by_employee_id' => $auth['employee_id'],
+    'by_admin_id'    => null,
+]);
+
 try {
     $recipients = SmartAlertService::recipientsForBranch($tenantId, $employee['branch_id'], 'manage_leaves');
     foreach ($recipients as $rid) {

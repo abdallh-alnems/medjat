@@ -19,6 +19,10 @@ class PayrollController extends GetxController {
   int? branchFilter;
   int? shiftFilter;
   int? categoryFilter;
+  /// Status to keep when set: one of 'paid', 'approved', 'draft', 'live'.
+  /// Null shows every status. Purely client-side — the live overview already
+  /// carries each row's status, so toggling this never refetches.
+  String? statusFilter;
   /// When true the list is rendered with a header per branch and a subtotal
   /// row at the bottom of each group. Driven by a toolbar toggle.
   bool groupByBranch = false;
@@ -163,7 +167,11 @@ class PayrollController extends GetxController {
     return cycleLabelContaining(h);
   }
 
-  List<PayrollModel> get filteredPayrolls {
+  /// Rows matching search + branch/shift/category, *before* the status
+  /// filter and sort. The status counts below derive from this set so a
+  /// figure like "3 paid" stays stable while the user toggles the status
+  /// filter itself.
+  Iterable<PayrollModel> get _scopedPayrolls {
     final q = searchQuery.trim().toLowerCase();
     Iterable<PayrollModel> rows = payrolls;
     if (q.isNotEmpty) {
@@ -178,6 +186,14 @@ class PayrollController extends GetxController {
     }
     if (categoryFilter != null) {
       rows = rows.where((p) => p.categoryIds.contains(categoryFilter));
+    }
+    return rows;
+  }
+
+  List<PayrollModel> get filteredPayrolls {
+    Iterable<PayrollModel> rows = _scopedPayrolls;
+    if (statusFilter != null) {
+      rows = rows.where((p) => p.status == statusFilter);
     }
     final list = rows.toList();
     switch (sortBy) {
@@ -202,7 +218,19 @@ class PayrollController extends GetxController {
   bool get hasActiveFilters =>
       branchFilter != null ||
       shiftFilter != null ||
-      categoryFilter != null;
+      categoryFilter != null ||
+      statusFilter != null;
+
+  /// How many of the in-scope rows are already marked paid. Drives the
+  /// "X paid" badge on the summary card. Computed off [_scopedPayrolls] so
+  /// it ignores the status filter (you still see "3 paid" while viewing
+  /// only the unpaid rows).
+  int get paidCount =>
+      _scopedPayrolls.where((p) => p.status == 'paid').length;
+
+  /// Total in-scope rows (regardless of status) — the denominator for the
+  /// paid badge ("3 / 12 paid").
+  int get scopedCount => _scopedPayrolls.length;
 
   // ── Aggregates for the summary card ────────────────────────────────
   // All computed off the *filtered* list so the summary reacts to filters.
@@ -253,11 +281,17 @@ class PayrollController extends GetxController {
   /// total). Shift/category filtering stays client-side — the backend
   /// doesn't know about them, so the delta is hidden whenever either is
   /// active (see [previousSummaryApplies]).
-  void applyFilters({int? branchId, int? shiftId, int? categoryId}) {
+  void applyFilters({
+    int? branchId,
+    int? shiftId,
+    int? categoryId,
+    String? status,
+  }) {
     final branchChanged = branchFilter != branchId;
     branchFilter = branchId;
     shiftFilter = shiftId;
     categoryFilter = categoryId;
+    statusFilter = status;
     if (branchChanged) {
       loadPayrolls();
     } else {
@@ -270,6 +304,7 @@ class PayrollController extends GetxController {
     branchFilter = null;
     shiftFilter = null;
     categoryFilter = null;
+    statusFilter = null;
     if (branchWasSet) {
       loadPayrolls();
     } else {

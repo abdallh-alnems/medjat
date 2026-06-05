@@ -89,9 +89,62 @@ if (!empty($categoryIds)) {
     EmployeeCategoryModel::assignToEmployee($employeeId, $tenantId, $categoryIds);
 }
 
+// Optional recurring monthly allowances supplied with the new employee
+// (housing, transport, food…). Each one becomes an active allowance row that
+// payroll emits as a bonus line every month from start_month onwards. They
+// default to the hire month and run open-ended unless an end month is given.
+if (is_array($input['allowances'] ?? null)) {
+    $defaultStartMonth = substr($hireDate, 0, 7); // hire date is YYYY-MM-DD
+    foreach ($input['allowances'] as $allowance) {
+        if (!is_array($allowance)) {
+            continue;
+        }
+        $type = trim((string) ($allowance['type'] ?? ''));
+        $amount = (float) ($allowance['amount'] ?? 0);
+        // Skip blank rows (no type or non-positive amount) silently so the UI
+        // can submit a fixed set of optional fields without erroring.
+        if ($type === '' || $amount <= 0) {
+            continue;
+        }
+
+        $startMonth = (string) ($allowance['start_month'] ?? '');
+        if (!preg_match('/^\d{4}-\d{2}$/', $startMonth)) {
+            $startMonth = $defaultStartMonth;
+        }
+        $endMonth = isset($allowance['end_month']) && $allowance['end_month'] !== ''
+            ? (string) $allowance['end_month'] : null;
+        if ($endMonth !== null && !preg_match('/^\d{4}-\d{2}$/', $endMonth)) {
+            Response::fail('allowance end_month must be YYYY-MM', 422);
+        }
+        if ($endMonth !== null && $endMonth < $startMonth) {
+            Response::fail('allowance end_month cannot be before start_month', 422);
+        }
+        $label = isset($allowance['label']) && trim((string) $allowance['label']) !== ''
+            ? trim((string) $allowance['label']) : null;
+
+        AllowanceModel::create(
+            $tenantId,
+            $employeeId,
+            $type,
+            $amount,
+            $startMonth,
+            $endMonth,
+            $label,
+            $auth['admin_id']
+        );
+    }
+}
+
 $activation = ActivationCodeModel::generate($tenantId, $employeeId);
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'employee.create', 'employee', $employeeId);
+
+try {
+    OnboardingModel::ensureDefaults($tenantId);
+    OnboardingModel::generateForEmployee($tenantId, $employeeId);
+} catch (Exception $e) {
+    error_log('Onboarding generation error: ' . $e->getMessage());
+}
 
 Response::success([
     'employee_id' => $employeeId,

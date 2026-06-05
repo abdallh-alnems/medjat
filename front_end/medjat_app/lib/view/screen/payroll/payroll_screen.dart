@@ -9,6 +9,8 @@ import '../../../../logic/controller/payroll/payroll_controller.dart';
 class PayrollScreen extends StatelessWidget {
   const PayrollScreen({super.key});
 
+  static const _green = Color(0xFF2E7D32);
+
   @override
   Widget build(BuildContext context) {
     Get.lazyPut(() => PayrollController());
@@ -73,26 +75,59 @@ class PayrollScreen extends StatelessWidget {
       );
     }
 
+    final deductions = _lines(slip['deductions_breakdown']);
+    final additions = _lines(slip['bonuses_breakdown']);
+    final isDraft = slip['status'] == 'draft';
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _slipRow(context, 'base_salary'.tr, slip['base_salary']?.toString() ?? '0'),
-          if (slip['allowances'] != null)
-            _slipRow(context, 'allowances'.tr, slip['allowances']?.toString() ?? '0'),
-          if (slip['overtime_amount'] != null)
-            _slipRow(context, 'overtime'.tr, slip['overtime_amount']?.toString() ?? '0'),
-          if (slip['deductions'] != null)
-            _slipRow(context, 'deductions'.tr, slip['deductions']?.toString() ?? '0',
-                valueColor: Colors.red),
-          const Divider(height: 32),
-          _slipRow(
+          if (isDraft) _draftNote(context),
+
+          // ---- Summary ----
+          _sectionCard(
             context,
-            'net'.tr,
-            slip['net_salary']?.toString() ?? slip['total']?.toString() ?? '0',
-            isBold: true,
+            title: 'salary_summary'.tr,
+            children: [
+              _slipRow(context, 'base_salary'.tr, _money(slip['base_salary'])),
+              _slipRow(context, 'total_additions'.tr,
+                  '+ ${_money(slip['total_bonuses'])}',
+                  valueColor: _green),
+              _slipRow(context, 'total_deductions'.tr,
+                  '- ${_money(slip['total_deductions'])}',
+                  valueColor: Colors.red),
+              const Divider(height: 28),
+              _slipRow(context, 'net'.tr, _money(slip['net_salary']),
+                  isBold: true),
+            ],
           ),
+
+          // ---- Additions detail ----
+          const SizedBox(height: 16),
+          _sectionCard(
+            context,
+            title: 'additions_details'.tr,
+            children: additions.isEmpty
+                ? [_emptyRow(context, 'no_additions'.tr)]
+                : additions
+                    .map((d) => _detailRow(context, d, _green, '+'))
+                    .toList(),
+          ),
+
+          // ---- Deductions detail ----
+          const SizedBox(height: 16),
+          _sectionCard(
+            context,
+            title: 'deductions_details'.tr,
+            children: deductions.isEmpty
+                ? [_emptyRow(context, 'no_deductions'.tr)]
+                : deductions
+                    .map((d) => _detailRow(context, d, Colors.red, '-'))
+                    .toList(),
+          ),
+
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
@@ -113,14 +148,81 @@ class PayrollScreen extends StatelessWidget {
     );
   }
 
+  Widget _draftNote(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, color: Colors.orange, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('payroll_draft_note'.tr,
+                style: AppTextStyles.bodySecondary(context)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionCard(BuildContext context,
+      {required String title, required List<Widget> children}) {
+    final scheme = AppColors.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: scheme.borderHairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: AppTextStyles.h3(context)),
+          const SizedBox(height: 8),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  /// One detailed line from the breakdown: the Arabic description from the
+  /// backend plus its signed amount.
+  Widget _detailRow(BuildContext context, Map<String, dynamic> line,
+      Color color, String sign) {
+    final label = (line['description']?.toString().trim().isNotEmpty ?? false)
+        ? line['description'].toString()
+        : (line['type']?.toString() ?? '');
+    return _slipRow(context, label, '$sign ${_money(line['amount'])}',
+        valueColor: color);
+  }
+
+  Widget _emptyRow(BuildContext context, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(text, style: AppTextStyles.bodySecondary(context)),
+    );
+  }
+
   Widget _slipRow(BuildContext context, String label, String value,
       {Color? valueColor, bool isBold = false}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: isBold ? AppTextStyles.h3(context) : AppTextStyles.body(context)),
+          Expanded(
+            child: Text(label,
+                style: isBold
+                    ? AppTextStyles.h3(context)
+                    : AppTextStyles.body(context)),
+          ),
+          const SizedBox(width: 12),
           Text(
             value,
             style: TextStyle(
@@ -132,5 +234,23 @@ class PayrollScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Normalises a breakdown field (List of line maps) coming from the API.
+  List<Map<String, dynamic>> _lines(dynamic raw) {
+    if (raw is List) {
+      return raw
+          .whereType<Map<dynamic, dynamic>>()
+          .map((e) => e.map((k, v) => MapEntry(k.toString(), v)))
+          .toList();
+    }
+    return [];
+  }
+
+  /// Formats a money value, trimming a trailing ".00".
+  String _money(dynamic v) {
+    final n = v is num ? v : num.tryParse(v?.toString() ?? '') ?? 0;
+    final s = n.toStringAsFixed(2);
+    return s.endsWith('.00') ? s.substring(0, s.length - 3) : s;
   }
 }

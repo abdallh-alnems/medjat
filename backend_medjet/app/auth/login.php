@@ -68,6 +68,17 @@ if (!$admin) {
     );
 }
 
+// Single active session: the device that just logged in becomes the only
+// active device. Any other phone is signed out on its next request
+// (enforced in Auth::authenticateUser).
+$deviceId = $_SERVER['HTTP_X_DEVICE_ID'] ?? ($input['device_id'] ?? null);
+if (is_string($deviceId) && $deviceId !== '') {
+    Database::execute(
+        "UPDATE admins SET active_device_id = ? WHERE id = ?",
+        [substr($deviceId, 0, 100), $admin['id']]
+    );
+}
+
 $tenant = null;
 $employee = null;
 if ($admin['tenant_id']) {

@@ -68,6 +68,37 @@ final class EmployeeModel {
         );
     }
 
+    /**
+     * Active (non-terminated) employees matching a bulk-adjustment scope.
+     * Returns id + admin_id + base_salary so callers can fan out payroll
+     * lines (fixed manual bonus/deduction, or a percentage of base_salary)
+     * and notify each linked employee account.
+     *
+     * $scopeType: 'branch' | 'shift' | 'category'. Unknown types yield [].
+     */
+    public static function listForScope(string $scopeType, int $scopeId, int $tenantId): array {
+        switch ($scopeType) {
+            case 'branch':
+                $sql = "SELECT id, admin_id, base_salary FROM employees
+                        WHERE tenant_id = ? AND branch_id = ? AND status != 'terminated'";
+                break;
+            case 'shift':
+                $sql = "SELECT id, admin_id, base_salary FROM employees
+                        WHERE tenant_id = ? AND shift_id = ? AND status != 'terminated'";
+                break;
+            case 'category':
+                $sql = "SELECT e.id, e.admin_id, e.base_salary FROM employees e
+                        JOIN employee_category_assignments eca
+                          ON eca.employee_id = e.id AND eca.tenant_id = e.tenant_id
+                        WHERE e.tenant_id = ? AND eca.category_id = ?
+                          AND e.status != 'terminated'";
+                break;
+            default:
+                return [];
+        }
+        return Database::fetchAll($sql, [$tenantId, $scopeId]);
+    }
+
     public static function create(int $tenantId, array $data): int {
         $columns = [
             'tenant_id', 'branch_id', 'admin_id', 'name', 'phone', 'job_title',
@@ -211,8 +242,22 @@ final class EmployeeModel {
 
     public static function delete(int $id, int $tenantId): bool {
         return Database::execute(
-            "UPDATE employees SET status = 'terminated', deleted_at = NOW() WHERE id = ? AND tenant_id = ?",
+            "UPDATE employees SET status = 'terminated', terminated_at = CURDATE(), deleted_at = NOW() WHERE id = ? AND tenant_id = ?",
             [$id, $tenantId]
+        ) > 0;
+    }
+
+    /**
+     * End an employee's service with an explicit termination date (the last
+     * working day). Same effect as delete() but the termination date is the
+     * settlement's last working day rather than today. Used when approving an
+     * end-of-service settlement.
+     */
+    public static function terminate(int $id, int $tenantId, string $terminationDate): bool {
+        return Database::execute(
+            "UPDATE employees SET status = 'terminated', terminated_at = ?, deleted_at = NOW()
+             WHERE id = ? AND tenant_id = ?",
+            [$terminationDate, $id, $tenantId]
         ) > 0;
     }
 
@@ -255,7 +300,7 @@ final class EmployeeModel {
     /** Flip an employee to 'terminated' because their fixed term ended. */
     public static function autoTerminate(int $id, int $tenantId): void {
         Database::execute(
-            "UPDATE employees SET status = 'terminated', updated_at = NOW()
+            "UPDATE employees SET status = 'terminated', terminated_at = CURDATE(), updated_at = NOW()
              WHERE id = ? AND tenant_id = ? AND status NOT IN ('terminated')",
             [$id, $tenantId]
         );

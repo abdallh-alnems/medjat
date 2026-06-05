@@ -9,6 +9,7 @@ final class SmartAlertService
         'compliance_expiry' => true,
         'leave_events'      => true,
         'payroll_events'    => true,
+        'break_events'      => true,
     ];
 
     public static function dispatch(

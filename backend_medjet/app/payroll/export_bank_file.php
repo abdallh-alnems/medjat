@@ -15,7 +15,7 @@ if (!preg_match('/^\d{4}-\d{2}$/', $month)) {
 }
 
 $branchId = ($_GET['branch_id'] ?? null) ? (int) $_GET['branch_id'] : null;
-$format = $_GET['format'] ?? 'csv';
+$exporterKey = $_GET['exporter'] ?? null;
 
 $rows = PayrollModel::getApprovedForBankFile($tenantId, $month, $branchId);
 
@@ -33,43 +33,29 @@ foreach ($rows as $row) {
 }
 
 $tenant = TenantModel::findById($tenantId);
-$currency = 'EGP';
+$currency = $tenant['currency'] ?? 'EGP';
 
-$bom = "\xEF\xBB\xBF";
-$filename = "payroll_bank_{$month}.csv";
-
-header('Content-Type: text/csv; charset=utf-8');
-header("Content-Disposition: attachment; filename=\"{$filename}\"");
-
-$output = fopen('php://output', 'w');
-fputs($output, $bom);
-
-fputcsv($output, [
-    'الاسم',
-    'اسم البنك',
-    'رقم الحساب',
-    'IBAN',
-    'المبلغ الصافي',
-    'العملة',
-    'الشهر',
-]);
-
-foreach ($ready as $row) {
-    fputcsv($output, [
-        $row['employee_name'],
-        $row['bank_name'] ?? '',
-        $row['bank_account_number'] ?? '',
-        $row['bank_iban'] ?? '',
-        number_format((float) $row['net_salary'], 2, '.', ''),
-        $currency,
-        $month,
-    ]);
+$exporter = PayrollExporterRegistry::resolve($exporterKey, $tenant);
+if ($exporter === null) {
+    Response::fail('No payroll exporter available for this country/format', 422);
 }
 
-fclose($output);
+$ext = $exporter->fileExtension();
+$filename = "payroll_{$exporter->key()}_{$month}.{$ext}";
+
+header('Content-Type: ' . $exporter->mimeType());
+header("Content-Disposition: attachment; filename=\"{$filename}\"");
+
+$out = fopen('php://output', 'w');
+$exporter->write($out, new PayrollExportContext($ready, $tenant, $month, $currency));
+fclose($out);
 
 try {
-    AuditLogModel::log($tenantId, $auth['admin_id'], 'payroll.export_bank_file', null, null, ['month' => $month]);
+    AuditLogModel::log($tenantId, $auth['admin_id'], 'payroll.export_bank_file', null, null, [
+        'month' => $month,
+        'exporter' => $exporter->key(),
+        'country' => $tenant['country_code'] ?? null,
+    ]);
 } catch (Exception $e) {
     error_log("Audit log failed: " . $e->getMessage());
 }

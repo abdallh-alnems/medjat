@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../../../core/class/crud.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/services/token_storage_service.dart';
@@ -61,11 +62,44 @@ class AuthController extends GetxController {
     _loadCachedUser();
     _listenToAuthState();
     _listenToDeepLinks();
+    CRUD.onSessionSuperseded = _onSessionSuperseded;
+  }
+
+  bool _handlingSupersede = false;
+
+  /// Called by CRUD when the backend reports this device's session was
+  /// replaced by a login on another phone. Sign out locally (no network call,
+  /// it would just 401 again) and return to the login screen.
+  void _onSessionSuperseded() {
+    if (_handlingSupersede) return;
+    _handlingSupersede = true;
+    () async {
+      try {
+        await _googleSignIn.signOut();
+        await _auth.signOut();
+      } catch (_) {}
+      await TokenStorageService.clearAll();
+      user = null;
+      isLoggedIn.value = false;
+      hasTenant.value = false;
+      if (Get.currentRoute != AppRoutes.login) {
+        Get.offAllNamed(AppRoutes.login);
+      }
+      Get.snackbar(
+        'تنبيه',
+        'تم تسجيل الدخول من جهاز آخر، تم إنهاء الجلسة على هذا الجهاز',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      _handlingSupersede = false;
+    }();
   }
 
   @override
   void onClose() {
     _deepLinkSub?.cancel();
+    if (CRUD.onSessionSuperseded == _onSessionSuperseded) {
+      CRUD.onSessionSuperseded = null;
+    }
     super.onClose();
   }
 

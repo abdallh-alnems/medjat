@@ -10,6 +10,7 @@ import '../../../core/shared/input_fields/primary_input.dart';
 import '../../../data/data_source/remote/branch_data/branch_data.dart';
 import '../../../data/model/branch_model.dart';
 import '../../../logic/controller/branch/branch_controller.dart';
+import '../../widget/payroll/bulk_adjust_sheet.dart';
 
 class BranchScreen extends StatelessWidget {
   const BranchScreen({super.key});
@@ -52,6 +53,7 @@ class BranchScreen extends StatelessWidget {
                       separatorBuilder: (_, __) =>
                           const SizedBox(height: AppSpacing.s3),
                       itemBuilder: (_, i) => _BranchTile(
+                        branchId: ctrl.branches[i].id,
                         name: ctrl.branches[i].name,
                         address: ctrl.branches[i].address ?? '',
                         employeeCount: ctrl.branches[i].employeeCount,
@@ -234,6 +236,7 @@ void _showEditBranchSheet(
 }
 
 class _BranchTile extends StatelessWidget {
+  final int branchId;
   final String name;
   final String address;
   final int employeeCount;
@@ -241,6 +244,7 @@ class _BranchTile extends StatelessWidget {
   final VoidCallback onTap;
 
   const _BranchTile({
+    required this.branchId,
     required this.name,
     required this.address,
     required this.employeeCount,
@@ -341,6 +345,19 @@ class _BranchTile extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+          IconButton(
+            icon: Icon(Icons.payments_outlined,
+                size: 20, color: colors.textSecondary),
+            tooltip: 'bulk_adjust'.tr,
+            onPressed: () => showBulkAdjustSheet(
+              context,
+              scopeType: 'branch',
+              scopeId: branchId,
+              scopeName: name,
+            ),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
           ),
         ],
       ),

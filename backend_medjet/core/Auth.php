@@ -37,7 +37,7 @@ final class Auth {
         $uid = $verifiedToken->claims()->get('sub');
 
         $admin = Database::fetchOne(
-            "SELECT a.id, a.tenant_id, a.branch_id, a.role, a.is_active
+            "SELECT a.id, a.tenant_id, a.branch_id, a.role, a.is_active, a.active_device_id
              FROM admins a WHERE a.firebase_uid = ? LIMIT 1",
             [$uid]
         );
@@ -48,6 +48,18 @@ final class Auth {
 
         if (!$admin['is_active']) {
             Response::fail('Account is deactivated', 403);
+        }
+
+        // Single active session: if a newer login set a different active device,
+        // sign this device out. Only enforced when both sides carry a device id
+        // so older clients (no header) keep working until they re-login.
+        $requestDeviceId = $_SERVER['HTTP_X_DEVICE_ID'] ?? ($input['device_id'] ?? $_GET['device_id'] ?? null);
+        if (
+            !empty($admin['active_device_id'])
+            && is_string($requestDeviceId) && $requestDeviceId !== ''
+            && $admin['active_device_id'] !== $requestDeviceId
+        ) {
+            Response::fail('تم تسجيل الدخول من جهاز آخر', 401, 'session_superseded');
         }
 
         return [

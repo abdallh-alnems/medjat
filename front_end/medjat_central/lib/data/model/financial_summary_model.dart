@@ -64,6 +64,8 @@ class FinancialAdjustment {
         return 'deduction_type_absence'.tr;
       case 'late':
         return 'deduction_type_late'.tr;
+      case 'early_leave':
+        return 'deduction_type_early_leave'.tr;
       case 'loan':
         return 'deduction_type_loan'.tr;
       case 'social_insurance':

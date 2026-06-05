@@ -92,6 +92,9 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
   ];
   bool showBankInfo = false;
   bool showCompliance = false;
+  bool showAllowances = false;
+  // Recurring monthly allowances added alongside the salary (housing, transport…).
+  final List<_AllowanceDraft> allowanceDrafts = [];
   final Set<String> weeklyOffDays = {};
   Country? selectedCountry;
   // Fixed-term (temporary) employment.
@@ -191,6 +194,9 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
     iqamaNumberCtrl.dispose();
     passportNumberCtrl.dispose();
     workPermitNumberCtrl.dispose();
+    for (final d in allowanceDrafts) {
+      d.dispose();
+    }
     super.dispose();
   }
 
@@ -320,6 +326,49 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
               onTap: () => _pickDate(hireDate, (d) => hireDate = d),
               onClear: () => setState(() => hireDate = null),
             ),
+            const SizedBox(height: AppSpacing.s4),
+            _SectionToggle(
+              title: 'allowances_title'.tr,
+              enabled: showAllowances,
+              onToggle: (v) => setState(() {
+                showAllowances = v;
+                // Seed one empty row when the section is first opened.
+                if (v && allowanceDrafts.isEmpty) {
+                  allowanceDrafts.add(_AllowanceDraft());
+                }
+              }),
+            ),
+            if (showAllowances) ...[
+              const SizedBox(height: AppSpacing.s2),
+              Text(
+                'allowance_add_employee_hint'.tr,
+                style: AppTextStyles.sm(context),
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              ...List.generate(allowanceDrafts.length, (i) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.s3),
+                  child: _AllowanceDraftCard(
+                    draft: allowanceDrafts[i],
+                    onTypeChanged: (t) =>
+                        setState(() => allowanceDrafts[i].type = t),
+                    onRemove: () => setState(() {
+                      allowanceDrafts[i].dispose();
+                      allowanceDrafts.removeAt(i);
+                    }),
+                  ),
+                );
+              }),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton.icon(
+                  onPressed: () =>
+                      setState(() => allowanceDrafts.add(_AllowanceDraft())),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text('allowance_add'.tr),
+                ),
+              ),
+            ],
             const SizedBox(height: AppSpacing.s4),
             _SectionToggle(
               title: 'bank_info'.tr,
@@ -716,6 +765,22 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
 
     final phoneE164 = '+${selectedCountry!.phoneCode}${phoneCtrl.text.trim()}';
 
+    // Collect filled-in allowance rows; the backend defaults each one's start
+    // month to the hire month and runs it open-ended.
+    final allowancesPayload = <Map<String, dynamic>>[];
+    if (showAllowances) {
+      for (final d in allowanceDrafts) {
+        final amount = double.tryParse(d.amountCtrl.text.trim());
+        if (amount == null || amount <= 0) continue;
+        allowancesPayload.add({
+          'type': d.type,
+          'amount': amount,
+          if (d.labelCtrl.text.trim().isNotEmpty)
+            'label': d.labelCtrl.text.trim(),
+        });
+      }
+    }
+
     ctrl.createEmployee({
       'name': nameCtrl.text.trim(),
       'phone': phoneE164,
@@ -745,6 +810,7 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
       },
       if (annualLeaveCtrl.text.trim().isNotEmpty)
         'annual_leave_days': int.tryParse(annualLeaveCtrl.text.trim()),
+      if (allowancesPayload.isNotEmpty) 'allowances': allowancesPayload,
       if (weeklyOffDays.isNotEmpty)
         'weekly_off_days': weeklyOffDays.toList(),
       if (showCompliance) ...{
@@ -1481,6 +1547,107 @@ class _BranchSelector extends StatelessWidget {
           }).toList(),
           onChanged: onSelect,
         ),
+      ),
+    );
+  }
+}
+
+/// Mutable draft for one recurring monthly allowance entered on the add-employee
+/// form. The type is a predefined key; amount and an optional custom label are
+/// held in their own controllers. start_month defaults server-side to the hire
+/// month and the allowance runs open-ended.
+class _AllowanceDraft {
+  String type = 'housing';
+  final TextEditingController amountCtrl = TextEditingController();
+  final TextEditingController labelCtrl = TextEditingController();
+
+  void dispose() {
+    amountCtrl.dispose();
+    labelCtrl.dispose();
+  }
+}
+
+class _AllowanceDraftCard extends StatelessWidget {
+  final _AllowanceDraft draft;
+  final ValueChanged<String> onTypeChanged;
+  final VoidCallback onRemove;
+
+  const _AllowanceDraftCard({
+    required this.draft,
+    required this.onTypeChanged,
+    required this.onRemove,
+  });
+
+  static const _types = [
+    'housing',
+    'transport',
+    'food',
+    'communication',
+    'other',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s3),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  initialValue: draft.type,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    labelText: 'allowance_type_label'.tr,
+                  ),
+                  items: _types
+                      .map((t) => DropdownMenuItem(
+                            value: t,
+                            child: Text('allowance_type_$t'.tr),
+                          ))
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) onTypeChanged(v);
+                  },
+                ),
+              ),
+              IconButton(
+                tooltip: 'delete'.tr,
+                icon: Icon(Icons.delete_outline, color: colors.error),
+                onPressed: onRemove,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s2),
+          TextFormField(
+            controller: draft.amountCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+            ],
+            decoration: InputDecoration(
+              labelText: 'amount'.tr,
+              suffixText: 'currency_egp'.tr,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s2),
+          TextFormField(
+            controller: draft.labelCtrl,
+            decoration: InputDecoration(
+              labelText: 'allowance_label_label'.tr,
+              hintText: 'allowance_label_hint'.tr,
+            ),
+          ),
+        ],
       ),
     );
   }

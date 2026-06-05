@@ -371,6 +371,11 @@ class _PayrollTileState extends State<_PayrollTile> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  if (payroll.status == 'paid' ||
+                      payroll.status == 'approved') ...[
+                    const SizedBox(width: AppSpacing.s2),
+                    _StatusBadge(status: payroll.status),
+                  ],
                   if (anomaly != null) ...[
                     const SizedBox(width: AppSpacing.s2),
                     _AnomalyChip(kind: anomaly),
@@ -386,6 +391,24 @@ class _PayrollTileState extends State<_PayrollTile> {
                   color: colors.textTertiary,
                 ),
               ),
+              if (payroll.status == 'paid' && payroll.paidAt != null) ...[
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Icon(Icons.event_available_outlined,
+                        size: 12, color: colors.success),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${'payroll_paid_at'.tr} ${_formatDate(payroll.paidAt!)}',
+                      style: TextStyle(
+                        fontFamily: _font,
+                        fontSize: 11,
+                        color: colors.success,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -622,6 +645,10 @@ class _PayrollTileState extends State<_PayrollTile> {
     );
   }
 
+  /// "5 يونيو 2026" — day + localized month name + year.
+  String _formatDate(DateTime d) =>
+      '${d.day} ${'month_${d.month}'.tr} ${d.year}';
+
   /// Format an integer with thousand separators (1234567 → "1,234,567").
   String _money(double value) {
     final isNeg = value < 0;
@@ -847,7 +874,8 @@ class _FilterButton extends StatelessWidget {
   int get _activeCount =>
       (ctrl.branchFilter != null ? 1 : 0) +
       (ctrl.shiftFilter != null ? 1 : 0) +
-      (ctrl.categoryFilter != null ? 1 : 0);
+      (ctrl.categoryFilter != null ? 1 : 0) +
+      (ctrl.statusFilter != null ? 1 : 0);
 
   @override
   Widget build(BuildContext context) {
@@ -942,6 +970,15 @@ class _PayrollFilterPanelState extends State<_PayrollFilterPanel> {
   late int? _branchId = widget.ctrl.branchFilter;
   late int? _shiftId = widget.ctrl.shiftFilter;
   late int? _categoryId = widget.ctrl.categoryFilter;
+  late String? _status = widget.ctrl.statusFilter;
+
+  /// Selectable payroll states, in display order. Null = every status.
+  static const _statusOptions = <Map<String, String?>>[
+    {'key': null, 'label': 'filter_all'},
+    {'key': 'paid', 'label': 'status_paid'},
+    {'key': 'approved', 'label': 'status_approved'},
+    {'key': 'draft', 'label': 'status_draft'},
+  ];
 
   List<ShiftModel> get _visibleShifts {
     if (_branchId == null) return widget.shifts;
@@ -1043,6 +1080,22 @@ class _PayrollFilterPanelState extends State<_PayrollFilterPanel> {
             ),
             const SizedBox(height: AppSpacing.s4),
           ],
+          _filterLabel(colors, 'filter_status'.tr),
+          const SizedBox(height: AppSpacing.s2),
+          Wrap(
+            spacing: AppSpacing.s2,
+            runSpacing: AppSpacing.s2,
+            children: _statusOptions.map((opt) {
+              final key = opt['key'];
+              final selected = _status == key;
+              return _StatusChoiceChip(
+                label: opt['label']!.tr,
+                selected: selected,
+                onTap: () => setState(() => _status = key),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: AppSpacing.s4),
           const SizedBox(height: AppSpacing.s2),
           Row(
             children: [
@@ -1052,6 +1105,7 @@ class _PayrollFilterPanelState extends State<_PayrollFilterPanel> {
                     _branchId = null;
                     _shiftId = null;
                     _categoryId = null;
+                    _status = null;
                   }),
                   child: Text(
                     'clear_filters'.tr,
@@ -1068,6 +1122,7 @@ class _PayrollFilterPanelState extends State<_PayrollFilterPanel> {
                       branchId: _branchId,
                       shiftId: _shiftId,
                       categoryId: _categoryId,
+                      status: _status,
                     );
                     Navigator.of(context).pop();
                   },
@@ -1151,6 +1206,51 @@ class _PayrollFilterPanelState extends State<_PayrollFilterPanel> {
   }
 }
 
+/// A pill toggle for one payroll status in the filter sheet. Brand-filled
+/// when selected, hairline-outlined otherwise.
+class _StatusChoiceChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _StatusChoiceChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Material(
+      color: selected ? colors.brand : colors.surface,
+      borderRadius: BorderRadius.circular(AppRadius.full),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.full),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.s3, vertical: AppSpacing.s2),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.full),
+            border: Border.all(
+              color: selected ? colors.brand : colors.borderHairline,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 13,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              color: selected ? Colors.white : colors.textPrimary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /* ── Active filters bar (chips under the search row) ──────────────── */
 
 class _PayrollActiveFiltersBar extends StatelessWidget {
@@ -1174,6 +1274,7 @@ class _PayrollActiveFiltersBar extends StatelessWidget {
                 branchId: null,
                 shiftId: ctrl.shiftFilter,
                 categoryId: ctrl.categoryFilter,
+                status: ctrl.statusFilter,
               )));
     }
     if (ctrl.shiftFilter != null) {
@@ -1188,6 +1289,7 @@ class _PayrollActiveFiltersBar extends StatelessWidget {
                 branchId: ctrl.branchFilter,
                 shiftId: null,
                 categoryId: ctrl.categoryFilter,
+                status: ctrl.statusFilter,
               )));
     }
     if (ctrl.categoryFilter != null) {
@@ -1202,6 +1304,17 @@ class _PayrollActiveFiltersBar extends StatelessWidget {
                 branchId: ctrl.branchFilter,
                 shiftId: ctrl.shiftFilter,
                 categoryId: null,
+                status: ctrl.statusFilter,
+              )));
+    }
+    if (ctrl.statusFilter != null) {
+      chips.add(_chip(colors, Icons.verified_outlined,
+          _statusLabel(ctrl.statusFilter!),
+          () => ctrl.applyFilters(
+                branchId: ctrl.branchFilter,
+                shiftId: ctrl.shiftFilter,
+                categoryId: ctrl.categoryFilter,
+                status: null,
               )));
     }
 
@@ -1218,6 +1331,21 @@ class _PayrollActiveFiltersBar extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _statusLabel(String status) {
+    switch (status) {
+      case 'paid':
+        return 'status_paid'.tr;
+      case 'approved':
+        return 'status_approved'.tr;
+      case 'draft':
+        return 'status_draft'.tr;
+      case 'live':
+        return 'status_live'.tr;
+      default:
+        return status;
+    }
   }
 
   String _lookup<T>(List<T> list, int? id, int? Function(T) idOf,
@@ -1383,14 +1511,49 @@ class _PayrollSummaryCard extends StatelessWidget {
             color: Colors.white.withValues(alpha: 0.18),
           ),
           const SizedBox(height: AppSpacing.s3),
-          // Bottom row: just the employee count
-          Text(
-            'payroll_employee_count'.trParams({'count': '$visible'}),
-            style: const TextStyle(
-              fontFamily: 'IBM Plex Sans Arabic',
-              fontSize: 12,
-              color: Colors.white,
-            ),
+          // Bottom row: employee count + paid badge
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'payroll_employee_count'.trParams({'count': '$visible'}),
+                  style: const TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 12,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              if (ctrl.paidCount > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s2, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.check_circle,
+                          size: 13, color: Colors.white),
+                      const SizedBox(width: 4),
+                      Text(
+                        'payroll_paid_count'.trParams({
+                          'paid': '${ctrl.paidCount}',
+                          'total': '${ctrl.scopedCount}',
+                        }),
+                        style: const TextStyle(
+                          fontFamily: 'IBM Plex Sans Arabic',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -1724,6 +1887,49 @@ class _TileMenu extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/* ── Status badge (paid / approved) ────────────────────────────────── */
+
+class _StatusBadge extends StatelessWidget {
+  final String status;
+  const _StatusBadge({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final isPaid = status == 'paid';
+    final color = isPaid ? colors.success : colors.brand;
+    final label = isPaid ? 'status_paid'.tr : 'status_approved'.tr;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppRadius.full),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isPaid ? Icons.check_circle : Icons.verified_outlined,
+            size: 12,
+            color: color,
+          ),
+          const SizedBox(width: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

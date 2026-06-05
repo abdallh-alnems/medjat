@@ -85,6 +85,27 @@ class PayrollData {
     });
   }
 
+  /// Apply a manual bonus/deduction to every employee in a scope
+  /// (branch/shift/category) at once. [kind] is 'bonus' or 'deduction';
+  /// [scopeType] is 'branch', 'shift', or 'category'.
+  Future<Map<String, dynamic>> bulkAdjust({
+    required String kind,
+    required String scopeType,
+    required int scopeId,
+    required num amount,
+    required String reason,
+    String amountType = 'fixed', // 'fixed' | 'percent'
+  }) async {
+    return await _crud.postData(AppLinks.payrollBulkAdjust, {
+      'kind': kind,
+      'scope_type': scopeType,
+      'scope_id': scopeId,
+      'amount': amount,
+      'amount_type': amountType,
+      'reason': reason,
+    });
+  }
+
   /// Edit the amount of, remove, or restore any computed payroll line
   /// (absence/late/loan/insurance/tax/overtime…) for one employee+month.
   /// [action] is 'set' (with [amount]), 'waive', or 'clear'.
@@ -272,11 +293,12 @@ class PayrollData {
     }
   }
 
-  Future<String?> downloadBankFile(String month, {int? branchId}) async {
+  Future<String?> downloadBankFile(String month, {int? branchId, String? exporterKey}) async {
     try {
       final uri = Uri.parse(AppLinks.payrollBankFile);
       final params = <String, String>{'month': month};
       if (branchId != null) params['branch_id'] = branchId.toString();
+      if (exporterKey != null) params['exporter'] = exporterKey;
 
       final headers = <String, String>{};
       final securityUser = dotenv.env['SECURITY_USER'] ?? '';
@@ -321,5 +343,56 @@ class PayrollData {
     } catch (e) {
       return null;
     }
+  }
+
+  // ── Export Templates ────────────────────────────────
+  Future<Map<String, dynamic>> getExportFields() async {
+    return await _crud.getData(AppLinks.exportTemplateFields);
+  }
+
+  Future<Map<String, dynamic>> listExportTemplates() async {
+    return await _crud.getData(AppLinks.exportTemplatesList);
+  }
+
+  Future<Map<String, dynamic>> createExportTemplate({
+    required String name,
+    required String delimiter,
+    required int includeBom,
+    required int includeHeaderRow,
+    required int decimalPlaces,
+    required List<Map<String, String>> columns,
+  }) async {
+    return await _crud.postData(AppLinks.exportTemplateCreate, {
+      'name': name,
+      'delimiter': delimiter,
+      'include_bom': includeBom,
+      'include_header_row': includeHeaderRow,
+      'decimal_places': decimalPlaces,
+      'columns': columns,
+    });
+  }
+
+  Future<Map<String, dynamic>> updateExportTemplate({
+    required int id,
+    String? name,
+    String? delimiter,
+    int? includeBom,
+    int? includeHeaderRow,
+    int? decimalPlaces,
+    List<Map<String, String>>? columns,
+  }) async {
+    final body = <String, dynamic>{'id': id};
+    if (name != null) body['name'] = name;
+    if (delimiter != null) body['delimiter'] = delimiter;
+    if (includeBom != null) body['include_bom'] = includeBom;
+    if (includeHeaderRow != null) body['include_header_row'] = includeHeaderRow;
+    if (decimalPlaces != null) body['decimal_places'] = decimalPlaces;
+    if (columns != null) body['columns'] = columns;
+    return await _crud.postData(AppLinks.exportTemplateUpdate, body);
+  }
+
+  Future<Map<String, dynamic>> deleteExportTemplate(int id) async {
+    return await _crud
+        .postData(AppLinks.exportTemplateDelete, {'id': id});
   }
 }
