@@ -133,7 +133,9 @@ class _WeeklyScheduleScreenState extends State<WeeklyScheduleScreen> {
         children: [
           IconButton(
             icon: const Icon(Icons.chevron_right),
-            onPressed: ctrl.busy ? null : ctrl.previousWeek,
+            onPressed: (ctrl.busy || !ctrl.canGoPrevious)
+                ? null
+                : ctrl.previousWeek,
             tooltip: 'previous'.tr,
           ),
           Expanded(
@@ -168,9 +170,10 @@ class _WeeklyScheduleScreenState extends State<WeeklyScheduleScreen> {
             tooltip: 'next'.tr,
           ),
           IconButton(
-            icon: Icon(Icons.copy_all_outlined, size: 20, color: colors.brand),
-            onPressed: ctrl.busy ? null : () => _copyPrevious(context),
-            tooltip: 'copy_previous_week'.tr,
+            icon: Icon(Icons.edit_calendar_outlined,
+                size: 20, color: colors.textSecondary),
+            onPressed: ctrl.busy ? null : () => _pickWeekStartDay(context),
+            tooltip: 'week_start_day_label'.tr,
           ),
         ],
       ),
@@ -407,53 +410,48 @@ class _WeeklyScheduleScreenState extends State<WeeklyScheduleScreen> {
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          onTap: () => _pickCell(context, emp, date),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.s3),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Padding(
+        // Tapping the card body does nothing on purpose; edits happen per-day
+        // via the week strip below (and the avatar toggles multi-select).
+        padding: const EdgeInsets.all(AppSpacing.s3),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    _selectAvatar(context, emp, cell, isSel),
-                    const SizedBox(width: AppSpacing.s3),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            emp.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontFamily: AppTextStyles.arabicFamily,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          if (_subtitle(emp).isNotEmpty)
-                            Text(
-                              _subtitle(emp),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTextStyles.xs(context),
-                            ),
-                        ],
+                _selectAvatar(context, emp, cell, isSel),
+                const SizedBox(width: AppSpacing.s3),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        emp.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: AppTextStyles.arabicFamily,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: AppSpacing.s2),
-                    _dayStatus(context, cell),
-                  ],
+                      if (_subtitle(emp).isNotEmpty)
+                        Text(
+                          _subtitle(emp),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.xs(context),
+                        ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: AppSpacing.s3),
-                _weekStrip(context, emp, date),
+                const SizedBox(width: AppSpacing.s2),
+                _dayStatus(context, cell),
               ],
             ),
-          ),
+            const SizedBox(height: AppSpacing.s3),
+            _weekStrip(context, emp, date),
+          ],
         ),
       ),
     );
@@ -937,35 +935,44 @@ class _WeeklyScheduleScreenState extends State<WeeklyScheduleScreen> {
         child: Material(
           type: MaterialType.transparency,
           child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _sheetHandle(context),
-            Text(
-              '${emp.name} · ${_dayLabel(date)} ${_d(date)}',
-              style: const TextStyle(
-                fontFamily: AppTextStyles.arabicFamily,
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _sheetHandle(context),
+              Text(
+                '${emp.name} · ${_dayLabel(date)} ${_d(date)}',
+                style: const TextStyle(
+                  fontFamily: AppTextStyles.arabicFamily,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.s4),
-            ...ctrl.shifts.map(
-              (s) => _shiftOption(context, s, () {
-                Get.back<void>();
-                ctrl.assign(employeeIds: [emp.id], dates: [date], shiftId: s.id);
-              }),
-            ),
-            _plainOption(context, Icons.bedtime_outlined, 'rest_day'.tr, () {
-              Get.back<void>();
-              ctrl.assign(employeeIds: [emp.id], dates: [date]);
-            }),
-            if (ctrl.cellFor(emp.id, date) != null)
-              _plainOption(context, Icons.clear, 'clear'.tr, () {
-                Get.back<void>();
-                ctrl.clearCell(emp.id, date);
-              }, color: colors.error),
-          ],
+              const SizedBox(height: AppSpacing.s4),
+              Flexible(
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    ...ctrl.shifts.map(
+                      (s) => _shiftOption(context, s, () {
+                        Get.back<void>();
+                        ctrl.assign(
+                            employeeIds: [emp.id], dates: [date], shiftId: s.id);
+                      }),
+                    ),
+                    _plainOption(
+                        context, Icons.bedtime_outlined, 'rest_day'.tr, () {
+                      Get.back<void>();
+                      ctrl.assign(employeeIds: [emp.id], dates: [date]);
+                    }),
+                    if (ctrl.cellFor(emp.id, date) != null)
+                      _plainOption(context, Icons.clear, 'clear'.tr, () {
+                        Get.back<void>();
+                        ctrl.clearCell(emp.id, date);
+                      }, color: colors.error),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1055,6 +1062,9 @@ class _WeeklyScheduleScreenState extends State<WeeklyScheduleScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colors.brand,
                   foregroundColor: Colors.white,
+                  // Theme forces full width (Size.fromHeight → infinite);
+                  // size to content inside this Row.
+                  minimumSize: const Size(0, 48),
                 ),
               ),
             ],
@@ -1185,28 +1195,76 @@ class _WeeklyScheduleScreenState extends State<WeeklyScheduleScreen> {
 
   // ── actions ────────────────────────────────────────────────────────────
 
-  void _copyPrevious(BuildContext context) {
-    Get.dialog<void>(
-      AlertDialog(
-        title: Text('copy_previous_week'.tr),
-        content: Text('copy_previous_week_confirm'.tr),
-        actions: [
-          TextButton(onPressed: () => Get.back<void>(), child: Text('cancel'.tr)),
-          TextButton(
-            onPressed: () async {
-              Get.back<void>();
-              final ok = await ctrl.copyPreviousWeek();
-              Get.snackbar(
-                'done'.tr,
-                ok ? 'schedule_updated'.tr : 'error'.tr,
-                snackPosition: SnackPosition.BOTTOM,
-              );
-            },
-            child: Text('copy'.tr),
-          ),
-        ],
+  /// Bottom sheet to change the company-wide roster start weekday, ordered
+  /// Saturday-first to match the default Arab work week.
+  void _pickWeekStartDay(BuildContext context) {
+    const order = [6, 7, 1, 2, 3, 4, 5]; // ISO weekdays, Saturday-first
+    final colors = AppColors.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: colors.canvas,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.s4),
+              child: Text('week_start_day_label'.tr,
+                  style: AppTextStyles.h3(context)),
+            ),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: order.map((wd) {
+                  final isSelected = wd == ctrl.weekStartDay;
+                  return ListTile(
+                    title: Text(
+                      _weekdayName(wd),
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 15,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w400,
+                        color:
+                            isSelected ? colors.brand : colors.textPrimary,
+                      ),
+                    ),
+                    trailing: isSelected
+                        ? Icon(Icons.check, color: colors.brand)
+                        : null,
+                    onTap: () async {
+                      Get.back<void>();
+                      final ok = await ctrl.changeWeekStartDay(wd);
+                      if (!ok) {
+                        Get.snackbar('error'.tr, 'an_error_occurred'.tr,
+                            snackPosition: SnackPosition.BOTTOM);
+                      }
+                    },
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s3),
+          ],
+        ),
       ),
     );
+  }
+
+  String _weekdayName(int isoWeekday) {
+    const keys = {
+      1: 'weekday_mon',
+      2: 'weekday_tue',
+      3: 'weekday_wed',
+      4: 'weekday_thu',
+      5: 'weekday_fri',
+      6: 'weekday_sat',
+      7: 'weekday_sun',
+    };
+    return (keys[isoWeekday] ?? 'weekday_sat').tr;
   }
 
   void _confirmPublish(BuildContext context) {
@@ -1259,18 +1317,6 @@ class _WeeklyScheduleScreenState extends State<WeeklyScheduleScreen> {
               filtered ? 'no_matching_employees'.tr : 'no_employees'.tr,
               style: AppTextStyles.bodySecondary(context),
             ),
-            if (filtered) ...[
-              const SizedBox(height: AppSpacing.s3),
-              OutlinedButton.icon(
-                onPressed: () => setState(() {
-                  _branchFilter = null;
-                  _roleFilter = null;
-                  _shiftFilter = null;
-                }),
-                icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
-                label: Text('clear_all'.tr),
-              ),
-            ],
           ],
         ),
       ),

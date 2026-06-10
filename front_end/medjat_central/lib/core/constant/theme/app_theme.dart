@@ -88,6 +88,7 @@ class AppTheme {
           fontFamily: 'IBM Plex Sans Arabic',
           fontSize: 12,
           fontWeight: FontWeight.w500,
+          height: 1.5,
           color: c.textSecondary,
         ),
         floatingLabelBehavior: FloatingLabelBehavior.always,

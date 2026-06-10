@@ -71,6 +71,7 @@ import '../../../view/screen/station/recognition_logs_screen.dart';
 import '../../../view/screen/employee/biometric_enrollment_screen.dart';
 import '../../../view/screen/employee/employee_documents_screen.dart';
 import '../../../view/screen/settings/required_documents_screen.dart';
+import '../../../view/screen/settings/required_document_submissions_screen.dart';
 import '../../../view/screen/report/documents_report_screen.dart';
 import '../../../view/screen/category/categories_screen.dart';
 import '../../../view/screen/notification/notifications_screen.dart';
@@ -228,6 +229,8 @@ List<GetPage<dynamic>> getPages = [
     page: () => const BreakScreen(),
     binding: BindingsBuilder<void>(() {
       Get.lazyPut<BreakData>(() => BreakData());
+      Get.lazyPut<BranchData>(() => BranchData());
+      Get.lazyPut<CategoryData>(() => CategoryData());
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
@@ -423,6 +426,7 @@ List<GetPage<dynamic>> getPages = [
     page: () => const WeeklyScheduleScreen(),
     binding: BindingsBuilder<void>(() {
       Get.lazyPut<ScheduleData>(() => ScheduleData());
+      Get.lazyPut<CompanySettingsData>(() => CompanySettingsData());
       Get.lazyPut<ScheduleController>(() => ScheduleController());
     }),
     middlewares: [AuthMiddleware()],
@@ -543,6 +547,17 @@ List<GetPage<dynamic>> getPages = [
     binding: BindingsBuilder<void>(() {
       Get.lazyPut<DocumentData>(() => DocumentData());
       Get.lazyPut<RequiredDocumentsData>(() => RequiredDocumentsData());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.requiredDocumentSubmissions,
+    page: () => const RequiredDocumentSubmissionsScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<RequiredDocumentsData>(() => RequiredDocumentsData());
+      Get.lazyPut<DocumentData>(() => DocumentData());
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
@@ -719,13 +734,7 @@ class MoreScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
         children: [
-          _MoreSectionHeader(title: 'management'.tr),
-          if (auth.user?.canManageEmployees == true)
-            _MenuTile(
-              icon: Icons.schedule_outlined,
-              title: 'shifts'.tr,
-              onTap: () => Get.toNamed<void>(AppRoutes.shifts),
-            ),
+          _MoreSectionHeader(title: 'employees_and_time'.tr),
           if (auth.user?.canManageEmployees == true)
             _MenuTile(
               icon: Icons.calendar_view_week_outlined,
@@ -751,12 +760,8 @@ class MoreScreen extends StatelessWidget {
               subtitle: 'letters_hint'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.letters),
             ),
-          if (auth.user?.canManagePayroll == true)
-            _MenuTile(
-              icon: Icons.upload_file_outlined,
-              title: 'export_templates'.tr,
-              onTap: () => Get.toNamed<void>(AppRoutes.exportTemplates),
-            ),
+          const SizedBox(height: AppSpacing.s4),
+          _MoreSectionHeader(title: 'finance_section'.tr),
           if (auth.user?.canManagePayroll == true)
             _MenuTile(
               icon: Icons.receipt_long_outlined,
@@ -778,18 +783,15 @@ class MoreScreen extends StatelessWidget {
               subtitle: 'assets_hint'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.assets),
             ),
-          if (auth.user?.canManageBranches == true)
-            _MenuTile(
-              icon: Icons.account_tree_outlined,
-              title: 'branches'.tr,
-              onTap: () => Get.toNamed<void>(AppRoutes.branchManage),
-            ),
-          if (auth.user?.canViewReports == true)
+          if (auth.user?.canViewReports == true) ...[
+            const SizedBox(height: AppSpacing.s4),
+            _MoreSectionHeader(title: 'reports'.tr),
             _MenuTile(
               icon: Icons.assessment_outlined,
               title: 'reports'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.reports),
             ),
+          ],
           const SizedBox(height: AppSpacing.s4),
           _MoreSectionHeader(title: 'settings'.tr),
           if (canManageCompany)

@@ -13,6 +13,7 @@ class BreakRequestModel {
   final String? reason;
   final String status;
   final String? decisionNote;
+  final String? decidedByName;
   final DateTime? suggestedDate;
   final String? suggestedStartTime;
   final String? suggestedEndTime;
@@ -30,6 +31,7 @@ class BreakRequestModel {
     this.reason,
     this.status = 'pending',
     this.decisionNote,
+    this.decidedByName,
     this.suggestedDate,
     this.suggestedStartTime,
     this.suggestedEndTime,
@@ -51,6 +53,7 @@ class BreakRequestModel {
       reason: json['reason'] as String?,
       status: (json['status'] as String?) ?? 'pending',
       decisionNote: json['decision_note'] as String?,
+      decidedByName: json['decided_by_name'] as String?,
       suggestedDate: json['suggested_date'] != null
           ? DateTime.tryParse(json['suggested_date'] as String)
           : null,

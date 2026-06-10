@@ -44,6 +44,23 @@ String _currencyLabel(String code) {
 String _timezoneLabel(String id) =>
     'tz_${id.toLowerCase().replaceAll('/', '_')}'.tr;
 
+// Week start weekday options (ISO: 1=Mon..7=Sun), ordered Saturday-first to
+// match the Arab work week shown by default.
+const List<String> _kWeekdayOrder = ['6', '7', '1', '2', '3', '4', '5'];
+
+const Map<int, String> _kWeekdayKeys = {
+  1: 'weekday_mon',
+  2: 'weekday_tue',
+  3: 'weekday_wed',
+  4: 'weekday_thu',
+  5: 'weekday_fri',
+  6: 'weekday_sat',
+  7: 'weekday_sun',
+};
+
+String _weekdayLabel(int isoWeekday) =>
+    (_kWeekdayKeys[isoWeekday] ?? 'weekday_sat').tr;
+
 class CompanySettingsScreen extends StatelessWidget {
   const CompanySettingsScreen({super.key});
 
@@ -151,6 +168,29 @@ class CompanySettingsScreen extends StatelessWidget {
                       style: AppTextStyles.sm(context)),
                   const SizedBox(height: AppSpacing.s3),
                   _CycleStartDayField(ctrl: ctrl),
+
+                  // ── Weekly schedule ──
+                  const SizedBox(height: AppSpacing.s6),
+                  Text('weekly_schedule'.tr,
+                      style: AppTextStyles.h3(context)),
+                  const SizedBox(height: AppSpacing.s2),
+                  Text('week_start_day_hint'.tr,
+                      style: AppTextStyles.sm(context)),
+                  const SizedBox(height: AppSpacing.s3),
+                  _PickerField(
+                    label: 'week_start_day_label'.tr,
+                    value: _weekdayLabel(ctrl.weekStartDay),
+                    icon: Icons.calendar_view_week,
+                    onTap: () => _pickOption(
+                      context,
+                      title: 'week_start_day_label'.tr,
+                      options: _kWeekdayOrder,
+                      selected: ctrl.weekStartDay.toString(),
+                      labelOf: (o) => _weekdayLabel(int.parse(o)),
+                      onSelected: (o) => ctrl.setWeekStartDay(int.parse(o)),
+                    ),
+                  ),
+
                   const SizedBox(height: AppSpacing.s6),
                   PrimaryButton(
                     text: 'save_changes'.tr,

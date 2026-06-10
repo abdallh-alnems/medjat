@@ -13,12 +13,18 @@ class BreakData {
 
   Future<Map<String, dynamic>> getBreaks({
     int? branchId,
+    int? categoryId,
+    String? search,
     String? status,
     String? from,
     String? to,
   }) async {
     final params = <String, dynamic>{};
     if (branchId != null) params['branch_id'] = branchId;
+    if (categoryId != null) params['category_id'] = categoryId;
+    if (search != null && search.trim().isNotEmpty) {
+      params['search'] = search.trim();
+    }
     if (status != null) params['status'] = status;
     if (from != null) params['from'] = from;
     if (to != null) params['to'] = to;
@@ -26,7 +32,8 @@ class BreakData {
   }
 
   Future<Map<String, dynamic>> createBreak(Map<String, dynamic> data) async {
-    return await _crud.postData(AppLinks.breakRequest, data);
+    // Manager-created permission on behalf of a chosen employee (admin auth).
+    return await _crud.postData(AppLinks.breakCreateFor, data);
   }
 
   Future<Map<String, dynamic>> cancelBreak(int breakId) async {

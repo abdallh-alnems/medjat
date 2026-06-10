@@ -6,17 +6,9 @@ import '../../../../core/constant/theme/app_spacing.dart';
 import '../../../../core/constant/theme/app_text_styles.dart';
 import '../../../../core/shared/buttons/primary_button.dart';
 import '../../../../core/shared/input_fields/primary_input.dart';
+import '../../../../data/data_source/remote/employee_data/employee_data.dart';
+import '../../../../data/model/employee_model.dart';
 import '../../../../logic/controller/break/break_controller.dart';
-
-const List<(String, String)> _breakTypes = [
-  ('break', 'break_type_break'),
-  ('permission', 'break_type_permission'),
-  ('prayer', 'break_type_prayer'),
-  ('errand', 'break_type_errand'),
-  ('medical', 'break_type_medical'),
-  ('early_leave', 'break_type_early_leave'),
-  ('other', 'break_type_other'),
-];
 
 Future<void> showAddBreakSheet(BreakController controller) {
   return Get.bottomSheet<void>(
@@ -35,21 +27,87 @@ class AddBreakSheet extends StatefulWidget {
 }
 
 class _AddBreakSheetState extends State<AddBreakSheet> {
+  final TextEditingController _typeCtrl = TextEditingController();
   final TextEditingController _reasonCtrl = TextEditingController();
   final TextEditingController _dateCtrl = TextEditingController();
   final TextEditingController _startTimeCtrl = TextEditingController();
   final TextEditingController _endTimeCtrl = TextEditingController();
 
-  String _type = 'break';
+  bool _deductFromSalary = false;
   bool _submitting = false;
+
+  bool _loadingEmployees = true;
+  String? _employeesError;
+  List<EmployeeModel> _employees = [];
+  EmployeeModel? _employee;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEmployees();
+  }
 
   @override
   void dispose() {
+    _typeCtrl.dispose();
     _reasonCtrl.dispose();
     _dateCtrl.dispose();
     _startTimeCtrl.dispose();
     _endTimeCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadEmployees() async {
+    setState(() {
+      _loadingEmployees = true;
+      _employeesError = null;
+    });
+    try {
+      final response =
+          await Get.find<EmployeeData>().getEmployees(status: 'active');
+      final list = _parseEmployees(response['data']);
+      if (!mounted) return;
+      setState(() {
+        _employees = list;
+        _loadingEmployees = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _employeesError = 'break_created_failed'.tr;
+        _loadingEmployees = false;
+      });
+    }
+  }
+
+  List<EmployeeModel> _parseEmployees(dynamic raw) {
+    dynamic payload = raw;
+    if (payload is Map && payload['data'] != null) payload = payload['data'];
+    List<dynamic>? items;
+    if (payload is List) {
+      items = payload;
+    } else if (payload is Map) {
+      for (final key in const ['items', 'records', 'list', 'data']) {
+        if (payload[key] is List) {
+          items = payload[key] as List;
+          break;
+        }
+      }
+    }
+    return items
+            ?.whereType<Map<String, dynamic>>()
+            .map(EmployeeModel.fromJson)
+            .toList() ??
+        [];
+  }
+
+  Future<void> _pickEmployee() async {
+    final selected = await Get.bottomSheet<EmployeeModel>(
+      _EmployeePicker(employees: _employees),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+    );
+    if (selected != null) setState(() => _employee = selected);
   }
 
   Future<void> _pickDate() async {
@@ -78,6 +136,11 @@ class _AddBreakSheetState extends State<AddBreakSheet> {
   }
 
   Future<void> _submit() async {
+    if (_employee == null) {
+      Get.snackbar('error'.tr, 'select_employee'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
     if (_dateCtrl.text.trim().isEmpty) {
       Get.snackbar('error'.tr, 'break_select_date'.tr,
           snackPosition: SnackPosition.BOTTOM);
@@ -96,11 +159,13 @@ class _AddBreakSheetState extends State<AddBreakSheet> {
 
     setState(() => _submitting = true);
     final ok = await widget.controller.createBreak(
+      employeeId: _employee!.id,
       date: _dateCtrl.text.trim(),
       startTime: _startTimeCtrl.text.trim(),
       endTime: _endTimeCtrl.text.trim(),
-      type: _type,
+      type: _typeCtrl.text.trim(),
       reason: _reasonCtrl.text.trim(),
+      deductFromSalary: _deductFromSalary,
     );
     if (!mounted) return;
     setState(() => _submitting = false);
@@ -139,9 +204,15 @@ class _AddBreakSheetState extends State<AddBreakSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _sectionLabel('break_type'.tr, colors),
+                    _sectionLabel('leave_employee_section'.tr, colors),
                     const SizedBox(height: AppSpacing.s2),
-                    _buildTypePicker(colors),
+                    _buildEmployeeField(colors),
+                    const SizedBox(height: AppSpacing.s4),
+                    PrimaryInput(
+                      label: 'break_type'.tr,
+                      controller: _typeCtrl,
+                      hint: 'break_type_hint'.tr,
+                    ),
                     const SizedBox(height: AppSpacing.s4),
                     _sectionLabel('break_date'.tr, colors),
                     const SizedBox(height: AppSpacing.s2),
@@ -167,6 +238,8 @@ class _AddBreakSheetState extends State<AddBreakSheet> {
                       hint: 'break_reason'.tr,
                       maxLines: 2,
                     ),
+                    const SizedBox(height: AppSpacing.s4),
+                    _buildDeductToggle(colors),
                     const SizedBox(height: AppSpacing.s5),
                     PrimaryButton(
                       text: 'save'.tr,
@@ -222,18 +295,36 @@ class _AddBreakSheetState extends State<AddBreakSheet> {
     );
   }
 
-  Widget _buildTypePicker(AppColorScheme colors) {
-    return Wrap(
-      spacing: AppSpacing.s2,
-      runSpacing: AppSpacing.s2,
-      children: _breakTypes
-          .map((t) => _ChoiceChip(
-                label: t.$2.tr,
-                selected: _type == t.$1,
-                onTap: () => setState(() => _type = t.$1),
-                colors: colors,
-              ))
-          .toList(),
+  Widget _buildDeductToggle(AppColorScheme colors) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.s3,
+        vertical: AppSpacing.s1,
+      ),
+      decoration: _fieldDecoration(colors),
+      child: Row(
+        children: [
+          Icon(Icons.money_off, size: 20, color: colors.brand),
+          const SizedBox(width: AppSpacing.s3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('break_deduct_hourly'.tr,
+                    style: AppTextStyles.body(context)),
+                Text('break_deduct_hourly_hint'.tr,
+                    style: AppTextStyles.sm(context)
+                        .copyWith(color: colors.textTertiary)),
+              ],
+            ),
+          ),
+          Switch(
+            value: _deductFromSalary,
+            activeThumbColor: colors.brand,
+            onChanged: (v) => setState(() => _deductFromSalary = v),
+          ),
+        ],
+      ),
     );
   }
 
@@ -300,6 +391,69 @@ class _AddBreakSheetState extends State<AddBreakSheet> {
     );
   }
 
+  Widget _buildEmployeeField(AppColorScheme colors) {
+    if (_loadingEmployees) {
+      return Container(
+        height: 58,
+        alignment: Alignment.center,
+        decoration: _fieldDecoration(colors),
+        child: const CircularProgressIndicator.adaptive(),
+      );
+    }
+    if (_employeesError != null) {
+      return Container(
+        padding: const EdgeInsets.all(AppSpacing.s3),
+        decoration: _fieldDecoration(colors),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(_employeesError!,
+                  style:
+                      AppTextStyles.sm(context).copyWith(color: colors.error)),
+            ),
+            TextButton(onPressed: _loadEmployees, child: Text('retry'.tr)),
+          ],
+        ),
+      );
+    }
+
+    final employee = _employee;
+    return InkWell(
+      onTap: _pickEmployee,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.s3, vertical: AppSpacing.s3),
+        decoration: _fieldDecoration(colors),
+        child: Row(
+          children: [
+            _Avatar(name: employee?.name, colors: colors),
+            const SizedBox(width: AppSpacing.s3),
+            Expanded(
+              child: employee == null
+                  ? Text('select_employee'.tr,
+                      style: AppTextStyles.body(context)
+                          .copyWith(color: colors.textTertiary))
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(employee.name,
+                            style: AppTextStyles.body(context)
+                                .copyWith(fontWeight: FontWeight.w600)),
+                        if (employee.jobTitle != null &&
+                            employee.jobTitle!.isNotEmpty)
+                          Text(employee.jobTitle!,
+                              style: AppTextStyles.sm(context)),
+                      ],
+                    ),
+            ),
+            Icon(Icons.unfold_more, size: 20, color: colors.textTertiary),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _sectionLabel(String text, AppColorScheme colors) {
     return Text(text,
         style: TextStyle(
@@ -317,41 +471,146 @@ class _AddBreakSheetState extends State<AddBreakSheet> {
       );
 }
 
-class _ChoiceChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
+class _Avatar extends StatelessWidget {
+  final String? name;
   final AppColorScheme colors;
 
-  const _ChoiceChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    required this.colors,
-  });
+  const _Avatar({required this.name, required this.colors});
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.full),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.s3, vertical: AppSpacing.s2),
-        decoration: BoxDecoration(
-          color: selected ? colors.brandSubtle : colors.sunken,
-          borderRadius: BorderRadius.circular(AppRadius.full),
-          border: Border.all(
-            color: selected ? colors.brand : colors.borderHairline,
-          ),
+    final initial = (name != null && name!.trim().isNotEmpty)
+        ? name!.trim().characters.first
+        : '?';
+    return Container(
+      width: 38,
+      height: 38,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: colors.brandSubtle,
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        initial,
+        style: TextStyle(
+          fontFamily: 'IBM Plex Sans Arabic',
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: colors.brand,
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'IBM Plex Sans Arabic',
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: selected ? colors.brand : colors.textSecondary,
+      ),
+    );
+  }
+}
+
+/// Searchable employee selector shown as a nested bottom sheet.
+class _EmployeePicker extends StatefulWidget {
+  final List<EmployeeModel> employees;
+
+  const _EmployeePicker({required this.employees});
+
+  @override
+  State<_EmployeePicker> createState() => _EmployeePickerState();
+}
+
+class _EmployeePickerState extends State<_EmployeePicker> {
+  String _query = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final q = _query.trim().toLowerCase();
+    final filtered = q.isEmpty
+        ? widget.employees
+        : widget.employees
+            .where((e) =>
+                e.name.toLowerCase().contains(q) ||
+                (e.employeeCode?.toLowerCase().contains(q) ?? false) ||
+                (e.jobTitle?.toLowerCase().contains(q) ?? false))
+            .toList();
+
+    final mq = MediaQuery.of(context);
+    final viewInsets = mq.viewInsets.bottom;
+    final available = mq.size.height -
+        viewInsets -
+        mq.padding.top -
+        mq.padding.bottom -
+        AppSpacing.s4 * 2;
+    final cap = mq.size.height * 0.7;
+    final sheetHeight = available < cap ? available : cap;
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: viewInsets),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.s4),
+            child: Material(
+              color: colors.surface,
+              clipBehavior: Clip.antiAlias,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              child: SizedBox(
+                height: sheetHeight,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(AppSpacing.s4),
+                      child: TextField(
+                        autofocus: true,
+                        onChanged: (v) => setState(() => _query = v),
+                        decoration: InputDecoration(
+                          prefixIcon: const Icon(Icons.search),
+                          hintText: 'leave_search_employee'.tr,
+                          hintStyle: TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 14,
+                            color: colors.textTertiary,
+                          ),
+                          filled: true,
+                          fillColor: colors.sunken,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: filtered.isEmpty
+                          ? Padding(
+                              padding: const EdgeInsets.all(AppSpacing.s5),
+                              child: Text('leave_no_employees_found'.tr,
+                                  style: AppTextStyles.bodySecondary(context)),
+                            )
+                          : ListView.separated(
+                              padding: const EdgeInsets.fromLTRB(
+                                  AppSpacing.s4, 0, AppSpacing.s4, AppSpacing.s4),
+                              itemCount: filtered.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: AppSpacing.s1),
+                              itemBuilder: (_, i) {
+                                final e = filtered[i];
+                                return ListTile(
+                                  contentPadding: EdgeInsets.zero,
+                                  leading: _Avatar(name: e.name, colors: colors),
+                                  title: Text(e.name,
+                                      style: AppTextStyles.body(context)
+                                          .copyWith(fontWeight: FontWeight.w600)),
+                                  subtitle: (e.jobTitle != null &&
+                                          e.jobTitle!.isNotEmpty)
+                                      ? Text(e.jobTitle!,
+                                          style: AppTextStyles.sm(context))
+                                      : null,
+                                  onTap: () => Get.back<EmployeeModel>(result: e),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),

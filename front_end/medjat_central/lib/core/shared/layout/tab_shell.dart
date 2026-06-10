@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../constant/theme/app_colors.dart';
 import '../../services/push_notification_service.dart';
+import 'tap_to_exit.dart';
 
 class TabShell extends StatefulWidget {
   final List<Widget> screens;
@@ -30,9 +31,11 @@ class _TabShellState extends State<TabShell> {
     final colors = isLight ? AppColors.light : AppColors.dark;
 
     return Obx(() => Scaffold(
-          body: IndexedStack(
-            index: controller.currentIndex.value,
-            children: widget.screens,
+          body: TapToExit(
+            child: IndexedStack(
+              index: controller.currentIndex.value,
+              children: widget.screens,
+            ),
           ),
           bottomNavigationBar: Container(
             decoration: BoxDecoration(

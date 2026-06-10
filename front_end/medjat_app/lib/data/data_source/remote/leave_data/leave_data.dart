@@ -22,6 +22,34 @@ class LeaveData {
     return await _crud.postData(AppLinks.leaveApply, data);
   }
 
+  Future<Map<String, dynamic>> myLeaves({String? status}) async {
+    final params = <String, dynamic>{};
+    if (status != null) params['status'] = status;
+    return await _crud.getData(AppLinks.myLeaves, queryParameters: params);
+  }
+
+  Future<Map<String, dynamic>> cancel(int id) async {
+    return await _crud.postData(AppLinks.leaveCancel, {'leave_id': id});
+  }
+
+  Future<Map<String, dynamic>> update({
+    required int id,
+    required String type,
+    required String startDate,
+    required String endDate,
+    String? reason,
+  }) async {
+    final data = <String, dynamic>{
+      'leave_id': id,
+      'type': type,
+      'date': startDate,
+      'start_date': startDate,
+      'end_date': endDate,
+    };
+    if (reason != null) data['reason'] = reason;
+    return await _crud.postData(AppLinks.leaveUpdate, data);
+  }
+
   Future<Map<String, dynamic>> getBalance({int? year}) async {
     final params = <String, dynamic>{};
     if (year != null) params['year'] = year.toString();

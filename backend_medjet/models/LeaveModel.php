@@ -24,6 +24,61 @@ final class LeaveModel {
         );
     }
 
+    /**
+     * Convert an existing leave into an absence. Every calendar day in the
+     * leave's range is set to 'absent' (creating/updating the attendance row,
+     * which makes the day deductible), then the leave record itself is removed
+     * so it no longer counts toward the annual-leave balance.
+     *
+     * @return array{employee_id:int, days:int} Summary for the caller.
+     */
+    public static function convertToAbsence(int $leaveId, int $tenantId, int $adminId, ?string $reason = null): array {
+        $leave = Database::fetchOne(
+            "SELECT id, employee_id,
+                    DATE_FORMAT(start_date, '%Y-%m-%d') AS start_date,
+                    DATE_FORMAT(end_date, '%Y-%m-%d') AS end_date
+             FROM leaves WHERE id = ? AND tenant_id = ? LIMIT 1",
+            [$leaveId, $tenantId]
+        );
+        if (!$leave) {
+            throw new RuntimeException('Leave not found');
+        }
+
+        $employee = EmployeeModel::findById((int) $leave['employee_id'], $tenantId);
+        if (!$employee) {
+            throw new RuntimeException('Employee not found');
+        }
+
+        $cursor = new DateTime($leave['start_date']);
+        $end = new DateTime($leave['end_date']);
+        $note = $reason ?? 'Converted from leave';
+        $days = 0;
+
+        while ($cursor <= $end) {
+            AttendanceModel::setDayStatus(
+                $employee,
+                $tenantId,
+                $cursor->format('Y-m-d'),
+                'absent',
+                null,
+                null,
+                null,
+                $note,
+                $adminId
+            );
+            $days++;
+            $cursor->modify('+1 day');
+        }
+
+        // The days are now absences; drop the leave so the balance stays correct.
+        Database::execute(
+            "DELETE FROM leaves WHERE id = ? AND tenant_id = ?",
+            [$leaveId, $tenantId]
+        );
+
+        return ['employee_id' => (int) $leave['employee_id'], 'days' => $days];
+    }
+
     public static function createRecurring(int $tenantId, ?int $branchId, string $dayOfWeek, string $type, ?string $reason = null): int {
         Database::execute(
             "INSERT INTO recurring_leaves (tenant_id, branch_id, day_of_week, type, reason, is_active)
@@ -187,15 +242,124 @@ final class LeaveModel {
         return (int) (Database::fetchOne($sql, $params)['c'] ?? 0);
     }
 
-    public static function getByTenant(int $tenantId, int $page = 1, int $limit = 20, ?string $status = null): array {
-        $sql = "SELECT l.*, e.name as employee_name FROM leaves l
+    /**
+     * The employee's own leave requests, newest first. Used by the employee app
+     * so a worker can track requests still awaiting a manager's decision.
+     */
+    public static function getByEmployee(int $employeeId, int $tenantId, ?string $status = null, int $limit = 50): array {
+        $sql = "SELECT id, type,
+                       DATE_FORMAT(start_date, '%Y-%m-%d') AS start_date,
+                       DATE_FORMAT(end_date, '%Y-%m-%d') AS end_date,
+                       (DATEDIFF(end_date, start_date) + 1) AS days,
+                       reason, status, rejection_reason,
+                       DATE_FORMAT(created_at, '%Y-%m-%d') AS created_at
+                FROM leaves
+                WHERE employee_id = ? AND tenant_id = ?";
+        $params = [$employeeId, $tenantId];
+        if ($status) {
+            $sql .= " AND status = ?";
+            $params[] = $status;
+        }
+        $sql .= " ORDER BY created_at DESC, id DESC LIMIT ?";
+        $params[] = $limit;
+        return Database::fetchAll($sql, $params);
+    }
+
+    /** How many leave requests the employee currently has awaiting a decision. */
+    public static function countPendingForEmployee(int $employeeId, int $tenantId): int {
+        $row = Database::fetchOne(
+            "SELECT COUNT(*) AS c FROM leaves
+             WHERE employee_id = ? AND tenant_id = ? AND status = 'pending'",
+            [$employeeId, $tenantId]
+        );
+        return (int) ($row['c'] ?? 0);
+    }
+
+    /** Fetch a leave only if it belongs to the employee and is still pending. */
+    public static function findOwnedPending(int $leaveId, int $employeeId, int $tenantId): ?array {
+        return Database::fetchOne(
+            "SELECT id, employee_id, type,
+                    DATE_FORMAT(start_date, '%Y-%m-%d') AS start_date,
+                    DATE_FORMAT(end_date, '%Y-%m-%d') AS end_date,
+                    reason, status
+             FROM leaves
+             WHERE id = ? AND employee_id = ? AND tenant_id = ? AND status = 'pending'
+             LIMIT 1",
+            [$leaveId, $employeeId, $tenantId]
+        );
+    }
+
+    /** Delete a pending leave owned by the employee. Returns true if a row was removed. */
+    public static function cancelOwn(int $leaveId, int $employeeId, int $tenantId): bool {
+        $affected = Database::execute(
+            "DELETE FROM leaves
+             WHERE id = ? AND employee_id = ? AND tenant_id = ? AND status = 'pending'",
+            [$leaveId, $employeeId, $tenantId]
+        );
+        return $affected > 0;
+    }
+
+    /** Update a pending leave owned by the employee. Returns true if it was updated. */
+    public static function updateOwn(
+        int $leaveId,
+        int $employeeId,
+        int $tenantId,
+        string $type,
+        string $startDate,
+        string $endDate,
+        ?string $reason
+    ): bool {
+        Database::execute(
+            "UPDATE leaves
+             SET type = ?, date = ?, start_date = ?, end_date = ?, reason = ?
+             WHERE id = ? AND employee_id = ? AND tenant_id = ? AND status = 'pending'",
+            [$type, $startDate, $startDate, $endDate, $reason, $leaveId, $employeeId, $tenantId]
+        );
+        return true;
+    }
+
+    public static function getByTenant(
+        int $tenantId,
+        int $page = 1,
+        int $limit = 20,
+        ?string $status = null,
+        ?int $branchId = null,
+        ?int $categoryId = null,
+        ?string $search = null
+    ): array {
+        $sql = "SELECT l.*,
+                       e.name as employee_name,
+                       e.branch_id,
+                       b.name as branch_name,
+                       ap.name as approved_by_name,
+                       rj.name as rejected_by_name,
+                       (SELECT GROUP_CONCAT(eca.category_id)
+                          FROM employee_category_assignments eca
+                          WHERE eca.employee_id = e.id) AS category_ids
+                FROM leaves l
                 JOIN employees e ON e.id = l.employee_id
+                LEFT JOIN branches b ON b.id = e.branch_id
+                LEFT JOIN admins ap ON ap.id = l.approved_by
+                LEFT JOIN admins rj ON rj.id = l.rejected_by
                 WHERE l.tenant_id = ?";
         $params = [$tenantId];
 
         if ($status) {
             $sql .= " AND l.status = ?";
             $params[] = $status;
+        }
+        if ($branchId !== null) {
+            $sql .= " AND e.branch_id = ?";
+            $params[] = $branchId;
+        }
+        if ($categoryId !== null) {
+            $sql .= " AND EXISTS (SELECT 1 FROM employee_category_assignments eca
+                                  WHERE eca.employee_id = e.id AND eca.category_id = ?)";
+            $params[] = $categoryId;
+        }
+        if ($search !== null && trim($search) !== '') {
+            $sql .= " AND e.name LIKE ?";
+            $params[] = '%' . trim($search) . '%';
         }
 
         $offset = ($page - 1) * $limit;

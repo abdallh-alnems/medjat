@@ -12,6 +12,7 @@ class EmployeeData {
     String? search,
     String? status,
     String? sort,
+    String? dir,
     int? expiringWithin,
   }) async {
     final params = <String, dynamic>{};
@@ -21,6 +22,7 @@ class EmployeeData {
     if (search != null && search.isNotEmpty) params['search'] = search;
     if (status != null && status.isNotEmpty) params['status'] = status;
     if (sort != null && sort.isNotEmpty) params['sort'] = sort;
+    if (dir != null && dir.isNotEmpty) params['dir'] = dir;
     if (expiringWithin != null) params['expiring_within'] = expiringWithin;
     return await _crud.getData(AppLinks.employees, queryParameters: params);
   }

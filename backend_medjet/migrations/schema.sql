@@ -1019,6 +1019,7 @@ CREATE TABLE IF NOT EXISTS `tenants` (
   `default_annual_leave_days` int NOT NULL DEFAULT '21' COMMENT 'Default annual leave entitlement for all employees',
   `leave_carryover_max_days` int DEFAULT NULL COMMENT 'NULL = no carryover; number = max days carried to next year',
   `cycle_start_day` tinyint unsigned NOT NULL DEFAULT '1' COMMENT 'Attendance cycle start day (1-28); cycle labeled by its end month',
+  `week_start_day` tinyint unsigned NOT NULL DEFAULT '6' COMMENT 'Weekly schedule start weekday (ISO: 1=Mon..7=Sun, default 6=Sat)',
   `stamp_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Company stamp image for generated letters',
   `signature_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Authorized signatory image for generated letters',
   `commercial_register` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Commercial registration number shown on letters',
@@ -1810,10 +1811,10 @@ CREATE TABLE IF NOT EXISTS `break_requests` (
   `start_time` time NOT NULL,
   `end_time` time NOT NULL,
   `duration_minutes` smallint unsigned NOT NULL DEFAULT 0 COMMENT 'محسوبة في PHP وقت الإدراج',
-  `type` enum('break','permission','prayer','errand','medical','early_leave','other')
-        COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'break',
+  `type` varchar(100)
+        COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT 'نوع/وصف الطلب يُدخله المستخدم بحرية',
   `deduct_from_salary` tinyint(1) NOT NULL DEFAULT 0
-        COMMENT 'إذن انصراف مبكر: هل يُخصم بنظام الساعة من الراتب؟ يحدده المدير عند الموافقة',
+        COMMENT 'هل يُخصم من الراتب بنظام الساعة؟ يُحدَّد عند الإنشاء أو الموافقة',
   `reason` text COLLATE utf8mb4_unicode_ci,
   `status` enum('pending','approved','rejected','postponed','cancelled')
         COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',

@@ -135,6 +135,45 @@ if (is_array($input['allowances'] ?? null)) {
     }
 }
 
+// Optional per-employee document requests entered on the add-employee form.
+// Each becomes an employee-scoped required document so ONLY this employee is
+// asked to provide it (mirrors the custom path in employees/request_document).
+if (is_array($input['requested_documents'] ?? null)) {
+    foreach ($input['requested_documents'] as $doc) {
+        if (!is_array($doc)) {
+            continue;
+        }
+        $docName = trim((string) ($doc['name'] ?? ''));
+        // Skip blank rows silently so the UI can submit optional fields.
+        if ($docName === '') {
+            continue;
+        }
+        $fields = [
+            'name' => mb_substr($docName, 0, 100),
+            'description' => isset($doc['description']) && trim((string) $doc['description']) !== ''
+                ? trim((string) $doc['description']) : null,
+            'scope_type' => 'employees',
+            'scope_branch_id' => null,
+            'is_required' => 1,
+        ];
+        if (!empty($doc['category'])) {
+            Validator::enum($doc['category'],
+                ['identity', 'contract', 'certificate', 'insurance', 'general'], 'category');
+            $fields['category'] = $doc['category'];
+        }
+        if (isset($doc['expiry_days']) && $doc['expiry_days'] !== '' && $doc['expiry_days'] !== null) {
+            $fields['expiry_days'] = (int) $doc['expiry_days'] ?: null;
+        }
+        $reqId = DocumentModel::addRequiredFull($tenantId, $fields);
+        DocumentModel::setEmployeeScope($reqId, $tenantId, [$employeeId]);
+        AuditLogModel::log($tenantId, $auth['admin_id'], 'document.request', 'employee', $employeeId, [
+            'required_document_id' => $reqId,
+            'custom' => true,
+            'source' => 'employee_create',
+        ]);
+    }
+}
+
 $activation = ActivationCodeModel::generate($tenantId, $employeeId);
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'employee.create', 'employee', $employeeId);

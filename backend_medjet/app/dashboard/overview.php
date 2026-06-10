@@ -126,6 +126,7 @@ $payroll = PayrollModel::getTotalByMonth($tenantId, $currentMonth);
 // Approval queues + financials for the home action list (tenant-wide).
 $pendingLetters = DocumentRequestModel::countPending($tenantId);
 $pendingLoans = LoanModel::countPending($tenantId);
+$pendingBreaks = BreakRequestModel::countPending($tenantId);
 $assetsToReturn = AssetModel::countReturnRequested($tenantId);
 $pendingExpenses = ExpenseModel::countPending($tenantId);
 $monthlyExpenses = ExpenseModel::totalForMonth($tenantId, $currentMonth);
@@ -148,6 +149,7 @@ Response::success([
     'pending_leaves' => $pendingLeaves,
     'pending_letters' => $pendingLetters,
     'pending_loans' => $pendingLoans,
+    'pending_breaks' => $pendingBreaks,
     'assets_to_return' => $assetsToReturn,
     'pending_expenses' => $pendingExpenses,
     'monthly_expenses' => $monthlyExpenses,

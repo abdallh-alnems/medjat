@@ -356,31 +356,40 @@ class _ShiftTile extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          shift.name,
-                          style: const TextStyle(
-                            fontFamily: 'IBM Plex Sans Arabic',
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
+                        Flexible(
+                          child: Text(
+                            shift.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'IBM Plex Sans Arabic',
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                         if (shift.branchName != null) ...[
                           const SizedBox(width: AppSpacing.s2),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colors.brandSubtle,
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                            ),
-                            child: Text(
-                              shift.branchName!,
-                              style: TextStyle(
-                                fontFamily: 'IBM Plex Sans Arabic',
-                                fontSize: 10,
-                                color: colors.brand,
+                          Flexible(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colors.brandSubtle,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
+                              ),
+                              child: Text(
+                                shift.branchName!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontFamily: 'IBM Plex Sans Arabic',
+                                  fontSize: 10,
+                                  color: colors.brand,
+                                ),
                               ),
                             ),
                           ),
@@ -390,13 +399,17 @@ class _ShiftTile extends StatelessWidget {
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        Text(
-                          '${_formatTime(shift.startTime)} - ${_formatTime(shift.endTime)}',
-                          style: TextStyle(
-                            fontFamily: 'Geist',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: colors.textSecondary,
+                        Flexible(
+                          child: Text(
+                            '${_formatTime(shift.startTime)} - ${_formatTime(shift.endTime)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: 'Geist',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: colors.textSecondary,
+                            ),
                           ),
                         ),
                         const SizedBox(width: AppSpacing.s3),

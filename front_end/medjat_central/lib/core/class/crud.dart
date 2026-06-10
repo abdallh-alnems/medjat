@@ -144,10 +144,17 @@ class CRUD {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         return {'status': StatusRequest.success, 'bytes': response.bodyBytes};
       }
-      return {'status': StatusRequest.failure, 'statusCode': response.statusCode};
+      // Surface a short snippet of the error body to aid diagnosis.
+      return {
+        'status': StatusRequest.failure,
+        'statusCode': response.statusCode,
+        'error': response.body.isNotEmpty
+            ? response.body.substring(0, response.body.length.clamp(0, 200))
+            : null,
+      };
     } catch (e) {
       debugPrint('GET BYTES Error: $e');
-      return {'status': StatusRequest.failure};
+      return {'status': StatusRequest.failure, 'error': e.toString()};
     }
   }
 

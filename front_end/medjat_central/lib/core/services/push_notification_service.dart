@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import '../constant/id/app_links.dart';
 import '../constant/routes/app_routes.dart';
 import '../class/crud.dart';
+import 'local_notifications_service.dart';
 
 class PushNotificationService {
   PushNotificationService._();
@@ -16,19 +17,19 @@ class PushNotificationService {
     try {
       final messaging = FirebaseMessaging.instance;
 
-      final settings = await messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
-
-      if (settings.authorizationStatus == AuthorizationStatus.denied) {
-        debugPrint('PushNotificationService: permission denied');
-        return;
-      }
-
+      // Attach listeners first so foreground handling always works, even if the
+      // permission prompt or local-notification setup below fails.
       FirebaseMessaging.onMessage.listen(_onForegroundMessage);
       FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpenedApp);
+
+      try {
+        await LocalNotificationsService.init();
+        LocalNotificationsService.onTap = _handleData;
+      } catch (e) {
+        debugPrint('LocalNotifications init error: $e');
+      }
+
+      await messaging.requestPermission(alert: true, badge: true, sound: true);
 
       await _registerToken();
 
@@ -69,34 +70,18 @@ class PushNotificationService {
 
   static void _onForegroundMessage(RemoteMessage message) {
     final notification = message.notification;
-    if (notification == null) return;
+    final title = notification?.title ?? message.data['title'] as String?;
+    final body = notification?.body ?? message.data['body'] as String?;
+    if ((title == null || title.isEmpty) && (body == null || body.isEmpty)) {
+      return;
+    }
 
-    Get.snackbar(
-      notification.title ?? '',
-      notification.body ?? '',
-      snackPosition: SnackPosition.TOP,
-      duration: const Duration(seconds: 5),
-      margin: const EdgeInsets.all(12),
-      mainButton: _actionButton(message.data),
-    );
+    // Show a real system notification (tray + sound) even while the app is open.
+    LocalNotificationsService.show(title, body, message.data);
   }
 
   static void _onMessageOpenedApp(RemoteMessage message) {
     _handleData(message.data);
-  }
-
-  static TextButton? _actionButton(Map<String, dynamic> data) {
-    final type = data['type'] as String? ?? '';
-    if (type == 'support') {
-      final ticketId = int.tryParse(data['ticket_id']?.toString() ?? '');
-      if (ticketId != null) {
-        return TextButton(
-          onPressed: () => _navigateToSupportChat(ticketId),
-          child: const Text('Open'),
-        );
-      }
-    }
-    return null;
   }
 
   static void _handleData(Map<String, dynamic> data) {

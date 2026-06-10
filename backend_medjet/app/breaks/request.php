@@ -11,8 +11,11 @@ $input     = $auth['input'];
 $date      = $input['date'] ?? null;
 $startTime = $input['start_time'] ?? null;
 $endTime   = $input['end_time'] ?? null;
-$type      = $input['type'] ?? 'break';
+$type      = trim((string) ($input['type'] ?? ''));
 $reason    = $input['reason'] ?? null;
+// Hourly salary deduction can be requested at creation for any type; the
+// approving manager can still change it at approval time.
+$deductFromSalary = filter_var($input['deduct_from_salary'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
 Validator::required($date, 'date');
 Validator::date($date, 'date');
@@ -20,7 +23,9 @@ Validator::required($startTime, 'start_time');
 Validator::time($startTime, 'start_time');
 Validator::required($endTime, 'end_time');
 Validator::time($endTime, 'end_time');
-Validator::enum($type, ['break','permission','prayer','errand','medical','early_leave','other'], 'type');
+if (mb_strlen($type) > 100) {
+    Response::fail('نوع الطلب طويل جدًا', 422, 'type_too_long');
+}
 
 $startTs = strtotime($date . ' ' . $startTime);
 $endTs   = strtotime($date . ' ' . $endTime);
@@ -33,12 +38,17 @@ if ($durationMinutes > 480) {
     Response::fail('مدة الإذن كبيرة جدًا', 422, 'duration_too_long');
 }
 
+// Can't request a permission whose window has already passed.
+if ($endTs < time()) {
+    Response::fail('انتهى وقت الإذن، لا يمكن طلبه', 422, 'break_window_passed');
+}
+
 if (BreakRequestModel::hasOverlap($employee['id'], $tenantId, $date, $startTime, $endTime)) {
     Response::fail('يوجد تداخل مع طلب إذن قائم في نفس الوقت', 409, 'break_overlap');
 }
 
 $id = BreakRequestModel::create(
-    $tenantId, $employee['id'], $date, $startTime, $endTime, $durationMinutes, $type, $reason
+    $tenantId, $employee['id'], $date, $startTime, $endTime, $durationMinutes, $type, $reason, $deductFromSalary
 );
 
 try {

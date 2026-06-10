@@ -50,10 +50,13 @@ class PdfExportService {
           Get.find<AuthController>().user?.name ??
           'Medjat';
 
+      final isRtl = (Get.locale?.languageCode ?? 'ar') == 'ar';
+
       doc.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
-          textDirection: pw.TextDirection.rtl,
+          textDirection:
+              isRtl ? pw.TextDirection.rtl : pw.TextDirection.ltr,
           margin: const pw.EdgeInsets.all(40),
           build: (context) => [
             pw.Center(

@@ -13,6 +13,10 @@ class AppLinks {
       '$base/app/auth/employee_logout.php';
 
   static String get myProfile => '$base/app/employees/my_profile.php';
+  static String get submitDocument =>
+      '$base/app/employees/submit_document.php';
+  static String get myDocumentView =>
+      '$base/app/employees/my_document_view.php';
 
   static String get checkIn => '$base/app/attendance/check_in.php';
   static String get checkOut => '$base/app/attendance/check_out.php';
@@ -28,6 +32,13 @@ class AppLinks {
 
   static String get leaveApply => '$base/app/leaves/apply.php';
   static String get leaveBalance => '$base/app/leaves/my_balance.php';
+  static String get myLeaves => '$base/app/leaves/my_leaves.php';
+  static String get leaveCancel => '$base/app/leaves/cancel.php';
+  static String get leaveUpdate => '$base/app/leaves/update.php';
+
+  static String get breakRequest => '$base/app/breaks/request.php';
+  static String get myBreaks => '$base/app/breaks/my_list.php';
+  static String get breakCancel => '$base/app/breaks/cancel.php';
 
   static String get notifications => '$base/app/notifications/list.php';
   static String notificationRead(int id) =>

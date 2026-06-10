@@ -10,6 +10,7 @@ abstract class AppRoutes {
   static const String myDocuments = '/my-documents';
   static const String payroll = '/payroll';
   static const String leaves = '/leaves';
+  static const String breaks = '/breaks';
   static const String notifications = '/notifications';
   static const String settings = '/settings';
   static const String kioskPair = '/kiosk-pair';

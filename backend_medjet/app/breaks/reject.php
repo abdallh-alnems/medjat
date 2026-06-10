@@ -19,10 +19,20 @@ BreakRequestModel::reject($id, $tenantId, $auth['admin_id'], $note);
 AuditLogModel::log($tenantId, $auth['admin_id'], 'break.reject', 'break', $id);
 
 try {
+    $bodyAr = ($note !== null && trim((string) $note) !== '')
+        ? 'تم رفض طلب الإذن الخاص بك: ' . trim((string) $note)
+        : 'تم رفض طلب الإذن الخاص بك.';
     Database::execute(
         "INSERT INTO notifications (tenant_id, employee_id, type, title, title_ar, body, body_ar, data, sent_via, created_at)
-         VALUES (?, ?, 'break', 'Break Rejected', 'تم رفض الإذن', 'Your break request has been rejected.', 'تم رفض طلب الإذن الخاص بك.', ?, 'in_app', NOW())",
-        [$tenantId, $row['employee_id'], json_encode(['break_id' => $id, 'action' => 'reject'])]
+         VALUES (?, ?, 'break', 'Break Rejected', 'تم رفض الإذن', 'Your break request has been rejected.', ?, ?, 'push,in_app', NOW())",
+        [$tenantId, $row['employee_id'], $bodyAr, json_encode(['break_id' => $id, 'action' => 'reject'])]
+    );
+
+    NotificationService::sendToEmployee(
+        (int) $row['employee_id'],
+        'تم رفض الإذن',
+        $bodyAr,
+        ['break_id' => (string) $id, 'action' => 'reject', 'type' => 'break_rejected']
     );
 } catch (Exception $e) { error_log('Notification insert error: ' . $e->getMessage()); }
 

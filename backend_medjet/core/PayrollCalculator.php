@@ -268,12 +268,12 @@ final class PayrollCalculator {
             }
         }
 
-        // Approved early-leave permissions (إذن انصراف مبكر) flagged for hourly
-        // deduction. Each window is deducted at the hourly rate for its minutes.
-        $earlyLeaves = $effectiveEnd === null
+        // Approved permissions (any type) flagged for hourly deduction. Each
+        // window is deducted at the hourly rate for its minutes.
+        $hourlyDeductions = $effectiveEnd === null
             ? []
-            : BreakRequestModel::approvedEarlyLeaveDeductions($employeeId, $tenantId, $cycleStart, $effectiveEnd);
-        foreach ($earlyLeaves as $el) {
+            : BreakRequestModel::approvedHourlyDeductions($employeeId, $tenantId, $cycleStart, $effectiveEnd);
+        foreach ($hourlyDeductions as $el) {
             $minutes = (int) $el['duration_minutes'];
             if ($minutes <= 0) {
                 continue;
@@ -282,11 +282,12 @@ final class PayrollCalculator {
             if ($amount <= 0) {
                 continue;
             }
+            $label = trim((string) ($el['type'] ?? '')) !== '' ? $el['type'] : 'إذن';
             $deductions[] = [
-                'type' => 'early_leave',
+                'type' => 'permission_hourly',
                 'date' => $el['date'],
                 'amount' => $amount,
-                'description' => "انصراف مبكر {$minutes} دقيقة ({$el['date']})",
+                'description' => "{$label} {$minutes} دقيقة ({$el['date']})",
             ];
         }
 

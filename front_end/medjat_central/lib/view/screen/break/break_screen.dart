@@ -27,38 +27,140 @@ class BreakScreen extends StatelessWidget {
       body: Column(
         children: [
           Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s4,
+              AppSpacing.s3,
+              AppSpacing.s4,
+              0,
+            ),
+            child: TextField(
+              controller: ctrl.searchCtrl,
+              onChanged: ctrl.search,
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                isDense: true,
+                prefixIcon: const Icon(Icons.search, size: 20),
+                hintText: 'search_employee'.tr,
+                hintStyle: TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 14,
+                  color: colors.textTertiary,
+                ),
+                filled: true,
+                fillColor: colors.sunken,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+          GetBuilder<BreakController>(
+            builder: (_) => Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.s4,
+                AppSpacing.s2,
+                AppSpacing.s4,
+                0,
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _filterField(
+                      context,
+                      colors,
+                      text: ctrl.branchFilter == null
+                          ? 'all_branches'.tr
+                          : ctrl.branches
+                                .firstWhere(
+                                  (b) => b.id == ctrl.branchFilter,
+                                  orElse: () => ctrl.branches.first,
+                                )
+                                .name,
+                      onTap: () => _showSelectSheet(
+                        context,
+                        colors,
+                        title: 'all_branches'.tr,
+                        selected: ctrl.branchFilter,
+                        options: [
+                          MapEntry(null, 'all_branches'.tr),
+                          ...ctrl.branches.map((b) => MapEntry(b.id, b.name)),
+                        ],
+                        onSelect: ctrl.filterByBranch,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.s2),
+                  Expanded(
+                    child: _filterField(
+                      context,
+                      colors,
+                      text: ctrl.categoryFilter == null
+                          ? 'all_categories'.tr
+                          : ctrl.categories
+                                .firstWhere(
+                                  (c) => c.id == ctrl.categoryFilter,
+                                  orElse: () => ctrl.categories.first,
+                                )
+                                .name,
+                      onTap: () => _showSelectSheet(
+                        context,
+                        colors,
+                        title: 'all_categories'.tr,
+                        selected: ctrl.categoryFilter,
+                        options: [
+                          MapEntry(null, 'all_categories'.tr),
+                          ...ctrl.categories.map((c) => MapEntry(c.id, c.name)),
+                        ],
+                        onSelect: ctrl.filterByCategory,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.s4,
               vertical: AppSpacing.s2,
             ),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _FilterChip(
-                    label: 'all'.tr,
-                    selected: ctrl.statusFilter == null,
-                    onTap: () => ctrl.filterByStatus(null),
-                  ),
-                  const SizedBox(width: AppSpacing.s2),
-                  _FilterChip(
-                    label: 'under_review'.tr,
-                    selected: ctrl.statusFilter == 'pending',
-                    onTap: () => ctrl.filterByStatus('pending'),
-                  ),
-                  const SizedBox(width: AppSpacing.s2),
-                  _FilterChip(
-                    label: 'accepted'.tr,
-                    selected: ctrl.statusFilter == 'approved',
-                    onTap: () => ctrl.filterByStatus('approved'),
-                  ),
-                  const SizedBox(width: AppSpacing.s2),
-                  _FilterChip(
-                    label: 'status_postponed'.tr,
-                    selected: ctrl.statusFilter == 'postponed',
-                    onTap: () => ctrl.filterByStatus('postponed'),
-                  ),
-                ],
+              child: GetBuilder<BreakController>(
+                builder: (_) => Row(
+                  children: [
+                    _FilterChip(
+                      label: 'all'.tr,
+                      selected: ctrl.statusFilter == null,
+                      onTap: () => ctrl.filterByStatus(null),
+                    ),
+                    const SizedBox(width: AppSpacing.s2),
+                    _FilterChip(
+                      label: 'under_review'.tr,
+                      selected: ctrl.statusFilter == 'pending',
+                      onTap: () => ctrl.filterByStatus('pending'),
+                    ),
+                    const SizedBox(width: AppSpacing.s2),
+                    _FilterChip(
+                      label: 'accepted'.tr,
+                      selected: ctrl.statusFilter == 'approved',
+                      onTap: () => ctrl.filterByStatus('approved'),
+                    ),
+                    const SizedBox(width: AppSpacing.s2),
+                    _FilterChip(
+                      label: 'status_postponed'.tr,
+                      selected: ctrl.statusFilter == 'postponed',
+                      onTap: () => ctrl.filterByStatus('postponed'),
+                    ),
+                    const SizedBox(width: AppSpacing.s2),
+                    _FilterChip(
+                      label: 'status_rejected'.tr,
+                      selected: ctrl.statusFilter == 'rejected',
+                      onTap: () => ctrl.filterByStatus('rejected'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -75,12 +177,16 @@ class BreakScreen extends StatelessWidget {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.coffee_outlined,
-                                    size: 48, color: colors.textTertiary),
+                                Icon(
+                                  Icons.coffee_outlined,
+                                  size: 48,
+                                  color: colors.textTertiary,
+                                ),
                                 const SizedBox(height: AppSpacing.s3),
-                                Text('no_break_requests'.tr,
-                                    style:
-                                        AppTextStyles.bodySecondary(context)),
+                                Text(
+                                  'no_break_requests'.tr,
+                                  style: AppTextStyles.bodySecondary(context),
+                                ),
                               ],
                             ),
                           )
@@ -99,9 +205,15 @@ class BreakScreen extends StatelessWidget {
                               onApprove: () =>
                                   _handleApprove(context, ctrl, ctrl.breaks[i]),
                               onReject: () => _showRejectDialog(
-                                  context, ctrl, ctrl.breaks[i].id),
+                                context,
+                                ctrl,
+                                ctrl.breaks[i].id,
+                              ),
                               onPostpone: () => _showPostponeDialog(
-                                  context, ctrl, ctrl.breaks[i]),
+                                context,
+                                ctrl,
+                                ctrl.breaks[i],
+                              ),
                               onCancel: () =>
                                   ctrl.cancelBreak(ctrl.breaks[i].id),
                             ),
@@ -116,31 +228,138 @@ class BreakScreen extends StatelessWidget {
     );
   }
 
-  // Early-leave permissions let the manager decide whether the window is
-  // deducted from the salary by the hour; other types approve directly.
+  // Tappable filter field that opens a bottom-sheet picker (same pattern as the
+  // leaves screen) — avoids the DropdownButton "first tap does nothing" issue.
+  Widget _filterField(
+    BuildContext context,
+    AppColorScheme colors, {
+    required String text,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: colors.borderHairline),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.sm(context),
+              ),
+            ),
+            Icon(Icons.arrow_drop_down, color: colors.textTertiary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSelectSheet(
+    BuildContext context,
+    AppColorScheme colors, {
+    required String title,
+    required int? selected,
+    required List<MapEntry<int?, String>> options,
+    required ValueChanged<int?> onSelect,
+  }) {
+    Get.bottomSheet<void>(
+      Directionality(
+        textDirection: TextDirection.rtl,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.6,
+          ),
+          child: Material(
+            color: colors.canvas,
+            clipBehavior: Clip.antiAlias,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(AppRadius.lg),
+              ),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(AppSpacing.s4),
+                    child: Text(
+                      title,
+                      style: AppTextStyles.body(
+                        context,
+                      ).copyWith(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  Flexible(
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: options.map((opt) {
+                        final isSel = opt.key == selected;
+                        return ListTile(
+                          title: Text(
+                            opt.value,
+                            style: AppTextStyles.body(context),
+                          ),
+                          trailing: isSel
+                              ? Icon(Icons.check, color: colors.brand)
+                              : null,
+                          onTap: () {
+                            Get.back<void>();
+                            onSelect(opt.key);
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // On approval the manager confirms whether the permission window is deducted
+  // from the salary by the hour. The dialog starts from the value the requester
+  // chose at creation time and can be changed here.
   void _handleApprove(
-      BuildContext context, BreakController ctrl, BreakRequestModel item) {
-    if (item.type != 'early_leave') {
-      ctrl.approveBreak(item.id);
-      return;
-    }
+    BuildContext context,
+    BreakController ctrl,
+    BreakRequestModel item,
+  ) {
     final colors = AppColors.of(context);
     Get.dialog<void>(
       Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          title: Text('early_leave_approve_title'.tr,
-              style: const TextStyle(
-                fontFamily: 'IBM Plex Sans Arabic',
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              )),
-          content: Text('early_leave_deduct_question'.tr,
-              style: TextStyle(
-                fontFamily: 'IBM Plex Sans Arabic',
-                fontSize: 14,
-                color: colors.textSecondary,
-              )),
+          title: Text(
+            'early_leave_approve_title'.tr,
+            style: const TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: Text(
+            'early_leave_deduct_question'.tr,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 14,
+              color: colors.textSecondary,
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Get.back<void>(),
@@ -168,7 +387,10 @@ class BreakScreen extends StatelessWidget {
   }
 
   void _showRejectDialog(
-      BuildContext context, BreakController ctrl, int breakId) {
+    BuildContext context,
+    BreakController ctrl,
+    int breakId,
+  ) {
     final reasonCtrl = TextEditingController();
     final colors = AppColors.of(context);
 
@@ -176,12 +398,14 @@ class BreakScreen extends StatelessWidget {
       Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          title: Text('reject_break'.tr,
-              style: const TextStyle(
-                fontFamily: 'IBM Plex Sans Arabic',
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              )),
+          title: Text(
+            'reject_break'.tr,
+            style: const TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           content: TextField(
             controller: reasonCtrl,
             autofocus: true,
@@ -204,10 +428,12 @@ class BreakScreen extends StatelessWidget {
             TextButton(
               onPressed: () {
                 Get.back<void>();
-                ctrl.rejectBreak(breakId,
-                    reason: reasonCtrl.text.trim().isNotEmpty
-                        ? reasonCtrl.text.trim()
-                        : null);
+                ctrl.rejectBreak(
+                  breakId,
+                  reason: reasonCtrl.text.trim().isNotEmpty
+                      ? reasonCtrl.text.trim()
+                      : null,
+                );
               },
               style: TextButton.styleFrom(foregroundColor: colors.error),
               child: Text('reject'.tr),
@@ -219,7 +445,10 @@ class BreakScreen extends StatelessWidget {
   }
 
   void _showPostponeDialog(
-      BuildContext context, BreakController ctrl, BreakRequestModel item) {
+    BuildContext context,
+    BreakController ctrl,
+    BreakRequestModel item,
+  ) {
     final noteCtrl = TextEditingController();
     final dateCtrl = TextEditingController();
     final startCtrl = TextEditingController();
@@ -230,12 +459,14 @@ class BreakScreen extends StatelessWidget {
       Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          title: Text('postpone_break'.tr,
-              style: const TextStyle(
-                fontFamily: 'IBM Plex Sans Arabic',
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              )),
+          title: Text(
+            'postpone_break'.tr,
+            style: const TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -257,7 +488,8 @@ class BreakScreen extends StatelessWidget {
                 TextField(
                   controller: dateCtrl,
                   decoration: InputDecoration(
-                    hintText: 'break_suggested_date'.tr,
+                    labelText: 'break_suggested_date'.tr,
+                    suffixIcon: const Icon(Icons.event_outlined, size: 20),
                     hintStyle: TextStyle(
                       fontFamily: 'IBM Plex Sans Arabic',
                       fontSize: 14,
@@ -285,20 +517,46 @@ class BreakScreen extends StatelessWidget {
                     Expanded(
                       child: TextField(
                         controller: startCtrl,
+                        readOnly: true,
                         decoration: InputDecoration(
-                          hintText: 'break_start_time'.tr,
+                          labelText: 'break_start_time'.tr,
+                          floatingLabelBehavior: FloatingLabelBehavior.always,
+                          suffixIcon: const Icon(Icons.access_time, size: 20),
                           border: const OutlineInputBorder(),
                         ),
+                        onTap: () async {
+                          final picked = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.now(),
+                          );
+                          if (picked != null) {
+                            startCtrl.text =
+                                '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                          }
+                        },
                       ),
                     ),
                     const SizedBox(width: AppSpacing.s2),
                     Expanded(
                       child: TextField(
                         controller: endCtrl,
+                        readOnly: true,
                         decoration: InputDecoration(
-                          hintText: 'break_end_time'.tr,
+                          labelText: 'break_end_time'.tr,
+                          floatingLabelBehavior: FloatingLabelBehavior.always,
+                          suffixIcon: const Icon(Icons.access_time, size: 20),
                           border: const OutlineInputBorder(),
                         ),
+                        onTap: () async {
+                          final picked = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.now(),
+                          );
+                          if (picked != null) {
+                            endCtrl.text =
+                                '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                          }
+                        },
                       ),
                     ),
                   ],
@@ -449,7 +707,10 @@ class _BreakTile extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.s2),
-          Row(
+          Wrap(
+            spacing: AppSpacing.s3,
+            runSpacing: AppSpacing.s2,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text(
                 breakItem.typeLabel,
@@ -459,7 +720,6 @@ class _BreakTile extends StatelessWidget {
                   color: colors.textSecondary,
                 ),
               ),
-              const SizedBox(width: AppSpacing.s3),
               Text(
                 '$dateLabel  ${breakItem.startTime} - ${breakItem.endTime}',
                 style: TextStyle(
@@ -468,7 +728,6 @@ class _BreakTile extends StatelessWidget {
                   color: colors.textTertiary,
                 ),
               ),
-              const SizedBox(width: AppSpacing.s2),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.s2,
@@ -480,20 +739,16 @@ class _BreakTile extends StatelessWidget {
                 ),
                 child: Text(
                   '${breakItem.durationMinutes} ${'minutes'.tr}',
-                  style: AppTextStyles.sm(context).copyWith(
-                    color: colors.brand,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AppTextStyles.sm(
+                    context,
+                  ).copyWith(color: colors.brand, fontWeight: FontWeight.w600),
                 ),
               ),
             ],
           ),
           if (breakItem.reason != null) ...[
             const SizedBox(height: AppSpacing.s2),
-            Text(
-              breakItem.reason!,
-              style: AppTextStyles.sm(context),
-            ),
+            Text(breakItem.reason!, style: AppTextStyles.sm(context)),
           ],
           if (breakItem.status == 'rejected' &&
               breakItem.decisionNote != null &&
@@ -510,6 +765,27 @@ class _BreakTile extends StatelessWidget {
                       fontFamily: 'IBM Plex Sans Arabic',
                       fontSize: 12,
                       color: colors.error,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (breakItem.status == 'rejected' &&
+              breakItem.decidedByName != null &&
+              breakItem.decidedByName!.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.s1),
+            Row(
+              children: [
+                Icon(Icons.person_outline, size: 14, color: colors.textTertiary),
+                const SizedBox(width: AppSpacing.s2),
+                Expanded(
+                  child: Text(
+                    '${'break_rejected_by'.tr}: ${breakItem.decidedByName!}',
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 12,
+                      color: colors.textTertiary,
                     ),
                   ),
                 ),
@@ -543,8 +819,7 @@ class _BreakTile extends StatelessWidget {
               ),
             ),
           ],
-          if (breakItem.type == 'early_leave' &&
-              breakItem.status == 'approved') ...[
+          if (breakItem.status == 'approved') ...[
             const SizedBox(height: AppSpacing.s2),
             Row(
               children: [
@@ -574,6 +849,30 @@ class _BreakTile extends StatelessWidget {
                 ),
               ],
             ),
+            if (breakItem.decidedByName != null &&
+                breakItem.decidedByName!.isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.s1),
+              Row(
+                children: [
+                  Icon(
+                    Icons.person_outline,
+                    size: 14,
+                    color: colors.textTertiary,
+                  ),
+                  const SizedBox(width: AppSpacing.s2),
+                  Expanded(
+                    child: Text(
+                      '${'break_approved_by'.tr}: ${breakItem.decidedByName!}',
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 12,
+                        color: colors.textTertiary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
           if (breakItem.status == 'pending') ...[
             const SizedBox(height: AppSpacing.s3),

@@ -53,7 +53,13 @@ class RequiredDocumentsController extends GetxController {
     if (response['status'] == StatusRequest.success) {
       dynamic body = response['data'];
       if (body is Map && body['data'] is Map) body = body['data'];
-      if (body is Map && body['employees'] is List) {
+      // The employees list endpoint returns the array under `items`; older
+      // shapes used `employees`. Support both.
+      if (body is Map && body['items'] is List) {
+        employees = (body['items'] as List)
+            .map((e) => EmployeeModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } else if (body is Map && body['employees'] is List) {
         employees = (body['employees'] as List)
             .map((e) => EmployeeModel.fromJson(e as Map<String, dynamic>))
             .toList();

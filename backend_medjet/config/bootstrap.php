@@ -31,6 +31,7 @@ require_once __DIR__ . '/../core/EmailService.php';
 require_once __DIR__ . '/../core/AuthEmail.php';
 require_once __DIR__ . '/../core/LoginAlertService.php';
 require_once __DIR__ . '/../core/EmployeeActivationAlert.php';
+require_once __DIR__ . '/../core/ManagerAlert.php';
 require_once __DIR__ . '/../core/ApprovalEngine.php';
 require_once __DIR__ . '/../core/ApprovalDispatcher.php';
 require_once __DIR__ . '/../core/SignedPdfService.php';

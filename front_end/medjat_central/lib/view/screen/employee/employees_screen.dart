@@ -20,18 +20,42 @@ class EmployeesScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text('employees'.tr),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add_outlined),
+            tooltip: 'add_employee'.tr,
+            onPressed: () async {
+              final result = await Get.toNamed(AppRoutes.employeeAdd);
+              if (result == true) {
+                ctrl.loadEmployees();
+              }
+            },
+          ),
           GetBuilder<EmployeeController>(
             builder: (_) => PopupMenuButton<String>(
               icon: const Icon(Icons.swap_vert),
               tooltip: 'sort_by'.tr,
               onSelected: ctrl.setSort,
-              itemBuilder: (_) => EmployeeController.sortOptions
-                  .map((s) => CheckedPopupMenuItem<String>(
-                        value: s,
-                        checked: ctrl.sortBy == s,
-                        child: Text(_sortLabel(s)),
-                      ))
-                  .toList(),
+              itemBuilder: (_) => EmployeeController.sortOptions.map((s) {
+                final selected = ctrl.sortBy == s;
+                return PopupMenuItem<String>(
+                  value: s,
+                  child: Row(
+                    children: [
+                      Icon(
+                        selected
+                            ? (ctrl.sortAscending
+                                ? Icons.arrow_upward
+                                : Icons.arrow_downward)
+                            : null,
+                        size: 18,
+                        color: AppColors.of(context).brand,
+                      ),
+                      const SizedBox(width: AppSpacing.s2),
+                      Text(_sortLabel(s)),
+                    ],
+                  ),
+                );
+              }).toList(),
             ),
           ),
           IconButton(
@@ -39,17 +63,6 @@ class EmployeesScreen extends StatelessWidget {
             onPressed: () => _showFilterSheet(context, ctrl),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'fab_employees',
-        onPressed: () async {
-          final result = await Get.toNamed(AppRoutes.employeeAdd);
-          if (result == true) {
-            ctrl.loadEmployees();
-          }
-        },
-        backgroundColor: AppColors.of(context).brand,
-        child: const Icon(Icons.person_add_outlined, color: Colors.white),
       ),
       body: Column(
         children: [
@@ -71,12 +84,6 @@ class EmployeesScreen extends StatelessWidget {
                 fontSize: 15,
               ),
             ),
-          ),
-          GetBuilder<EmployeeController>(
-            builder: (_) {
-              if (!ctrl.hasActiveFilters) return const SizedBox.shrink();
-              return _ActiveFiltersBar(ctrl: ctrl);
-            },
           ),
           Expanded(
             child: RefreshIndicator(
@@ -357,12 +364,6 @@ class _StatsHeader extends StatelessWidget {
         color: colors.brand
       ),
       (
-        key: 'active',
-        label: 'employee_active'.tr,
-        count: counts['active'] ?? 0,
-        color: colors.success
-      ),
-      (
         key: 'on_leave',
         label: 'employee_on_leave'.tr,
         count: counts['on_leave'] ?? 0,
@@ -515,8 +516,6 @@ String _sortLabel(String sort) {
       return 'sort_by_name'.tr;
     case 'hire_date':
       return 'sort_by_hire_date'.tr;
-    case 'status':
-      return 'sort_by_status'.tr;
     default:
       return sort;
   }
@@ -550,14 +549,8 @@ class _EmptyEmployees extends StatelessWidget {
               textAlign: TextAlign.center,
               style: AppTextStyles.bodySecondary(context),
             ),
-            const SizedBox(height: AppSpacing.s4),
-            if (isFiltered)
-              OutlinedButton.icon(
-                onPressed: ctrl.clearFilters,
-                icon: const Icon(Icons.filter_alt_off_outlined, size: 18),
-                label: Text('clear_all'.tr),
-              )
-            else
+            if (!isFiltered) ...[
+              const SizedBox(height: AppSpacing.s4),
               ElevatedButton.icon(
                 onPressed: () async {
                   final result = await Get.toNamed(AppRoutes.employeeAdd);
@@ -571,126 +564,10 @@ class _EmptyEmployees extends StatelessWidget {
                   foregroundColor: Colors.white,
                 ),
               ),
+            ],
           ],
         ),
       ),
-    );
-  }
-}
-
-class _ActiveFiltersBar extends StatelessWidget {
-  final EmployeeController ctrl;
-  const _ActiveFiltersBar({required this.ctrl});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final chips = <Widget>[];
-
-    if (ctrl.statusFilter != null) {
-      chips.add(_filterChip(
-        context,
-        label: ctrl.statusLabel(ctrl.statusFilter!),
-        color: colors.brand,
-        onRemove: () => ctrl.applyFilters(
-          branchId: ctrl.branchFilter,
-          shiftId: ctrl.shiftFilter,
-          categoryId: ctrl.categoryFilter,
-          status: null,
-          expiringWithin: ctrl.expiringFilter,
-        ),
-      ));
-    }
-    if (ctrl.expiringFilter != null) {
-      chips.add(_filterChip(
-        context,
-        label: '${'expiring_documents'.tr} • ${ctrl.expiringFilter}'
-            ' ${'days_unit'.tr}',
-        color: colors.warning,
-        onRemove: () => ctrl.applyFilters(
-          branchId: ctrl.branchFilter,
-          shiftId: ctrl.shiftFilter,
-          categoryId: ctrl.categoryFilter,
-          status: ctrl.statusFilter,
-          expiringWithin: null,
-        ),
-      ));
-    }
-    if (ctrl.branchFilter != null) {
-      chips.add(_filterChip(
-        context,
-        label: ctrl.branchName(ctrl.branchFilter) ?? '',
-        color: colors.brand,
-        onRemove: () => ctrl.applyFilters(
-          branchId: null,
-          shiftId: ctrl.shiftFilter,
-          categoryId: ctrl.categoryFilter,
-          status: ctrl.statusFilter,
-          expiringWithin: ctrl.expiringFilter,
-        ),
-      ));
-    }
-    if (ctrl.shiftFilter != null) {
-      chips.add(_filterChip(
-        context,
-        label: ctrl.shiftName(ctrl.shiftFilter) ?? '',
-        color: colors.brand,
-        onRemove: () => ctrl.applyFilters(
-          branchId: ctrl.branchFilter,
-          shiftId: null,
-          categoryId: ctrl.categoryFilter,
-          status: ctrl.statusFilter,
-          expiringWithin: ctrl.expiringFilter,
-        ),
-      ));
-    }
-    if (ctrl.categoryFilter != null) {
-      chips.add(_filterChip(
-        context,
-        label: ctrl.categoryName(ctrl.categoryFilter) ?? '',
-        color: colors.brand,
-        onRemove: () => ctrl.applyFilters(
-          branchId: ctrl.branchFilter,
-          shiftId: ctrl.shiftFilter,
-          categoryId: null,
-          status: ctrl.statusFilter,
-          expiringWithin: ctrl.expiringFilter,
-        ),
-      ));
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
-      child: Wrap(
-        spacing: AppSpacing.s2,
-        runSpacing: AppSpacing.s1,
-        children: chips,
-      ),
-    );
-  }
-
-  Widget _filterChip(
-    BuildContext context, {
-    required String label,
-    required Color color,
-    required VoidCallback onRemove,
-  }) {
-    return Chip(
-      label: Text(
-        label,
-        style: TextStyle(
-          fontFamily: 'IBM Plex Sans Arabic',
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: color,
-        ),
-      ),
-      deleteIcon: Icon(Icons.close, size: 16, color: color),
-      onDeleted: onRemove,
-      visualDensity: VisualDensity.compact,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      side: BorderSide(color: color.withValues(alpha: 0.3)),
-      backgroundColor: color.withValues(alpha: 0.08),
     );
   }
 }

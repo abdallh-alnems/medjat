@@ -8,7 +8,9 @@ const Map<String, String> ar = {
   'error': 'خطأ',
   'done': 'تم',
   'cancel': 'إلغاء',
+  'close': 'إغلاق',
   'save': 'حفظ',
+  'details': 'التفاصيل',
   'delete': 'حذف',
   'add': 'إضافة',
   'update': 'تحديث',
@@ -57,7 +59,8 @@ const Map<String, String> ar = {
 
   // ── Forgot Password ──
   'forgot_password': 'هل نسيت كلمة السر؟',
-  'forgot_password_desc': 'أدخل بريدك الإلكتروني وسنرسل لك رابط لإعادة تعيين كلمة السر',
+  'forgot_password_desc':
+      'أدخل بريدك الإلكتروني وسنرسل لك رابط لإعادة تعيين كلمة السر',
   'send_reset_link': 'إرسال رابط إعادة التعيين',
   'reset_link_sent': 'تم إرسال رابط إعادة التعيين',
   'reset_link_sent_desc': 'أرسلنا رابط إعادة تعيين كلمة السر إلى',
@@ -134,6 +137,7 @@ const Map<String, String> ar = {
 
   // ── Bottom Nav ──
   'home': 'الرئيسية',
+  'press_again_to_exit': 'اضغط مرة أخرى للخروج',
   'employees': 'الموظفين',
   'attendance': 'الحضور',
   'payroll': 'الرواتب',
@@ -152,6 +156,7 @@ const Map<String, String> ar = {
   'apply': 'تطبيق',
   'overview': 'نظرة عامة',
   'pending_leaves': 'طلبات إجازة معلقة',
+  'pending_breaks': 'طلبات إذن معلقة',
   'pending_leaves_hint': 'بانتظار موافقتك',
   'payroll_summary': 'ملخص الرواتب',
   'net_payroll': 'صافي الرواتب (هذا الشهر)',
@@ -201,7 +206,8 @@ const Map<String, String> ar = {
   'expiring_compliance': 'مستندات تنتهي قريباً',
   'expiring_soon': 'تنتهي قريباً',
   'empty_no_employees_title': 'لا يوجد موظفون بعد',
-  'empty_no_employees_desc': 'أضف موظفين لتبدأ متابعة الحضور والإجازات والرواتب.',
+  'empty_no_employees_desc':
+      'أضف موظفين لتبدأ متابعة الحضور والإجازات والرواتب.',
   'empty_no_results_title': 'لا بيانات مطابقة',
   'empty_no_results_desc': 'جرّب تعديل التخصيصات أو مسحها.',
   'company_wide_note': 'على مستوى الشركة — لا يتأثر بالتخصيص',
@@ -222,11 +228,14 @@ const Map<String, String> ar = {
   'phone_invalid': 'رقم هاتف غير صحيح',
   'phone_number_hint': 'رقم الهاتف',
   'select_country': 'اختر الدولة',
+  'select_category': 'اختر فئة',
   'country_required': 'اختر الدولة أولاً',
   'date_in_past_warning': 'هذا التاريخ في الماضي',
-  'contract_end_before_start': 'تاريخ نهاية العقد يجب أن يكون بعد تاريخ البداية',
+  'contract_end_before_start':
+      'تاريخ نهاية العقد يجب أن يكون بعد تاريخ البداية',
   'temporary_employment': 'عمل لمدة محددة',
-  'temporary_employment_hint': 'سيتم إنهاء حساب الموظف تلقائياً عند انتهاء المدة',
+  'temporary_employment_hint':
+      'سيتم إنهاء حساب الموظف تلقائياً عند انتهاء المدة',
   'employment_start': 'بداية العمل',
   'employment_duration': 'المدة',
   'unit_days': 'أيام',
@@ -296,7 +305,8 @@ const Map<String, String> ar = {
   'duration_expired': 'منتهٍ',
   'no_branches_available': 'لا يوجد فروع متاحة',
   'add_branch_first': 'يجب إضافة فرع أولاً',
-  'add_branch_first_hint': 'لا يمكنك إضافة موظف بدون فرع. أضف فرع واحد على الأقل ثم حاول مرة أخرى.',
+  'add_branch_first_hint':
+      'لا يمكنك إضافة موظف بدون فرع. أضف فرع واحد على الأقل ثم حاول مرة أخرى.',
   'employee_schedule': 'دوام الموظف',
 
   // ── Employee Detail ──
@@ -367,6 +377,7 @@ const Map<String, String> ar = {
 
   // ── Branch ──
   'branches': 'الفروع',
+  'branches_subtitle': 'إدارة فروع الشركة ومواقعها',
   'no_branches': 'لا يوجد فروع',
   'add_branch': 'إضافة فرع',
   'edit_branch': 'تعديل الفرع',
@@ -440,13 +451,17 @@ const Map<String, String> ar = {
   'current_password': 'كلمة السر الحالية',
   'password_changed_success': 'تم تغيير كلمة السر بنجاح',
   'current_password_wrong': 'كلمة السر الحالية غير صحيحة',
-  'requires_recent_login': 'يرجى تسجيل الخروج وإعادة الدخول ثم المحاولة مرة أخرى',
+  'requires_recent_login':
+      'يرجى تسجيل الخروج وإعادة الدخول ثم المحاولة مرة أخرى',
   'account': 'الحساب',
   'address': 'العنوان',
   'phone': 'رقم الهاتف',
   'save_changes': 'حفظ التغييرات',
   'the_company': 'الشركة',
   'management': 'إدارة',
+  'employees_and_time': 'الموظفون والوقت',
+  'finance_section': 'المالية',
+  'company_operations_structure': 'العمليات والهيكل',
   'company_settings': 'إعدادات الشركة',
   'company_settings_hint': 'بيانات الشركة، الخصومات، الصلاحيات',
   'my_account': 'حسابي',
@@ -497,6 +512,8 @@ const Map<String, String> ar = {
   'status_holiday': 'عطلة رسمية',
   'status_weekly_off': 'إجازة أسبوعية',
   'not_arrived': 'لم يحضر',
+  'status': 'الحالة',
+  'total': 'الإجمالي',
   'status_draft': 'مسودة',
   'status_approved': 'معتمد',
   'status_paid': 'مدفوع',
@@ -504,6 +521,7 @@ const Map<String, String> ar = {
   'status_pending': 'قيد المراجعة',
   'status_rejected': 'مرفوضة',
   'status_uploaded': 'مرفوعة',
+  'status_under_review': 'يحتاج إلى مراجعة',
   'status_required': 'مطلوبة',
   'status_expired': 'منتهية الصلاحية',
   'pending_activation': 'في انتظار التفعيل',
@@ -523,6 +541,11 @@ const Map<String, String> ar = {
   // ── Leave Type Labels ──
   'leave_recurring': 'متكررة',
   'leave_single': 'مرة واحدة',
+  'leave_annual': 'إجازة سنوية',
+  'leave_sick': 'إجازة مرضية',
+  'leave_personal': 'إجازة شخصية',
+  'leave_unpaid': 'إجازة بدون راتب',
+  'leave_weekly_off': 'راحة أسبوعية',
   'leave_absence_conversion': 'تحويل غياب',
 
   // ── Role Scope Labels ──
@@ -531,6 +554,7 @@ const Map<String, String> ar = {
 
   // ── Shifts ──
   'shifts': 'الشفتات',
+  'shifts_subtitle': 'تعريف أوقات الورديات',
   'shift': 'شفت',
   'add_shift': 'إضافة شفت',
   'edit_shift': 'تعديل الشفت',
@@ -578,22 +602,23 @@ const Map<String, String> ar = {
   'schedule_published': 'تم نشر الجدول',
   'schedule_updated': 'تم تحديث الجدول',
   'copy_previous_week': 'نسخ الأسبوع السابق',
-  'copy_previous_week_confirm': 'سيتم نسخ توزيع الأسبوع السابق إلى هذا الأسبوع كمسودة. متابعة؟',
+  'copy_previous_week_confirm':
+      'سيتم نسخ توزيع الأسبوع السابق إلى هذا الأسبوع كمسودة. متابعة؟',
   'selected_employees': 'موظف محدد',
   'd_sat': 'السبت',
   'd_sun': 'الأحد',
-  'd_mon': 'الإثنين',
+  'd_mon': 'الاثنين',
   'd_tue': 'الثلاثاء',
   'd_wed': 'الأربعاء',
   'd_thu': 'الخميس',
   'd_fri': 'الجمعة',
   'd_sat_s': 'سبت',
   'd_sun_s': 'أحد',
-  'd_mon_s': 'إثن',
-  'd_tue_s': 'ثلا',
-  'd_wed_s': 'أرب',
-  'd_thu_s': 'خمس',
-  'd_fri_s': 'جمع',
+  'd_mon_s': 'اثنين',
+  'd_tue_s': 'ثلاثاء',
+  'd_wed_s': 'أربعاء',
+  'd_thu_s': 'خميس',
+  'd_fri_s': 'جمعة',
   'not_assigned': 'لم يُعيّن',
   'no_shift_today': 'لا يوجد دوام اليوم',
   'this_week': 'هذا الأسبوع',
@@ -634,7 +659,8 @@ const Map<String, String> ar = {
   // ── Admin Permissions ──
   'edit_permissions': 'تعديل الصلاحيات',
   'permissions_for_admin': 'صلاحيات الإداري',
-  'permissions_override_hint': 'هذه الصلاحيات تتجاوز الصلاحيات الافتراضية لدور هذا الإداري.',
+  'permissions_override_hint':
+      'هذه الصلاحيات تتجاوز الصلاحيات الافتراضية لدور هذا الإداري.',
   'default_for_role': 'افتراضي للدور',
   'customized_permissions': 'صلاحيات مخصصة',
   'reset_to_default': 'إعادة تعيين للافتراضي',
@@ -666,8 +692,7 @@ const Map<String, String> ar = {
   'method_gps_only_desc':
       'يسجل الموظف بناءً على موقعه داخل نطاق الفرع، دون مسح QR.',
   'method_manual_admin': 'يدوي من الإداريين',
-  'method_manual_admin_desc':
-      'يقوم الإداري بتسجيل حضور وانصراف الموظف يدوياً.',
+  'method_manual_admin_desc': 'يقوم الإداري بتسجيل حضور وانصراف الموظف يدوياً.',
   'method_station': 'محطة الحضور',
   'method_station_desc':
       'جهاز مشترك في الفرع (تابلت/كشك) يسجّل حضور الموظفين بالوجه أو البصمة.',
@@ -681,12 +706,10 @@ const Map<String, String> ar = {
   'at_least_one_method_required': 'يجب تفعيل طريقة واحدة على الأقل',
   'manual_admins_section': 'الإداريون المسموح لهم بالتسجيل اليدوي',
   'allow_all_admins': 'يمكن لكل الإداريين',
-  'allow_all_admins_hint':
-      'أي إداري له صلاحية إدارة الحضور يقدر يسجل يدوياً.',
+  'allow_all_admins_hint': 'أي إداري له صلاحية إدارة الحضور يقدر يسجل يدوياً.',
   'select_specific_admins': 'اختر إداريين محددين',
   'choose_admins': 'اختر الإداريين',
-  'no_admin_selected':
-      'لم يتم اختيار إداريين — سيتم رفض كل تسجيل يدوي',
+  'no_admin_selected': 'لم يتم اختيار إداريين — سيتم رفض كل تسجيل يدوي',
   'admins_selected_count': '@count مختار',
   'search_admins': 'بحث عن إداري...',
   'manual_disabled_warning': 'تفعيل طريقة واحدة على الأقل',
@@ -744,14 +767,17 @@ const Map<String, String> ar = {
   'enrolled': 'مسجّل',
   'enroll_face': 'تسجيل الوجه',
   're_enroll_face': 'إعادة تسجيل الوجه',
-  'face_enrollment_placeholder': 'تسجيل الوجه يتطلب كاميرا — سيتم تفعيله قريباً',
-  'fingerprint_usb_placeholder': 'تسجيل البصمة يتطلب جهاز بصمة USB — سيتم تفعيله لاحقاً',
+  'face_enrollment_placeholder':
+      'تسجيل الوجه يتطلب كاميرا — سيتم تفعيله قريباً',
+  'fingerprint_usb_placeholder':
+      'تسجيل البصمة يتطلب جهاز بصمة USB — سيتم تفعيله لاحقاً',
   'delete_biometric': 'حذف البيانات البيومترية',
   'delete_face': 'حذف بيانات الوجه',
   'delete_fingerprint': 'حذف بيانات البصمة',
   'confirm_delete_face': 'هل تريد حذف بيانات الوجه لهذا الموظف؟',
   'confirm_delete_fingerprint': 'هل تريد حذف بيانات البصمة لهذا الموظف؟',
-  'enroll_biometric_suggestion': 'هل تريد تسجيل البيانات البيومترية لهذا الموظف؟',
+  'enroll_biometric_suggestion':
+      'هل تريد تسجيل البيانات البيومترية لهذا الموظف؟',
 
   // ── Recognition Logs ──
   'recognition_logs': 'سجلات التعرف',
@@ -808,15 +834,21 @@ const Map<String, String> ar = {
 
   // ── Employee Documents ──
   'document_status_summary': 'حالة الأوراق',
-  'document_missing': 'ناقصة',
+  'document_missing': 'ناقص',
   'document_uploaded': 'تم رفع الورقة',
   'document_deleted': 'تم حذف الورقة',
   'document_updated': 'تم تحديث الورقة',
-  'document_verified': 'تم قبول الورقة',
+  'document_verified': 'تم التأكيد',
   'document_rejected': 'تم رفض الورقة',
   'document_verify': 'قبول',
+  'view_document': 'عرض المستند',
+  'document_open_failed': 'تعذّر فتح المستند',
   'document_reject': 'رفض',
   'rejection_reason': 'سبب الرفض',
+  'doc_submissions_summary': 'حالة الإرسال',
+  'doc_submitted': 'تم الإرسال',
+  'doc_not_submitted': 'لم يُرسل',
+  'doc_no_scope_employees': 'لا يوجد موظفون ضمن نطاق هذه الورقة',
   'edit_document': 'تعديل الورقة',
   'edit_notes': 'تعديل ملاحظات',
   'notes': 'ملاحظات',
@@ -827,8 +859,10 @@ const Map<String, String> ar = {
   'requested_documents': 'المستندات المطلوبة',
   'no_requested_documents': 'لم يُطلب أي مستند من هذا الموظف بعد',
   'request_document': 'طلب مستند',
+  'review_documents': 'مراجعة المستندات والموافقة',
   'request_document_title': 'طلب مستند من الموظف',
-  'no_requestable_documents': 'كل أنواع المستندات المُعرّفة مطلوبة بالفعل من هذا الموظف',
+  'no_requestable_documents':
+      'كل أنواع المستندات المُعرّفة مطلوبة بالفعل من هذا الموظف',
   'send_request': 'إرسال الطلب',
   'document_requested': 'تم إرسال طلب المستند',
   'request_document_failed': 'تعذّر إرسال طلب المستند',
@@ -859,6 +893,7 @@ const Map<String, String> ar = {
   'amount_required': 'المبلغ مطلوب',
   'amount_must_be_positive': 'المبلغ يجب أن يكون أكبر من صفر',
   'reason': 'السبب',
+  'reason_optional': 'السبب (اختياري)',
   'enter_reason': 'أدخل السبب',
   'reason_required': 'السبب مطلوب',
   'deduction_added': 'تم إضافة الخصم بنجاح',
@@ -899,7 +934,8 @@ const Map<String, String> ar = {
   'suspend_employee': 'إيقاف عن العمل',
   'suspend_confirm': 'تأكيد الإيقاف',
   'end_suspension': 'إنهاء الإيقاف',
-  'end_suspension_hint': 'سيعود الموظف إلى حالته السابقة (نشط) ويتوقف خصم أيام الإيقاف.',
+  'end_suspension_hint':
+      'سيعود الموظف إلى حالته السابقة (نشط) ويتوقف خصم أيام الإيقاف.',
   'suspension_history': 'سجل الإيقاف عن العمل',
   'suspension_reason': 'سبب الإيقاف',
   'suspension_reason_hint': 'أدخل سبب الإيقاف عن العمل',
@@ -990,7 +1026,8 @@ const Map<String, String> ar = {
   'category_updated': 'تم تحديث الفئة بنجاح',
   'category_deleted': 'تم حذف الفئة بنجاح',
   'category_name_exists': 'اسم الفئة موجود بالفعل',
-  'category_in_use_cannot_delete': 'لا يمكن حذف الفئة لأنها مرتبطة بوثيقة مطلوبة',
+  'category_in_use_cannot_delete':
+      'لا يمكن حذف الفئة لأنها مرتبطة بوثيقة مطلوبة',
   'select_categories': 'اختر فئة واحدة على الأقل',
   'assign_categories': 'إسناد الفئات',
 
@@ -1008,6 +1045,7 @@ const Map<String, String> ar = {
 
   // ── Export Templates ──
   'export_templates': 'قوالب التصدير',
+  'export_templates_subtitle': 'تنسيق تصدير الرواتب',
   'export_template_new': 'قالب جديد',
   'export_template_edit': 'تعديل القالب',
   'export_template_delete_confirm': 'هل تريد حذف هذا القالب؟',
@@ -1035,6 +1073,13 @@ const Map<String, String> ar = {
 
   // ── Compliance / legal credentials ──
   'compliance_info': 'الوثائق الرسمية',
+  'requested_documents_title': 'طلب وثائق من الموظف',
+  'requested_documents_hint':
+      'أضف الأوراق المطلوبة من هذا الموظف فقط ليرفعها لاحقاً من تطبيقه.',
+  'requested_documents_add': 'إضافة وثيقة مطلوبة',
+  'requested_document_name_label': 'اسم الوثيقة',
+  'requested_document_name_hint': 'مثال: رخصة قيادة، شهادة تخرج',
+  'requested_document_note_label': 'ملاحظة (اختياري)',
   'national_id': 'رقم الهوية',
   'nationality': 'الجنسية',
   'iqama_number': 'رقم الإقامة',
@@ -1075,7 +1120,8 @@ const Map<String, String> ar = {
   'pref_leave_events': 'طلبات الإجازات',
   'pref_leave_events_desc': 'تنبيه عند تقديم طلب إجازة جديد',
   'pref_payroll_events': 'الرواتب وتفعيل الموظفين',
-  'pref_payroll_events_desc': 'تنبيه عند توليد/اعتماد كشف رواتب أو تفعيل موظف جديد',
+  'pref_payroll_events_desc':
+      'تنبيه عند توليد/اعتماد كشف رواتب أو تفعيل موظف جديد',
 
   // ── Statutory Payroll Settings ──
   'payroll_settings': 'إعدادات الرواتب',
@@ -1219,7 +1265,8 @@ const Map<String, String> ar = {
   'loan_approved': 'تمت الموافقة على السلفة',
   'loan_approve_btn': 'موافقة',
   'loan_cancel': 'إلغاء',
-  'loan_cancel_confirm': 'سيتم إلغاء السلفة وإيقاف خصم الأقساط المتبقية. هل أنت متأكد؟',
+  'loan_cancel_confirm':
+      'سيتم إلغاء السلفة وإيقاف خصم الأقساط المتبقية. هل أنت متأكد؟',
   'loan_cancelled': 'ملغاة',
   'loan_cancelled_done': 'تم إلغاء السلفة',
   'loan_active': 'نشطة',
@@ -1381,11 +1428,22 @@ const Map<String, String> ar = {
   // ── Leave Messages ──
   'leave_approved': 'تم قبول الإجازة',
   'leave_rejected_msg': 'تم رفض الإجازة',
+  'approved_by': 'اعتمدها @name',
+  'rejected_by': 'رفضها @name',
+  'convert_to_absence': 'تحويل إلى غياب',
+  'convert_to_absence_confirm':
+      'سيتم احتساب أيام هذه الإجازة كغياب وتطبيق الخصم عليها. هل تريد المتابعة؟',
+  'leave_converted_to_absence': 'تم تحويل الإجازة إلى غياب',
+  'leave_convert_failed': 'تعذّر تحويل الإجازة إلى غياب',
   'leave_balance_exceeded_warning':
       'سيتم احتساب @paid يوم بأجر و @unpaid يوم بدون أجر',
   'leave_overlap': 'يوجد تداخل مع إجازة قائمة في هذه الفترة',
   'recurring_leave_created': 'تم إنشاء الإجازة المتكررة بنجاح',
   'recurring_leave_failed': 'فشل إنشاء الإجازة المتكررة',
+  'leave_tab_current': 'الحالية',
+  'leave_tab_archive': 'منتهية ومرفوضة',
+  'leave_tab_ended': 'منتهية',
+  'leave_tab_rejected': 'مرفوضة',
   'reject_leave': 'رفض الإجازة',
 
   // ── Days of Week ──
@@ -1442,8 +1500,7 @@ const Map<String, String> ar = {
   'duration': 'المدة',
   'day_of_week': 'يوم الأسبوع',
   'select_start_date': 'يرجى اختيار تاريخ البداية',
-  'leave_balance_warning':
-      'سيُحتسب @paid يوم بأجر و @unpaid يوم بدون أجر',
+  'leave_balance_warning': 'سيُحتسب @paid يوم بأجر و @unpaid يوم بدون أجر',
 
   // ── Add Leave Sheet (rebuilt) ──
   'add_leave_subtitle': 'سجّل إجازة لموظف بتاريخ بداية ونهاية',
@@ -1466,6 +1523,7 @@ const Map<String, String> ar = {
   'leave_auto_approve_hint': 'تُعتمد الإجازة مباشرة دون مراجعة',
 
   'weekly_day_off': 'يوم الراحة الأسبوعي',
+  'weekly_day_off_enable': 'تحديد يوم راحة أسبوعي ثابت',
   'weekly_day_off_hint': 'يوم الإجازة المتكرر كل أسبوع (لا يُسجّل غياب فيه)',
   'no_weekly_off': 'بدون راحة أسبوعية',
 
@@ -1534,7 +1592,8 @@ const Map<String, String> ar = {
   'payroll_reverted': 'تم التراجع عن الإجراء',
   'payroll_revert_failed': 'فشل التراجع',
   'payroll_revert_confirm_title': 'تراجع عن الإجراء',
-  'payroll_revert_confirm_message': 'سيُعاد الراتب للحالة السابقة. هل أنت متأكد؟',
+  'payroll_revert_confirm_message':
+      'سيُعاد الراتب للحالة السابقة. هل أنت متأكد؟',
   'payroll_no_slip_yet': 'لم يُولَّد كشف لهذا الشهر بعد',
   'payroll_estimate_hint': 'رقم تقديري قابل للتغيّر حتى الاعتماد',
   'payroll_approved_at': 'اعتُمد بتاريخ',
@@ -1555,6 +1614,7 @@ const Map<String, String> ar = {
   'allowance_type_communication': 'بدل اتصالات',
   'allowance_type_other': 'بدل آخر',
   'allowance_type_label': 'نوع البدل',
+  'allowance_type_hint': 'مثال: بدل سكن، بدل مواصلات',
   'allowance_label_label': 'اسم مخصص (اختياري)',
   'allowance_label_hint': 'اتركه فارغاً لاستخدام اسم النوع',
   'allowance_start_month': 'الشهر الأول',
@@ -1570,7 +1630,8 @@ const Map<String, String> ar = {
   'allowance_save_failed': 'فشل حفظ البدل',
   'allowance_delete_failed': 'فشل حذف البدل',
   'allowance_delete_confirm_title': 'حذف البدل',
-  'allowance_delete_confirm_message': 'سيُحذف هذا البدل ولن يُضاف لرواتب الأشهر القادمة. هل أنت متأكد؟',
+  'allowance_delete_confirm_message':
+      'سيُحذف هذا البدل ولن يُضاف لرواتب الأشهر القادمة. هل أنت متأكد؟',
   'allowance_empty': 'لا توجد بدلات شهرية',
   'allowance_select_month': 'اختر شهراً',
   'bank_card_title': 'بيانات الدفع',
@@ -1622,7 +1683,8 @@ const Map<String, String> ar = {
   'adjustment_update_failed': 'فشل تحديث البند',
   'adjustment_delete_failed': 'فشل حذف البند',
   'adjustment_delete_confirm_title': 'حذف البند',
-  'adjustment_delete_confirm_message': 'سيُحذف هذا البند من راتب هذه الفترة. هل أنت متأكد؟',
+  'adjustment_delete_confirm_message':
+      'سيُحذف هذا البند من راتب هذه الفترة. هل أنت متأكد؟',
   'adjustment_edit_title': 'تعديل البند',
   'financial_breakdown': 'تفاصيل الراتب',
   'attendance_in_period': 'الحضور خلال الفترة',
@@ -1693,6 +1755,9 @@ const Map<String, String> ar = {
   'cycle_start_day_hint':
       'اليوم الذي يبدأ منه الشهر في حسابات الحضور. استخدم 1 للشهر الميلادي العادي. يمكن للفروع تجاوزه.',
   'cycle_start_day_label': 'يوم بداية الشهر',
+  'week_start_day_label': 'يوم بداية الأسبوع',
+  'week_start_day_hint':
+      'اليوم الذي يبدأ منه أسبوع جدول المناوبات. يخص الجدول الأسبوعي فقط ولا يؤثر على دورة الحضور أو الرواتب.',
   'cycle_normal_month': 'شهر ميلادي عادي (من 1 إلى آخر الشهر)',
   'cycle_window_preview': 'الشهر: من يوم @from إلى يوم @to من الشهر التالي',
   'branch_cycle_override': 'يوم بداية الشهر (تجاوز)',
@@ -1718,7 +1783,7 @@ const Map<String, String> ar = {
   'leave_type_unpaid_desc': 'بدون خصم — لا تُخصم من الرصيد ولا من الراتب',
   'weekday_sat': 'السبت',
   'weekday_sun': 'الأحد',
-  'weekday_mon': 'الإثنين',
+  'weekday_mon': 'الاثنين',
   'weekday_tue': 'الثلاثاء',
   'weekday_wed': 'الأربعاء',
   'weekday_thu': 'الخميس',
@@ -1800,6 +1865,9 @@ const Map<String, String> ar = {
   'request_break': 'طلب إذن / استراحة',
   'request_break_subtitle': 'حدّد النوع والتاريخ والوقت',
   'break_type': 'نوع الطلب',
+  'break_type_hint': 'اكتب نوع الطلب (مثال: انصراف مبكر، إذن خروج…)',
+  'break_deduct_hourly': 'يُخصم من الراتب بنظام الساعة',
+  'break_deduct_hourly_hint': 'يُحسب الخصم حسب عدد الدقائق وأجر الساعة',
   'break_date': 'التاريخ',
   'break_time': 'الوقت',
   'break_start_time': 'وقت البداية',
@@ -1812,13 +1880,15 @@ const Map<String, String> ar = {
   'break_type_medical': 'طبي',
   'break_type_early_leave': 'انصراف مبكر',
   'break_type_other': 'أخرى',
-  'early_leave_approve_title': 'الموافقة على إذن الانصراف المبكر',
+  'early_leave_approve_title': 'الموافقة على الطلب',
   'early_leave_deduct_question':
-      'هل تريد خصم مدة الانصراف المبكر من الراتب بنظام الساعة؟',
+      'هل تريد خصم مدة الإذن من الراتب بنظام الساعة؟',
   'early_leave_approve_deduct': 'موافقة مع الخصم',
   'early_leave_approve_no_deduct': 'موافقة بدون خصم',
   'early_leave_deducted': 'يُخصم من الراتب بنظام الساعة',
   'early_leave_not_deducted': 'بدون خصم من الراتب',
+  'break_approved_by': 'تمت الموافقة بواسطة',
+  'break_rejected_by': 'تم الرفض بواسطة',
   'break_select_date': 'اختر التاريخ',
   'break_select_start_time': 'وقت البداية',
   'break_select_end_time': 'وقت النهاية',

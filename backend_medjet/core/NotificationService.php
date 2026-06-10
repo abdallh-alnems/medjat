@@ -19,6 +19,31 @@ final class NotificationService {
         );
     }
 
+    /**
+     * Push to a single employee's device(s). The employee app registers its FCM
+     * token under the employee's linked admin account (employees.admin_id), so
+     * we resolve the tokens through that relationship.
+     */
+    public static function sendToEmployee(int $employeeId, string $title, string $body, ?array $data = null): bool {
+        $tokens = Database::fetchAll(
+            "SELECT ad.fcm_token FROM admin_devices ad
+             JOIN employees e ON e.admin_id = ad.admin_id
+             WHERE e.id = ? AND ad.is_active = 1",
+            [$employeeId]
+        );
+
+        if (empty($tokens)) {
+            return false;
+        }
+
+        return self::sendMulticast(
+            array_column($tokens, 'fcm_token'),
+            $title,
+            $body,
+            $data
+        );
+    }
+
     public static function sendToTenant(int $tenantId, string $title, string $body, ?array $data = null): int {
         $tokens = Database::fetchAll(
             "SELECT ud.fcm_token FROM admin_devices ud
@@ -104,10 +129,31 @@ final class NotificationService {
                 'body' => $body,
             ];
 
+            // FCM requires every data value to be a string; non-string values
+            // (e.g. integer ids) make the whole send fail. Coerce them here so
+            // every caller is safe.
+            $stringData = [];
+            foreach (($data ?: []) as $key => $value) {
+                $stringData[(string) $key] = is_scalar($value)
+                    ? (string) $value
+                    : json_encode($value, JSON_UNESCAPED_UNICODE);
+            }
+
             $message = [
                 'notification' => $notification,
-                'data' => $data ?: [],
-                'android' => ['priority' => 'high'],
+                'data' => $stringData,
+                'android' => [
+                    'priority' => 'high',
+                    'notification' => [
+                        'sound' => 'default',
+                        'default_sound' => true,
+                        'default_vibrate_timings' => true,
+                        'notification_priority' => 'PRIORITY_HIGH',
+                    ],
+                ],
+                'apns' => [
+                    'payload' => ['aps' => ['sound' => 'default']],
+                ],
             ];
 
             $report = $messaging->sendMulticast($message, $tokens);

@@ -26,6 +26,7 @@ class EmployeeController extends GetxController {
   String? statusFilter;
   int? expiringFilter; // null | 30 | 60 (days)
   String sortBy = 'name';
+  bool sortAscending = true;
 
   /// Headcount per status for the stats header (from the list endpoint).
   Map<String, int> statusCounts = {
@@ -48,7 +49,7 @@ class EmployeeController extends GetxController {
   ];
 
   /// Supported sort keys (matches the backend whitelist).
-  static const List<String> sortOptions = ['name', 'hire_date', 'status'];
+  static const List<String> sortOptions = ['name', 'hire_date'];
 
   Timer? _searchDebounce;
 
@@ -80,6 +81,7 @@ class EmployeeController extends GetxController {
       search: searchQuery.isNotEmpty ? searchQuery : null,
       status: statusFilter,
       sort: sortBy,
+      dir: sortAscending ? 'asc' : 'desc',
       expiringWithin: expiringFilter,
     );
 
@@ -221,9 +223,16 @@ class EmployeeController extends GetxController {
     loadEmployees();
   }
 
+  /// Selecting the active field flips the direction (ascending ⇄ descending);
+  /// selecting a different field switches to it (ascending by default).
   void setSort(String sort) {
-    if (!sortOptions.contains(sort) || sort == sortBy) return;
-    sortBy = sort;
+    if (!sortOptions.contains(sort)) return;
+    if (sort == sortBy) {
+      sortAscending = !sortAscending;
+    } else {
+      sortBy = sort;
+      sortAscending = true;
+    }
     loadEmployees();
   }
 

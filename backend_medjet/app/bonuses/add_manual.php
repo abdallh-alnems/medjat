@@ -11,11 +11,10 @@ PermissionMiddleware::check($auth, 'manage_payroll');
 $input = $auth['input'];
 $employeeId = (int) ($input['employee_id'] ?? 0);
 $amount = (float) ($input['amount'] ?? 0);
-$reason = $input['reason'] ?? null;
+$reason = trim((string) ($input['reason'] ?? ''));
 
 Validator::required($employeeId, 'employee_id');
 Validator::required($amount, 'amount');
-Validator::required($reason, 'reason');
 
 $employee = EmployeeModel::findById($employeeId, $tenantId);
 if (!$employee) {

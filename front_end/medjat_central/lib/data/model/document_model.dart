@@ -71,7 +71,13 @@ class DocumentModel {
   String get statusLabel {
     switch (status) {
       case 'uploaded':
-        return 'status_uploaded'.tr;
+        // A verified admin-uploaded doc carries verifiedAt; without it the
+        // file is still awaiting review rather than confirmed.
+        return verifiedAt != null
+            ? 'document_verified'.tr
+            : 'status_under_review'.tr;
+      case 'pending':
+        return 'status_under_review'.tr;
       case 'required':
         return 'status_required'.tr;
       case 'expired':

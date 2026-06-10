@@ -86,28 +86,49 @@ class MyProfileScreen extends StatelessWidget {
   }
 
   Widget _quickAccessCards(BuildContext context, ProfileController controller) {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _quickAccessCard(
-            context,
-            icon: Icons.folder_outlined,
-            activeIcon: Icons.folder,
-            label: 'my_documents'.tr,
-            badge: controller.documents.isNotEmpty ? '${controller.documents.length}' : null,
-            onTap: () => Get.toNamed<void>(AppRoutes.myDocuments),
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _quickAccessCard(
+                context,
+                icon: Icons.folder_outlined,
+                activeIcon: Icons.folder,
+                label: 'my_documents'.tr,
+                badge: controller.documents.isNotEmpty
+                    ? '${controller.documents.length}'
+                    : null,
+                onTap: () => Get.toNamed<void>(AppRoutes.myDocuments),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _quickAccessCard(
+                context,
+                icon: Icons.beach_access_outlined,
+                activeIcon: Icons.beach_access,
+                label: 'leaves'.tr,
+                onTap: () => Get.toNamed<void>(AppRoutes.leaves),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _quickAccessCard(
-            context,
-            icon: Icons.beach_access_outlined,
-            activeIcon: Icons.beach_access,
-            label: 'leaves'.tr,
-            badge: controller.leaveBalance?['remaining_days']?.toString(),
-            onTap: () => Get.toNamed<void>(AppRoutes.leaves),
-          ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _quickAccessCard(
+                context,
+                icon: Icons.free_breakfast_outlined,
+                activeIcon: Icons.free_breakfast,
+                label: 'break_requests'.tr,
+                onTap: () => Get.toNamed<void>(AppRoutes.breaks),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(child: SizedBox()),
+          ],
         ),
       ],
     );

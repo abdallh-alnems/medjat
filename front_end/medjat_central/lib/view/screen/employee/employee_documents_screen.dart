@@ -137,6 +137,16 @@ class EmployeeDocumentsScreen extends StatelessWidget {
                   style: AppTextStyles.sm(context)),
             ],
             const SizedBox(height: AppSpacing.s4),
+            if (doc.filePath != null || doc.fileUrl != null)
+              ListTile(
+                leading: Icon(Icons.visibility_outlined, color: colors.brand),
+                title: Text('view_document'.tr),
+                onTap: () {
+                  Get.back();
+                  ctrl.openDocument(doc.id,
+                      mimeType: doc.mimeType, originalName: doc.originalName);
+                },
+              ),
             ListTile(
               leading: const Icon(Icons.edit_outlined),
               title: Text('edit_notes'.tr),
@@ -145,7 +155,9 @@ class EmployeeDocumentsScreen extends StatelessWidget {
                 _showEditNotesDialog(context, ctrl, doc);
               },
             ),
-            if (doc.status == 'uploaded')
+            // Employee self-submissions arrive as 'pending'; admin uploads as
+            // 'uploaded'. Both can be approved or rejected.
+            if (doc.status == 'uploaded' || doc.status == 'pending')
               ListTile(
                 leading: Icon(Icons.check_circle_outline, color: colors.success),
                 title: Text('document_verify'.tr),
@@ -154,7 +166,7 @@ class EmployeeDocumentsScreen extends StatelessWidget {
                   ctrl.verifyDocument(doc.id);
                 },
               ),
-            if (doc.status == 'uploaded')
+            if (doc.status == 'uploaded' || doc.status == 'pending')
               ListTile(
                 leading: Icon(Icons.cancel_outlined, color: colors.error),
                 title: Text('document_reject'.tr),
@@ -399,7 +411,11 @@ class _DocumentCard extends StatelessWidget {
     }
     switch (document?.status ?? '') {
       case 'uploaded':
-        return Icon(Icons.check_circle_outline, size: 22, color: colors.success);
+        return document?.verifiedAt != null
+            ? Icon(Icons.check_circle_outline, size: 22, color: colors.success)
+            : Icon(Icons.hourglass_top, size: 22, color: colors.warning);
+      case 'pending':
+        return Icon(Icons.hourglass_top, size: 22, color: colors.warning);
       case 'expired':
         return Icon(Icons.warning_amber_rounded, size: 22, color: colors.error);
       case 'rejected':
@@ -412,7 +428,9 @@ class _DocumentCard extends StatelessWidget {
   Color _statusColor(AppColorScheme colors) {
     switch (document?.status ?? '') {
       case 'uploaded':
-        return colors.success;
+        return document?.verifiedAt != null ? colors.success : colors.warning;
+      case 'pending':
+        return colors.warning;
       case 'expired':
         return colors.error;
       case 'rejected':
@@ -425,7 +443,11 @@ class _DocumentCard extends StatelessWidget {
   String _statusText() {
     switch (document?.status ?? '') {
       case 'uploaded':
-        return document?.verifiedAt != null ? 'document_verified'.tr : 'status_uploaded'.tr;
+        return document?.verifiedAt != null
+            ? 'document_verified'.tr
+            : 'status_under_review'.tr;
+      case 'pending':
+        return 'status_under_review'.tr;
       case 'expired':
         return 'status_expired'.tr;
       case 'rejected':

@@ -8,7 +8,9 @@ const Map<String, String> en = {
   'error': 'Error',
   'done': 'Done',
   'cancel': 'Cancel',
+  'close': 'Close',
   'save': 'Save',
+  'details': 'Details',
   'delete': 'Delete',
   'add': 'Add',
   'update': 'Update',
@@ -57,7 +59,8 @@ const Map<String, String> en = {
 
   // ── Forgot Password ──
   'forgot_password': 'Forgot Password?',
-  'forgot_password_desc': 'Enter your email and we\'ll send you a link to reset your password',
+  'forgot_password_desc':
+      'Enter your email and we\'ll send you a link to reset your password',
   'send_reset_link': 'Send Reset Link',
   'reset_link_sent': 'Reset Link Sent',
   'reset_link_sent_desc': 'We sent a password reset link to',
@@ -83,14 +86,16 @@ const Map<String, String> en = {
   // ── Verify Email ──
   'verify_your_email': 'Verify your email',
   'sent_activation_link_to': 'We sent an activation link to',
-  'click_link_to_activate': 'Click the link in the email to activate your account',
+  'click_link_to_activate':
+      'Click the link in the email to activate your account',
   'activated': 'Activated',
   'resend_link': 'Resend Link',
   'change_email_or_back': 'Change email or go back',
 
   // ── Onboarding ──
   'welcome': 'Welcome',
-  'not_part_of_company': "You're not part of any company yet. Choose how you'd like to start:",
+  'not_part_of_company':
+      "You're not part of any company yet. Choose how you'd like to start:",
   'create_your_company': 'Create your company',
   'join_company_with_code': 'Join company with invite code',
   'company_name': 'Company Name',
@@ -134,6 +139,7 @@ const Map<String, String> en = {
 
   // ── Bottom Nav ──
   'home': 'Home',
+  'press_again_to_exit': 'Press again to exit',
   'employees': 'Employees',
   'attendance': 'Attendance',
   'payroll': 'Payroll',
@@ -152,6 +158,7 @@ const Map<String, String> en = {
   'apply': 'Apply',
   'overview': 'Overview',
   'pending_leaves': 'Pending Leave Requests',
+  'pending_breaks': 'Pending Permission Requests',
   'pending_leaves_hint': 'Awaiting your approval',
   'payroll_summary': 'Payroll Summary',
   'net_payroll': 'Net Payroll (this month)',
@@ -223,11 +230,13 @@ const Map<String, String> en = {
   'phone_invalid': 'Invalid phone number',
   'phone_number_hint': 'Phone number',
   'select_country': 'Select country',
+  'select_category': 'Select category',
   'country_required': 'Please select a country first',
   'date_in_past_warning': 'This date is in the past',
   'contract_end_before_start': 'Contract end must be after the start date',
   'temporary_employment': 'Fixed-term employment',
-  'temporary_employment_hint': 'The employee account will be terminated automatically when the period ends',
+  'temporary_employment_hint':
+      'The employee account will be terminated automatically when the period ends',
   'employment_start': 'Employment start',
   'employment_duration': 'Duration',
   'unit_days': 'Days',
@@ -257,7 +266,8 @@ const Map<String, String> en = {
   'code_regenerated': 'New code generated',
   'regenerate_code': 'Regenerate Code',
   'activation_code_valid_for': 'Valid for 24 hours',
-  'share_code_with_employee': 'Share this code with the employee to activate their account',
+  'share_code_with_employee':
+      'Share this code with the employee to activate their account',
   'share_via_whatsapp': 'Share via WhatsApp',
   'cannot_open_whatsapp': 'Could not open WhatsApp',
   'code_expires_in': 'Expires in @duration',
@@ -297,7 +307,8 @@ const Map<String, String> en = {
   'duration_expired': 'expired',
   'no_branches_available': 'No branches available',
   'add_branch_first': 'Add a branch first',
-  'add_branch_first_hint': 'You cannot add an employee without a branch. Add at least one branch and try again.',
+  'add_branch_first_hint':
+      'You cannot add an employee without a branch. Add at least one branch and try again.',
   'employee_schedule': 'Employee Schedule',
 
   // ── Employee Detail ──
@@ -324,7 +335,8 @@ const Map<String, String> en = {
   'not_recorded': 'Not recorded',
   'select_employee': 'Select Employee',
   'all_employees_have_records': 'All employees have records for this day',
-  'no_employees_eligible_check_out': 'No employees have a check-in pending check-out',
+  'no_employees_eligible_check_out':
+      'No employees have a check-in pending check-out',
   'date': 'Date',
   'attendance_recorded_today': 'Already recorded today',
   'no_employees_in_branch': 'No employees have been added to this branch yet',
@@ -368,6 +380,7 @@ const Map<String, String> en = {
 
   // ── Branch ──
   'branches': 'Branches',
+  'branches_subtitle': 'Manage company branches & locations',
   'no_branches': 'No branches',
   'add_branch': 'Add Branch',
   'edit_branch': 'Edit Branch',
@@ -448,6 +461,9 @@ const Map<String, String> en = {
   'save_changes': 'Save Changes',
   'the_company': 'Company',
   'management': 'Management',
+  'employees_and_time': 'Employees & Time',
+  'finance_section': 'Finance',
+  'company_operations_structure': 'Operations & Structure',
   'company_settings': 'Company Settings',
   'company_settings_hint': 'Company data, deductions, permissions',
   'my_account': 'My Account',
@@ -498,6 +514,8 @@ const Map<String, String> en = {
   'status_holiday': 'Public Holiday',
   'status_weekly_off': 'Weekly Off',
   'not_arrived': 'Not arrived',
+  'status': 'Status',
+  'total': 'Total',
   'status_draft': 'Draft',
   'status_approved': 'Approved',
   'status_paid': 'Paid',
@@ -505,6 +523,7 @@ const Map<String, String> en = {
   'status_pending': 'Under Review',
   'status_rejected': 'Rejected',
   'status_uploaded': 'Uploaded',
+  'status_under_review': 'Needs review',
   'status_required': 'Required',
   'status_expired': 'Expired',
   'pending_activation': 'Pending Activation',
@@ -524,6 +543,11 @@ const Map<String, String> en = {
   // ── Leave Type Labels ──
   'leave_recurring': 'Recurring',
   'leave_single': 'One Time',
+  'leave_annual': 'Annual Leave',
+  'leave_sick': 'Sick Leave',
+  'leave_personal': 'Personal Leave',
+  'leave_unpaid': 'Unpaid Leave',
+  'leave_weekly_off': 'Weekly Off',
   'leave_absence_conversion': 'Absence Conversion',
 
   // ── Role Scope Labels ──
@@ -532,6 +556,7 @@ const Map<String, String> en = {
 
   // ── Shifts ──
   'shifts': 'Shifts',
+  'shifts_subtitle': 'Define shift times',
   'shift': 'Shift',
   'add_shift': 'Add Shift',
   'edit_shift': 'Edit Shift',
@@ -574,12 +599,14 @@ const Map<String, String> en = {
   'rest_day': 'Rest',
   'clear': 'Clear',
   'publish': 'Publish',
-  'publish_confirm': 'The schedule will become visible to employees and drive attendance. Continue?',
+  'publish_confirm':
+      'The schedule will become visible to employees and drive attendance. Continue?',
   'nothing_to_publish': 'No changes to publish',
   'schedule_published': 'Schedule published',
   'schedule_updated': 'Schedule updated',
   'copy_previous_week': 'Copy previous week',
-  'copy_previous_week_confirm': 'The previous week\'s layout will be copied into this week as a draft. Continue?',
+  'copy_previous_week_confirm':
+      'The previous week\'s layout will be copied into this week as a draft. Continue?',
   'selected_employees': 'selected',
   'd_sat': 'Sat',
   'd_sun': 'Sun',
@@ -635,14 +662,17 @@ const Map<String, String> en = {
   // ── Admin Permissions ──
   'edit_permissions': 'Edit Permissions',
   'permissions_for_admin': 'Admin Permissions',
-  'permissions_override_hint': 'These permissions override the default permissions for this admin\'s role.',
+  'permissions_override_hint':
+      'These permissions override the default permissions for this admin\'s role.',
   'default_for_role': 'Default for role',
   'customized_permissions': 'Customized',
   'reset_to_default': 'Reset to Default',
-  'reset_permissions_confirm': 'Reset permissions to the default for this role?',
+  'reset_permissions_confirm':
+      'Reset permissions to the default for this role?',
   'permissions_saved': 'Permissions saved',
   'permissions_reset': 'Permissions reset',
-  'general_manager_permissions_locked': 'General manager permissions cannot be modified',
+  'general_manager_permissions_locked':
+      'General manager permissions cannot be modified',
   'perm_manage_employees': 'Manage Employees',
   'perm_manage_deduction_rules': 'Manage Deduction Rules',
   'perm_manage_attendance': 'Manage Attendance',
@@ -745,14 +775,17 @@ const Map<String, String> en = {
   'enrolled': 'Enrolled',
   'enroll_face': 'Enroll Face',
   're_enroll_face': 'Re-enroll Face',
-  'face_enrollment_placeholder': 'Face enrollment requires camera — coming soon',
-  'fingerprint_usb_placeholder': 'Fingerprint enrollment requires USB device — coming later',
+  'face_enrollment_placeholder':
+      'Face enrollment requires camera — coming soon',
+  'fingerprint_usb_placeholder':
+      'Fingerprint enrollment requires USB device — coming later',
   'delete_biometric': 'Delete Biometric Data',
   'delete_face': 'Delete Face Data',
   'delete_fingerprint': 'Delete Fingerprint Data',
   'confirm_delete_face': 'Delete face data for this employee?',
   'confirm_delete_fingerprint': 'Delete fingerprint data for this employee?',
-  'enroll_biometric_suggestion': 'Would you like to enroll biometric data for this employee?',
+  'enroll_biometric_suggestion':
+      'Would you like to enroll biometric data for this employee?',
 
   // ── Recognition Logs ──
   'recognition_logs': 'Recognition Logs',
@@ -813,11 +846,17 @@ const Map<String, String> en = {
   'document_uploaded': 'Document uploaded',
   'document_deleted': 'Document deleted',
   'document_updated': 'Document updated',
-  'document_verified': 'Document verified',
+  'document_verified': 'Confirmed',
   'document_rejected': 'Document rejected',
   'document_verify': 'Verify',
+  'view_document': 'View document',
+  'document_open_failed': 'Could not open document',
   'document_reject': 'Reject',
   'rejection_reason': 'Rejection reason',
+  'doc_submissions_summary': 'Submission status',
+  'doc_submitted': 'Submitted',
+  'doc_not_submitted': 'Not submitted',
+  'doc_no_scope_employees': 'No employees are in scope for this document',
   'edit_document': 'Edit Document',
   'edit_notes': 'Edit Notes',
   'notes': 'Notes',
@@ -828,6 +867,7 @@ const Map<String, String> en = {
   'requested_documents': 'Requested Documents',
   'no_requested_documents': 'No documents requested from this employee yet',
   'request_document': 'Request a document',
+  'review_documents': 'Review & approve documents',
   'request_document_title': 'Request a document from the employee',
   'no_requestable_documents':
       'All defined document types are already requested from this employee',
@@ -861,6 +901,7 @@ const Map<String, String> en = {
   'amount_required': 'Amount is required',
   'amount_must_be_positive': 'Amount must be greater than zero',
   'reason': 'Reason',
+  'reason_optional': 'Reason (optional)',
   'enter_reason': 'Enter reason',
   'reason_required': 'Reason is required',
   'deduction_added': 'Deduction added successfully',
@@ -983,7 +1024,8 @@ const Map<String, String> en = {
 
   // ── Employee Categories ──
   'employee_categories': 'Employee Categories',
-  'employee_categories_subtitle': 'Group employees into categories for document management',
+  'employee_categories_subtitle':
+      'Group employees into categories for document management',
   'category_name': 'Category Name',
   'category_color_hint': 'Color (e.g. #FF5722)',
   'add_category': 'Add Category',
@@ -993,7 +1035,8 @@ const Map<String, String> en = {
   'category_updated': 'Category updated successfully',
   'category_deleted': 'Category deleted successfully',
   'category_name_exists': 'Category name already exists',
-  'category_in_use_cannot_delete': 'Cannot delete category because it is linked to a required document',
+  'category_in_use_cannot_delete':
+      'Cannot delete category because it is linked to a required document',
   'select_categories': 'Select at least one category',
   'assign_categories': 'Assign Categories',
 
@@ -1011,9 +1054,11 @@ const Map<String, String> en = {
 
   // ── Export Templates ──
   'export_templates': 'Export Templates',
+  'export_templates_subtitle': 'Payroll export format',
   'export_template_new': 'New Template',
   'export_template_edit': 'Edit Template',
-  'export_template_delete_confirm': 'Are you sure you want to delete this template?',
+  'export_template_delete_confirm':
+      'Are you sure you want to delete this template?',
   'export_template_name': 'Template Name',
   'export_template_delimiter': 'Delimiter',
   'export_template_bom': 'Include UTF-8 BOM',
@@ -1038,6 +1083,13 @@ const Map<String, String> en = {
 
   // ── Compliance / legal credentials ──
   'compliance_info': 'Legal Documents',
+  'requested_documents_title': 'Request documents from employee',
+  'requested_documents_hint':
+      'Add papers requested from this employee only, to upload later from their app.',
+  'requested_documents_add': 'Add requested document',
+  'requested_document_name_label': 'Document name',
+  'requested_document_name_hint': 'e.g. Driver\'s license, Degree certificate',
+  'requested_document_note_label': 'Note (optional)',
   'national_id': 'National ID',
   'nationality': 'Nationality',
   'iqama_number': 'Iqama Number',
@@ -1072,13 +1124,16 @@ const Map<String, String> en = {
   'pref_late_absence': 'Late or Absent',
   'pref_late_absence_desc': 'Alert when an employee is late or absent',
   'pref_missing_checkout': 'Missing Checkout',
-  'pref_missing_checkout_desc': 'Alert when an employee checked in but did not check out',
+  'pref_missing_checkout_desc':
+      'Alert when an employee checked in but did not check out',
   'pref_document_expiry': 'Document Expiry',
-  'pref_document_expiry_desc': 'Alert when a document or contract is about to expire',
+  'pref_document_expiry_desc':
+      'Alert when a document or contract is about to expire',
   'pref_leave_events': 'Leave Requests',
   'pref_leave_events_desc': 'Alert when a new leave request is submitted',
   'pref_payroll_events': 'Payroll & Employee Activation',
-  'pref_payroll_events_desc': 'Alert on payroll generate/approve or new employee activation',
+  'pref_payroll_events_desc':
+      'Alert on payroll generate/approve or new employee activation',
 
   // ── Statutory Payroll Settings ──
   'payroll_settings': 'Payroll Settings',
@@ -1101,7 +1156,8 @@ const Map<String, String> en = {
   'eosb_days_per_year': 'Days per Year of Service',
   'load_egypt_template': 'Load Egypt Template',
   'template_loaded': 'Template loaded',
-  'template_disclaimer': 'These values are indicative. Verify with applicable law.',
+  'template_disclaimer':
+      'These values are indicative. Verify with applicable law.',
   'statutory_settings_saved': 'Payroll settings saved',
   'statutory_settings_save_failed': 'Failed to save payroll settings',
   'social_insurance_deduction': 'Social Insurance',
@@ -1386,11 +1442,22 @@ const Map<String, String> en = {
   // ── Leave Messages ──
   'leave_approved': 'Leave approved',
   'leave_rejected_msg': 'Leave rejected',
+  'approved_by': 'Approved by @name',
+  'rejected_by': 'Rejected by @name',
+  'convert_to_absence': 'Convert to absence',
+  'convert_to_absence_confirm':
+      'The days of this leave will be counted as absence and a deduction applied. Continue?',
+  'leave_converted_to_absence': 'Leave converted to absence',
+  'leave_convert_failed': 'Failed to convert leave to absence',
   'leave_balance_exceeded_warning':
       '@paid paid days and @unpaid unpaid days will be counted',
   'leave_overlap': 'Overlap with an existing leave in this period',
   'recurring_leave_created': 'Recurring leave created successfully',
   'recurring_leave_failed': 'Failed to create recurring leave',
+  'leave_tab_current': 'Current',
+  'leave_tab_archive': 'Ended & Rejected',
+  'leave_tab_ended': 'Ended',
+  'leave_tab_rejected': 'Rejected',
   'reject_leave': 'Reject Leave',
 
   // ── Days of Week ──
@@ -1435,13 +1502,13 @@ const Map<String, String> en = {
   'update_ready': 'Update ready to install',
   'install_now': 'Install Now',
   'maintenance_title': 'Under Maintenance',
-  'maintenance_message':
-      'The app is under maintenance, we will be back soon',
+  'maintenance_message': 'The app is under maintenance, we will be back soon',
 
   // ── Upgrade Messages ──
   'upgrade_body':
       '\nA new version of Medjat Admin is available 📱\n\n New features and improvements ✨\n Bug fixes and performance 🔧\n Enhanced security 🛡️\n\n We recommend updating for the best experience! 💪',
-  'upgrade_prompt': 'An app update is required for best performance and experience',
+  'upgrade_prompt':
+      'An app update is required for best performance and experience',
   'upgrade_title': 'Update Available',
 
   // ── Leave Screen ──
@@ -1472,6 +1539,7 @@ const Map<String, String> en = {
   'leave_auto_approve_hint': 'Leave is approved at once without review',
 
   'weekly_day_off': 'Weekly Day Off',
+  'weekly_day_off_enable': 'Set a fixed weekly day off',
   'weekly_day_off_hint': 'Recurring weekly rest day (no absence recorded)',
   'no_weekly_off': 'No weekly off',
 
@@ -1510,7 +1578,8 @@ const Map<String, String> en = {
   'statutory_insurance_employer': 'Social insurance (employer share)',
   'statutory_income_tax': 'Income tax',
   'statutory_taxable_income': 'Taxable income',
-  'statutory_employer_note': 'Paid by the company — not deducted from your salary',
+  'statutory_employer_note':
+      'Paid by the company — not deducted from your salary',
   'loans_title': 'Loans & advances',
   'loan_status_pending': 'Pending approval',
   'loan_status_active': 'Active',
@@ -1541,7 +1610,8 @@ const Map<String, String> en = {
   'payroll_mark_paid_failed': 'Failed to mark as paid',
   'payroll_revert_failed': 'Failed to revert',
   'payroll_revert_confirm_title': 'Revert action',
-  'payroll_revert_confirm_message': 'The payroll will return to its previous state. Are you sure?',
+  'payroll_revert_confirm_message':
+      'The payroll will return to its previous state. Are you sure?',
   'payroll_no_slip_yet': 'No payroll slip generated for this month yet',
   'payroll_estimate_hint': 'Provisional — finalized on approval',
   'payroll_approved_at': 'Approved on',
@@ -1562,6 +1632,7 @@ const Map<String, String> en = {
   'allowance_type_communication': 'Communication',
   'allowance_type_other': 'Other',
   'allowance_type_label': 'Allowance type',
+  'allowance_type_hint': 'e.g. Housing, Transport',
   'allowance_label_label': 'Custom name (optional)',
   'allowance_label_hint': 'Leave empty to use the type name',
   'allowance_start_month': 'First month',
@@ -1577,7 +1648,8 @@ const Map<String, String> en = {
   'allowance_save_failed': 'Failed to save allowance',
   'allowance_delete_failed': 'Failed to delete allowance',
   'allowance_delete_confirm_title': 'Delete allowance',
-  'allowance_delete_confirm_message': "This allowance will be removed and won't be added to future payrolls. Are you sure?",
+  'allowance_delete_confirm_message':
+      "This allowance will be removed and won't be added to future payrolls. Are you sure?",
   'allowance_empty': 'No monthly allowances',
   'allowance_select_month': 'Select month',
   'bank_card_title': 'Payment details',
@@ -1629,7 +1701,8 @@ const Map<String, String> en = {
   'adjustment_update_failed': 'Failed to update adjustment',
   'adjustment_delete_failed': 'Failed to delete adjustment',
   'adjustment_delete_confirm_title': 'Delete adjustment',
-  'adjustment_delete_confirm_message': "This adjustment will be removed from this period's salary. Are you sure?",
+  'adjustment_delete_confirm_message':
+      "This adjustment will be removed from this period's salary. Are you sure?",
   'adjustment_edit_title': 'Edit adjustment',
   'financial_breakdown': 'Salary breakdown',
   'attendance_in_period': 'Attendance this period',
@@ -1700,6 +1773,9 @@ const Map<String, String> en = {
   'cycle_start_day_hint':
       'The day the month starts for attendance. Use 1 for a normal calendar month. Branches can override this.',
   'cycle_start_day_label': 'Month start day',
+  'week_start_day_label': 'Week start day',
+  'week_start_day_hint':
+      'The day the shift-schedule week begins. Affects the weekly schedule only — not the attendance cycle or payroll.',
   'cycle_normal_month': 'Normal calendar month (1st → end of month)',
   'cycle_window_preview': 'Month: day @from → day @to of the next month',
   'branch_cycle_override': 'Month start day (override)',
@@ -1801,6 +1877,9 @@ const Map<String, String> en = {
   'request_break': 'Request Break / Permission',
   'request_break_subtitle': 'Select type, date, and time',
   'break_type': 'Request Type',
+  'break_type_hint': 'Type the request (e.g. early leave, permission…)',
+  'break_deduct_hourly': 'Deduct from salary (hourly)',
+  'break_deduct_hourly_hint': 'Deducted based on the minutes and the hourly rate',
   'break_date': 'Date',
   'break_time': 'Time',
   'break_start_time': 'Start Time',
@@ -1813,13 +1892,15 @@ const Map<String, String> en = {
   'break_type_medical': 'Medical',
   'break_type_early_leave': 'Early Leave',
   'break_type_other': 'Other',
-  'early_leave_approve_title': 'Approve Early-Leave Permission',
+  'early_leave_approve_title': 'Approve Request',
   'early_leave_deduct_question':
-      'Deduct the early-leave time from salary at the hourly rate?',
+      'Deduct the permission time from salary at the hourly rate?',
   'early_leave_approve_deduct': 'Approve with deduction',
   'early_leave_approve_no_deduct': 'Approve without deduction',
   'early_leave_deducted': 'Deducted from salary (hourly)',
   'early_leave_not_deducted': 'Not deducted from salary',
+  'break_approved_by': 'Approved by',
+  'break_rejected_by': 'Rejected by',
   'break_select_date': 'Select Date',
   'break_select_start_time': 'Start Time',
   'break_select_end_time': 'End Time',
@@ -1848,7 +1929,8 @@ const Map<String, String> en = {
   'bulk_type_percent': '% of base salary',
   'bulk_percent': 'Percentage %',
   'bulk_percent_range': 'Percentage must be between 1 and 100',
-  'bulk_skipped_note': '(@skipped employees without a base salary were skipped)',
+  'bulk_skipped_note':
+      '(@skipped employees without a base salary were skipped)',
   'bulk_confirm_deduction_pct':
       '@amount% of base salary will be deducted from every employee in @scope. Continue?',
   'bulk_confirm_bonus_pct':

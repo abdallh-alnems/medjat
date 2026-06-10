@@ -342,10 +342,11 @@ final class SurveyModel {
         }
 
         $questions = self::listQuestions($surveyId, $tenantId);
-        $totalResponses = (int) Database::fetchOne(
+        $totalRow = Database::fetchOne(
             "SELECT COUNT(*) AS cnt FROM survey_responses WHERE survey_id = ? AND tenant_id = ?",
             [$surveyId, $tenantId]
-        )['cnt'] ?? 0;
+        );
+        $totalResponses = (int) ($totalRow['cnt'] ?? 0);
 
         $results = [];
         foreach ($questions as $q) {

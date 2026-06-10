@@ -39,6 +39,8 @@ abstract class AppRoutes {
   static const String biometricEnrollment = '/employee/biometric';
   static const String recognitionLogs = '/stations/logs';
   static const String requiredDocuments = '/settings/required-documents';
+  static const String requiredDocumentSubmissions =
+      '/settings/required-documents/submissions';
   static const String employeeDocuments = '/employee/documents';
   static const String documentsReport = '/reports/documents';
   static const String categories = '/settings/categories';

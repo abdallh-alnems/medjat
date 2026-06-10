@@ -5,7 +5,6 @@ import '../../../core/class/handling_data_request.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/theme/theme.dart';
 import '../../../core/constant/routes/app_routes.dart';
-import '../../../core/shared/layout/tab_shell.dart';
 import '../../../data/model/dashboard_model.dart';
 import '../../../logic/controller/dashboard/dashboard_controller.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
@@ -350,6 +349,13 @@ class _DashboardContent extends StatelessWidget {
       route: AppRoutes.leaveManage,
     );
     add(
+      d?.pendingBreaks ?? 0,
+      'pending_breaks',
+      Icons.free_breakfast_outlined,
+      colors.warning,
+      route: AppRoutes.breakManage,
+    );
+    add(
       d?.pendingLetters ?? 0,
       'pending_letters',
       Icons.description_outlined,
@@ -507,12 +513,9 @@ class _DashboardContent extends StatelessWidget {
               onClearFilters: ctrl.clearFilters,
             )
           else ...[
-            // Quick actions — fast paths for the most common tasks.
-            _QuickActions(auth: auth),
             // Today's attendance — one uniform card grid. "Present" carries its
             // live "inside now" count; checked-out and not-arrived get their own
             // cards. Wrapped in the live controller so the now-values refresh.
-            const SizedBox(height: AppSpacing.s5),
             const _SectionLabel('attendance_today'),
             const SizedBox(height: AppSpacing.s3),
             if (showLive)
@@ -1135,101 +1138,6 @@ class _DashboardEmptyState extends StatelessWidget {
                 ),
               ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Fast paths for the most common tasks, shown as small pills under the header.
-/// Each is permission-gated and a comfortable (≥44px) tap target.
-class _QuickActions extends StatelessWidget {
-  final AuthController auth;
-  const _QuickActions({required this.auth});
-
-  @override
-  Widget build(BuildContext context) {
-    final u = auth.user;
-    final actions = <Widget>[];
-
-    if (u?.canManageEmployees == true) {
-      actions.add(
-        _pill(
-          context,
-          icon: Icons.person_add_alt_1_outlined,
-          labelKey: 'add_employee',
-          onTap: () => Get.toNamed<void>(AppRoutes.employeeAdd),
-        ),
-      );
-    }
-    if (u?.canManageAttendance == true) {
-      actions.add(
-        _pill(
-          context,
-          icon: Icons.how_to_reg_outlined,
-          labelKey: 'record_attendance',
-          onTap: () {
-            try {
-              Get.find<TabNavController>().changeTab(2); // Attendance tab
-            } catch (_) {}
-          },
-        ),
-      );
-    }
-
-    if (actions.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.s4),
-      child: Wrap(
-        spacing: AppSpacing.s2,
-        runSpacing: AppSpacing.s2,
-        children: actions,
-      ),
-    );
-  }
-
-  Widget _pill(
-    BuildContext context, {
-    required IconData icon,
-    required String labelKey,
-    required VoidCallback onTap,
-  }) {
-    final colors = AppColors.of(context);
-    final radius = BorderRadius.circular(AppRadius.full);
-    // The visible label + InkWell already expose a "button" with the right
-    // text to screen readers, so no extra Semantics wrapper is needed.
-    return Material(
-      color: colors.surface,
-      borderRadius: radius,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: radius,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 44),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.s4,
-            vertical: AppSpacing.s2,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: radius,
-            border: Border.all(color: colors.borderHairline),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 18, color: colors.brand),
-              const SizedBox(width: AppSpacing.s2),
-              Text(
-                labelKey.tr,
-                style: TextStyle(
-                  fontFamily: 'IBM Plex Sans Arabic',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: colors.textPrimary,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );

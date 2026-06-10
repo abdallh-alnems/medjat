@@ -102,11 +102,6 @@ class _BulkAdjustSheetState extends State<_BulkAdjustSheet> {
       return;
     }
     final reason = _reasonCtl.text.trim();
-    if (reason.isEmpty) {
-      Get.snackbar('error'.tr, 'bulk_reason_required'.tr,
-          snackPosition: SnackPosition.BOTTOM);
-      return;
-    }
 
     final isDeduction = _kind == 'deduction';
     final confirmed = await _confirm(amount, isDeduction);
@@ -239,7 +234,7 @@ class _BulkAdjustSheetState extends State<_BulkAdjustSheet> {
               controller: _reasonCtl,
               maxLines: 2,
               decoration: InputDecoration(
-                labelText: 'reason'.tr,
+                labelText: 'reason_optional'.tr,
                 border: const OutlineInputBorder(),
                 alignLabelWithHint: true,
               ),

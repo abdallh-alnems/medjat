@@ -12,11 +12,10 @@ PermissionMiddleware::check($auth, 'manage_payroll');
 $input = $auth['input'];
 $id = (int) ($input['id'] ?? 0);
 $amount = isset($input['amount']) ? (float) $input['amount'] : null;
-$reason = $input['reason'] ?? null;
+$reason = trim((string) ($input['reason'] ?? ''));
 
 Validator::required($id, 'id');
 Validator::required($amount, 'amount');
-Validator::required($reason, 'reason');
 
 if ($amount <= 0) {
     Response::fail('amount must be positive', 422);

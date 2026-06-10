@@ -149,6 +149,36 @@ final class DocumentModel {
         return array_map(fn($r) => (int) $r['category_id'], $rows);
     }
 
+    /**
+     * Scoped employees with their names (joined to employees so only ones that
+     * still exist are returned). Lets clients show names without depending on a
+     * paginated employee list.
+     */
+    public static function getEmployeeScopeDetailed(int $requiredDocumentId, int $tenantId): array {
+        $rows = Database::fetchAll(
+            "SELECT e.id, e.name
+             FROM required_document_employees rde
+             JOIN employees e ON e.id = rde.employee_id AND e.tenant_id = rde.tenant_id
+             WHERE rde.required_document_id = ? AND rde.tenant_id = ?
+             ORDER BY e.name ASC",
+            [$requiredDocumentId, $tenantId]
+        );
+        return array_map(fn($r) => ['id' => (int) $r['id'], 'name' => $r['name']], $rows);
+    }
+
+    /** Scoped categories with their names (joined to employee_categories). */
+    public static function getCategoryScopeDetailed(int $requiredDocumentId, int $tenantId): array {
+        $rows = Database::fetchAll(
+            "SELECT c.id, c.name
+             FROM required_document_categories rdc
+             JOIN employee_categories c ON c.id = rdc.category_id AND c.tenant_id = rdc.tenant_id
+             WHERE rdc.required_document_id = ? AND rdc.tenant_id = ?
+             ORDER BY c.name ASC",
+            [$requiredDocumentId, $tenantId]
+        );
+        return array_map(fn($r) => ['id' => (int) $r['id'], 'name' => $r['name']], $rows);
+    }
+
     public static function deleteRequired(int $id, int $tenantId): bool {
         return Database::execute(
             "DELETE FROM required_documents WHERE id = ? AND tenant_id = ?",
@@ -163,12 +193,16 @@ final class DocumentModel {
         ) > 0;
     }
 
-    public static function upload(int $employeeId, int $tenantId, int $documentTypeId, string $filePath, string $originalName, int $uploadedBy, ?int $fileSize = null, ?string $mimeType = null): int {
+    public static function upload(int $employeeId, int $tenantId, int $documentTypeId, string $filePath, string $originalName, ?int $uploadedBy = null, ?int $fileSize = null, ?string $mimeType = null, string $status = 'uploaded'): int {
+        // $status lets the caller distinguish an admin upload (verified
+        // immediately => 'uploaded') from an employee self-submission awaiting
+        // review (=> 'pending'). Re-uploading over a rejected document resets
+        // the status via VALUES(status) and clears the rejection reason.
         Database::execute(
             "INSERT INTO employee_documents (tenant_id, employee_id, required_document_id, file_path, original_name, file_size, mime_type, uploaded_by, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'uploaded')
-             ON DUPLICATE KEY UPDATE file_path = VALUES(file_path), original_name = VALUES(original_name), file_size = VALUES(file_size), mime_type = VALUES(mime_type), status = 'uploaded', uploaded_by = VALUES(uploaded_by), rejected_reason = NULL, notes = NULL",
-            [$tenantId, $employeeId, $documentTypeId, $filePath, $originalName, $fileSize, $mimeType, $uploadedBy]
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE file_path = VALUES(file_path), original_name = VALUES(original_name), file_size = VALUES(file_size), mime_type = VALUES(mime_type), status = VALUES(status), uploaded_by = VALUES(uploaded_by), verified_at = NULL, verified_by = NULL, rejected_reason = NULL, notes = NULL",
+            [$tenantId, $employeeId, $documentTypeId, $filePath, $originalName, $fileSize, $mimeType, $uploadedBy, $status]
         );
         return (int) Database::lastInsertId();
     }
@@ -181,6 +215,89 @@ final class DocumentModel {
              WHERE ed.employee_id = ? AND ed.tenant_id = ?
              ORDER BY rd.name ASC",
             [$employeeId, $tenantId]
+        );
+    }
+
+    /**
+     * Full required-document checklist for an employee: every required document
+     * that applies to them by scope (all / their branch / explicit employee /
+     * their category), merged with any document they have already uploaded.
+     * Not-yet-uploaded items come back with status 'required' so the employee
+     * app can prompt for them instead of showing an empty list.
+     */
+    public static function getEmployeeDocumentChecklist(int $employeeId, int $tenantId): array {
+        return Database::fetchAll(
+            "SELECT rd.id as required_document_id,
+                    rd.name as document_type_name,
+                    rd.description,
+                    rd.category,
+                    rd.is_required,
+                    ed.id as employee_document_id,
+                    ed.file_path,
+                    ed.original_name,
+                    ed.rejected_reason,
+                    ed.verified_at,
+                    ed.expires_at as expiry_date,
+                    COALESCE(ed.status, 'required') as status
+             FROM required_documents rd
+             JOIN employees e ON e.id = ? AND e.tenant_id = ?
+             LEFT JOIN employee_documents ed
+                    ON ed.required_document_id = rd.id
+                   AND ed.employee_id = e.id
+                   AND ed.tenant_id = rd.tenant_id
+             WHERE rd.tenant_id = ? AND rd.is_active = 1 AND (
+                rd.scope_type = 'all'
+                OR (rd.scope_type = 'branch' AND rd.scope_branch_id = e.branch_id)
+                OR (rd.scope_type = 'employees' AND EXISTS (
+                    SELECT 1 FROM required_document_employees rde
+                    WHERE rde.required_document_id = rd.id AND rde.employee_id = e.id
+                ))
+                OR (rd.scope_type = 'category' AND EXISTS (
+                    SELECT 1 FROM required_document_categories rdc
+                    JOIN employee_category_assignments eca ON eca.category_id = rdc.category_id AND eca.tenant_id = rdc.tenant_id
+                    WHERE rdc.required_document_id = rd.id AND eca.employee_id = e.id AND rdc.tenant_id = ?
+                ))
+             )
+             ORDER BY rd.sort_order ASC, rd.name ASC",
+            [$employeeId, $tenantId, $tenantId, $tenantId]
+        );
+    }
+
+    /**
+     * Every in-scope active employee for one required-document type, merged with
+     * the document they have (if any) for that type. Lets an admin open a single
+     * document type and see who submitted it — and who hasn't — in one list,
+     * then review / approve / reject from there. Employees with no row come back
+     * with document_id = NULL (not yet submitted).
+     */
+    public static function getSubmissionsForRequired(int $requiredDocumentId, int $tenantId): array {
+        return Database::fetchAll(
+            "SELECT e.id as employee_id, e.name as employee_name, b.name as branch_name,
+                    ed.id as document_id, ed.status, ed.original_name, ed.file_path,
+                    ed.mime_type, ed.verified_at, ed.rejected_reason, ed.expires_at,
+                    ed.created_at as uploaded_at, rd.name as document_name
+             FROM employees e
+             JOIN required_documents rd ON rd.id = ? AND rd.tenant_id = e.tenant_id AND (
+                rd.scope_type = 'all'
+                OR (rd.scope_type = 'branch' AND rd.scope_branch_id = e.branch_id)
+                OR (rd.scope_type = 'employees' AND EXISTS (
+                    SELECT 1 FROM required_document_employees rde
+                    WHERE rde.required_document_id = rd.id AND rde.employee_id = e.id
+                ))
+                OR (rd.scope_type = 'category' AND EXISTS (
+                    SELECT 1 FROM required_document_categories rdc
+                    JOIN employee_category_assignments eca ON eca.category_id = rdc.category_id AND eca.tenant_id = rdc.tenant_id
+                    WHERE rdc.required_document_id = rd.id AND eca.employee_id = e.id AND rdc.tenant_id = ?
+                ))
+             )
+             LEFT JOIN employee_documents ed
+                    ON ed.employee_id = e.id
+                   AND ed.required_document_id = rd.id
+                   AND ed.tenant_id = e.tenant_id
+             LEFT JOIN branches b ON b.id = e.branch_id
+             WHERE e.tenant_id = ? AND e.status = 'active'
+             ORDER BY e.name ASC",
+            [$requiredDocumentId, $tenantId, $tenantId]
         );
     }
 
@@ -334,6 +451,35 @@ final class DocumentModel {
                 AND ed.expires_at IS NOT NULL
                 AND ed.expires_at BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL ? DAY)";
         $params = [$tenantId, $daysAhead];
+
+        if ($branchId) {
+            $sql .= " AND e.branch_id = ?";
+            $params[] = $branchId;
+        }
+
+        $sql .= " ORDER BY ed.expires_at ASC";
+        return Database::fetchAll($sql, $params);
+    }
+
+    /**
+     * Documents whose expiry date falls within each document type's own
+     * configured notification window (notification_days_before), rather than a
+     * fixed window. Used by the alert cron so every document type can control
+     * how early its expiry reminder fires. Falls back to 30 days when unset.
+     */
+    public static function getDueForNotification(int $tenantId, ?int $branchId = null): array {
+        $sql = "SELECT ed.*, e.name as employee_name, e.branch_id, b.name as branch_name,
+                       rd.name as document_name, rd.notification_days_before
+                FROM employee_documents ed
+                JOIN employees e ON e.id = ed.employee_id
+                JOIN required_documents rd ON rd.id = ed.required_document_id
+                LEFT JOIN branches b ON b.id = e.branch_id
+                WHERE ed.tenant_id = ?
+                AND ed.status = 'uploaded'
+                AND ed.expires_at IS NOT NULL
+                AND ed.expires_at BETWEEN CURDATE()
+                    AND DATE_ADD(CURDATE(), INTERVAL COALESCE(rd.notification_days_before, 30) DAY)";
+        $params = [$tenantId];
 
         if ($branchId) {
             $sql .= " AND e.branch_id = ?";

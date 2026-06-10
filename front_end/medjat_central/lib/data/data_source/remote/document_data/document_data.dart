@@ -10,6 +10,11 @@ class DocumentData {
     return await _crud.getData(AppLinks.employeeDocuments(employeeId));
   }
 
+  /// Downloads the raw bytes of an uploaded document file (image or PDF).
+  Future<Map<String, dynamic>> downloadFile(int docId) async {
+    return await _crud.getBytes(AppLinks.documentFileView(docId));
+  }
+
   Future<Map<String, dynamic>> uploadDocument(
       int employeeId, Map<String, dynamic> data) async {
     return await _crud.postData(AppLinks.employeeDocuments(employeeId), data);
@@ -29,8 +34,11 @@ class DocumentData {
 
   Future<Map<String, dynamic>> deleteDocument(
       int employeeId, int docId) async {
+    // Deletion is a POST to a dedicated endpoint: an HTTP DELETE to the
+    // listing URL was silently ignored by the backend (returned the list as
+    // success), so nothing was actually removed.
     return await _crud
-        .deleteData(AppLinks.employeeDocument(employeeId, docId));
+        .postData(AppLinks.employeeDeleteDocument, {'document_id': docId});
   }
 
   Future<Map<String, dynamic>> updateDocument(

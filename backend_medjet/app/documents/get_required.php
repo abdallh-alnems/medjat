@@ -11,13 +11,22 @@ $documents = DocumentModel::getAllRequiredByTenant($tenantId);
 
 foreach ($documents as &$doc) {
     if (($doc['scope_type'] ?? 'all') === 'employees') {
-        $doc['scope_employee_ids'] = DocumentModel::getEmployeeScope((int) $doc['id'], $tenantId);
+        // Detailed (id + name) joined to employees, so only employees that
+        // still exist are returned; derive the ids from the same set so the
+        // count and the names always match.
+        $emps = DocumentModel::getEmployeeScopeDetailed((int) $doc['id'], $tenantId);
+        $doc['scope_employees'] = $emps;
+        $doc['scope_employee_ids'] = array_map(fn($e) => $e['id'], $emps);
     } else {
+        $doc['scope_employees'] = [];
         $doc['scope_employee_ids'] = [];
     }
     if (($doc['scope_type'] ?? 'all') === 'category') {
-        $doc['scope_category_ids'] = DocumentModel::getCategoryScope((int) $doc['id'], $tenantId);
+        $cats = DocumentModel::getCategoryScopeDetailed((int) $doc['id'], $tenantId);
+        $doc['scope_categories'] = $cats;
+        $doc['scope_category_ids'] = array_map(fn($c) => $c['id'], $cats);
     } else {
+        $doc['scope_categories'] = [];
         $doc['scope_category_ids'] = [];
     }
 }

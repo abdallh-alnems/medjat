@@ -15,6 +15,7 @@ $categoryId = ($_GET['category_id'] ?? null) ? (int) $_GET['category_id'] : null
 $search = $_GET['search'] ?? null;
 $status = $_GET['status'] ?? null;
 $sort = $_GET['sort'] ?? 'name';
+$dir = strtolower((string) ($_GET['dir'] ?? 'asc')) === 'desc' ? 'desc' : 'asc';
 $expiringWithin = ($_GET['expiring_within'] ?? null) ? (int) $_GET['expiring_within'] : null;
 
 if ($branchId) {
@@ -31,7 +32,8 @@ $result = EmployeeModel::getByTenant(
     $sort,
     $shiftId,
     $categoryId,
-    $expiringWithin
+    $expiringWithin,
+    $dir
 );
 
 foreach ($result['items'] as &$emp) {

@@ -12,6 +12,10 @@ class RequiredDocumentModel {
   final int? scopeBranchId;
   final List<int> scopeEmployeeIds;
   final List<int> scopeCategoryIds;
+  // Resolved names for the selected scope (provided by the list endpoint),
+  // so the UI can show them without depending on a paginated employee list.
+  final List<String> scopeEmployeeNames;
+  final List<String> scopeCategoryNames;
 
   RequiredDocumentModel({
     required this.id,
@@ -27,6 +31,8 @@ class RequiredDocumentModel {
     this.scopeBranchId,
     this.scopeEmployeeIds = const [],
     this.scopeCategoryIds = const [],
+    this.scopeEmployeeNames = const [],
+    this.scopeCategoryNames = const [],
   });
 
   factory RequiredDocumentModel.fromJson(Map<String, dynamic> json) {
@@ -38,6 +44,20 @@ class RequiredDocumentModel {
     final catIds = rawCats is List
         ? rawCats.map((e) => e is int ? e : int.tryParse(e.toString()) ?? 0).where((v) => v > 0).toList()
         : <int>[];
+    final rawEmps = json['scope_employees'];
+    final empNames = rawEmps is List
+        ? rawEmps
+            .map((e) => (e is Map ? e['name']?.toString() : null) ?? '')
+            .where((s) => s.isNotEmpty)
+            .toList()
+        : <String>[];
+    final rawCatObjs = json['scope_categories'];
+    final catNames = rawCatObjs is List
+        ? rawCatObjs
+            .map((e) => (e is Map ? e['name']?.toString() : null) ?? '')
+            .where((s) => s.isNotEmpty)
+            .toList()
+        : <String>[];
     return RequiredDocumentModel(
       id: (json['id'] as int?) ?? 0,
       name: (json['name'] as String?) ?? '',
@@ -52,6 +72,8 @@ class RequiredDocumentModel {
       scopeBranchId: json['scope_branch_id'] as int?,
       scopeEmployeeIds: empIds,
       scopeCategoryIds: catIds,
+      scopeEmployeeNames: empNames,
+      scopeCategoryNames: catNames,
     );
   }
 

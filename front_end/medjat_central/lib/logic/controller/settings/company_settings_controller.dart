@@ -29,6 +29,9 @@ class CompanySettingsController extends GetxController {
   // Company default attendance cycle start day (1-28). Branches may override.
   int cycleStartDay = 1;
 
+  // Weekly-schedule start weekday (ISO: 1=Mon..7=Sun, default 6=Sat).
+  int weekStartDay = 6;
+
   @override
   void onInit() {
     super.onInit();
@@ -65,6 +68,7 @@ class CompanySettingsController extends GetxController {
         hasStamp = data['has_stamp'] == true;
         hasSignature = data['has_signature'] == true;
         cycleStartDay = (data['cycle_start_day'] as num?)?.toInt() ?? 1;
+        weekStartDay = (data['week_start_day'] as num?)?.toInt() ?? 6;
       }
       status = StatusRequest.success;
     } else {
@@ -75,6 +79,11 @@ class CompanySettingsController extends GetxController {
 
   void setCycleStartDay(int day) {
     cycleStartDay = day.clamp(1, 28);
+    update();
+  }
+
+  void setWeekStartDay(int weekday) {
+    weekStartDay = weekday.clamp(1, 7);
     update();
   }
 
@@ -98,6 +107,7 @@ class CompanySettingsController extends GetxController {
       'currency': currency,
       'timezone': timezone,
       'cycle_start_day': cycleStartDay.clamp(1, 28),
+      'week_start_day': weekStartDay.clamp(1, 7),
     };
 
     final response = await _companySettingsData.updateCompanySettings(data);

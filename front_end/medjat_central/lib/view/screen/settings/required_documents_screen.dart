@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constant/theme/theme.dart';
+import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/class/handling_data_request.dart';
 import '../../../data/model/required_document_model.dart';
 import '../../../logic/controller/document/required_documents_controller.dart';
@@ -27,11 +28,20 @@ class RequiredDocumentsScreen extends StatelessWidget {
                           style: AppTextStyles.bodySecondary(context)),
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.all(AppSpacing.s4),
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.s4,
+                        AppSpacing.s5,
+                        AppSpacing.s4,
+                        AppSpacing.s4,
+                      ),
                       itemCount: ctrl.documents.length,
                       itemBuilder: (context, index) {
                         return _DocumentTypeTile(
                           doc: ctrl.documents[index],
+                          onTap: () =>
+                              _openSubmissions(ctrl.documents[index]),
+                          onDetails: () => _showDocumentDetails(
+                              context, ctrl, ctrl.documents[index]),
                           onToggle: () =>
                               ctrl.toggleActive(ctrl.documents[index].id),
                           onEdit: () =>
@@ -58,6 +68,15 @@ class RequiredDocumentsScreen extends StatelessWidget {
     _showDocumentDialog(context, ctrl, null);
   }
 
+  /// Opens the per-document-type submissions screen: who sent this document and
+  /// who hasn't, with review / approve / reject from there.
+  void _openSubmissions(RequiredDocumentModel doc) {
+    Get.toNamed(AppRoutes.requiredDocumentSubmissions, arguments: {
+      'required_document_id': doc.id,
+      'document_name': doc.name,
+    });
+  }
+
   void _showEditDialog(BuildContext context, RequiredDocumentsController ctrl,
       RequiredDocumentModel doc) {
     _showDocumentDialog(context, ctrl, doc);
@@ -69,16 +88,14 @@ class RequiredDocumentsScreen extends StatelessWidget {
     final nameCtl = TextEditingController(text: existing?.name ?? '');
     final descCtl =
         TextEditingController(text: existing?.description ?? '');
-    final expiryCtl = TextEditingController(
-        text: existing?.expiryDays?.toString() ?? '');
     final notifCtl = TextEditingController(
         text: (existing?.notificationDaysBefore ?? 30).toString());
     String category = existing?.category ?? 'general';
-    bool isRequired = existing?.isRequired ?? true;
     String scopeType = existing?.scopeType ?? 'all';
     int? scopeBranchId = existing?.scopeBranchId;
     final Set<int> scopeEmployeeIds = {...(existing?.scopeEmployeeIds ?? const <int>[])};
     final Set<int> scopeCategoryIds = {...(existing?.scopeCategoryIds ?? const <int>[])};
+    String employeeQuery = '';
 
     Get.dialog<void>(
       Dialog(
@@ -104,8 +121,8 @@ class RequiredDocumentsScreen extends StatelessWidget {
                   ),
                   Flexible(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.s4),
+                      padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.s4, AppSpacing.s2, AppSpacing.s4, AppSpacing.s4),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -155,15 +172,6 @@ class RequiredDocumentsScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: AppSpacing.s3),
                           TextField(
-                            controller: expiryCtl,
-                            decoration: InputDecoration(
-                              labelText: 'expiry_days_hint'.tr,
-                              isDense: true,
-                            ),
-                            keyboardType: TextInputType.number,
-                          ),
-                          const SizedBox(height: AppSpacing.s3),
-                          TextField(
                             controller: notifCtl,
                             decoration: InputDecoration(
                               labelText: 'notification_days_hint'.tr,
@@ -172,14 +180,6 @@ class RequiredDocumentsScreen extends StatelessWidget {
                             keyboardType: TextInputType.number,
                           ),
                           const SizedBox(height: AppSpacing.s2),
-                          SwitchListTile(
-                            value: isRequired,
-                            title: Text('is_required'.tr),
-                            onChanged: (v) =>
-                                setDialogState(() => isRequired = v),
-                            contentPadding: EdgeInsets.zero,
-                            dense: true,
-                          ),
                           const Divider(),
                           Padding(
                             padding: const EdgeInsets.only(
@@ -232,7 +232,31 @@ class RequiredDocumentsScreen extends StatelessWidget {
                           ),
                           if (scopeType == 'employees') ...[
                             const SizedBox(height: AppSpacing.s2),
-                            Container(
+                            TextField(
+                              decoration: InputDecoration(
+                                hintText: 'search_employee'.tr,
+                                prefixIcon: const Icon(Icons.search, size: 20),
+                                isDense: true,
+                              ),
+                              onChanged: (v) => setDialogState(
+                                  () => employeeQuery = v.trim().toLowerCase()),
+                            ),
+                            const SizedBox(height: AppSpacing.s2),
+                            Builder(
+                              builder: (_) {
+                                final filteredEmployees = employeeQuery.isEmpty
+                                    ? ctrl.employees
+                                    : ctrl.employees
+                                        .where((e) =>
+                                            e.name
+                                                .toLowerCase()
+                                                .contains(employeeQuery) ||
+                                            (e.branchName
+                                                    ?.toLowerCase()
+                                                    .contains(employeeQuery) ??
+                                                false))
+                                        .toList();
+                                return Container(
                               constraints:
                                   const BoxConstraints(maxHeight: 220),
                               decoration: BoxDecoration(
@@ -250,11 +274,21 @@ class RequiredDocumentsScreen extends StatelessWidget {
                                             dialogCtx),
                                       ),
                                     )
+                                  : filteredEmployees.isEmpty
+                                  ? Padding(
+                                      padding: const EdgeInsets.all(
+                                          AppSpacing.s3),
+                                      child: Text(
+                                        'no_employees'.tr,
+                                        style: AppTextStyles.bodySecondary(
+                                            dialogCtx),
+                                      ),
+                                    )
                                   : ListView.builder(
                                       shrinkWrap: true,
-                                      itemCount: ctrl.employees.length,
+                                      itemCount: filteredEmployees.length,
                                       itemBuilder: (_, i) {
-                                        final e = ctrl.employees[i];
+                                        final e = filteredEmployees[i];
                                         final checked =
                                             scopeEmployeeIds.contains(e.id);
                                         return CheckboxListTile(
@@ -289,6 +323,8 @@ class RequiredDocumentsScreen extends StatelessWidget {
                                         );
                                       },
                                     ),
+                                );
+                              },
                             ),
                             const SizedBox(height: AppSpacing.s1),
                             Text(
@@ -379,8 +415,19 @@ class RequiredDocumentsScreen extends StatelessWidget {
                         ),
                         const SizedBox(width: AppSpacing.s2),
                         ElevatedButton(
+                          // The global theme makes ElevatedButton full-width
+                          // (Size.fromHeight → infinite width); override so it
+                          // sizes to content inside this end-aligned Row.
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: const Size(0, 48),
+                          ),
                           onPressed: () {
-                            if (nameCtl.text.trim().isEmpty) return;
+                            if (nameCtl.text.trim().isEmpty) {
+                              Get.snackbar(
+                                  'error'.tr, 'document_type_name'.tr,
+                                  snackPosition: SnackPosition.BOTTOM);
+                              return;
+                            }
                             if (scopeType == 'branch' && scopeBranchId == null) {
                               Get.snackbar(
                                   'error'.tr, 'select_branch'.tr,
@@ -407,13 +454,15 @@ class RequiredDocumentsScreen extends StatelessWidget {
                               description: descCtl.text.trim().isEmpty
                                   ? null
                                   : descCtl.text.trim(),
-                              expiryDays: expiryCtl.text.trim().isEmpty
-                                  ? null
-                                  : int.tryParse(expiryCtl.text.trim()),
+                              // Expiry date is set manually per uploaded
+                              // document, so this type-level field is no longer
+                              // edited here; preserve any existing value.
+                              expiryDays: existing?.expiryDays,
                               notificationDaysBefore:
                                   int.tryParse(notifCtl.text.trim()) ?? 30,
                               category: category,
-                              isRequired: isRequired,
+                              // All document types are mandatory by design
+                              // (model defaults isRequired to true).
                               scopeType: scopeType,
                               scopeBranchId: scopeType == 'branch'
                                   ? scopeBranchId
@@ -446,6 +495,188 @@ class RequiredDocumentsScreen extends StatelessWidget {
     );
   }
 
+  void _showDocumentDetails(BuildContext context,
+      RequiredDocumentsController ctrl, RequiredDocumentModel doc) {
+    final colors = AppColors.of(context);
+
+    String categoryLabel() {
+      switch (doc.category) {
+        case 'identity':
+          return 'category_identity'.tr;
+        case 'contract':
+          return 'category_contract'.tr;
+        case 'certificate':
+          return 'category_certificate'.tr;
+        case 'insurance':
+          return 'category_insurance'.tr;
+        default:
+          return 'category_general'.tr;
+      }
+    }
+
+    // Resolve the scope into a human-readable heading + list of names.
+    String scopeHeading;
+    List<String> scopeNames;
+    switch (doc.scopeType) {
+      case 'branch':
+        scopeHeading = 'doc_scope_branch'.tr;
+        final branch = ctrl.branches
+            .firstWhereOrNull((b) => b.id == doc.scopeBranchId);
+        scopeNames = branch != null ? [branch.name] : [];
+        break;
+      case 'employees':
+        scopeHeading = 'doc_scope_employees'.tr;
+        scopeNames = doc.scopeEmployeeNames;
+        break;
+      case 'category':
+        scopeHeading = 'doc_scope_category'.tr;
+        scopeNames = doc.scopeCategoryNames;
+        break;
+      default:
+        scopeHeading = 'doc_scope_all'.tr;
+        scopeNames = [];
+    }
+
+    Get.dialog<void>(
+      Dialog(
+        insetPadding: const EdgeInsets.all(AppSpacing.s4),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+            maxWidth: 480,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.s4),
+                child: Text(doc.name, style: AppTextStyles.h3(context)),
+              ),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.s4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (doc.description != null &&
+                          doc.description!.isNotEmpty) ...[
+                        Text(doc.description!,
+                            style: AppTextStyles.bodySecondary(context)),
+                        const SizedBox(height: AppSpacing.s3),
+                      ],
+                      _detailRow('document_category'.tr, categoryLabel()),
+                      _detailRow('notification_days_hint'.tr,
+                          '${doc.notificationDaysBefore}'),
+                      const Divider(height: AppSpacing.s4),
+                      Text('document_scope'.tr,
+                          style: AppTextStyles.h3(context)),
+                      const SizedBox(height: AppSpacing.s1),
+                      Row(
+                        children: [
+                          Icon(_scopeIconFor(doc.scopeType),
+                              size: 16, color: colors.brand),
+                          const SizedBox(width: AppSpacing.s2),
+                          Text(scopeHeading,
+                              style: AppTextStyles.body(context)),
+                        ],
+                      ),
+                      if (doc.scopeType == 'all')
+                        Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.s2),
+                          child: Text('doc_scope_all_hint'.tr,
+                              style: AppTextStyles.sm(context)),
+                        )
+                      else if (scopeNames.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.s2),
+                          child: Text('no_employees'.tr,
+                              style: AppTextStyles.sm(context)),
+                        )
+                      else
+                        ...scopeNames.map((n) => Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 3),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.person_outline, size: 16),
+                                  const SizedBox(width: AppSpacing.s2),
+                                  Expanded(
+                                    child: Text(n,
+                                        style: AppTextStyles.body(context)),
+                                  ),
+                                ],
+                              ),
+                            )),
+                      const SizedBox(height: AppSpacing.s4),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.s3),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Get.back<void>(),
+                      child: Text('close'.tr),
+                    ),
+                    const SizedBox(width: AppSpacing.s2),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(0, 48),
+                      ),
+                      onPressed: () {
+                        Get.back<void>();
+                        _showEditDialog(context, ctrl, doc);
+                      },
+                      child: Text('update'.tr),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value) {
+    return Builder(
+      builder: (context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 130,
+              child: Text(label, style: AppTextStyles.sm(context)),
+            ),
+            Expanded(
+              child: Text(value, style: AppTextStyles.body(context)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _scopeIconFor(String scope) {
+    switch (scope) {
+      case 'branch':
+        return Icons.account_tree_outlined;
+      case 'employees':
+        return Icons.people_outline;
+      case 'category':
+        return Icons.category_outlined;
+      default:
+        return Icons.public;
+    }
+  }
+
   void _confirmDelete(BuildContext context, RequiredDocumentsController ctrl,
       RequiredDocumentModel doc) {
     Get.defaultDialog(
@@ -465,12 +696,16 @@ class RequiredDocumentsScreen extends StatelessWidget {
 
 class _DocumentTypeTile extends StatelessWidget {
   final RequiredDocumentModel doc;
+  final VoidCallback onTap;
+  final VoidCallback onDetails;
   final VoidCallback onToggle;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _DocumentTypeTile({
     required this.doc,
+    required this.onTap,
+    required this.onDetails,
     required this.onToggle,
     required this.onEdit,
     required this.onDelete,
@@ -480,7 +715,9 @@ class _DocumentTypeTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
 
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.s2),
       padding: const EdgeInsets.all(AppSpacing.s3),
       decoration: BoxDecoration(
@@ -496,35 +733,19 @@ class _DocumentTypeTile extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(
-                      doc.name,
-                      style: const TextStyle(
-                        fontFamily: 'IBM Plex Sans Arabic',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
+                    Flexible(
+                      child: Text(
+                        doc.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'IBM Plex Sans Arabic',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          height: 1.5,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.s2),
-                    if (doc.isRequired)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.s1,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.brandSubtle,
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                        ),
-                        child: Text(
-                          'required'.tr,
-                          style: TextStyle(
-                            fontFamily: 'IBM Plex Sans Arabic',
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: colors.brand,
-                          ),
-                        ),
-                      ),
                   ],
                 ),
                 if (doc.description != null && doc.description!.isNotEmpty) ...[
@@ -534,17 +755,6 @@ class _DocumentTypeTile extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: 'IBM Plex Sans Arabic',
                       fontSize: 12,
-                      color: colors.textTertiary,
-                    ),
-                  ),
-                ],
-                if (doc.expiryDays != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    '${'expiry'.tr}: ${doc.expiryDays} ${'days'.tr}',
-                    style: TextStyle(
-                      fontFamily: 'Geist',
-                      fontSize: 11,
                       color: colors.textTertiary,
                     ),
                   ),
@@ -575,10 +785,12 @@ class _DocumentTypeTile extends StatelessWidget {
           ),
           PopupMenuButton<String>(
             onSelected: (v) {
+              if (v == 'details') onDetails();
               if (v == 'edit') onEdit();
               if (v == 'delete') onDelete();
             },
             itemBuilder: (_) => [
+              PopupMenuItem(value: 'details', child: Text('details'.tr)),
               PopupMenuItem(value: 'edit', child: Text('update'.tr)),
               PopupMenuItem(
                 value: 'delete',
@@ -590,6 +802,7 @@ class _DocumentTypeTile extends StatelessWidget {
             constraints: const BoxConstraints(),
           ),
         ],
+      ),
       ),
     );
   }

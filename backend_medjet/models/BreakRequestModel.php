@@ -5,13 +5,13 @@ final class BreakRequestModel
     public static function create(
         int $tenantId, int $employeeId, string $date,
         string $startTime, string $endTime, int $durationMinutes,
-        string $type, ?string $reason
+        string $type, ?string $reason, bool $deductFromSalary = false
     ): int {
         Database::execute(
             "INSERT INTO break_requests
-                (tenant_id, employee_id, date, start_time, end_time, duration_minutes, type, reason, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')",
-            [$tenantId, $employeeId, $date, $startTime, $endTime, $durationMinutes, $type, $reason]
+                (tenant_id, employee_id, date, start_time, end_time, duration_minutes, type, deduct_from_salary, reason, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')",
+            [$tenantId, $employeeId, $date, $startTime, $endTime, $durationMinutes, $type, $deductFromSalary ? 1 : 0, $reason]
         );
         return (int) Database::lastInsertId();
     }
@@ -38,16 +38,28 @@ final class BreakRequestModel
 
     public static function listForManager(
         int $tenantId, ?int $branchId = null, ?string $status = null,
-        ?string $from = null, ?string $to = null
+        ?string $from = null, ?string $to = null,
+        ?int $categoryId = null, ?string $search = null
     ): array {
-        $sql = "SELECT br.*, e.name AS employee_name, e.branch_id
+        $sql = "SELECT br.*, e.name AS employee_name, e.branch_id,
+                       a.name AS decided_by_name
                 FROM break_requests br
                 JOIN employees e ON e.id = br.employee_id
+                LEFT JOIN admins a ON a.id = br.decided_by
                 WHERE br.tenant_id = ?";
         $params = [$tenantId];
         if ($branchId !== null) {
             $sql .= " AND e.branch_id = ?";
             $params[] = $branchId;
+        }
+        if ($categoryId !== null) {
+            $sql .= " AND EXISTS (SELECT 1 FROM employee_category_assignments eca
+                                  WHERE eca.employee_id = e.id AND eca.category_id = ?)";
+            $params[] = $categoryId;
+        }
+        if ($search !== null && $search !== '') {
+            $sql .= " AND e.name LIKE ?";
+            $params[] = '%' . $search . '%';
         }
         if ($status !== null) {
             $sql .= " AND br.status = ?";
@@ -61,8 +73,20 @@ final class BreakRequestModel
             $sql .= " AND br.date <= ?";
             $params[] = $to;
         }
-        $sql .= " ORDER BY br.date DESC, br.start_time DESC, br.id DESC";
+        // Newest-submitted first: order by when the request was added.
+        $sql .= " ORDER BY br.created_at DESC, br.id DESC";
         return Database::fetchAll($sql, $params);
+    }
+
+    /** Count of still-pending permission requests for the tenant. */
+    public static function countPending(int $tenantId): int
+    {
+        $row = Database::fetchOne(
+            "SELECT COUNT(*) AS c FROM break_requests
+             WHERE tenant_id = ? AND status = 'pending'",
+            [$tenantId]
+        );
+        return (int) ($row['c'] ?? 0);
     }
 
     public static function approve(
@@ -78,18 +102,18 @@ final class BreakRequestModel
     }
 
     /**
-     * Approved early-leave permissions flagged for hourly deduction, within a
-     * date window. Used by the payroll calculator to subtract the early-leave
+     * Approved permissions (any type) flagged for hourly deduction, within a
+     * date window. Used by the payroll calculator to subtract the permission
      * hours from the salary.
      */
-    public static function approvedEarlyLeaveDeductions(
+    public static function approvedHourlyDeductions(
         int $employeeId, int $tenantId, string $from, string $to
     ): array {
         return Database::fetchAll(
-            "SELECT id, date, start_time, end_time, duration_minutes
+            "SELECT id, date, start_time, end_time, duration_minutes, type
              FROM break_requests
              WHERE employee_id = ? AND tenant_id = ?
-               AND type = 'early_leave' AND status = 'approved'
+               AND status = 'approved'
                AND deduct_from_salary = 1
                AND date >= ? AND date <= ?
              ORDER BY date ASC, start_time ASC",
@@ -127,6 +151,47 @@ final class BreakRequestModel
              WHERE id = ? AND employee_id = ? AND tenant_id = ? AND status = 'pending'",
             [$id, $employeeId, $tenantId]
         );
+    }
+
+    /**
+     * Auto-cancel still-pending permissions for an employee once they check out:
+     * any request whose day is today or earlier can no longer be acted on, so it
+     * is cancelled to avoid being approved after the shift has ended.
+     * Returns the number of cancelled requests.
+     */
+    public static function cancelPendingOnCheckOut(int $employeeId, int $tenantId): int
+    {
+        return Database::execute(
+            "UPDATE break_requests
+                SET status = 'cancelled',
+                    decision_note = 'أُلغي تلقائياً بعد تسجيل الانصراف'
+             WHERE employee_id = ? AND tenant_id = ?
+               AND status = 'pending'
+               AND `date` <= CURDATE()",
+            [$employeeId, $tenantId]
+        );
+    }
+
+    /**
+     * Auto-cancel any pending permission whose window (date + end_time) has
+     * already passed. A request can't logically stay "pending" after its time
+     * is gone, so it's cancelled before the list is shown. Pass an employee id
+     * to scope it; otherwise the whole tenant is swept. Returns rows affected.
+     */
+    public static function expirePastPending(int $tenantId, ?int $employeeId = null): int
+    {
+        $sql = "UPDATE break_requests
+                   SET status = 'cancelled',
+                       decision_note = 'انتهى وقت الإذن قبل البتّ فيه'
+                 WHERE tenant_id = ?
+                   AND status = 'pending'
+                   AND TIMESTAMP(`date`, end_time) < NOW()";
+        $params = [$tenantId];
+        if ($employeeId !== null) {
+            $sql .= " AND employee_id = ?";
+            $params[] = $employeeId;
+        }
+        return Database::execute($sql, $params);
     }
 
     public static function hasOverlap(

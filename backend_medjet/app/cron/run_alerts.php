@@ -158,7 +158,7 @@ function _checkMissingCheckout(int $tenantId, string $today, array &$counts): vo
 
 function _checkDocumentExpiry(int $tenantId, array &$counts): void
 {
-    $documents = DocumentModel::getExpiringSoon($tenantId, 30);
+    $documents = DocumentModel::getDueForNotification($tenantId);
 
     foreach ($documents as $doc) {
         $employeeName = $doc['employee_name'];

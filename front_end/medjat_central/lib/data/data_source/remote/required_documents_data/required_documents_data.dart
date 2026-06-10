@@ -24,4 +24,9 @@ class RequiredDocumentsData {
   Future<Map<String, dynamic>> toggleRequired(int id) async {
     return await _crud.postData(AppLinks.documentToggleRequired, {'id': id});
   }
+
+  Future<Map<String, dynamic>> getSubmissions(int requiredDocumentId) async {
+    return await _crud
+        .getData(AppLinks.documentRequiredSubmissions(requiredDocumentId));
+  }
 }

@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constant/theme/theme.dart';
 import '../../../core/constant/routes/app_routes.dart';
+import '../../../logic/controller/auth/auth_controller.dart';
 
 class CompanySettingsHubScreen extends StatelessWidget {
   const CompanySettingsHubScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final auth = Get.find<AuthController>();
     return Scaffold(
       appBar: AppBar(title: Text('company_settings'.tr)),
       body: ListView(
@@ -62,16 +64,37 @@ class CompanySettingsHubScreen extends StatelessWidget {
             subtitle: 'team_and_permissions_subtitle'.tr,
             onTap: () => Get.toNamed<void>(AppRoutes.team),
           ),
-          const SizedBox(height: AppSpacing.s2),
-          _HubTile(
-            icon: Icons.workspace_premium_outlined,
-            title: 'subscription'.tr,
-            subtitle: 'coming_soon'.tr,
-            onTap: () {
-              Get.snackbar('coming_soon'.tr, '',
-                  snackPosition: SnackPosition.BOTTOM);
-            },
-          ),
+          if (auth.user?.canManageEmployees == true ||
+              auth.user?.canManagePayroll == true ||
+              auth.user?.canManageBranches == true) ...[
+            const SizedBox(height: AppSpacing.s5),
+            _HubSectionHeader(title: 'company_operations_structure'.tr),
+            if (auth.user?.canManageEmployees == true) ...[
+              _HubTile(
+                icon: Icons.schedule_outlined,
+                title: 'shifts'.tr,
+                subtitle: 'shifts_subtitle'.tr,
+                onTap: () => Get.toNamed<void>(AppRoutes.shifts),
+              ),
+              const SizedBox(height: AppSpacing.s2),
+            ],
+            if (auth.user?.canManagePayroll == true) ...[
+              _HubTile(
+                icon: Icons.upload_file_outlined,
+                title: 'export_templates'.tr,
+                subtitle: 'export_templates_subtitle'.tr,
+                onTap: () => Get.toNamed<void>(AppRoutes.exportTemplates),
+              ),
+              const SizedBox(height: AppSpacing.s2),
+            ],
+            if (auth.user?.canManageBranches == true)
+              _HubTile(
+                icon: Icons.account_tree_outlined,
+                title: 'branches'.tr,
+                subtitle: 'branches_subtitle'.tr,
+                onTap: () => Get.toNamed<void>(AppRoutes.branchManage),
+              ),
+          ],
         ],
       ),
     );

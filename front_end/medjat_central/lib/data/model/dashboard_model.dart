@@ -10,6 +10,7 @@ class DashboardModel {
   final int pendingLeaves;
   final int pendingLetters;
   final int pendingLoans;
+  final int pendingBreaks;
   final int assetsToReturn;
   final int pendingExpenses;
   final double monthlyExpenses;
@@ -29,6 +30,7 @@ class DashboardModel {
     this.pendingLeaves = 0,
     this.pendingLetters = 0,
     this.pendingLoans = 0,
+    this.pendingBreaks = 0,
     this.assetsToReturn = 0,
     this.pendingExpenses = 0,
     this.monthlyExpenses = 0,
@@ -50,6 +52,7 @@ class DashboardModel {
       pendingLeaves: (json['pending_leaves'] as num?)?.toInt() ?? 0,
       pendingLetters: (json['pending_letters'] as num?)?.toInt() ?? 0,
       pendingLoans: (json['pending_loans'] as num?)?.toInt() ?? 0,
+      pendingBreaks: (json['pending_breaks'] as num?)?.toInt() ?? 0,
       assetsToReturn: (json['assets_to_return'] as num?)?.toInt() ?? 0,
       pendingExpenses: (json['pending_expenses'] as num?)?.toInt() ?? 0,
       monthlyExpenses: (json['monthly_expenses'] as num?)?.toDouble() ?? 0,

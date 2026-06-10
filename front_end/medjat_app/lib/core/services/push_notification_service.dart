@@ -10,6 +10,7 @@ import '../constant/id/app_links.dart';
 import '../constant/routes/app_routes.dart';
 import '../class/crud.dart';
 import '../services/token_storage_service.dart';
+import 'local_notifications_service.dart';
 
 class PushNotificationService {
   PushNotificationService._();
@@ -22,18 +23,19 @@ class PushNotificationService {
     try {
       final messaging = FirebaseMessaging.instance;
 
-      final settings = await messaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
+      // Attach listeners and register the token first so push delivery works
+      // even if the permission prompt or local-notification setup fails.
+      _setupListeners();
 
-      if (settings.authorizationStatus == AuthorizationStatus.denied) {
-        debugPrint('PushNotificationService: permission denied');
-        return;
+      try {
+        await LocalNotificationsService.init();
+        LocalNotificationsService.onTap = _routeByType;
+      } catch (e) {
+        debugPrint('LocalNotifications init error: $e');
       }
 
-      _setupListeners();
+      await messaging.requestPermission(alert: true, badge: true, sound: true);
+
       await registerTokenNow();
     } catch (e) {
       debugPrint('PushNotificationService enableForUser error: $e');
@@ -103,19 +105,21 @@ class PushNotificationService {
 
   static void _onForegroundMessage(RemoteMessage message) {
     final notification = message.notification;
-    if (notification == null) return;
+    final title = notification?.title ?? message.data['title']?.toString();
+    final body = notification?.body ?? message.data['body']?.toString();
+    if ((title == null || title.isEmpty) && (body == null || body.isEmpty)) {
+      return;
+    }
 
-    Get.snackbar(
-      notification.title ?? '',
-      notification.body ?? '',
-      snackPosition: SnackPosition.TOP,
-      duration: const Duration(seconds: 5),
-      margin: const EdgeInsets.all(12),
-    );
+    // Show a real system notification (tray + sound) even while the app is open.
+    LocalNotificationsService.show(title, body, message.data);
   }
 
   static void _handleMessageTap(RemoteMessage message) {
-    final data = message.data;
+    _routeByType(message.data);
+  }
+
+  static void _routeByType(Map<String, dynamic> data) {
     final type = data['type']?.toString() ?? '';
 
     switch (type) {
@@ -123,6 +127,11 @@ class PushNotificationService {
       case 'leave_approved':
       case 'leave_rejected':
         Get.toNamed<void>(AppRoutes.leaves);
+        break;
+      case 'break':
+      case 'break_approved':
+      case 'break_rejected':
+        Get.toNamed<void>(AppRoutes.breaks);
         break;
       case 'payroll':
       case 'payroll_approved':

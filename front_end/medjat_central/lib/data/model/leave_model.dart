@@ -10,6 +10,13 @@ class LeaveModel {
   final String? reason;
   final String? rejectionReason;
   final String status;
+  final String? approvedByName;
+  final DateTime? approvedAt;
+  final String? rejectedByName;
+  final int? branchId;
+  final String? branchName;
+  final List<int> categoryIds;
+  final DateTime? createdAt;
 
   LeaveModel({
     required this.id,
@@ -21,6 +28,13 @@ class LeaveModel {
     this.reason,
     this.rejectionReason,
     this.status = 'pending',
+    this.approvedByName,
+    this.approvedAt,
+    this.rejectedByName,
+    this.branchId,
+    this.branchName,
+    this.categoryIds = const [],
+    this.createdAt,
   });
 
   factory LeaveModel.fromJson(Map<String, dynamic> json) {
@@ -37,7 +51,28 @@ class LeaveModel {
       reason: json['reason'] as String?,
       rejectionReason: json['rejection_reason'] as String?,
       status: (json['status'] as String?) ?? 'pending',
+      approvedByName: json['approved_by_name'] as String?,
+      approvedAt: json['approved_at'] != null
+          ? DateTime.tryParse(json['approved_at'] as String)
+          : null,
+      rejectedByName: json['rejected_by_name'] as String?,
+      branchId: json['branch_id'] as int?,
+      branchName: json['branch_name'] as String?,
+      categoryIds: _parseCategoryIds(json['category_ids']),
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'] as String)
+          : null,
     );
+  }
+
+  static List<int> _parseCategoryIds(dynamic raw) {
+    if (raw == null) return const [];
+    return raw
+        .toString()
+        .split(',')
+        .map((s) => int.tryParse(s.trim()))
+        .whereType<int>()
+        .toList();
   }
 
   String get typeLabel {

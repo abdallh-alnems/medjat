@@ -32,13 +32,12 @@ $scopeType = $input['scope_type'] ?? '';
 $scopeId = (int) ($input['scope_id'] ?? 0);
 $amount = (float) ($input['amount'] ?? 0);
 $amountType = $input['amount_type'] ?? 'fixed';
-$reason = $input['reason'] ?? null;
+$reason = trim((string) ($input['reason'] ?? ''));
 
 Validator::required($kind, 'kind');
 Validator::required($scopeType, 'scope_type');
 Validator::required($scopeId, 'scope_id');
 Validator::required($amount, 'amount');
-Validator::required($reason, 'reason');
 
 if (!in_array($kind, ['bonus', 'deduction'], true)) {
     Response::error('Invalid kind', 422);

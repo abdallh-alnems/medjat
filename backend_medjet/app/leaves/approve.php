@@ -9,11 +9,13 @@ $tenantId = TenantMiddleware::requireTenant();
 PermissionMiddleware::check($auth, 'manage_leaves');
 
 $input = $auth['input'];
-$leaveId = (int) ($input['leave_id'] ?? 0);
+$leaveId = (int) ($input['leave_id'] ?? $_GET['id'] ?? 0);
 Validator::required($leaveId, 'leave_id');
 
+// A manager approving directly from the leave screen overrides any pending
+// multi-level approval chain: cancel the open request, then approve.
 if (ApprovalEngine::isPending($tenantId, 'leave', $leaveId)) {
-    Response::fail('This leave is managed by a multi-level approval chain. Use approvals/decide.', 409);
+    ApprovalEngine::cancelFor($tenantId, 'leave', $leaveId);
 }
 
 LeaveModel::approve($leaveId, $tenantId, $auth['admin_id']);
@@ -28,8 +30,15 @@ try {
     if ($leave) {
         Database::execute(
             "INSERT INTO notifications (tenant_id, employee_id, type, title, title_ar, body, body_ar, data, sent_via, created_at)
-             VALUES (?, ?, 'leave', 'Leave Approved', 'تم قبول الإجازة', 'Your leave request has been approved.', 'تم قبول طلب الإجازة الخاص بك.', ?, 'in_app', NOW())",
+             VALUES (?, ?, 'leave', 'Leave Approved', 'تم قبول الإجازة', 'Your leave request has been approved.', 'تم قبول طلب الإجازة الخاص بك.', ?, 'push,in_app', NOW())",
             [$tenantId, $leave['employee_id'], json_encode(['leave_id' => $leaveId, 'action' => 'approve'])]
+        );
+
+        NotificationService::sendToEmployee(
+            (int) $leave['employee_id'],
+            'تم قبول الإجازة',
+            'تم قبول طلب الإجازة الخاص بك.',
+            ['leave_id' => (string) $leaveId, 'action' => 'approve', 'type' => 'leave']
         );
     }
 } catch (Exception $e) {

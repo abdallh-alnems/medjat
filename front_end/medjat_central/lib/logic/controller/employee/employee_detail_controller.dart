@@ -1,5 +1,10 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/class/crud.dart';
@@ -826,6 +831,94 @@ class EmployeeDetailController extends GetxController {
     }
   }
 
+  Future<void> verifyDocument(int docId) async {
+    final response = await _documentData.verifyDocument(docId);
+    if (response['status'] == StatusRequest.success) {
+      Get.snackbar('done'.tr, 'document_verified'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      await loadDocuments();
+    } else {
+      Get.snackbar('error'.tr, 'error'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  Future<void> rejectDocument(int docId, String reason) async {
+    final response = await _documentData.rejectDocument(docId, reason);
+    if (response['status'] == StatusRequest.success) {
+      Get.snackbar('done'.tr, 'document_rejected'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      await loadDocuments();
+    } else {
+      Get.snackbar('error'.tr, 'error'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  // Id of the document currently being downloaded (for a spinner / disabling).
+  int? openingDocId;
+
+  /// Downloads the document file via an authenticated request and opens it in
+  /// the device's default viewer (image/PDF) so the admin can review it.
+  Future<void> openDocument(int docId,
+      {String? mimeType, String? originalName}) async {
+    openingDocId = docId;
+    update();
+    try {
+      final response = await _documentData.downloadFile(docId);
+      final bytes = response['bytes'];
+
+      if (response['status'] == StatusRequest.offline) {
+        Get.snackbar('error'.tr, 'offline_error'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+      if (response['status'] != StatusRequest.success || bytes is! List<int>) {
+        final code = response['statusCode'];
+        final err = response['error'];
+        Get.snackbar(
+            'error'.tr,
+            '${'document_open_failed'.tr}'
+            '${code != null ? ' ($code)' : ''}'
+            '${err != null ? '\n$err' : ''}',
+            snackPosition: SnackPosition.BOTTOM,
+            duration: const Duration(seconds: 6));
+        return;
+      }
+
+      final data = Uint8List.fromList(bytes);
+      final lowerName = (originalName ?? '').toLowerCase();
+      final isPdf = (mimeType?.contains('pdf') ?? false) ||
+          lowerName.endsWith('.pdf');
+
+      if (!isPdf) {
+        // Images: preview in-app from memory (no temp file, no native plugin).
+        Get.dialog<void>(
+          _ImagePreviewDialog(bytes: data),
+          barrierColor: Colors.black87,
+        );
+        return;
+      }
+
+      // PDFs: write to a temp file and open with the device viewer.
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/doc_$docId.pdf');
+      await file.writeAsBytes(data, flush: true);
+      final result = await OpenFilex.open(file.path);
+      if (result.type != ResultType.done) {
+        Get.snackbar('error'.tr,
+            '${'document_open_failed'.tr} (${result.message})',
+            snackPosition: SnackPosition.BOTTOM);
+      }
+    } catch (e) {
+      Get.snackbar('error'.tr, '${'document_open_failed'.tr}: $e',
+          snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      openingDocId = null;
+      update();
+    }
+  }
+
   bool get canManagePayroll {
     try {
       final auth = Get.find<AuthController>();
@@ -1369,5 +1462,40 @@ class EmployeeDetailController extends GetxController {
       Get.snackbar('error'.tr, 'review_delete_failed'.tr,
           snackPosition: SnackPosition.BOTTOM);
     }
+  }
+}
+
+/// Fullscreen, zoomable in-app preview for an image document (no temp file or
+/// native viewer needed — renders the downloaded bytes directly).
+class _ImagePreviewDialog extends StatelessWidget {
+  final Uint8List bytes;
+  const _ImagePreviewDialog({required this.bytes});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(12),
+      child: Stack(
+        alignment: Alignment.topRight,
+        children: [
+          InteractiveViewer(
+            minScale: 0.5,
+            maxScale: 5,
+            child: Center(
+              child: Image.memory(bytes, fit: BoxFit.contain),
+            ),
+          ),
+          Material(
+            color: Colors.black54,
+            shape: const CircleBorder(),
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () => Get.back<void>(),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

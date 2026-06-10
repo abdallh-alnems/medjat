@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import '../../constant/theme/app_colors.dart';
 import '../../constant/theme/app_spacing.dart';
 
@@ -15,6 +16,8 @@ class PrimaryInput extends StatelessWidget {
   final bool enabled;
   final int maxLines;
   final List<TextInputFormatter>? inputFormatters;
+  // Shows an "optional" tag next to the label for non-required fields.
+  final bool optional;
 
   const PrimaryInput({
     super.key,
@@ -29,6 +32,7 @@ class PrimaryInput extends StatelessWidget {
     this.enabled = true,
     this.maxLines = 1,
     this.inputFormatters,
+    this.optional = false,
   });
 
   @override
@@ -41,15 +45,33 @@ class PrimaryInput extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.s2),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'IBM Plex Sans Arabic',
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.04,
-              color: colors.textSecondary,
-            ),
+          child: Row(
+            children: [
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.04,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ),
+              if (optional) ...[
+                const SizedBox(width: AppSpacing.s1),
+                Text(
+                  '(${'optional'.tr})',
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                    color: colors.textTertiary,
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
         TextFormField(
@@ -61,7 +83,8 @@ class PrimaryInput extends StatelessWidget {
           enabled: enabled,
           maxLines: maxLines,
           inputFormatters: inputFormatters,
-          textDirection: keyboardType == TextInputType.emailAddress ||
+          textDirection:
+              keyboardType == TextInputType.emailAddress ||
                   keyboardType == TextInputType.number
               ? TextDirection.ltr
               : TextDirection.rtl,
@@ -72,10 +95,7 @@ class PrimaryInput extends StatelessWidget {
             fontSize: 16,
             color: colors.textPrimary,
           ),
-          decoration: InputDecoration(
-            hintText: hint,
-            suffixIcon: suffixIcon,
-          ),
+          decoration: InputDecoration(hintText: hint, suffixIcon: suffixIcon),
         ),
       ],
     );

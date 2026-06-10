@@ -1,5 +1,10 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../core/class/status_request.dart';
 import '../../../data/data_source/remote/document_data/document_data.dart';
 import '../../../data/data_source/remote/required_documents_data/required_documents_data.dart';
@@ -181,5 +186,97 @@ class EmployeeDocumentsController extends GetxController {
       Get.snackbar('error'.tr, 'error'.tr,
           snackPosition: SnackPosition.BOTTOM);
     }
+  }
+
+  // Id of the document currently being downloaded (for a spinner / disabling).
+  int? openingDocId;
+
+  /// Downloads the document file via an authenticated request and opens it in
+  /// the device's default viewer (image/PDF), so the admin can review it
+  /// before approving.
+  Future<void> openDocument(int docId,
+      {String? mimeType, String? originalName}) async {
+    openingDocId = docId;
+    update();
+
+    final response = await _documentData.downloadFile(docId);
+    final bytes = response['bytes'];
+
+    openingDocId = null;
+    update();
+
+    if (response['status'] != StatusRequest.success || bytes is! List<int>) {
+      Get.snackbar('error'.tr, 'document_open_failed'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+
+    final data = Uint8List.fromList(bytes);
+
+    // Employee self-submissions often have no stored mime_type / original_name,
+    // so decide PDF-vs-image from the metadata first, then the file signature.
+    final lowerName = (originalName ?? '').toLowerCase();
+    final isPdf = (mimeType?.contains('pdf') ?? false) ||
+        lowerName.endsWith('.pdf') ||
+        (data.length >= 4 &&
+            data[0] == 0x25 &&
+            data[1] == 0x50 &&
+            data[2] == 0x44 &&
+            data[3] == 0x46);
+
+    if (!isPdf) {
+      // Images: preview in-app from memory (no temp file, no external viewer).
+      unawaited(Get.dialog<void>(
+        _ImagePreviewDialog(bytes: data),
+        barrierColor: Colors.black87,
+      ));
+      return;
+    }
+
+    // PDFs: write to a temp file and open with the device's PDF viewer.
+    final dir = await getTemporaryDirectory();
+    final file = File('${dir.path}/doc_$docId.pdf');
+    await file.writeAsBytes(data, flush: true);
+
+    final result = await OpenFilex.open(file.path);
+    if (result.type != ResultType.done) {
+      Get.snackbar('error'.tr, 'document_open_failed'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+}
+
+/// Fullscreen, zoomable in-app preview for an image document — renders the
+/// downloaded bytes directly so no external app is needed.
+class _ImagePreviewDialog extends StatelessWidget {
+  final Uint8List bytes;
+  const _ImagePreviewDialog({required this.bytes});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(12),
+      child: Stack(
+        alignment: Alignment.topRight,
+        children: [
+          InteractiveViewer(
+            minScale: 0.5,
+            maxScale: 5,
+            child: Center(
+              child: Image.memory(bytes, fit: BoxFit.contain),
+            ),
+          ),
+          Material(
+            color: Colors.black54,
+            shape: const CircleBorder(),
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () => Get.back<void>(),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

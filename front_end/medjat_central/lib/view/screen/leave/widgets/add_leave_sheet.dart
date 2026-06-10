@@ -50,7 +50,6 @@ class _AddLeaveSheetState extends State<AddLeaveSheet> {
   String _type = 'annual';
   DateTimeRange? _range;
   String _onExceed = 'split';
-  bool _autoApprove = false;
   bool _submitting = false;
 
   @override
@@ -149,6 +148,7 @@ class _AddLeaveSheetState extends State<AddLeaveSheet> {
     final selected = await Get.bottomSheet<EmployeeModel>(
       _EmployeePicker(employees: _employees),
       isScrollControlled: true,
+      backgroundColor: Colors.transparent,
     );
     if (selected != null) _onEmployeePicked(selected);
   }
@@ -172,7 +172,8 @@ class _AddLeaveSheetState extends State<AddLeaveSheet> {
       startDate: _range!.start,
       endDate: _range!.end,
       reason: _reasonCtrl.text,
-      autoApprove: _autoApprove,
+      // The manager creating the leave is granting it, so it is approved at once.
+      autoApprove: true,
       onExceed: _onExceed,
     );
     if (!mounted) return;
@@ -231,8 +232,6 @@ class _AddLeaveSheetState extends State<AddLeaveSheet> {
                       hint: 'leave_reason'.tr,
                       maxLines: 2,
                     ),
-                    const SizedBox(height: AppSpacing.s4),
-                    _buildAutoApprove(colors),
                     const SizedBox(height: AppSpacing.s5),
                     PrimaryButton(
                       text: 'save'.tr,
@@ -549,35 +548,6 @@ class _AddLeaveSheetState extends State<AddLeaveSheet> {
     );
   }
 
-  Widget _buildAutoApprove(AppColorScheme colors) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.s3, vertical: AppSpacing.s2),
-      decoration: _fieldDecoration(colors),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('leave_auto_approve'.tr,
-                    style: AppTextStyles.body(context)
-                        .copyWith(fontWeight: FontWeight.w600)),
-                Text('leave_auto_approve_hint'.tr,
-                    style: AppTextStyles.sm(context)),
-              ],
-            ),
-          ),
-          Switch.adaptive(
-            value: _autoApprove,
-            activeThumbColor: colors.brand,
-            onChanged: (v) => setState(() => _autoApprove = v),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _sectionLabel(String text, AppColorScheme colors) {
     return Text(text,
         style: TextStyle(
@@ -824,21 +794,33 @@ class _EmployeePickerState extends State<_EmployeePicker> {
                 (e.jobTitle?.toLowerCase().contains(q) ?? false))
             .toList();
 
+    final mq = MediaQuery.of(context);
+    final viewInsets = mq.viewInsets.bottom;
+    // Space available above the keyboard (and system insets), minus our margins.
+    final available = mq.size.height -
+        viewInsets -
+        mq.padding.top -
+        mq.padding.bottom -
+        AppSpacing.s4 * 2;
+    final cap = mq.size.height * 0.7;
+    final sheetHeight = available < cap ? available : cap;
+
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
-        ),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(AppRadius.lg),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      child: Padding(
+        // Lift the card to sit directly on top of the keyboard.
+        padding: EdgeInsets.only(bottom: viewInsets),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.s4),
+            child: Material(
+              color: colors.surface,
+              clipBehavior: Clip.antiAlias,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              child: SizedBox(
+                height: sheetHeight,
+                child: Column(
+                  children: [
             Padding(
               padding: const EdgeInsets.all(AppSpacing.s4),
               child: TextField(
@@ -861,7 +843,7 @@ class _EmployeePickerState extends State<_EmployeePicker> {
                 ),
               ),
             ),
-            Flexible(
+            Expanded(
               child: filtered.isEmpty
                   ? Padding(
                       padding: const EdgeInsets.all(AppSpacing.s5),
@@ -869,7 +851,6 @@ class _EmployeePickerState extends State<_EmployeePicker> {
                           style: AppTextStyles.bodySecondary(context)),
                     )
                   : ListView.separated(
-                      shrinkWrap: true,
                       padding: const EdgeInsets.fromLTRB(
                           AppSpacing.s4, 0, AppSpacing.s4, AppSpacing.s4),
                       itemCount: filtered.length,
@@ -893,7 +874,11 @@ class _EmployeePickerState extends State<_EmployeePicker> {
                       },
                     ),
             ),
-          ],
+            ],
+          ),
+        ),
+      ),
+          ),
         ),
       ),
     );

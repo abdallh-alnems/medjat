@@ -50,6 +50,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "510933674549-qevq705rjpn27qf6a6d4tepd7b9pcra4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.khawarizmie.medjatCentral",
+            "certificate_hash": "a20bb9fc67248328fba0ece6f050aa7c8465019a"
+          }
+        },
+        {
           "client_id": "510933674549-otcm2dholnti3pnq8iuoo2qo2jrh7amj.apps.googleusercontent.com",
           "client_type": 3
         }

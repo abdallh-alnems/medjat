@@ -12,6 +12,16 @@ import '../../../logic/controller/employee/add_employee_controller.dart';
 import '../../../data/model/branch_model.dart';
 import '../../../data/model/employee_category_model.dart';
 
+/// Strips non-digits and the national trunk prefix (leading zeros) from a
+/// locally-typed number so it can be joined to a country code as E.164.
+/// E.g. Egypt "01023809407" + code "20" → "+201023809407" (not "+2001023809407").
+String _nationalDigits(String raw) =>
+    raw.replaceAll(RegExp(r'\D'), '').replaceFirst(RegExp(r'^0+'), '');
+
+/// Builds an E.164 number from a country dial code and a locally-typed number.
+String _toE164(String phoneCode, String raw) =>
+    '+$phoneCode${_nationalDigits(raw)}';
+
 class AddEmployeeScreen extends StatelessWidget {
   const AddEmployeeScreen({super.key});
 
@@ -95,7 +105,12 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
   bool showAllowances = false;
   // Recurring monthly allowances added alongside the salary (housing, transport…).
   final List<_AllowanceDraft> allowanceDrafts = [];
+  // Per-employee document requests: papers requested from THIS employee only.
+  final List<_DocRequestDraft> docRequestDrafts = [];
   final Set<String> weeklyOffDays = {};
+  // A fixed weekly off day is optional — when disabled the employee's rest day
+  // is variable (e.g. set per rotating schedule) and no fixed day is sent.
+  bool enableWeeklyOff = false;
   Country? selectedCountry;
   // Fixed-term (temporary) employment.
   bool isTemporary = false;
@@ -152,8 +167,7 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
     return DateTime(n.year, n.month, n.day);
   }
 
-  bool _isPast(DateTime d) =>
-      DateTime(d.year, d.month, d.day).isBefore(_today);
+  bool _isPast(DateTime d) => DateTime(d.year, d.month, d.day).isBefore(_today);
 
   /// Contract end must be strictly after the start date.
   bool get _contractEndInvalid =>
@@ -164,7 +178,10 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
   String? _expiryWarning(DateTime? date) =>
       date != null && _isPast(date) ? 'date_in_past_warning'.tr : null;
 
-  Future<void> _pickDate(DateTime? current, ValueChanged<DateTime> onPicked) async {
+  Future<void> _pickDate(
+    DateTime? current,
+    ValueChanged<DateTime> onPicked,
+  ) async {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
@@ -197,6 +214,9 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
     for (final d in allowanceDrafts) {
       d.dispose();
     }
+    for (final d in docRequestDrafts) {
+      d.dispose();
+    }
     super.dispose();
   }
 
@@ -227,6 +247,7 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
             PrimaryInput(
               label: 'job_title'.tr,
               controller: jobTitleCtrl,
+              optional: true,
             ),
             if (ctrl.categories.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.s3),
@@ -250,7 +271,8 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.s3),
+                          horizontal: AppSpacing.s3,
+                        ),
                         decoration: BoxDecoration(
                           color: colors.surface,
                           borderRadius: BorderRadius.circular(AppRadius.md),
@@ -259,37 +281,95 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<int?>(
                             value: ctrl.selectedCategoryId,
-                            hint: Text('optional'.tr,
+                            hint: Text(
+                              'optional'.tr,
+                              style: TextStyle(
+                                fontFamily: 'IBM Plex Sans Arabic',
+                                fontSize: 14,
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                            isExpanded: true,
+                            // Allow menu items to grow taller than the default
+                            // 48px so two-line (name + description) items fit.
+                            itemHeight: null,
+                            icon: Icon(
+                              Icons.expand_more,
+                              color: colors.textTertiary,
+                            ),
+                            // Closed button shows only the name (single line),
+                            // while the open menu shows name + description.
+                            selectedItemBuilder: (context) => [
+                              Text(
+                                'select_category'.tr,
                                 style: TextStyle(
                                   fontFamily: 'IBM Plex Sans Arabic',
                                   fontSize: 14,
-                                  color: colors.textSecondary,
-                                )),
-                            isExpanded: true,
-                            icon: Icon(Icons.expand_more,
-                                color: colors.textTertiary),
+                                  color: colors.textTertiary,
+                                ),
+                              ),
+                              ...ctrl.categories.map(
+                                (cat) => Align(
+                                  alignment: AlignmentDirectional.centerStart,
+                                  child: Text(
+                                    cat.name,
+                                    style: const TextStyle(
+                                      fontFamily: 'IBM Plex Sans Arabic',
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                             items: [
                               DropdownMenuItem<int?>(
                                 value: null,
-                                child: Text('none'.tr,
-                                    style: TextStyle(
-                                      fontFamily: 'IBM Plex Sans Arabic',
-                                      fontSize: 14,
-                                      color: colors.textTertiary,
-                                    )),
+                                child: Text(
+                                  'select_category'.tr,
+                                  style: TextStyle(
+                                    fontFamily: 'IBM Plex Sans Arabic',
+                                    fontSize: 14,
+                                    color: colors.textTertiary,
+                                  ),
+                                ),
                               ),
-                              ...ctrl.categories.map((cat) =>
-                                  DropdownMenuItem<int?>(
-                                    value: cat.id,
-                                    child: Text(
-                                      cat.name,
-                                      style: const TextStyle(
-                                        fontFamily: 'IBM Plex Sans Arabic',
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
+                              ...ctrl.categories.map((cat) {
+                                final desc = cat.description?.trim() ?? '';
+                                return DropdownMenuItem<int?>(
+                                  value: cat.id,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        cat.name,
+                                        style: const TextStyle(
+                                          fontFamily: 'IBM Plex Sans Arabic',
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
-                                    ),
-                                  )),
+                                      if (desc.isNotEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 2,
+                                          ),
+                                          child: Text(
+                                            desc,
+                                            style: TextStyle(
+                                              fontFamily:
+                                                  'IBM Plex Sans Arabic',
+                                              fontSize: 12,
+                                              color: colors.textTertiary,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              }),
                             ],
                             onChanged: (v) {
                               ctrl.selectedCategoryId = v;
@@ -307,8 +387,9 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
             PrimaryInput(
               label: 'base_salary'.tr,
               controller: salaryCtrl,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
               ],
@@ -326,6 +407,33 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
               onTap: () => _pickDate(hireDate, (d) => hireDate = d),
               onClear: () => setState(() => hireDate = null),
             ),
+            const SizedBox(height: AppSpacing.s4),
+            _SectionToggle(
+              title: 'weekly_day_off_enable'.tr,
+              enabled: enableWeeklyOff,
+              onToggle: (v) {
+                setState(() {
+                  enableWeeklyOff = v;
+                  if (!v) weeklyOffDays.clear();
+                });
+              },
+            ),
+            if (enableWeeklyOff) ...[
+              const SizedBox(height: AppSpacing.s3),
+              _WeeklyDayOffSelector(
+                selectedDays: weeklyOffDays,
+                daysOfWeek: _daysOfWeek,
+                onToggle: (day) {
+                  setState(() {
+                    if (weeklyOffDays.contains(day)) {
+                      weeklyOffDays.remove(day);
+                    } else {
+                      weeklyOffDays.add(day);
+                    }
+                  });
+                },
+              ),
+            ],
             const SizedBox(height: AppSpacing.s4),
             _SectionToggle(
               title: 'allowances_title'.tr,
@@ -350,8 +458,6 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
                   padding: const EdgeInsets.only(bottom: AppSpacing.s3),
                   child: _AllowanceDraftCard(
                     draft: allowanceDrafts[i],
-                    onTypeChanged: (t) =>
-                        setState(() => allowanceDrafts[i].type = t),
                     onRemove: () => setState(() {
                       allowanceDrafts[i].dispose();
                       allowanceDrafts.removeAt(i);
@@ -377,10 +483,7 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
             ),
             if (showBankInfo) ...[
               const SizedBox(height: AppSpacing.s3),
-              PrimaryInput(
-                label: 'bank_name'.tr,
-                controller: bankNameCtrl,
-              ),
+              PrimaryInput(label: 'bank_name'.tr, controller: bankNameCtrl),
               const SizedBox(height: AppSpacing.s3),
               PrimaryInput(
                 label: 'bank_account_number'.tr,
@@ -408,10 +511,7 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
             ),
             if (showCompliance) ...[
               const SizedBox(height: AppSpacing.s3),
-              PrimaryInput(
-                label: 'national_id'.tr,
-                controller: nationalIdCtrl,
-              ),
+              PrimaryInput(label: 'national_id'.tr, controller: nationalIdCtrl),
               const SizedBox(height: AppSpacing.s3),
               PrimaryInput(
                 label: 'nationality'.tr,
@@ -440,7 +540,8 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
                 label: 'passport_expiry'.tr,
                 date: passportExpiry,
                 warning: _expiryWarning(passportExpiry),
-                onTap: () => _pickDate(passportExpiry, (d) => passportExpiry = d),
+                onTap: () =>
+                    _pickDate(passportExpiry, (d) => passportExpiry = d),
                 onClear: () => setState(() => passportExpiry = null),
               ),
               const SizedBox(height: AppSpacing.s3),
@@ -487,8 +588,43 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
                 date: healthInsuranceExpiry,
                 warning: _expiryWarning(healthInsuranceExpiry),
                 onTap: () => _pickDate(
-                    healthInsuranceExpiry, (d) => healthInsuranceExpiry = d),
+                  healthInsuranceExpiry,
+                  (d) => healthInsuranceExpiry = d,
+                ),
                 onClear: () => setState(() => healthInsuranceExpiry = null),
+              ),
+              // ── Request specific documents from THIS employee ──────
+              const SizedBox(height: AppSpacing.s4),
+              Text(
+                'requested_documents_title'.tr,
+                style: AppTextStyles.bodySecondary(context),
+              ),
+              const SizedBox(height: AppSpacing.s1),
+              Text(
+                'requested_documents_hint'.tr,
+                style: AppTextStyles.sm(context),
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              ...List.generate(docRequestDrafts.length, (i) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.s3),
+                  child: _DocRequestCard(
+                    draft: docRequestDrafts[i],
+                    onRemove: () => setState(() {
+                      docRequestDrafts[i].dispose();
+                      docRequestDrafts.removeAt(i);
+                    }),
+                  ),
+                );
+              }),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton.icon(
+                  onPressed: () =>
+                      setState(() => docRequestDrafts.add(_DocRequestDraft())),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text('requested_documents_add'.tr),
+                ),
               ),
             ],
             const SizedBox(height: AppSpacing.s4),
@@ -507,7 +643,8 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
               _DateFieldTile(
                 label: 'employment_start'.tr,
                 date: tempStart ?? _today,
-                onTap: () => _pickDate(tempStart ?? _today, (d) => tempStart = d),
+                onTap: () =>
+                    _pickDate(tempStart ?? _today, (d) => tempStart = d),
                 onClear: () => setState(() => tempStart = null),
               ),
               const SizedBox(height: AppSpacing.s3),
@@ -519,9 +656,7 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
                       label: 'employment_duration'.tr,
                       controller: tempDurationCtrl,
                       keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       onChanged: (_) => setState(() {}),
                     ),
                   ),
@@ -540,8 +675,11 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
                 const SizedBox(height: AppSpacing.s2),
                 Row(
                   children: [
-                    Icon(Icons.event_available,
-                        size: 16, color: AppColors.of(context).brand),
+                    Icon(
+                      Icons.event_available,
+                      size: 16,
+                      color: AppColors.of(context).brand,
+                    ),
                     const SizedBox(width: AppSpacing.s1),
                     Text(
                       '${'employment_ends_on'.tr}: ${_fmtDate(_tempEndDate!)} — ${_weekdayName(_tempEndDate!)}',
@@ -575,8 +713,7 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
             GetBuilder<AddEmployeeController>(
               builder: (_) {
                 final hasShifts = ctrl.shifts.isNotEmpty;
-                final usingShift =
-                    hasShifts && ctrl.selectedShiftId != null;
+                final usingShift = hasShifts && ctrl.selectedShiftId != null;
                 return Text(
                   hasShifts ? 'shift'.tr : 'employee_schedule'.tr,
                   style: AppTextStyles.h3(context),
@@ -594,7 +731,8 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.s3),
+                        horizontal: AppSpacing.s3,
+                      ),
                       decoration: BoxDecoration(
                         color: colors.surface,
                         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -603,27 +741,33 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<int?>(
                           value: ctrl.selectedShiftId,
-                          hint: Text('select_shift'.tr,
-                              style: TextStyle(
-                                fontFamily: 'IBM Plex Sans Arabic',
-                                fontSize: 14,
-                                color: colors.textSecondary,
-                              )),
+                          hint: Text(
+                            'select_shift'.tr,
+                            style: TextStyle(
+                              fontFamily: 'IBM Plex Sans Arabic',
+                              fontSize: 14,
+                              color: colors.textSecondary,
+                            ),
+                          ),
                           isExpanded: true,
-                          icon: Icon(Icons.expand_more,
-                              color: colors.textTertiary),
+                          icon: Icon(
+                            Icons.expand_more,
+                            color: colors.textTertiary,
+                          ),
                           items: ctrl.shifts
-                              .map((s) => DropdownMenuItem<int?>(
-                                    value: s.id,
-                                    child: Text(
-                                      '${s.name} (${s.startTime.substring(0, 5)} - ${s.endTime.substring(0, 5)})',
-                                      style: const TextStyle(
-                                        fontFamily: 'IBM Plex Sans Arabic',
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                              .map(
+                                (s) => DropdownMenuItem<int?>(
+                                  value: s.id,
+                                  child: Text(
+                                    '${s.name} (${s.startTime.substring(0, 5)} - ${s.endTime.substring(0, 5)})',
+                                    style: const TextStyle(
+                                      fontFamily: 'IBM Plex Sans Arabic',
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
                                     ),
-                                  ))
+                                  ),
+                                ),
+                              )
                               .toList(),
                           onChanged: (v) {
                             ctrl.selectedShiftId = v;
@@ -636,8 +780,11 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
                       const SizedBox(height: AppSpacing.s2),
                       Row(
                         children: [
-                          Icon(Icons.info_outline,
-                              size: 14, color: colors.textTertiary),
+                          Icon(
+                            Icons.info_outline,
+                            size: 14,
+                            color: colors.textTertiary,
+                          ),
                           const SizedBox(width: AppSpacing.s1),
                           Expanded(
                             child: Text(
@@ -714,27 +861,16 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               hint: 'employee_annual_leave_hint'.tr,
-            ),
-            const SizedBox(height: AppSpacing.s3),
-            _WeeklyDayOffSelector(
-              selectedDays: weeklyOffDays,
-              daysOfWeek: _daysOfWeek,
-              onToggle: (day) {
-                setState(() {
-                  if (weeklyOffDays.contains(day)) {
-                    weeklyOffDays.remove(day);
-                  } else {
-                    weeklyOffDays.add(day);
-                  }
-                });
-              },
+              optional: true,
             ),
             const SizedBox(height: AppSpacing.s6),
-            Obx(() => PrimaryButton(
-                  text: 'add_employee_btn'.tr,
-                  isLoading: ctrl.status.value == StatusRequest.loading,
-                  onPressed: _submit,
-                )),
+            Obx(
+              () => PrimaryButton(
+                text: 'add_employee_btn'.tr,
+                isLoading: ctrl.status.value == StatusRequest.loading,
+                onPressed: _submit,
+              ),
+            ),
             const SizedBox(height: AppSpacing.s5),
           ],
         ),
@@ -745,45 +881,68 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
   void _submit() {
     if (!formKey.currentState!.validate()) return;
     if (ctrl.selectedBranchId == null) {
-      Get.snackbar('error'.tr, 'please_select_branch'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'error'.tr,
+        'please_select_branch'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
     if (_contractEndInvalid) {
-      Get.snackbar('error'.tr, 'contract_end_before_start'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'error'.tr,
+        'contract_end_before_start'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
     if (isTemporary && _tempEndDate == null) {
-      Get.snackbar('error'.tr, 'duration_required'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        'error'.tr,
+        'duration_required'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
       return;
     }
 
-    final usingShift =
-        ctrl.shifts.isNotEmpty && ctrl.selectedShiftId != null;
+    final usingShift = ctrl.shifts.isNotEmpty && ctrl.selectedShiftId != null;
 
-    final phoneE164 = '+${selectedCountry!.phoneCode}${phoneCtrl.text.trim()}';
+    // Phone is optional. When left blank the employee signs in via the
+    // activation link / QR code shown after creation instead of by phone.
+    final phoneE164 =
+        (phoneCtrl.text.trim().isNotEmpty && selectedCountry != null)
+        ? _toE164(selectedCountry!.phoneCode, phoneCtrl.text)
+        : null;
 
     // Collect filled-in allowance rows; the backend defaults each one's start
     // month to the hire month and runs it open-ended.
     final allowancesPayload = <Map<String, dynamic>>[];
     if (showAllowances) {
       for (final d in allowanceDrafts) {
+        final type = d.typeCtrl.text.trim();
         final amount = double.tryParse(d.amountCtrl.text.trim());
-        if (amount == null || amount <= 0) continue;
-        allowancesPayload.add({
-          'type': d.type,
-          'amount': amount,
-          if (d.labelCtrl.text.trim().isNotEmpty)
-            'label': d.labelCtrl.text.trim(),
+        if (type.isEmpty || amount == null || amount <= 0) continue;
+        allowancesPayload.add({'type': type, 'amount': amount});
+      }
+    }
+
+    // Per-employee document requests entered in the official-documents section.
+    final docRequestsPayload = <Map<String, dynamic>>[];
+    if (showCompliance) {
+      for (final d in docRequestDrafts) {
+        final docName = d.nameCtrl.text.trim();
+        if (docName.isEmpty) continue;
+        final note = d.noteCtrl.text.trim();
+        docRequestsPayload.add({
+          'name': docName,
+          if (note.isNotEmpty) 'description': note,
         });
       }
     }
 
     ctrl.createEmployee({
       'name': nameCtrl.text.trim(),
-      'phone': phoneE164,
+      if (phoneE164 != null) 'phone': phoneE164,
       'job_title': jobTitleCtrl.text.trim(),
       'base_salary': double.tryParse(salaryCtrl.text.trim()) ?? 0,
       if (hireDate != null) 'hire_date': _fmtDate(hireDate!),
@@ -811,7 +970,9 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
       if (annualLeaveCtrl.text.trim().isNotEmpty)
         'annual_leave_days': int.tryParse(annualLeaveCtrl.text.trim()),
       if (allowancesPayload.isNotEmpty) 'allowances': allowancesPayload,
-      if (weeklyOffDays.isNotEmpty)
+      if (docRequestsPayload.isNotEmpty)
+        'requested_documents': docRequestsPayload,
+      if (enableWeeklyOff && weeklyOffDays.isNotEmpty)
         'weekly_off_days': weeklyOffDays.toList(),
       if (showCompliance) ...{
         if (nationalIdCtrl.text.trim().isNotEmpty)
@@ -823,7 +984,8 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
         if (iqamaExpiry != null) 'iqama_expiry': _fmtDate(iqamaExpiry!),
         if (passportNumberCtrl.text.trim().isNotEmpty)
           'passport_number': passportNumberCtrl.text.trim(),
-        if (passportExpiry != null) 'passport_expiry': _fmtDate(passportExpiry!),
+        if (passportExpiry != null)
+          'passport_expiry': _fmtDate(passportExpiry!),
         if (workPermitNumberCtrl.text.trim().isNotEmpty)
           'work_permit_number': workPermitNumberCtrl.text.trim(),
         if (workPermitExpiry != null)
@@ -866,8 +1028,11 @@ class _ActivationCodeView extends StatelessWidget {
               color: colors.success.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
-            child: Icon(Icons.check_circle_outline,
-                size: 36, color: colors.success),
+            child: Icon(
+              Icons.check_circle_outline,
+              size: 36,
+              color: colors.success,
+            ),
           ),
           const SizedBox(height: AppSpacing.s5),
           Text('employee_added_success'.tr, style: AppTextStyles.h2(context)),
@@ -902,8 +1067,7 @@ class _ActivationCodeView extends StatelessWidget {
           // ── Login phone ──────────────────────────────────────
           if (phone != null && phone.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.s5),
-            Text('login_phone'.tr,
-                style: AppTextStyles.bodySecondary(context)),
+            Text('login_phone'.tr, style: AppTextStyles.bodySecondary(context)),
             const SizedBox(height: AppSpacing.s2),
             Container(
               width: double.infinity,
@@ -938,8 +1102,10 @@ class _ActivationCodeView extends StatelessWidget {
 
           // ── Activation code ──────────────────────────────────
           const SizedBox(height: AppSpacing.s5),
-          Text('activation_code'.tr,
-              style: AppTextStyles.bodySecondary(context)),
+          Text(
+            'activation_code'.tr,
+            style: AppTextStyles.bodySecondary(context),
+          ),
           const SizedBox(height: AppSpacing.s3),
           Container(
             padding: const EdgeInsets.symmetric(
@@ -977,8 +1143,7 @@ class _ActivationCodeView extends StatelessWidget {
             alignment: WrapAlignment.center,
             children: [
               OutlinedButton.icon(
-                onPressed: () =>
-                    _copy(ctrl.activationCode, 'code_copied'.tr),
+                onPressed: () => _copy(ctrl.activationCode, 'code_copied'.tr),
                 icon: const Icon(Icons.copy, size: 18),
                 label: Text('copy_code'.tr),
               ),
@@ -1036,16 +1201,35 @@ class _PhoneField extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.s2),
-          child: Text(
-            'phone_number'.tr,
-            style: TextStyle(
-              fontFamily: 'IBM Plex Sans Arabic',
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: colors.textSecondary,
-            ),
+          child: Row(
+            children: [
+              Text(
+                'phone_number'.tr,
+                style: TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: colors.textSecondary,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s1),
+              Text(
+                '(${'optional'.tr})',
+                style: TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w400,
+                  color: colors.textTertiary,
+                ),
+              ),
+            ],
           ),
         ),
+        // Two separate cards: the country selector on the left and the phone
+        // field on the right. Top-aligned so a validation error growing under
+        // the phone field never stretches the country card. The country card's
+        // height comes from its padding (matching the field) — not a fixed
+        // height — so the two boxes line up at rest.
         Row(
           textDirection: TextDirection.ltr,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1054,9 +1238,10 @@ class _PhoneField extends StatelessWidget {
               onTap: onPickCountry,
               borderRadius: BorderRadius.circular(AppRadius.md),
               child: Container(
-                height: 56,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: AppSpacing.s3),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s3,
+                  vertical: 13,
+                ),
                 decoration: BoxDecoration(
                   color: colors.surface,
                   borderRadius: BorderRadius.circular(AppRadius.md),
@@ -1073,12 +1258,17 @@ class _PhoneField extends StatelessWidget {
                         fontFamily: 'Geist',
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color:
-                            hasCountry ? colors.textPrimary : colors.textTertiary,
+                        color: hasCountry
+                            ? colors.textPrimary
+                            : colors.textTertiary,
                       ),
                     ),
                     const SizedBox(width: AppSpacing.s1),
-                    Icon(Icons.expand_more, size: 18, color: colors.textTertiary),
+                    Icon(
+                      Icons.expand_more,
+                      size: 18,
+                      color: colors.textTertiary,
+                    ),
                   ],
                 ),
               ),
@@ -1100,12 +1290,13 @@ class _PhoneField extends StatelessWidget {
                 ),
                 decoration: InputDecoration(hintText: 'phone_number_hint'.tr),
                 validator: (v) {
-                  if (country == null) return 'country_required'.tr;
                   final n = (v ?? '').trim();
-                  if (n.isEmpty) return 'phone_required'.tr;
-                  // National number digits + country code must form a valid
-                  // E.164 number (8–15 digits total).
-                  final full = '${country!.phoneCode}$n';
+                  // Phone is optional — blank is valid (sign-in via link/QR).
+                  if (n.isEmpty) return null;
+                  // Once a number is typed, a country code is required to build
+                  // a valid E.164 number (8–15 digits total).
+                  if (country == null) return 'country_required'.tr;
+                  final full = '${country!.phoneCode}${_nationalDigits(n)}';
                   if (!RegExp(r'^[1-9]\d{7,14}$').hasMatch(full)) {
                     return 'phone_invalid'.tr;
                   }
@@ -1227,8 +1418,11 @@ class _DateFieldTile extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(Icons.event_outlined,
-                    size: 20, color: colors.textSecondary),
+                Icon(
+                  Icons.event_outlined,
+                  size: 20,
+                  color: colors.textSecondary,
+                ),
                 const SizedBox(width: AppSpacing.s3),
                 Expanded(
                   child: Text(
@@ -1254,8 +1448,11 @@ class _DateFieldTile extends StatelessWidget {
                     visualDensity: VisualDensity.compact,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
-                    icon: Icon(Icons.close,
-                        size: 18, color: colors.textTertiary),
+                    icon: Icon(
+                      Icons.close,
+                      size: 18,
+                      color: colors.textTertiary,
+                    ),
                     onPressed: onClear,
                   ),
               ],
@@ -1330,10 +1527,7 @@ class _DurationUnitDropdown extends StatelessWidget {
           initialValue: value,
           isExpanded: true,
           items: units
-              .map((u) => DropdownMenuItem(
-                    value: u,
-                    child: Text('unit_$u'.tr),
-                  ))
+              .map((u) => DropdownMenuItem(value: u, child: Text('unit_$u'.tr)))
               .toList(),
           onChanged: onChanged,
         ),
@@ -1376,10 +1570,10 @@ class _ContractTypeDropdown extends StatelessWidget {
           isExpanded: true,
           decoration: InputDecoration(hintText: 'optional'.tr),
           items: types
-              .map((t) => DropdownMenuItem(
-                    value: t,
-                    child: Text('contract_$t'.tr),
-                  ))
+              .map(
+                (t) =>
+                    DropdownMenuItem(value: t, child: Text('contract_$t'.tr)),
+              )
               .toList(),
           onChanged: onChanged,
         ),
@@ -1473,7 +1667,9 @@ class _NoBranchesView extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () async {
-                  final result = await Get.toNamed<dynamic>(AppRoutes.branchManage);
+                  final result = await Get.toNamed<dynamic>(
+                    AppRoutes.branchManage,
+                  );
                   if (result == true) {
                     Get.find<AddEmployeeController>().loadBranches();
                   }
@@ -1553,38 +1749,38 @@ class _BranchSelector extends StatelessWidget {
 }
 
 /// Mutable draft for one recurring monthly allowance entered on the add-employee
-/// form. The type is a predefined key; amount and an optional custom label are
-/// held in their own controllers. start_month defaults server-side to the hire
-/// month and the allowance runs open-ended.
+/// form. The type is typed in freely (e.g. "housing", "transport", or any
+/// custom name) and amount is held in its own controller. start_month defaults
+/// server-side to the hire month and the allowance runs open-ended.
 class _AllowanceDraft {
-  String type = 'housing';
+  final TextEditingController typeCtrl = TextEditingController();
   final TextEditingController amountCtrl = TextEditingController();
-  final TextEditingController labelCtrl = TextEditingController();
 
   void dispose() {
+    typeCtrl.dispose();
     amountCtrl.dispose();
-    labelCtrl.dispose();
   }
 }
 
-class _AllowanceDraftCard extends StatelessWidget {
-  final _AllowanceDraft draft;
-  final ValueChanged<String> onTypeChanged;
+/// Mutable draft for one document requested from this specific employee. The
+/// name is the paper to provide (e.g. "Driver's license"); an optional note
+/// gives the employee extra context. Submitted as an employee-scoped required
+/// document so only this person is asked for it.
+class _DocRequestDraft {
+  final TextEditingController nameCtrl = TextEditingController();
+  final TextEditingController noteCtrl = TextEditingController();
+
+  void dispose() {
+    nameCtrl.dispose();
+    noteCtrl.dispose();
+  }
+}
+
+class _DocRequestCard extends StatelessWidget {
+  final _DocRequestDraft draft;
   final VoidCallback onRemove;
 
-  const _AllowanceDraftCard({
-    required this.draft,
-    required this.onTypeChanged,
-    required this.onRemove,
-  });
-
-  static const _types = [
-    'housing',
-    'transport',
-    'food',
-    'communication',
-    'other',
-  ];
+  const _DocRequestCard({required this.draft, required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
@@ -1603,21 +1799,63 @@ class _AllowanceDraftCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
-                child: DropdownButtonFormField<String>(
-                  initialValue: draft.type,
-                  isExpanded: true,
+                child: TextFormField(
+                  controller: draft.nameCtrl,
+                  decoration: InputDecoration(
+                    labelText: 'requested_document_name_label'.tr,
+                    hintText: 'requested_document_name_hint'.tr,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: 'delete'.tr,
+                icon: Icon(Icons.delete_outline, color: colors.error),
+                onPressed: onRemove,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s2),
+          TextFormField(
+            controller: draft.noteCtrl,
+            decoration: InputDecoration(
+              labelText: 'requested_document_note_label'.tr,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AllowanceDraftCard extends StatelessWidget {
+  final _AllowanceDraft draft;
+  final VoidCallback onRemove;
+
+  const _AllowanceDraftCard({required this.draft, required this.onRemove});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s3),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: draft.typeCtrl,
                   decoration: InputDecoration(
                     labelText: 'allowance_type_label'.tr,
+                    hintText: 'allowance_type_hint'.tr,
                   ),
-                  items: _types
-                      .map((t) => DropdownMenuItem(
-                            value: t,
-                            child: Text('allowance_type_$t'.tr),
-                          ))
-                      .toList(),
-                  onChanged: (v) {
-                    if (v != null) onTypeChanged(v);
-                  },
                 ),
               ),
               IconButton(
@@ -1637,14 +1875,6 @@ class _AllowanceDraftCard extends StatelessWidget {
             decoration: InputDecoration(
               labelText: 'amount'.tr,
               suffixText: 'currency_egp'.tr,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.s2),
-          TextFormField(
-            controller: draft.labelCtrl,
-            decoration: InputDecoration(
-              labelText: 'allowance_label_label'.tr,
-              hintText: 'allowance_label_hint'.tr,
             ),
           ),
         ],
@@ -1721,8 +1951,9 @@ class _WeeklyDayOffSelector extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: 'IBM Plex Sans Arabic',
                         fontSize: 13,
-                        fontWeight:
-                            selected ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight: selected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                         color: selected ? colors.brand : colors.textPrimary,
                       ),
                     ),

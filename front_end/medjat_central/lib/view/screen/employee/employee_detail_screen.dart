@@ -5402,18 +5402,12 @@ void _showAdjustmentSheet(
                     controller: reasonCtrl,
                     maxLines: 3,
                     decoration: InputDecoration(
-                      labelText: 'reason'.tr,
+                      labelText: 'reason_optional'.tr,
                       hintText: 'enter_reason'.tr,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                     ),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) {
-                        return 'reason_required'.tr;
-                      }
-                      return null;
-                    },
                   ),
                   const SizedBox(height: AppSpacing.s6),
                   SizedBox(
@@ -6674,6 +6668,9 @@ void _showAllowanceSheet(
                               style: TextStyle(color: colors.error)),
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(color: colors.error),
+                            // Theme forces full width (infinite); size to
+                            // content inside this Row.
+                            minimumSize: const Size(0, 44),
                           ),
                         ),
                         const SizedBox(width: AppSpacing.s2),
@@ -7635,10 +7632,16 @@ class _DocumentsTab extends StatelessWidget {
                     ),
                   )
                 else ...[
-                  ...required.map((req) => _RequiredDocTile(
-                        requiredDoc: req,
-                        document: ctrl.documentForRequired(req.id),
-                      )),
+                  ...required.map((req) {
+                    final docForReq = ctrl.documentForRequired(req.id);
+                    return _RequiredDocTile(
+                      requiredDoc: req,
+                      document: docForReq,
+                      onTap: docForReq != null
+                          ? () => _showDocReviewSheet(context, ctrl, docForReq)
+                          : null,
+                    );
+                  }),
                   ...extraDocs.map((doc) => _DocumentTile(
                         document: doc,
                         onDelete: () => ctrl.deleteDocument(doc.id),
@@ -7669,6 +7672,101 @@ class _DocumentsTab extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Bottom sheet shown when tapping an uploaded document in the documents tab:
+/// preview the file, and (for documents awaiting review) approve or reject it.
+void _showDocReviewSheet(
+    BuildContext context, EmployeeDetailController ctrl, DocumentModel doc) {
+  final colors = AppColors.of(context);
+  final hasFile = doc.filePath != null || doc.fileUrl != null;
+  final isUploaded = doc.status == 'uploaded';
+  final isVerified = doc.verifiedAt != null;
+
+  Get.bottomSheet<void>(
+    Material(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      clipBehavior: Clip.antiAlias,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpacing.s4, AppSpacing.s4,
+                  AppSpacing.s4, AppSpacing.s2),
+              child: Text(doc.name, style: AppTextStyles.h3(context)),
+            ),
+            if (hasFile)
+              ListTile(
+                leading: Icon(Icons.visibility_outlined, color: colors.brand),
+                title: Text('view_document'.tr),
+                onTap: () {
+                  Get.back<void>();
+                  ctrl.openDocument(doc.id,
+                      mimeType: doc.mimeType, originalName: doc.originalName);
+                },
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s4, vertical: AppSpacing.s2),
+                child: Text('no_documents'.tr,
+                    style: AppTextStyles.bodySecondary(context)),
+              ),
+            if (isUploaded && !isVerified)
+              ListTile(
+                leading:
+                    Icon(Icons.check_circle_outline, color: colors.success),
+                title: Text('document_verify'.tr),
+                onTap: () {
+                  Get.back<void>();
+                  ctrl.verifyDocument(doc.id);
+                },
+              ),
+            if (isUploaded)
+              ListTile(
+                leading: Icon(Icons.cancel_outlined, color: colors.error),
+                title: Text('document_reject'.tr),
+                onTap: () {
+                  Get.back<void>();
+                  _showDetailRejectDialog(context, ctrl, doc.id);
+                },
+              ),
+            const SizedBox(height: AppSpacing.s2),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+void _showDetailRejectDialog(
+    BuildContext context, EmployeeDetailController ctrl, int docId) {
+  final reasonCtl = TextEditingController();
+  Get.defaultDialog<void>(
+    title: 'document_reject'.tr,
+    content: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s3),
+      child: TextField(
+        controller: reasonCtl,
+        decoration: InputDecoration(
+          labelText: 'rejection_reason'.tr,
+          isDense: true,
+        ),
+        maxLines: 2,
+      ),
+    ),
+    textConfirm: 'reject'.tr,
+    textCancel: 'cancel'.tr,
+    confirmTextColor: Colors.white,
+    buttonColor: AppColors.of(context).error,
+    onConfirm: () {
+      Get.back<void>();
+      ctrl.rejectDocument(docId, reasonCtl.text.trim());
+    },
+  );
 }
 
 /// Bottom sheet to request a document from this employee — either by picking
@@ -7988,18 +8086,28 @@ void _showRequestDocumentSheet(
 class _RequiredDocTile extends StatelessWidget {
   final RequiredDocumentModel requiredDoc;
   final DocumentModel? document;
-  const _RequiredDocTile({required this.requiredDoc, this.document});
+  final VoidCallback? onTap;
+  const _RequiredDocTile({required this.requiredDoc, this.document, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final has = document != null;
     final status = document?.status ?? 'required';
-    final statusColor = has ? _docStatusColor(status, colors) : colors.warning;
+    // An uploaded doc is only "confirmed" once it carries verifiedAt; until
+    // then it still needs review, so reflect that in colour and icon too.
+    final isVerified = status == 'uploaded' && document?.verifiedAt != null;
+    final statusColor = !has
+        ? colors.warning
+        : (status == 'uploaded' && !isVerified
+            ? colors.warning
+            : _docStatusColor(status, colors));
     final statusLabel =
         has ? document!.statusLabel : 'document_missing'.tr;
 
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.s2),
       padding: const EdgeInsets.all(AppSpacing.s3),
       decoration: BoxDecoration(
@@ -8011,9 +8119,11 @@ class _RequiredDocTile extends StatelessWidget {
           Icon(
             !has
                 ? Icons.error_outline
-                : (status == 'uploaded'
+                : (isVerified
                     ? Icons.check_circle_outline
-                    : Icons.description_outlined),
+                    : (status == 'uploaded'
+                        ? Icons.hourglass_top
+                        : Icons.description_outlined)),
             size: 22,
             color: statusColor,
           ),
@@ -8062,6 +8172,7 @@ class _RequiredDocTile extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

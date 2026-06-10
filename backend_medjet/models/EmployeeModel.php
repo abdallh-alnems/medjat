@@ -309,11 +309,10 @@ final class EmployeeModel {
     /** Employment statuses that can be filtered on (terminated is hidden by default). */
     public const FILTERABLE_STATUSES = ['active', 'suspended', 'on_leave', 'pending_activation'];
 
-    /** Whitelisted sort keys → safe ORDER BY clause. */
-    private const SORT_CLAUSES = [
-        'name' => 'e.name ASC',
-        'hire_date' => 'e.hire_date DESC, e.name ASC',
-        'status' => 'e.status ASC, e.name ASC',
+    /** Whitelisted sort keys → safe ORDER BY column. Direction is applied separately. */
+    private const SORT_COLUMNS = [
+        'name' => 'e.name',
+        'hire_date' => 'e.hire_date',
     ];
 
     public static function getByTenant(
@@ -326,7 +325,8 @@ final class EmployeeModel {
         string $sort = 'name',
         ?int $shiftId = null,
         ?int $categoryId = null,
-        ?int $expiringWithin = null
+        ?int $expiringWithin = null,
+        string $dir = 'asc'
     ): array {
         $sql = "SELECT e.*, s.start_time AS shift_start, s.end_time AS shift_end,
                        s.name AS shift_name
@@ -382,7 +382,13 @@ final class EmployeeModel {
             $params[] = $searchParam;
         }
 
-        $orderBy = self::SORT_CLAUSES[$sort] ?? self::SORT_CLAUSES['name'];
+        $sortCol = self::SORT_COLUMNS[$sort] ?? self::SORT_COLUMNS['name'];
+        $direction = strtolower($dir) === 'desc' ? 'DESC' : 'ASC';
+        $orderBy = "{$sortCol} {$direction}";
+        // Stable tiebreaker so equal hire dates keep a deterministic order.
+        if ($sort === 'hire_date') {
+            $orderBy .= ", e.name ASC";
+        }
         $offset = ($page - 1) * $limit;
         $sql .= " ORDER BY {$orderBy} LIMIT ? OFFSET ?";
         $params[] = $limit;

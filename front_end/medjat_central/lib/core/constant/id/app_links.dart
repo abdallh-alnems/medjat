@@ -50,12 +50,16 @@ class AppLinks {
       '$base/app/employees/get_documents.php?employee_id=$employeeId&doc_id=$docId';
   static String get employeeDocumentUpload =>
       '$base/app/employees/upload_document.php';
+  static String documentFileView(int docId) =>
+      '$base/app/documents/view.php?id=$docId';
   static String get employeeUpdateDocument =>
       '$base/app/employees/update_document.php';
   static String get employeeVerifyDocument =>
       '$base/app/employees/verify_document.php';
   static String get employeeRejectDocument =>
       '$base/app/employees/reject_document.php';
+  static String get employeeDeleteDocument =>
+      '$base/app/employees/delete_document.php';
   static String get employeeRequestDocument =>
       '$base/app/employees/request_document.php';
   static String employeeMissingDocuments(int id) =>
@@ -85,6 +89,8 @@ class AppLinks {
       '$base/app/documents/toggle_required.php';
   static String get documentMarkExpired =>
       '$base/app/documents/mark_expired.php';
+  static String documentRequiredSubmissions(int requiredDocumentId) =>
+      '$base/app/documents/get_required_submissions.php?required_document_id=$requiredDocumentId';
 
   // ── Document Reports ───────────────────────────────────
   static String get documentReportsExpiringSoon =>
@@ -192,6 +198,8 @@ class AppLinks {
       '$base/app/leaves/approve.php?id=$id';
   static String leaveReject(int id) =>
       '$base/app/leaves/reject.php?id=$id';
+  static String leaveConvertToAbsence(int id) =>
+      '$base/app/leaves/convert_to_absence.php?id=$id';
   static String get leaveCreateRecurring =>
       '$base/app/leaves/create_recurring.php';
   static String get leaveBalance => '$base/app/leaves/get_balance.php';
@@ -200,6 +208,7 @@ class AppLinks {
 
   // ── Breaks / Permissions ───────────────────────────────
   static String get breakRequest   => '$base/app/breaks/request.php';
+  static String get breakCreateFor => '$base/app/breaks/create_for.php';
   static String get breakMyList    => '$base/app/breaks/my_list.php';
   static String get breakCancel    => '$base/app/breaks/cancel.php';
   static String get breakList      => '$base/app/breaks/list.php';

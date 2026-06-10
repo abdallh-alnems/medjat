@@ -94,12 +94,6 @@ class StatusEmployeesScreen extends StatelessWidget {
               ),
             ),
           ),
-          GetBuilder<StatusEmployeesController>(
-            builder: (_) {
-              if (ctrl.activeFilterCount == 0) return const SizedBox.shrink();
-              return _ActiveFiltersBar(ctrl: ctrl);
-            },
-          ),
           Expanded(
             child: RefreshIndicator(
               onRefresh: ctrl.loadEmployees,
@@ -509,111 +503,6 @@ class _FilterDropdown<T> extends StatelessWidget {
                 onChanged: onChanged,
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActiveFiltersBar extends StatelessWidget {
-  final StatusEmployeesController ctrl;
-  const _ActiveFiltersBar({required this.ctrl});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final chips = <Widget>[];
-
-    if (ctrl.selectedBranchId != null) {
-      chips.add(_filterChip(
-        context,
-        label: ctrl.branchName(ctrl.selectedBranchId) ?? '',
-        onRemove: () => ctrl.applyFilters(
-          shiftId: ctrl.selectedShiftId,
-          categoryId: ctrl.selectedCategoryId,
-        ),
-      ));
-    }
-    if (ctrl.selectedShiftId != null) {
-      chips.add(_filterChip(
-        context,
-        label: ctrl.shiftName(ctrl.selectedShiftId) ?? '',
-        onRemove: () => ctrl.applyFilters(
-          branchId: ctrl.selectedBranchId,
-          categoryId: ctrl.selectedCategoryId,
-        ),
-      ));
-    }
-    if (ctrl.selectedCategoryId != null) {
-      chips.add(_filterChip(
-        context,
-        label: ctrl.categoryName(ctrl.selectedCategoryId) ?? '',
-        onRemove: () => ctrl.applyFilters(
-          branchId: ctrl.selectedBranchId,
-          shiftId: ctrl.selectedShiftId,
-        ),
-      ));
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
-      child: Wrap(
-        spacing: AppSpacing.s2,
-        runSpacing: AppSpacing.s1,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          ...chips,
-          TextButton(
-            onPressed: ctrl.clearFilters,
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s2),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text('clear_filters'.tr,
-                style: TextStyle(
-                  fontFamily: 'IBM Plex Sans Arabic',
-                  fontSize: 13,
-                  color: colors.textSecondary,
-                )),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _filterChip(
-    BuildContext context, {
-    required String label,
-    required VoidCallback onRemove,
-  }) {
-    final colors = AppColors.of(context);
-    return Container(
-      padding: const EdgeInsets.only(
-          left: AppSpacing.s3, right: AppSpacing.s2, top: 6, bottom: 6),
-      decoration: BoxDecoration(
-        color: colors.brand.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(AppRadius.full),
-        border: Border.all(color: colors.brand.withValues(alpha: 0.30)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'IBM Plex Sans Arabic',
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: colors.brand,
-            ),
-          ),
-          const SizedBox(width: 2),
-          InkWell(
-            onTap: onRemove,
-            borderRadius: BorderRadius.circular(AppRadius.full),
-            child: Icon(Icons.close, size: 14, color: colors.brand),
           ),
         ],
       ),

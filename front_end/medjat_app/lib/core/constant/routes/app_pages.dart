@@ -11,6 +11,7 @@ import '../../../data/data_source/remote/auth_data/auth_data.dart';
 import '../../../data/data_source/remote/profile_data/profile_data.dart';
 import '../../../data/data_source/remote/payroll_data/payroll_data.dart';
 import '../../../data/data_source/remote/leave_data/leave_data.dart';
+import '../../../data/data_source/remote/break_data/break_data.dart';
 import '../../../data/data_source/remote/notification_data/notification_data.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
 import '../../../logic/bindings/home_binding.dart';
@@ -26,6 +27,7 @@ import '../../../view/screen/profile/my_profile_screen.dart';
 import '../../../view/screen/documents/my_documents_screen.dart';
 import '../../../view/screen/payroll/payroll_screen.dart';
 import '../../../view/screen/leave/leave_screen.dart';
+import '../../../view/screen/break/break_screen.dart';
 import '../../../view/screen/notifications/notifications_screen.dart';
 import '../../../view/screen/settings/settings_screen.dart';
 import '../../../view/screen/kiosk/kiosk_pair_screen.dart';
@@ -46,7 +48,10 @@ class AppBindings extends Bindings {
     Get.lazyPut<AuthData>(() => AuthData());
     Get.lazyPut<ProfileData>(() => ProfileData());
     Get.lazyPut<PayrollData>(() => PayrollData());
-    Get.lazyPut<LeaveData>(() => LeaveData());
+    // fenix: recreate on demand — LeaveController is route-scoped and disposing
+    // it would otherwise drop LeaveData, breaking a second visit to /leaves.
+    Get.lazyPut<LeaveData>(() => LeaveData(), fenix: true);
+    Get.lazyPut<BreakData>(() => BreakData(), fenix: true);
     Get.lazyPut<NotificationData>(() => NotificationData());
     Get.put<ConnectivityService>(ConnectivityService(), permanent: true);
     Get.put<LocationService>(LocationService(), permanent: true);
@@ -124,6 +129,10 @@ List<GetPage<dynamic>> getPages = [
   GetPage(
     name: AppRoutes.leaves,
     page: () => const LeaveScreen(),
+  ),
+  GetPage(
+    name: AppRoutes.breaks,
+    page: () => const BreakScreen(),
   ),
   GetPage(
     name: AppRoutes.notifications,

@@ -47,6 +47,7 @@ if ($method === 'GET') {
         'manual_attendance_admin_ids' => $manualAdminIds,
         'allow_offline_attendance' => (bool) ($tenant['allow_offline_attendance'] ?? true),
         'cycle_start_day' => (int) ($tenant['cycle_start_day'] ?? 1),
+        'week_start_day' => (int) ($tenant['week_start_day'] ?? 6),
         'currency' => $tenant['currency'] ?? 'EGP',
         'timezone' => $tenant['timezone'] ?? 'Africa/Cairo',
         'branches' => $branchList,
@@ -147,6 +148,14 @@ if ($method === 'PUT' || $method === 'POST') {
             Response::fail('cycle_start_day must be between 1 and 28', 422);
         }
         $updateData['cycle_start_day'] = $day;
+    }
+
+    if (isset($input['week_start_day'])) {
+        $wday = (int) $input['week_start_day'];
+        if ($wday < 1 || $wday > 7) {
+            Response::fail('week_start_day must be between 1 (Mon) and 7 (Sun)', 422);
+        }
+        $updateData['week_start_day'] = $wday;
     }
 
     if (isset($input['allow_offline_attendance'])) {

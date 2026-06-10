@@ -75,19 +75,20 @@ class AttendancePdfExporter {
     final doc = pw.Document();
     final theme = pw.ThemeData.withFont(base: _regular, bold: _bold);
     final summary = _computeSummary(records);
+    final isRtl = (Get.locale?.languageCode ?? 'ar') == 'ar';
 
     doc.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         theme: theme,
-        textDirection: pw.TextDirection.rtl,
+        textDirection: isRtl ? pw.TextDirection.rtl : pw.TextDirection.ltr,
         margin: const pw.EdgeInsets.all(28),
         header: (ctx) => _header(date),
         footer: (ctx) => _footer(ctx),
         build: (ctx) => [
           _summaryBlock(summary, records.length),
           pw.SizedBox(height: 14),
-          _table(records),
+          _table(records, isRtl),
         ],
       ),
     );
@@ -176,7 +177,7 @@ class AttendancePdfExporter {
     );
   }
 
-  static pw.Widget _table(List<AttendanceRecordModel> records) {
+  static pw.Widget _table(List<AttendanceRecordModel> records, bool isRtl) {
     final headers = [
       '#',
       'name'.tr,
@@ -217,7 +218,7 @@ class AttendancePdfExporter {
       ),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.blueGrey800),
       cellStyle: const pw.TextStyle(fontSize: 9),
-      cellAlignment: pw.Alignment.centerRight,
+      cellAlignment: isRtl ? pw.Alignment.centerRight : pw.Alignment.centerLeft,
       cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
       oddRowDecoration: const pw.BoxDecoration(color: PdfColors.grey50),

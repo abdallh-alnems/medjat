@@ -3,6 +3,7 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="medjat_app"
         android:name="${applicationName}"
@@ -40,6 +41,11 @@
                       android:pathPrefix="/join"/>
             </intent-filter>
         </activity>
+        <!-- Default channel for FCM notifications shown by the OS in the
+             background/terminated state. Matches LocalNotificationsService. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="high_importance_channel" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

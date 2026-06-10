@@ -54,7 +54,8 @@ final class SmartAlertService
                 ]
             );
 
-            NotificationService::sendToUser($adminId, $titleEn, $bodyEn, $notificationData);
+            // The apps are Arabic-first, so push the Arabic copy.
+            NotificationService::sendToUser($adminId, $titleAr, $bodyAr, $notificationData);
         } catch (Throwable $e) {
             error_log('SmartAlertService::dispatch error: ' . $e->getMessage());
         }

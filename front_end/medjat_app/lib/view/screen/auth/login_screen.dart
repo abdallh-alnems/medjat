@@ -13,6 +13,13 @@ import '../../../../core/shared/buttons/primary_button.dart';
 import '../../../../core/shared/input_fields/primary_input.dart';
 import '../../../../logic/controller/auth/auth_controller.dart';
 
+/// Strips non-digits and the national trunk prefix (leading zeros) from a
+/// locally-typed number so it can be joined to a country code as E.164.
+/// E.g. Egypt "01023809407" + code "20" → "+201023809407" (not "+2001023809407").
+String _nationalDigits(String raw) => raw
+    .replaceAll(RegExp(r'\D'), '')
+    .replaceFirst(RegExp(r'^0+'), '');
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -62,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _submit(AuthController controller) {
     if (_formKey.currentState!.validate()) {
-      final national = _phoneController.text.trim();
+      final national = _nationalDigits(_phoneController.text);
       final phoneE164 = '+${_country.phoneCode}$national';
       controller.login(phone: phoneE164, code: _codeController.text);
     }
@@ -239,7 +246,7 @@ class _CountryPhoneField extends StatelessWidget {
                   validator: (v) {
                     final n = (v ?? '').trim();
                     if (n.isEmpty) return 'required'.tr;
-                    final full = '${country.phoneCode}$n';
+                    final full = '${country.phoneCode}${_nationalDigits(n)}';
                     if (full.length < 8 || full.length > 15) {
                       return 'invalid_phone'.tr;
                     }
