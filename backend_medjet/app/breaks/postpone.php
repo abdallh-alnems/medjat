@@ -26,10 +26,21 @@ BreakRequestModel::postpone($id, $tenantId, $auth['admin_id'], $note, $sDate, $s
 AuditLogModel::log($tenantId, $auth['admin_id'], 'break.postpone', 'break', $id);
 
 try {
+    $bodyAr = $sDate !== null
+        ? "تم اقتراح وقت بديل لإذنك: {$sDate}"
+            . ($sStart !== null ? " ({$sStart}" . ($sEnd !== null ? " - {$sEnd})" : ")") : '')
+        : 'تم تأجيل طلب الإذن الخاص بك.';
     Database::execute(
         "INSERT INTO notifications (tenant_id, employee_id, type, title, title_ar, body, body_ar, data, sent_via, created_at)
-         VALUES (?, ?, 'break', 'Break Postponed', 'تم تأجيل الإذن', 'Your break request was postponed.', 'تم تأجيل طلب الإذن الخاص بك.', ?, 'in_app', NOW())",
-        [$tenantId, $row['employee_id'], json_encode(['break_id' => $id, 'action' => 'postpone', 'suggested_date' => $sDate, 'suggested_start_time' => $sStart, 'suggested_end_time' => $sEnd])]
+         VALUES (?, ?, 'break', 'Break Postponed', 'تم تأجيل الإذن', 'Your break request was postponed.', ?, ?, 'push,in_app', NOW())",
+        [$tenantId, $row['employee_id'], $bodyAr, json_encode(['break_id' => $id, 'action' => 'postpone', 'suggested_date' => $sDate, 'suggested_start_time' => $sStart, 'suggested_end_time' => $sEnd])]
+    );
+
+    NotificationService::sendToEmployee(
+        (int) $row['employee_id'],
+        'تم تأجيل الإذن',
+        $bodyAr,
+        ['break_id' => (string) $id, 'action' => 'postpone', 'type' => 'break']
     );
 } catch (Exception $e) { error_log('Notification insert error: ' . $e->getMessage()); }
 

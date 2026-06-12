@@ -65,8 +65,8 @@ class BranchModel {
       id: (json['id'] as int?) ?? 0,
       name: (json['name'] as String?) ?? '',
       address: json['address'] as String?,
-      lat: _parseDouble(json['lat']),
-      lng: _parseDouble(json['lng']),
+      lat: _parseDouble(json['lat'] ?? json['latitude']),
+      lng: _parseDouble(json['lng'] ?? json['longitude']),
       qrCode: json['qr_code'] as String?,
       employeeCount: (json['employee_count'] as int?) ?? 0,
       attendanceMethods: methods,
@@ -90,7 +90,9 @@ class BranchModel {
     double? lng,
     String? qrCode,
     int? employeeCount,
-    List<String>? attendanceMethods,
+    // Sentinel-defaulted so an explicit `null` clears the override (back to
+    // inheriting company methods) instead of keeping the previous value.
+    Object? attendanceMethods = _unset,
     int? gpsRadiusMeters,
     bool? stationEnabled,
     String? stationMethods,
@@ -98,7 +100,7 @@ class BranchModel {
     double? stationConfidenceThreshold,
     bool? stationAntiSpoofing,
     bool? hasStationPin,
-    bool? allowOfflineAttendance,
+    Object? allowOfflineAttendance = _unset,
     int? cycleStartDay,
   }) {
     return BranchModel(
@@ -109,7 +111,9 @@ class BranchModel {
       lng: lng ?? this.lng,
       qrCode: qrCode ?? this.qrCode,
       employeeCount: employeeCount ?? this.employeeCount,
-      attendanceMethods: attendanceMethods ?? this.attendanceMethods,
+      attendanceMethods: identical(attendanceMethods, _unset)
+          ? this.attendanceMethods
+          : attendanceMethods as List<String>?,
       gpsRadiusMeters: gpsRadiusMeters ?? this.gpsRadiusMeters,
       stationEnabled: stationEnabled ?? this.stationEnabled,
       stationMethods: stationMethods ?? this.stationMethods,
@@ -117,8 +121,12 @@ class BranchModel {
       stationConfidenceThreshold: stationConfidenceThreshold ?? this.stationConfidenceThreshold,
       stationAntiSpoofing: stationAntiSpoofing ?? this.stationAntiSpoofing,
       hasStationPin: hasStationPin ?? this.hasStationPin,
-      allowOfflineAttendance: allowOfflineAttendance ?? this.allowOfflineAttendance,
+      allowOfflineAttendance: identical(allowOfflineAttendance, _unset)
+          ? this.allowOfflineAttendance
+          : allowOfflineAttendance as bool?,
       cycleStartDay: cycleStartDay ?? this.cycleStartDay,
     );
   }
+
+  static const Object _unset = Object();
 }

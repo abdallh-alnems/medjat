@@ -10,7 +10,9 @@ import '../../../core/services/connectivity_service.dart';
 import '../../../core/services/location_service.dart';
 import '../../../core/services/push_notification_service.dart';
 import '../../../data/data_source/remote/home_data/home_data.dart';
+import '../../../data/model/attendance_config_model.dart';
 import '../../../data/model/today_status_model.dart';
+import '../../../view/screen/home/widgets/attendance_method_picker_sheet.dart';
 import '../attendance/attendance_controller.dart';
 
 class HomeController extends GetxController {
@@ -18,6 +20,7 @@ class HomeController extends GetxController {
 
   StatusRequest status = StatusRequest.none;
   TodayStatusModel? todayStatus;
+  AttendanceConfigModel attendanceConfig = const AttendanceConfigModel();
   double? distanceFromBranch;
   bool isOffline = false;
   List<Map<String, dynamic>> monthRecords = [];
@@ -97,6 +100,10 @@ class HomeController extends GetxController {
     if (responseStatus == StatusRequest.success) {
       final data = response['data'] as Map<String, dynamic>?;
       if (data != null) {
+        final configJson = data['attendance_config'] as Map<String, dynamic>?;
+        if (configJson != null) {
+          attendanceConfig = AttendanceConfigModel.fromJson(configJson);
+        }
         final records = (data['records'] as List<dynamic>?)
                 ?.map((e) => e as Map<String, dynamic>)
                 .toList() ??
@@ -154,11 +161,31 @@ class HomeController extends GetxController {
   bool get isDayDone => attendanceStatus == AttendanceStatus.checkedOut;
 
   String get attendanceButtonText {
+    if (isDayDone) return 'day_done'.tr;
+    if (attendanceConfig.isSelfCheckDisabled) {
+      return attendanceConfig.hasStation
+          ? 'attendance_via_station'.tr
+          : 'attendance_via_admin'.tr;
+    }
     if (isOffline && canCheckIn) return 'check_in_offline'.tr;
     if (isOffline && canCheckOut) return 'check_out_offline'.tr;
     if (canCheckIn) return 'check_in'.tr;
     if (canCheckOut) return 'check_out'.tr;
     return 'day_done'.tr;
+  }
+
+  IconData get attendanceButtonIcon {
+    if (isDayDone) return Icons.check_rounded;
+    final config = attendanceConfig;
+    if (config.isSelfCheckDisabled) {
+      return config.hasStation
+          ? Icons.monitor_outlined
+          : Icons.manage_accounts_outlined;
+    }
+    if (config.selfMethods.length > 1) return Icons.touch_app_outlined;
+    return config.hasGpsOnly && !config.hasQrGps
+        ? Icons.location_on_outlined
+        : Icons.qr_code_scanner;
   }
 
   String get statusMessage {
@@ -175,28 +202,84 @@ class HomeController extends GetxController {
   Future<void> startAttendanceFlow() async {
     if (isDayDone) return;
 
+    final config = attendanceConfig;
+
+    // Branch only allows manual/station — the employee can't self check-in.
+    if (config.isSelfCheckDisabled) {
+      _showMethodUnavailableDialog(config);
+      return;
+    }
+
+    final selfMethods = config.selfMethods;
+
+    // Multiple methods enabled — let the employee pick.
+    if (selfMethods.length > 1) {
+      AttendanceMethodPickerSheet.show(
+        methods: selfMethods,
+        onSelected: _startMethod,
+      );
+      return;
+    }
+
+    await _startMethod(selfMethods.first);
+  }
+
+  Future<void> _startMethod(String method) async {
+    if (method == 'gps_only') {
+      if (!await _ensureLocationPermission()) return;
+      Get.toNamed<void>(AppRoutes.gpsCheckIn);
+    } else {
+      if (!await _ensureCameraPermission()) return;
+      if (!await _ensureLocationPermission()) return;
+      Get.toNamed<void>(AppRoutes.scanQr);
+    }
+  }
+
+  Future<bool> _ensureCameraPermission() async {
     final cameraStatus = await Permission.camera.status;
     if (cameraStatus.isDenied) {
       final result = await Permission.camera.request();
       if (result.isDenied || result.isPermanentlyDenied) {
         _showPermissionDialog('camera_required'.tr);
-        return;
+        return false;
       }
     } else if (cameraStatus.isPermanentlyDenied) {
       _showPermissionDialog('camera_required'.tr);
-      return;
+      return false;
     }
+    return true;
+  }
 
+  Future<bool> _ensureLocationPermission() async {
     final locationGranted = await LocationService.isPermissionGranted();
     if (!locationGranted) {
       final requested = await LocationService.requestPermission();
       if (!requested) {
         _showPermissionDialog('location_required'.tr);
-        return;
+        return false;
       }
     }
+    return true;
+  }
 
-    Get.toNamed<void>(AppRoutes.scanQr);
+  void _showMethodUnavailableDialog(AttendanceConfigModel config) {
+    final useStation = config.hasStation;
+    Get.dialog<void>(
+      AlertDialog(
+        title: Text(useStation
+            ? 'attendance_station_title'.tr
+            : 'attendance_manual_title'.tr),
+        content: Text(useStation
+            ? 'attendance_station_desc'.tr
+            : 'attendance_manual_desc'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back<void>(),
+            child: Text('got_it'.tr),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showPermissionDialog(String message) {

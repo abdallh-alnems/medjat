@@ -26,5 +26,7 @@ Response::success([
     'from_year' => $result['from_year'],
     'to_year' => $result['to_year'],
     'processed' => $result['processed'],
-    'carryover_max' => $result['carryover_max'],
+    'total_carried' => $result['total_carried'],
+    'total_encashed' => $result['total_encashed'],
+    'total_dropped' => $result['total_dropped'],
 ]);

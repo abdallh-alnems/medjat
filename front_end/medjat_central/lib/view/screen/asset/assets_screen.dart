@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/class/handling_data_request.dart';
+import '../../../core/class/status_request.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
@@ -8,8 +9,10 @@ import '../../../core/shared/buttons/primary_button.dart';
 import '../../../core/shared/input_fields/primary_input.dart';
 import '../../../logic/controller/asset/asset_controller.dart';
 import '../../../data/data_source/remote/employee_data/employee_data.dart';
+import '../../../data/data_source/remote/category_data/category_data.dart';
 import '../../../data/model/asset_custody_model.dart';
 import '../../../data/model/employee_model.dart';
+import '../../../data/model/employee_category_model.dart';
 
 const _assetTypes = [
   'equipment',
@@ -43,26 +46,37 @@ class AssetsScreen extends StatelessWidget {
               horizontal: AppSpacing.s4,
               vertical: AppSpacing.s2,
             ),
-            child: Row(
-              children: [
-                _Chip(
-                  label: 'all'.tr,
-                  selected: ctrl.statusFilter == null,
-                  onTap: () => ctrl.filterByStatus(null),
+            child: GetBuilder<AssetController>(
+              builder: (_) => SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                children: [
+                  _Chip(
+                    label: 'all'.tr,
+                    selected: ctrl.statusFilter == null,
+                    onTap: () => ctrl.filterByStatus(null),
+                  ),
+                  const SizedBox(width: AppSpacing.s2),
+                  _Chip(
+                    label: 'asset_status_assigned'.tr,
+                    selected: ctrl.statusFilter == 'assigned',
+                    onTap: () => ctrl.filterByStatus('assigned'),
+                  ),
+                  const SizedBox(width: AppSpacing.s2),
+                  _Chip(
+                    label: 'asset_status_return_requested'.tr,
+                    selected: ctrl.statusFilter == 'return_requested',
+                    onTap: () => ctrl.filterByStatus('return_requested'),
+                  ),
+                  const SizedBox(width: AppSpacing.s2),
+                  _Chip(
+                    label: 'asset_status_returned'.tr,
+                    selected: ctrl.statusFilter == 'returned',
+                    onTap: () => ctrl.filterByStatus('returned'),
+                  ),
+                ],
                 ),
-                const SizedBox(width: AppSpacing.s2),
-                _Chip(
-                  label: 'asset_status_assigned'.tr,
-                  selected: ctrl.statusFilter == 'assigned',
-                  onTap: () => ctrl.filterByStatus('assigned'),
-                ),
-                const SizedBox(width: AppSpacing.s2),
-                _Chip(
-                  label: 'asset_status_return_requested'.tr,
-                  selected: ctrl.statusFilter == 'return_requested',
-                  onTap: () => ctrl.filterByStatus('return_requested'),
-                ),
-              ],
+              ),
             ),
           ),
           Expanded(
@@ -165,15 +179,23 @@ class AssetsScreen extends StatelessWidget {
     );
   }
 
-  void _showCreateSheet(BuildContext context, AssetController ctrl) {
-    final nameCtrl = TextEditingController();
-    final valueCtrl = TextEditingController();
-    final serialCtrl = TextEditingController();
-    final qtyCtrl = TextEditingController(text: '1');
-    final descCtrl = TextEditingController();
-    int? selectedEmployeeId;
-    String selectedType = 'equipment';
-    DateTime assignedDate = DateTime.now();
+  void _showCreateSheet(BuildContext context, AssetController ctrl,
+      {AssetCustodyModel? existing}) {
+    final isEdit = existing != null;
+    final nameCtrl = TextEditingController(text: existing?.name ?? '');
+    final valueCtrl = TextEditingController(
+      text: (existing?.value != null && existing!.value! > 0)
+          ? existing.value!.toStringAsFixed(existing.value! % 1 == 0 ? 0 : 2)
+          : '',
+    );
+    final serialCtrl = TextEditingController(text: existing?.serialNo ?? '');
+    final qtyCtrl =
+        TextEditingController(text: (existing?.quantity ?? 1).toString());
+    final descCtrl = TextEditingController(text: existing?.notes ?? '');
+    int? selectedEmployeeId = existing?.employeeId;
+    String? selectedEmployeeName = existing?.employeeName;
+    String selectedType = existing?.type ?? 'equipment';
+    DateTime assignedDate = existing?.assignedAt ?? DateTime.now();
 
     final employeeData = Get.find<EmployeeData>();
 
@@ -195,29 +217,26 @@ class AssetsScreen extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('asset_assign'.tr, style: AppTextStyles.h3(context)),
+                  Text(isEdit ? 'asset_edit'.tr : 'asset_assign'.tr,
+                      style: AppTextStyles.h3(context)),
                   const SizedBox(height: AppSpacing.s4),
                   _label('select_employee'.tr, colors),
                   const SizedBox(height: AppSpacing.s2),
-                  FutureBuilder<List<EmployeeModel>>(
-                    future: _loadEmployees(employeeData),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState ==
-                          ConnectionState.waiting) {
-                        return const Center(
-                            child: Padding(
-                          padding: EdgeInsets.all(AppSpacing.s3),
-                          child: CircularProgressIndicator.adaptive(),
-                        ));
+                  // Employee is fixed once assigned; editing only its details.
+                  _EmployeePickerField(
+                    selectedName: selectedEmployeeName,
+                    colors: colors,
+                    onTap: isEdit
+                        ? null
+                        : () async {
+                      final picked = await _showEmployeePicker(
+                          context, employeeData);
+                      if (picked != null) {
+                        setSheetState(() {
+                          selectedEmployeeId = picked.id;
+                          selectedEmployeeName = picked.name;
+                        });
                       }
-                      final list = snapshot.data ?? [];
-                      return _employeeDropdown(
-                        value: selectedEmployeeId,
-                        list: list,
-                        colors: colors,
-                        onChanged: (v) =>
-                            setSheetState(() => selectedEmployeeId = v),
-                      );
                     },
                   ),
                   const SizedBox(height: AppSpacing.s3),
@@ -243,7 +262,8 @@ class AssetsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.s3),
                   PrimaryInput(
-                    label: isMoney ? 'asset_amount'.tr : 'asset_value'.tr,
+                    label:
+                        '${isMoney ? 'asset_amount'.tr : 'asset_value'.tr} (${'optional'.tr})',
                     controller: valueCtrl,
                     hint: isMoney ? 'asset_amount'.tr : 'asset_value'.tr,
                     keyboardType: TextInputType.number,
@@ -251,7 +271,7 @@ class AssetsScreen extends StatelessWidget {
                   if (!isMoney) ...[
                     const SizedBox(height: AppSpacing.s3),
                     PrimaryInput(
-                      label: 'asset_serial'.tr,
+                      label: '${'asset_serial'.tr} (${'optional'.tr})',
                       controller: serialCtrl,
                       hint: 'asset_serial'.tr,
                     ),
@@ -281,7 +301,7 @@ class AssetsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.s3),
                   PrimaryInput(
-                    label: 'asset_notes'.tr,
+                    label: '${'asset_notes'.tr} (${'optional'.tr})',
                     controller: descCtrl,
                     hint: 'asset_notes'.tr,
                     maxLines: 2,
@@ -302,17 +322,33 @@ class AssetsScreen extends StatelessWidget {
                       }
                       final value = double.tryParse(valueCtrl.text.trim());
                       final qty = int.tryParse(qtyCtrl.text.trim()) ?? 1;
-                      final ok = await ctrl.createAsset(
-                        employeeId: selectedEmployeeId!,
-                        type: selectedType,
-                        name: nameCtrl.text,
-                        assignedAt: assignedDate,
-                        value: value,
-                        serialNo: isMoney ? null : serialCtrl.text,
-                        quantity: isMoney ? 1 : (qty < 1 ? 1 : qty),
-                        notes: descCtrl.text,
-                      );
-                      if (ok) Get.back<void>();
+                      final ok = isEdit
+                          ? await ctrl.updateAsset(
+                              id: existing.id,
+                              type: selectedType,
+                              name: nameCtrl.text,
+                              assignedAt: assignedDate,
+                              value: value,
+                              serialNo: isMoney ? null : serialCtrl.text,
+                              quantity: isMoney ? 1 : (qty < 1 ? 1 : qty),
+                              notes: descCtrl.text,
+                            )
+                          : await ctrl.createAsset(
+                              employeeId: selectedEmployeeId!,
+                              type: selectedType,
+                              name: nameCtrl.text,
+                              assignedAt: assignedDate,
+                              value: value,
+                              serialNo: isMoney ? null : serialCtrl.text,
+                              quantity: isMoney ? 1 : (qty < 1 ? 1 : qty),
+                              notes: descCtrl.text,
+                            );
+                      if (ok) {
+                        Get.back<void>();
+                        Get.snackbar('done'.tr,
+                            isEdit ? 'asset_updated'.tr : 'asset_created'.tr,
+                            snackPosition: SnackPosition.BOTTOM);
+                      }
                     },
                   ),
                   const SizedBox(height: AppSpacing.s4),
@@ -350,43 +386,341 @@ Future<List<EmployeeModel>> _loadEmployees(EmployeeData employeeData) async {
       [];
 }
 
-Widget _employeeDropdown({
-  required int? value,
-  required List<EmployeeModel> list,
-  required AppColorScheme colors,
-  required void Function(int?) onChanged,
-}) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
-    decoration: BoxDecoration(
-      color: colors.sunken,
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      border: Border.all(color: colors.borderHairline),
-    ),
-    child: DropdownButtonHideUnderline(
-      child: DropdownButton<int>(
-        isExpanded: true,
-        hint: Text('select_employee'.tr,
-            style: TextStyle(
-              fontFamily: 'IBM Plex Sans Arabic',
-              fontSize: 14,
-              color: colors.textTertiary,
-            )),
-        value: value,
-        items: list
-            .map((e) => DropdownMenuItem<int>(
-                  value: e.id,
-                  child: Text(e.name,
-                      style: const TextStyle(
-                        fontFamily: 'IBM Plex Sans Arabic',
-                        fontSize: 14,
-                      )),
-                ))
-            .toList(),
-        onChanged: onChanged,
-      ),
-    ),
+Future<EmployeeModel?> _showEmployeePicker(
+    BuildContext context, EmployeeData employeeData) {
+  return Get.bottomSheet<EmployeeModel>(
+    _EmployeePickerSheet(employeeData: employeeData),
+    isScrollControlled: true,
   );
+}
+
+class _EmployeePickerField extends StatelessWidget {
+  final String? selectedName;
+  final AppColorScheme colors;
+  final VoidCallback? onTap;
+
+  const _EmployeePickerField({
+    required this.selectedName,
+    required this.colors,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasValue = selectedName != null && selectedName!.isNotEmpty;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.s4, vertical: AppSpacing.s3),
+        decoration: BoxDecoration(
+          color: colors.sunken,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(color: colors.borderHairline),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.person_search_outlined, size: 18, color: colors.brand),
+            const SizedBox(width: AppSpacing.s2),
+            Expanded(
+              child: Text(
+                hasValue ? selectedName! : 'select_employee'.tr,
+                style: TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 14,
+                  fontWeight: hasValue ? FontWeight.w500 : FontWeight.w400,
+                  color: hasValue ? colors.textPrimary : colors.textTertiary,
+                ),
+              ),
+            ),
+            Icon(Icons.expand_more, size: 20, color: colors.textTertiary),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmployeePickerSheet extends StatefulWidget {
+  final EmployeeData employeeData;
+
+  const _EmployeePickerSheet({required this.employeeData});
+
+  @override
+  State<_EmployeePickerSheet> createState() => _EmployeePickerSheetState();
+}
+
+class _EmployeePickerSheetState extends State<_EmployeePickerSheet> {
+  final _searchCtrl = TextEditingController();
+  List<EmployeeModel> _all = [];
+  List<EmployeeCategoryModel> _categories = [];
+  bool _loading = true;
+  String _search = '';
+  int? _branchId;
+  int? _categoryId;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    final employees = await _loadEmployees(widget.employeeData);
+    List<EmployeeCategoryModel> cats = [];
+    if (Get.isRegistered<CategoryData>()) {
+      final response = await Get.find<CategoryData>().getCategories();
+      if (response['status'] == StatusRequest.success) {
+        dynamic body = response['data'];
+        if (body is Map && body['data'] is Map) body = body['data'];
+        final raw = (body is Map && body['categories'] is List)
+            ? body['categories'] as List
+            : (body is List ? body : const <dynamic>[]);
+        cats = raw
+            .whereType<Map<String, dynamic>>()
+            .map(EmployeeCategoryModel.fromJson)
+            .toList();
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _all = employees;
+      _categories = cats;
+      _loading = false;
+    });
+  }
+
+  List<_BranchOption> get _branches {
+    final seen = <int, String>{};
+    for (final e in _all) {
+      if (!seen.containsKey(e.branchId)) {
+        seen[e.branchId] = e.branchName ?? 'branch'.tr;
+      }
+    }
+    final list = seen.entries
+        .map((e) => _BranchOption(e.key, e.value))
+        .toList()
+      ..sort((a, b) => a.name.compareTo(b.name));
+    return list;
+  }
+
+  List<EmployeeModel> get _filtered {
+    final q = _search.trim().toLowerCase();
+    return _all.where((e) {
+      if (_branchId != null && e.branchId != _branchId) return false;
+      if (_categoryId != null && !e.categoryIds.contains(_categoryId)) {
+        return false;
+      }
+      if (q.isNotEmpty) {
+        final name = e.name.toLowerCase();
+        final code = (e.employeeCode ?? '').toLowerCase();
+        if (!name.contains(q) && !code.contains(q)) return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final filtered = _filtered;
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppRadius.lg),
+        ),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: AppSpacing.s2),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: colors.borderHairline,
+              borderRadius: BorderRadius.circular(AppRadius.full),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.s4,
+              AppSpacing.s3,
+              AppSpacing.s4,
+              AppSpacing.s2,
+            ),
+            child: Row(
+              children: [
+                Text('select_employee'.tr,
+                    style: AppTextStyles.h3(context)),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => Get.back<EmployeeModel>(),
+                  icon: Icon(Icons.close, color: colors.textTertiary),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s4),
+            child: TextField(
+              controller: _searchCtrl,
+              onChanged: (v) => setState(() => _search = v),
+              decoration: InputDecoration(
+                hintText: 'search'.tr,
+                hintStyle: TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 14,
+                  color: colors.textTertiary,
+                ),
+                prefixIcon:
+                    Icon(Icons.search, size: 20, color: colors.textTertiary),
+                suffixIcon: _search.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(Icons.clear,
+                            size: 18, color: colors.textTertiary),
+                        onPressed: () {
+                          _searchCtrl.clear();
+                          setState(() => _search = '');
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: colors.sunken,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  borderSide: BorderSide(color: colors.borderHairline),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  borderSide: BorderSide(color: colors.borderHairline),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s3, vertical: AppSpacing.s3),
+              ),
+            ),
+          ),
+          if (_branches.length > 1) ...[
+            const SizedBox(height: AppSpacing.s2),
+            SizedBox(
+              height: 36,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s4),
+                children: [
+                  _Chip(
+                    label: 'all_branches'.tr,
+                    selected: _branchId == null,
+                    onTap: () => setState(() => _branchId = null),
+                  ),
+                  for (final b in _branches) ...[
+                    const SizedBox(width: AppSpacing.s2),
+                    _Chip(
+                      label: b.name,
+                      selected: _branchId == b.id,
+                      onTap: () => setState(() => _branchId = b.id),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+          if (_categories.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.s2),
+            SizedBox(
+              height: 36,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.s4),
+                children: [
+                  _Chip(
+                    label: 'all_categories'.tr,
+                    selected: _categoryId == null,
+                    onTap: () => setState(() => _categoryId = null),
+                  ),
+                  for (final c in _categories) ...[
+                    const SizedBox(width: AppSpacing.s2),
+                    _Chip(
+                      label: c.name,
+                      selected: _categoryId == c.id,
+                      onTap: () => setState(() => _categoryId = c.id),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.s2),
+          Divider(height: 1, color: colors.borderHairline),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator.adaptive())
+                : filtered.isEmpty
+                    ? Center(
+                        child: Text('no_employees'.tr,
+                            style: AppTextStyles.bodySecondary(context)),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.s2),
+                        itemCount: filtered.length,
+                        separatorBuilder: (_, __) =>
+                            Divider(height: 1, color: colors.borderHairline),
+                        itemBuilder: (_, i) {
+                          final e = filtered[i];
+                          return ListTile(
+                            leading: CircleAvatar(
+                              radius: 18,
+                              backgroundColor: colors.brandSubtle,
+                              child: Text(
+                                e.name.isNotEmpty ? e.name[0] : '?',
+                                style: TextStyle(
+                                  fontFamily: 'IBM Plex Sans Arabic',
+                                  fontWeight: FontWeight.w600,
+                                  color: colors.brand,
+                                ),
+                              ),
+                            ),
+                            title: Text(e.name,
+                                style: const TextStyle(
+                                  fontFamily: 'IBM Plex Sans Arabic',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                )),
+                            subtitle: (e.branchName != null &&
+                                    e.branchName!.isNotEmpty)
+                                ? Text(e.branchName!,
+                                    style: TextStyle(
+                                      fontFamily: 'IBM Plex Sans Arabic',
+                                      fontSize: 12,
+                                      color: colors.textTertiary,
+                                    ))
+                                : null,
+                            onTap: () => Get.back<EmployeeModel>(result: e),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BranchOption {
+  final int id;
+  final String name;
+  const _BranchOption(this.id, this.name);
 }
 
 Widget _label(String text, AppColorScheme colors) {

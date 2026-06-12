@@ -90,6 +90,14 @@ final class TenantModel {
         );
     }
 
+    /** Company-wide GPS geofence center + radius (the default for all branches). */
+    public static function updateGeofence(int $id, ?float $lat, ?float $lng, ?int $radius): void {
+        Database::execute(
+            "UPDATE tenants SET gps_latitude = ?, gps_longitude = ?, gps_radius_meters = ? WHERE id = ?",
+            [$lat, $lng, $radius, $id]
+        );
+    }
+
     public static function getAttendanceConfig(int $id): array {
         $row = Database::fetchOne(
             "SELECT attendance_methods, manual_attendance_admin_ids FROM tenants WHERE id = ? LIMIT 1",

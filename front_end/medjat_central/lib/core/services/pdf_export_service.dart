@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import '../../logic/controller/auth/auth_controller.dart';
+import '../utils/pdf_helpers.dart';
 
 class PdfExportService {
   PdfExportService._();
@@ -28,6 +28,7 @@ class PdfExportService {
     required List<String> headers,
     required List<List<String>> rows,
     String? companyName,
+    String? subtitle,
   }) async {
     try {
       Get.snackbar(
@@ -46,11 +47,9 @@ class PdfExportService {
         ),
       );
 
-      final companyNameValue = companyName ??
-          Get.find<AuthController>().user?.name ??
-          'Medjat';
+      final companyNameValue = pdfCompanyTitle(companyName);
 
-      final isRtl = (Get.locale?.languageCode ?? 'ar') == 'ar';
+      final isRtl = pdfIsArabic();
 
       doc.addPage(
         pw.MultiPage(
@@ -78,8 +77,21 @@ class PdfExportService {
                 ),
               ),
             ),
+            if (subtitle != null && subtitle.isNotEmpty) ...[
+              pw.SizedBox(height: 6),
+              pw.Center(
+                child: pw.Text(
+                  subtitle,
+                  style: pw.TextStyle(
+                    font: _arabicFont,
+                    fontSize: 11,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+              ),
+            ],
             pw.SizedBox(height: 20),
-            _buildTable(headers, rows),
+            _buildTable(headers, rows, isRtl),
           ],
         ),
       );
@@ -107,7 +119,16 @@ class PdfExportService {
   static pw.Widget _buildTable(
     List<String> headers,
     List<List<String>> rows,
+    bool isRtl,
   ) {
+    // pw.Table renders columns in list order and does not flip them for RTL,
+    // so reverse the columns ourselves to make the table read right-to-left.
+    final orderedHeaders =
+        isRtl ? headers.reversed.toList() : headers;
+    final orderedRows = isRtl
+        ? rows.map((r) => r.reversed.toList()).toList()
+        : rows;
+
     return pw.Table(
       border: pw.TableBorder.all(
         color: PdfColors.grey400,
@@ -116,7 +137,7 @@ class PdfExportService {
       children: [
         pw.TableRow(
           decoration: const pw.BoxDecoration(color: PdfColors.grey200),
-          children: headers
+          children: orderedHeaders
               .map((h) => pw.Padding(
                     padding: const pw.EdgeInsets.all(6),
                     child: pw.Text(
@@ -130,7 +151,7 @@ class PdfExportService {
                   ))
               .toList(),
         ),
-        ...rows.map(
+        ...orderedRows.map(
           (row) => pw.TableRow(
             children: row
                 .map((cell) => pw.Padding(

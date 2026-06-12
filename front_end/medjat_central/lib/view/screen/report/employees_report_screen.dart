@@ -4,7 +4,7 @@ import '../../../core/class/handling_data_request.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
-import '../../../core/services/pdf_export_service.dart';
+import '../../widget/report/report_export.dart';
 import '../../../logic/controller/report/employees_report_controller.dart';
 import '../../../data/model/report_model.dart';
 
@@ -21,10 +21,11 @@ class EmployeesReportScreen extends StatelessWidget {
         title: Text('employees_report'.tr),
         actions: [
           IconButton(
-            icon: const Icon(Icons.picture_as_pdf_outlined),
-            tooltip: 'export_pdf'.tr,
+            icon: const Icon(Icons.ios_share),
+            tooltip: 'export_as'.tr,
             onPressed: () {
-              PdfExportService.exportReport(
+              exportReportWithFormat(
+                context,
                 title: 'employees_report'.tr,
                 headers: [
                   'employee'.tr,

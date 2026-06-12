@@ -26,7 +26,6 @@ void main() {
             'status': StatusRequest.success,
             'data': {
               'name': 'شركة الاختبار',
-              'commercial_register': '1234567890',
               'currency': 'SAR',
               'timezone': 'Asia/Riyadh',
               'has_logo': true,
@@ -39,7 +38,6 @@ void main() {
 
       expect(controller.status, StatusRequest.success);
       expect(controller.nameController.text, 'شركة الاختبار');
-      expect(controller.commercialRegisterController.text, '1234567890');
       expect(controller.currency, 'SAR');
       expect(controller.timezone, 'Asia/Riyadh');
       expect(controller.hasLogo, true);

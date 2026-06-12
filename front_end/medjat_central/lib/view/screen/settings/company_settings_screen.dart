@@ -1,7 +1,6 @@
-import 'dart:io';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:timezone/timezone.dart' as tz;
 import '../../../core/class/handling_data_request.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/theme/app_colors.dart';
@@ -22,27 +21,46 @@ const List<String> _kCurrencies = [
   'QAR',
 ];
 
-/// IANA timezones offered in the picker. Labels come from
-/// `tz_<id lowercased, / → _>`.
-const List<String> _kTimezones = [
-  'Africa/Cairo',
-  'Asia/Riyadh',
-  'Asia/Dubai',
-  'Asia/Kuwait',
-  'Asia/Qatar',
-  'Asia/Baghdad',
-  'Asia/Amman',
-  'Europe/London',
-  'UTC',
-];
-
 String _currencyLabel(String code) {
   final name = 'curr_${code.toLowerCase()}'.tr;
   return '$name ($code)';
 }
 
-String _timezoneLabel(String id) =>
-    'tz_${id.toLowerCase().replaceAll('/', '_')}'.tr;
+/// Human label for a timezone id, localized to the active app language:
+///  - Curated full names for common zones (key `tz_<id>`) take precedence.
+///  - Otherwise the region (continent) is translated, the city is prettified,
+///    and the current GMT offset is appended, e.g. Arabic → "آسيا / Riyadh (GMT+3)".
+String _timezoneLabel(String id) {
+  final key = 'tz_${id.toLowerCase().replaceAll('/', '_')}';
+  final curated = key.tr;
+  if (curated != key) return curated;
+
+  final parts = id.split('/');
+  final regionKey = 'tzregion_${parts.first.toLowerCase()}';
+  final regionTr = regionKey.tr;
+  final region = regionTr != regionKey ? regionTr : parts.first;
+  final city = parts.length > 1
+      ? parts.sublist(1).join(' / ').replaceAll('_', ' ')
+      : '';
+  final name = city.isEmpty ? region : '$region / $city';
+  final offset = _gmtOffset(id);
+  return offset.isEmpty ? name : '$name ($offset)';
+}
+
+/// Current GMT offset for a zone (e.g. "GMT+3"), from the bundled tz database.
+String _gmtOffset(String id) {
+  try {
+    final totalMinutes = tz.getLocation(id).currentTimeZone.offset.inMinutes;
+    final sign = totalMinutes < 0 ? '-' : '+';
+    final abs = totalMinutes.abs();
+    final hours = abs ~/ 60;
+    final minutes = abs % 60;
+    final mm = minutes == 0 ? '' : ':${minutes.toString().padLeft(2, '0')}';
+    return 'GMT$sign$hours$mm';
+  } catch (_) {
+    return '';
+  }
+}
 
 // Week start weekday options (ISO: 1=Mon..7=Sun), ordered Saturday-first to
 // match the Arab work week shown by default.
@@ -80,50 +98,11 @@ class CompanySettingsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _CompanyHeader(ctrl: ctrl),
-                  const SizedBox(height: AppSpacing.s5),
                   Text('company_data'.tr, style: AppTextStyles.h3(context)),
                   const SizedBox(height: AppSpacing.s4),
                   PrimaryInput(
                     label: 'company_name'.tr,
                     controller: ctrl.nameController,
-                  ),
-                  const SizedBox(height: AppSpacing.s3),
-                  PrimaryInput(
-                    label: 'commercial_register'.tr,
-                    controller: ctrl.commercialRegisterController,
-                  ),
-
-                  // ── Company letterhead (logo / stamp / signature) ──
-                  const SizedBox(height: AppSpacing.s6),
-                  Text('company_branding'.tr,
-                      style: AppTextStyles.h3(context)),
-                  const SizedBox(height: AppSpacing.s2),
-                  Text('company_branding_hint'.tr,
-                      style: AppTextStyles.sm(context)),
-                  const SizedBox(height: AppSpacing.s3),
-                  _BrandingTile(
-                    ctrl: ctrl,
-                    type: 'logo',
-                    icon: Icons.image_outlined,
-                    title: 'logo'.tr,
-                    uploaded: ctrl.hasLogo,
-                  ),
-                  const SizedBox(height: AppSpacing.s2),
-                  _BrandingTile(
-                    ctrl: ctrl,
-                    type: 'stamp',
-                    icon: Icons.approval_outlined,
-                    title: 'stamp'.tr,
-                    uploaded: ctrl.hasStamp,
-                  ),
-                  const SizedBox(height: AppSpacing.s2),
-                  _BrandingTile(
-                    ctrl: ctrl,
-                    type: 'signature',
-                    icon: Icons.draw_outlined,
-                    title: 'signature'.tr,
-                    uploaded: ctrl.hasSignature,
                   ),
 
                   // ── Currency & timezone ──
@@ -149,15 +128,22 @@ class CompanySettingsScreen extends StatelessWidget {
                     label: 'timezone_label'.tr,
                     value: _timezoneLabel(ctrl.timezone),
                     icon: Icons.public,
-                    onTap: () => _pickOption(
-                      context,
-                      title: 'timezone_label'.tr,
-                      options: _kTimezones,
-                      selected: ctrl.timezone,
-                      labelOf: _timezoneLabel,
-                      onSelected: ctrl.setTimezone,
-                    ),
+                    onTap: () => _pickTimezone(context, ctrl),
                   ),
+                  if (ctrl.timezoneAutoDetected) ...[
+                    const SizedBox(height: AppSpacing.s2),
+                    Row(
+                      children: [
+                        Icon(Icons.my_location,
+                            size: 14, color: AppColors.of(context).brand),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text('timezone_auto_detected'.tr,
+                              style: AppTextStyles.sm(context)),
+                        ),
+                      ],
+                    ),
+                  ],
 
                   // ── Attendance cycle ──
                   const SizedBox(height: AppSpacing.s6),
@@ -266,6 +252,103 @@ class CompanySettingsScreen extends StatelessWidget {
       ),
     );
   }
+
+  /// Searchable picker over the full IANA timezone list loaded from the device.
+  void _pickTimezone(BuildContext context, CompanySettingsController ctrl) {
+    final colors = AppColors.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: colors.canvas,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        final all = ctrl.availableTimezones;
+        var query = '';
+        return StatefulBuilder(
+          builder: (ctx, setState) {
+            final filtered = query.isEmpty
+                ? all
+                : all
+                    .where((tz) =>
+                        tz.toLowerCase().contains(query) ||
+                        _timezoneLabel(tz).toLowerCase().contains(query))
+                    .toList();
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(ctx).viewInsets.bottom,
+                ),
+                child: SizedBox(
+                  height: MediaQuery.of(ctx).size.height * 0.75,
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(AppSpacing.s4),
+                        child: Text('timezone_label'.tr,
+                            style: AppTextStyles.h3(context)),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.s4),
+                        child: TextField(
+                          autofocus: true,
+                          decoration: InputDecoration(
+                            hintText: 'search'.tr,
+                            prefixIcon: const Icon(Icons.search),
+                            isDense: true,
+                            border: OutlineInputBorder(
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.md),
+                            ),
+                          ),
+                          onChanged: (v) =>
+                              setState(() => query = v.trim().toLowerCase()),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.s2),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: filtered.length,
+                          itemBuilder: (_, i) {
+                            final tz = filtered[i];
+                            final isSelected = tz == ctrl.timezone;
+                            return ListTile(
+                              title: Text(
+                                _timezoneLabel(tz),
+                                style: TextStyle(
+                                  fontFamily: 'IBM Plex Sans Arabic',
+                                  fontSize: 15,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                  color: isSelected
+                                      ? colors.brand
+                                      : colors.textPrimary,
+                                ),
+                              ),
+                              trailing: isSelected
+                                  ? Icon(Icons.check, color: colors.brand)
+                                  : null,
+                              onTap: () {
+                                ctrl.setTimezone(tz);
+                                Navigator.of(ctx).pop();
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 }
 
 /// A read-only field that opens a picker when tapped (used for currency/timezone).
@@ -333,112 +416,6 @@ class _PickerField extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// One letterhead asset row: shows its upload state and lets the user pick an
-/// image to upload or replace it.
-class _BrandingTile extends StatelessWidget {
-  final CompanySettingsController ctrl;
-  final String type;
-  final IconData icon;
-  final String title;
-  final bool uploaded;
-
-  const _BrandingTile({
-    required this.ctrl,
-    required this.type,
-    required this.icon,
-    required this.title,
-    required this.uploaded,
-  });
-
-  Future<void> _pick() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['jpg', 'jpeg', 'png'],
-    );
-    final path = result?.files.single.path;
-    if (path != null) {
-      await ctrl.uploadBranding(type, File(path));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final isUploading = ctrl.uploadingType == type;
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.s3),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: colors.borderHairline),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: colors.brandSubtle,
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            child: Icon(icon, size: 22, color: colors.brand),
-          ),
-          const SizedBox(width: AppSpacing.s3),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontFamily: 'IBM Plex Sans Arabic',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Icon(
-                      uploaded
-                          ? Icons.check_circle
-                          : Icons.remove_circle_outline,
-                      size: 13,
-                      color: uploaded ? colors.success : colors.textTertiary,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      uploaded ? 'uploaded'.tr : 'not_set'.tr,
-                      style: TextStyle(
-                        fontFamily: 'IBM Plex Sans Arabic',
-                        fontSize: 12,
-                        color:
-                            uploaded ? colors.success : colors.textTertiary,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          if (isUploading)
-            const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          else
-            TextButton(
-              onPressed: _pick,
-              child: Text(uploaded ? 'replace'.tr : 'upload'.tr),
-            ),
-        ],
-      ),
     );
   }
 }
@@ -521,47 +498,3 @@ class _CycleStartDayField extends StatelessWidget {
   }
 }
 
-class _CompanyHeader extends StatelessWidget {
-  final CompanySettingsController ctrl;
-  const _CompanyHeader({required this.ctrl});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.s4),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: colors.borderHairline),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: colors.brandSubtle,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-            child: Icon(Icons.business, size: 28, color: colors.brand),
-          ),
-          const SizedBox(width: AppSpacing.s4),
-          Expanded(
-            child: Text(
-              ctrl.nameController.text.isEmpty
-                  ? 'the_company'.tr
-                  : ctrl.nameController.text,
-              style: const TextStyle(
-                fontFamily: 'IBM Plex Sans Arabic',
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

@@ -4,6 +4,7 @@ import '../../../../core/constant/routes/app_routes.dart';
 import '../../../../core/constant/theme/app_colors.dart';
 import '../../../../core/constant/theme/app_text_styles.dart';
 import '../../../../logic/controller/station/station_controller.dart';
+import 'widgets/method_card.dart';
 
 class KioskHomeScreen extends StatelessWidget {
   const KioskHomeScreen({super.key});
@@ -99,8 +100,7 @@ class KioskHomeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 32),
           if (controller.supportsFace) ...[
-            _buildMethodCard(
-              context,
+            MethodCard(
               icon: Icons.face,
               title: 'face_checkin'.tr,
               subtitle: 'face_checkin_desc'.tr,
@@ -109,8 +109,7 @@ class KioskHomeScreen extends StatelessWidget {
             const SizedBox(height: 16),
           ],
           if (controller.supportsQr) ...[
-            _buildMethodCard(
-              context,
+            MethodCard(
               icon: Icons.qr_code_scanner,
               title: 'qr_checkin'.tr,
               subtitle: 'qr_checkin_desc'.tr,
@@ -118,53 +117,6 @@ class KioskHomeScreen extends StatelessWidget {
             ),
           ],
         ],
-      ),
-    );
-  }
-
-  Widget _buildMethodCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.brand(context).withValues(alpha: 0.3)),
-          borderRadius: BorderRadius.circular(16),
-          color: AppColors.brand(context).withValues(alpha: 0.05),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: AppColors.brand(context).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, size: 28, color: AppColors.brand(context)),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: AppTextStyles.h3(context)),
-                  const SizedBox(height: 4),
-                  Text(subtitle, style: AppTextStyles.bodySecondary(context)),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios, color: AppColors.brand(context)),
-          ],
-        ),
       ),
     );
   }

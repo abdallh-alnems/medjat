@@ -20,7 +20,13 @@ class AttendanceController extends GetxController {
   bool isProcessing = false;
   String? errorMessage;
 
-  Future<void> processQrScan(String qrCode) async {
+  Future<void> processQrScan(String qrCode) => _process(qrCode: qrCode);
+
+  /// GPS-only check-in / check-out: no QR scan. The backend resolves the
+  /// method from the (absent) QR code and validates the branch configuration.
+  Future<void> processGpsCheck() => _process(qrCode: null);
+
+  Future<void> _process({String? qrCode}) async {
     if (isProcessing) return;
     isProcessing = true;
     status = StatusRequest.loading;
@@ -73,7 +79,7 @@ class AttendanceController extends GetxController {
   }
 
   Future<void> _processOnline(
-      String qrCode, Position position, bool isCheckOut, {bool isVpn = false}) async {
+      String? qrCode, Position position, bool isCheckOut, {bool isVpn = false}) async {
     final homeController = Get.find<HomeController>();
 
     final response = isCheckOut
@@ -134,7 +140,7 @@ class AttendanceController extends GetxController {
   }
 
   Future<void> _processOffline(
-      String qrCode, Position position, bool isCheckOut, {bool isVpn = false}) async {
+      String? qrCode, Position position, bool isCheckOut, {bool isVpn = false}) async {
     final homeController = Get.find<HomeController>();
     final branch = homeController.todayStatus;
 
@@ -175,7 +181,7 @@ class AttendanceController extends GetxController {
   }
 
   Future<void> _saveOfflineRecord({
-    required String qrCode,
+    required String? qrCode,
     required Position position,
     required bool isCheckOut,
     bool isVpn = false,
@@ -194,7 +200,7 @@ class AttendanceController extends GetxController {
       'branch_id': branchId,
       'date': now.toIso8601String().substring(0, 10),
       'captured_at': now.toIso8601String(),
-      'qr_code': qrCode,
+      'qr_code': qrCode ?? '',
       'is_vpn': isVpn ? 1 : 0,
       'check_in_latitude': position.latitude,
       'check_in_longitude': position.longitude,

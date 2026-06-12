@@ -12,7 +12,6 @@ import '../../../data/data_source/remote/schedule_data/schedule_data.dart';
 import '../../../data/data_source/remote/manager_data/manager_data.dart';
 import '../../../data/data_source/remote/live_attendance_data/live_attendance_data.dart';
 import '../../../data/data_source/remote/category_data/category_data.dart';
-import '../../../data/data_source/remote/letter_data/letter_data.dart';
 import '../controller/dashboard/dashboard_controller.dart';
 import '../controller/employee/employee_controller.dart';
 import '../controller/attendance/attendance_controller.dart';
@@ -45,8 +44,6 @@ class HomeBinding extends Bindings {
     Get.lazyPut<ManagerData>(() => ManagerData(), fenix: true);
     Get.lazyPut<LiveAttendanceData>(() => LiveAttendanceData(), fenix: true);
     Get.lazyPut<CategoryData>(() => CategoryData(), fenix: true);
-    // Employee detail's financial tab issues letters/certificates on demand.
-    Get.lazyPut<LetterData>(() => LetterData(), fenix: true);
     Get.lazyPut<DashboardController>(() => DashboardController(), fenix: true);
     Get.lazyPut<LiveAttendanceController>(() => LiveAttendanceController(),
         fenix: true);

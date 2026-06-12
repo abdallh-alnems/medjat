@@ -920,7 +920,16 @@ Future<void> _confirmDeviceReset(
   );
   if (confirmed == true) {
     final ok = await ctrl.generateActivationCode();
-    if (ok) _showCodeShareSheet(ctrl);
+    if (ok) {
+      // The confirmation dialog is still animating out at this point. On a fast
+      // (local) server the generate request finishes before that close
+      // animation does, so opening the bottom sheet here makes GetX drop it
+      // (the sheet silently fails to appear). GetX's default dialog close
+      // transition is 300ms, so wait a touch longer to be sure the dialog
+      // route is gone before showing the share sheet.
+      await Future<void>.delayed(const Duration(milliseconds: 350));
+      _showCodeShareSheet(ctrl);
+    }
   }
 }
 
@@ -4121,10 +4130,6 @@ class _FinancialTab extends StatelessWidget {
             ],
 
             // ── Documents & long-horizon info ──
-            if (ctrl.letterTemplates.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.s3),
-              _LettersCard(ctrl: ctrl),
-            ],
             if (ctrl.eosb?.enabled ?? false) ...[
               const SizedBox(height: AppSpacing.s3),
               _EosbCard(ctrl: ctrl),
@@ -6726,142 +6731,6 @@ void _showAllowanceSheet(
     ),
     isScrollControlled: true,
   );
-}
-
-/* ── LETTERS & CERTIFICATES (one-tap issue + open PDF) ───────────────────── */
-
-class _LettersCard extends StatelessWidget {
-  final EmployeeDetailController ctrl;
-  const _LettersCard({required this.ctrl});
-
-  /// Picks an icon for the template based on its key (defaults gracefully for
-  /// custom templates the admin creates later).
-  IconData _iconFor(String? key) {
-    switch (key) {
-      case 'salary_certificate':
-        return Icons.workspace_premium_outlined;
-      case 'employment_verification':
-        return Icons.badge_outlined;
-      case 'bank_letter':
-        return Icons.account_balance_outlined;
-      default:
-        return Icons.description_outlined;
-    }
-  }
-
-  /// Bank letters need an "addressed_to" extra (the bank name); other
-  /// templates issue immediately.
-  Future<void> _onTap(BuildContext context, Map<String, dynamic> tpl) async {
-    final id = (tpl['id'] as num?)?.toInt() ?? 0;
-    final key = tpl['template_key'] as String?;
-    if (key == 'bank_letter') {
-      final to = await _askAddressedTo(context);
-      if (to == null || to.trim().isEmpty) return;
-      await ctrl.issueAndOpenLetter(id, extraFields: {'addressed_to': to.trim()});
-    } else {
-      await ctrl.issueAndOpenLetter(id);
-    }
-  }
-
-  Future<String?> _askAddressedTo(BuildContext context) async {
-    final colors = AppColors.of(context);
-    final tc = TextEditingController();
-    return await Get.dialog<String>(
-      AlertDialog(
-        title: Text('letter_bank_addressed_to'.tr),
-        content: TextField(
-          controller: tc,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: 'letter_bank_addressed_to_hint'.tr,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back<String>(),
-            child: Text('cancel'.tr),
-          ),
-          ElevatedButton(
-            onPressed: () => Get.back<String>(result: tc.text),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colors.brand,
-              foregroundColor: Colors.white,
-            ),
-            child: Text('letter_bank_issue'.tr),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final templates = ctrl.letterTemplates;
-
-    return _CollapsibleSection(
-      icon: Icons.assignment_outlined,
-      title: 'letters_card_title'.tr,
-      child: Column(
-        children: [
-          for (var i = 0; i < templates.length; i++) ...[
-            if (i > 0) const SizedBox(height: AppSpacing.s2),
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                onTap: () => _onTap(context, templates[i]),
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.s3),
-                  decoration: BoxDecoration(
-                    color: colors.sunken.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.s2),
-                        decoration: BoxDecoration(
-                          color: colors.brand.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                        ),
-                        child: Icon(
-                          _iconFor(templates[i]['template_key'] as String?),
-                          size: 18,
-                          color: colors.brand,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.s3),
-                      Expanded(
-                        child: Text(
-                          (templates[i]['name_ar'] as String?)?.isNotEmpty == true
-                              ? templates[i]['name_ar'] as String
-                              : (templates[i]['name_en'] as String? ?? '—'),
-                          style: const TextStyle(
-                            fontFamily: 'IBM Plex Sans Arabic',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      Icon(Icons.picture_as_pdf_outlined,
-                          size: 16, color: colors.textTertiary),
-                      const SizedBox(width: AppSpacing.s1),
-                      Icon(Icons.chevron_left,
-                          size: 18, color: colors.textTertiary),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
 }
 
 /* ── End-of-Service Benefits (long-horizon entitlement snapshot) ────────── */

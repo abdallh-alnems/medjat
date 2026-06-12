@@ -51,6 +51,16 @@ try {
     error_log('Support email error: ' . $e->getMessage());
 }
 
+try {
+    NotificationService::sendToSupportTeam(
+        'New Support Message',
+        mb_substr($body, 0, 100),
+        ['type' => 'support', 'ticket_id' => $ticketId]
+    );
+} catch (Throwable $e) {
+    error_log('Support push error: ' . $e->getMessage());
+}
+
 Response::success([
     'message_id' => $messageId,
     'status' => $newStatus,

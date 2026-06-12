@@ -1,57 +1,54 @@
-import 'package:get/get.dart';
+/// A single rung of the late-arrival deduction ladder: when an employee's
+/// late minutes reach [thresholdMinutes], [deductionDays] (a fraction of a
+/// working day) is deducted. The highest matching rung wins.
+class LateTier {
+  final int? id;
+  final int thresholdMinutes;
+  final double deductionDays;
 
-class DeductionRuleModel {
-  final int id;
-  final String type;
-  final String name;
-  final double value;
-  final String unit;
-  final bool isActive;
-
-  DeductionRuleModel({
-    required this.id,
-    required this.type,
-    required this.name,
-    this.value = 0,
-    this.unit = 'fixed',
-    this.isActive = true,
+  const LateTier({
+    this.id,
+    required this.thresholdMinutes,
+    required this.deductionDays,
   });
 
-  factory DeductionRuleModel.fromJson(Map<String, dynamic> json) {
-    return DeductionRuleModel(
-      id: (json['id'] as int?) ?? 0,
-      type: (json['type'] as String?) ?? 'late_proportional',
-      name: (json['name'] as String?) ?? '',
-      value: (json['value'] as num?)?.toDouble() ?? 0,
-      unit: (json['unit'] as String?) ?? 'fixed',
-      isActive: (json['is_active'] as bool?) ?? true,
-    );
-  }
+  factory LateTier.fromJson(Map<String, dynamic> json) => LateTier(
+    id: (json['id'] as num?)?.toInt(),
+    thresholdMinutes: (json['threshold_minutes'] as num?)?.toInt() ?? 0,
+    deductionDays: (json['deduction_days'] as num?)?.toDouble() ?? 0,
+  );
 
   Map<String, dynamic> toJson() => {
-        'type': type,
-        'name': name,
-        'value': value,
-        'unit': unit,
-        'is_active': isActive,
-      };
+    'threshold_minutes': thresholdMinutes,
+    'deduction_days': deductionDays,
+  };
 
-  String get typeLabel {
-    switch (type) {
-      case 'late_proportional':
-        return 'type_late_proportional'.tr;
-      case 'late_fixed':
-        return 'type_late_fixed'.tr;
-      case 'absence':
-        return 'type_absence'.tr;
-      case 'custom':
-        return 'type_custom'.tr;
-      case 'overtime_hourly':
-        return 'type_overtime_hourly'.tr;
-      case 'bonus_fixed':
-        return 'type_bonus_fixed'.tr;
-      default:
-        return type;
-    }
+  LateTier copyWith({int? thresholdMinutes, double? deductionDays}) => LateTier(
+    id: id,
+    thresholdMinutes: thresholdMinutes ?? this.thresholdMinutes,
+    deductionDays: deductionDays ?? this.deductionDays,
+  );
+}
+
+/// Tenant-level deduction configuration: the late-tier ladder plus the absence
+/// rate (days deducted per absent day).
+class DeductionConfig {
+  final List<LateTier> tiers;
+  final double absenceDays;
+
+  const DeductionConfig({this.tiers = const [], this.absenceDays = 1.5});
+
+  factory DeductionConfig.fromJson(Map<String, dynamic> json) {
+    final rawTiers = json['tiers'];
+    final tiers = rawTiers is List
+        ? rawTiers
+              .map((e) => LateTier.fromJson(e as Map<String, dynamic>))
+              .toList()
+        : <LateTier>[];
+    tiers.sort((a, b) => a.thresholdMinutes.compareTo(b.thresholdMinutes));
+    return DeductionConfig(
+      tiers: tiers,
+      absenceDays: (json['absence_days'] as num?)?.toDouble() ?? 1.5,
+    );
   }
 }

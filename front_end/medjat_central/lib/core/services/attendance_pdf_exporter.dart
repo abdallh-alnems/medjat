@@ -7,6 +7,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../../data/model/attendance_model.dart';
+import '../utils/pdf_helpers.dart';
 
 class AttendancePdfExporter {
   static pw.Font? _regular;
@@ -75,7 +76,7 @@ class AttendancePdfExporter {
     final doc = pw.Document();
     final theme = pw.ThemeData.withFont(base: _regular, bold: _bold);
     final summary = _computeSummary(records);
-    final isRtl = (Get.locale?.languageCode ?? 'ar') == 'ar';
+    final isRtl = pdfIsArabic();
 
     doc.addPage(
       pw.MultiPage(
@@ -208,9 +209,27 @@ class AttendancePdfExporter {
       ]);
     }
 
+    // TableHelper renders columns in list order and does not flip them for
+    // RTL, so reverse the columns (and remap the fixed widths) when Arabic.
+    final widths = <int, pw.TableColumnWidth>{
+      0: const pw.FixedColumnWidth(20),
+      4: const pw.FixedColumnWidth(45),
+      5: const pw.FixedColumnWidth(45),
+      6: const pw.FixedColumnWidth(35),
+      7: const pw.FixedColumnWidth(35),
+    };
+
+    final orderedHeaders = isRtl ? headers.reversed.toList() : headers;
+    final orderedRows =
+        isRtl ? rows.map((r) => r.reversed.toList()).toList() : rows;
+    final n = headers.length;
+    final orderedWidths = isRtl
+        ? {for (final e in widths.entries) (n - 1 - e.key): e.value}
+        : widths;
+
     return pw.TableHelper.fromTextArray(
-      headers: headers,
-      data: rows,
+      headers: orderedHeaders,
+      data: orderedRows,
       headerStyle: pw.TextStyle(
         fontSize: 9,
         fontWeight: pw.FontWeight.bold,
@@ -222,13 +241,7 @@ class AttendancePdfExporter {
       cellPadding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
       oddRowDecoration: const pw.BoxDecoration(color: PdfColors.grey50),
-      columnWidths: {
-        0: const pw.FixedColumnWidth(20),
-        4: const pw.FixedColumnWidth(45),
-        5: const pw.FixedColumnWidth(45),
-        6: const pw.FixedColumnWidth(35),
-        7: const pw.FixedColumnWidth(35),
-      },
+      columnWidths: orderedWidths,
     );
   }
 

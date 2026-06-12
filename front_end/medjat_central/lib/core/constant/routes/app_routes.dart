@@ -17,12 +17,18 @@ abstract class AppRoutes {
   static const String reportPayroll = '/reports/payroll';
   static const String reportEmployees = '/reports/employees';
   static const String reportLeaves = '/reports/leaves';
-  static const String expenses = '/expenses';
   static const String loans = '/loans';
+  static const String bulkAdjustments = '/bulk-adjustments';
+  static const String bulkAdjustmentCreate = '/bulk-adjustments/new';
+  static const String bulkAdjustmentDetail = '/bulk-adjustments/detail';
+  static const String auditLog = '/activity-log';
   static const String deductionRules = '/settings/deduction-rules';
   static const String attendanceMethod = '/settings/attendance-method';
   static const String companySettings = '/settings/company';
   static const String leaveSettings = '/settings/leave';
+  static const String leaveCarryoverPolicies =
+      '/settings/leave/carryover-policies';
+  static const String leaveEncashments = '/settings/leave/encashments';
   static const String forgotPassword = '/forgot-password';
   static const String shifts = '/shifts';
   static const String assignShift = '/shifts/assign';
@@ -44,12 +50,11 @@ abstract class AppRoutes {
   static const String employeeDocuments = '/employee/documents';
   static const String documentsReport = '/reports/documents';
   static const String categories = '/settings/categories';
+  static const String categoryEmployees = '/settings/categories/employees';
   static const String statutoryPayrollSettings = '/settings/statutory-payroll';
   static const String notifications = '/notifications';
   static const String notificationPrefs = '/notifications/prefs';
   static const String assets = '/assets';
-  static const String letters = '/letters';
-  static const String letterTemplateEdit = '/letters/template/edit';
   static const String statusEmployees = '/status-employees';
   static const String expiringCompliance = '/compliance/expiring';
   static const String support = '/support';

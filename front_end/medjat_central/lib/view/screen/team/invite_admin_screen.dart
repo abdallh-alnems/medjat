@@ -25,10 +25,27 @@ class _InviteAdminScreenState extends State<InviteAdminScreen> {
   final status = StatusRequest.none.obs;
   List<BranchModel> branches = [];
 
+  // Optional custom permissions chosen at invite time (point 5).
+  final customizePerms = false.obs;
+  final selectedPerms = <String>{}.obs;
+
   @override
   void initState() {
     super.initState();
+    _resetPermsForRole(roleCtrl.value);
     _loadBranches();
+  }
+
+  void _resetPermsForRole(String role) {
+    selectedPerms
+      ..clear()
+      ..addAll(TeamController.roleDefaultsByRole[role] ?? const []);
+  }
+
+  void _onRoleChanged(String role) {
+    roleCtrl.value = role;
+    customizePerms.value = false;
+    _resetPermsForRole(role);
   }
 
   Future<void> _loadBranches() async {
@@ -90,13 +107,30 @@ class _InviteAdminScreenState extends State<InviteAdminScreen> {
               const SizedBox(height: AppSpacing.s3),
               Obx(() => _RoleSelector(
                     selected: roleCtrl.value,
-                    onChanged: (v) => roleCtrl.value = v,
+                    onChanged: _onRoleChanged,
                     colors: colors,
                     // Only a general manager (full access) may grant the top role.
                     includeGeneralManager:
                         Get.find<AuthController>().user?.isGeneralManager ??
                             false,
                   )),
+              Obx(() => roleCtrl.value == 'general_manager'
+                  ? const SizedBox.shrink()
+                  : _PermissionsSection(
+                      customize: customizePerms.value,
+                      selected: selectedPerms,
+                      onToggleCustomize: (v) {
+                        customizePerms.value = v;
+                        if (!v) _resetPermsForRole(roleCtrl.value);
+                      },
+                      onTogglePerm: (perm) {
+                        if (selectedPerms.contains(perm)) {
+                          selectedPerms.remove(perm);
+                        } else {
+                          selectedPerms.add(perm);
+                        }
+                      },
+                    )),
               const SizedBox(height: AppSpacing.s4),
               Text('branch'.tr, style: AppTextStyles.h3(context)),
               const SizedBox(height: AppSpacing.s3),
@@ -130,6 +164,9 @@ class _InviteAdminScreenState extends State<InviteAdminScreen> {
       email: emailCtrl.text.trim(),
       role: roleCtrl.value,
       branchId: branchIdCtrl.value,
+      permissions: (customizePerms.value && roleCtrl.value != 'general_manager')
+          ? selectedPerms.toList()
+          : null,
     );
 
     status.value = StatusRequest.none;
@@ -137,6 +174,54 @@ class _InviteAdminScreenState extends State<InviteAdminScreen> {
     if (code != null) {
       Get.offNamed<dynamic>(AppRoutes.invitationCode, arguments: code);
     }
+  }
+}
+
+class _PermissionsSection extends StatelessWidget {
+  final bool customize;
+  final Set<String> selected;
+  final ValueChanged<bool> onToggleCustomize;
+  final ValueChanged<String> onTogglePerm;
+
+  const _PermissionsSection({
+    required this.customize,
+    required this.selected,
+    required this.onToggleCustomize,
+    required this.onTogglePerm,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: AppSpacing.s4),
+        SwitchListTile(
+          value: customize,
+          onChanged: onToggleCustomize,
+          contentPadding: EdgeInsets.zero,
+          dense: true,
+          title: Text('customize_permissions'.tr,
+              style: AppTextStyles.h3(context)),
+          subtitle: Text('customize_permissions_hint'.tr,
+              style: AppTextStyles.sm(context)),
+        ),
+        if (customize)
+          ...TeamController.allPermissionKeys.map((perm) {
+            final isOn = selected.contains(perm);
+            return CheckboxListTile(
+              value: isOn,
+              onChanged: (_) => onTogglePerm(perm),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: Text('perm_$perm'.tr,
+                  style: const TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic', fontSize: 14)),
+            );
+          }),
+      ],
+    );
   }
 }
 

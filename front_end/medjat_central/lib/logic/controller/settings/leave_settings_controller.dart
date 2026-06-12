@@ -12,9 +12,23 @@ class LeaveSettingsController extends GetxController {
 
   final defaultDaysController = TextEditingController();
   final carryoverDaysController = TextEditingController();
+  final expiryMonthsController = TextEditingController();
+  final legalMinController = TextEditingController();
 
   /// When false, remaining balance is dropped at year end (no carryover).
   bool carryoverEnabled = false;
+
+  /// Carried days expire after [expiryMonthsController] months when true.
+  bool expiryEnabled = false;
+
+  /// Pay out (cash) days above the cap instead of dropping them.
+  bool encashExcess = false;
+
+  /// Cron runs the year-end rollover automatically on Jan 1.
+  bool autoRolloverEnabled = false;
+
+  /// Bump entitlement to >=30 days after 10 years service (Egyptian law).
+  bool applyLegalSeniority = true;
 
   @override
   void onInit() {
@@ -26,6 +40,8 @@ class LeaveSettingsController extends GetxController {
   void onClose() {
     defaultDaysController.dispose();
     carryoverDaysController.dispose();
+    expiryMonthsController.dispose();
+    legalMinController.dispose();
     super.onClose();
   }
 
@@ -39,11 +55,24 @@ class LeaveSettingsController extends GetxController {
       dynamic body = response['data'];
       if (body is Map && body['data'] is Map) body = body['data'];
       if (body is Map) {
-        final defaultDays = (body['default_annual_leave_days'] as num?)?.toInt() ?? 21;
+        final defaultDays = (body['default_annual_leave_days'] as num?)?.toInt() ?? 0;
         defaultDaysController.text = defaultDays.toString();
         final carryover = (body['leave_carryover_max_days'] as num?)?.toInt();
-        carryoverEnabled = carryover != null;
+        carryoverEnabled = (body['carryover_enabled'] as bool?) ?? (carryover != null);
         carryoverDaysController.text = carryover?.toString() ?? '';
+
+        final expiry = (body['carryover_expiry_months'] as num?)?.toInt();
+        expiryEnabled = expiry != null;
+        expiryMonthsController.text = expiry?.toString() ?? '';
+
+        encashExcess = (body['carryover_encash_excess'] as bool?) ?? false;
+
+        final legalMin = (body['carryover_legal_min_days'] as num?)?.toInt();
+        legalMinController.text = legalMin?.toString() ?? '';
+
+        autoRolloverEnabled = (body['auto_rollover_enabled'] as bool?) ?? false;
+        applyLegalSeniority =
+            (body['apply_legal_seniority_entitlement'] as bool?) ?? true;
       }
       status = StatusRequest.success;
     } else {
@@ -57,6 +86,26 @@ class LeaveSettingsController extends GetxController {
     update();
   }
 
+  void setExpiryEnabled(bool value) {
+    expiryEnabled = value;
+    update();
+  }
+
+  void setEncashExcess(bool value) {
+    encashExcess = value;
+    update();
+  }
+
+  void setAutoRollover(bool value) {
+    autoRolloverEnabled = value;
+    update();
+  }
+
+  void setApplyLegalSeniority(bool value) {
+    applyLegalSeniority = value;
+    update();
+  }
+
   Future<void> saveSettings() async {
     final defaultDays = int.tryParse(defaultDaysController.text.trim());
     if (defaultDays == null || defaultDays < 0 || defaultDays > 366) {
@@ -66,12 +115,31 @@ class LeaveSettingsController extends GetxController {
     }
 
     int? carryoverMax;
+    int? expiryMonths;
+    int? legalMin;
     if (carryoverEnabled) {
       carryoverMax = int.tryParse(carryoverDaysController.text.trim());
       if (carryoverMax == null || carryoverMax < 0 || carryoverMax > 366) {
         Get.snackbar('error'.tr, 'leave_carryover_days_invalid'.tr,
             snackPosition: SnackPosition.BOTTOM);
         return;
+      }
+      if (expiryEnabled) {
+        expiryMonths = int.tryParse(expiryMonthsController.text.trim());
+        if (expiryMonths == null || expiryMonths < 0 || expiryMonths > 60) {
+          Get.snackbar('error'.tr, 'leave_expiry_invalid'.tr,
+              snackPosition: SnackPosition.BOTTOM);
+          return;
+        }
+      }
+      final legalText = legalMinController.text.trim();
+      if (legalText.isNotEmpty) {
+        legalMin = int.tryParse(legalText);
+        if (legalMin == null || legalMin < 0 || legalMin > 366) {
+          Get.snackbar('error'.tr, 'leave_legal_min_invalid'.tr,
+              snackPosition: SnackPosition.BOTTOM);
+          return;
+        }
       }
     }
 
@@ -80,7 +148,13 @@ class LeaveSettingsController extends GetxController {
 
     final response = await _data.updateLeaveSettings(
       defaultAnnualLeaveDays: defaultDays,
+      carryoverEnabled: carryoverEnabled,
       carryoverMaxDays: carryoverMax,
+      expiryMonths: expiryMonths,
+      encashExcess: carryoverEnabled && encashExcess,
+      legalMinDays: legalMin,
+      autoRolloverEnabled: autoRolloverEnabled,
+      applyLegalSeniorityEntitlement: applyLegalSeniority,
     );
 
     saving = false;

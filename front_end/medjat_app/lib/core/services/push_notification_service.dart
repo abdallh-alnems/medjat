@@ -141,6 +141,9 @@ class PushNotificationService {
       case 'document_expiry':
         Get.toNamed<void>(AppRoutes.myDocuments);
         break;
+      case 'asset':
+        Get.toNamed<void>(AppRoutes.myAssets);
+        break;
       default:
         Get.toNamed<void>(AppRoutes.notifications);
         break;

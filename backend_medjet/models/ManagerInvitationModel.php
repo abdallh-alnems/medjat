@@ -73,6 +73,21 @@ final class ManagerInvitationModel {
         return true;
     }
 
+    public static function regenerate(int $invitationId, int $tenantId): ?array {
+        $code = self::generateUniqueCode();
+        $tokenHash = hash('sha256', $code);
+        $expiresAt = date('Y-m-d H:i:s', strtotime('+' . self::VALIDITY_HOURS . ' hours'));
+
+        Database::execute(
+            "UPDATE manager_invitations
+             SET token_hash = ?, expires_at = ?, cancelled_at = NULL
+             WHERE id = ? AND tenant_id = ? AND accepted_at IS NULL",
+            [$tokenHash, $expiresAt, $invitationId, $tenantId]
+        );
+
+        return ['code' => $code, 'expires_at' => $expiresAt];
+    }
+
     public static function markAccepted(int $invitationId, int $adminId): void {
         Database::execute(
             "UPDATE manager_invitations

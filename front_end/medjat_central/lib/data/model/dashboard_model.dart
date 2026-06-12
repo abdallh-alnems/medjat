@@ -8,12 +8,9 @@ class DashboardModel {
   final int onLeaveToday;
   final int totalBranches;
   final int pendingLeaves;
-  final int pendingLetters;
   final int pendingLoans;
   final int pendingBreaks;
   final int assetsToReturn;
-  final int pendingExpenses;
-  final double monthlyExpenses;
   final int expiringCompliance;
   final PayrollSummary? payroll;
   final List<BranchStats> branchStats;
@@ -28,12 +25,9 @@ class DashboardModel {
     this.onLeaveToday = 0,
     this.totalBranches = 0,
     this.pendingLeaves = 0,
-    this.pendingLetters = 0,
     this.pendingLoans = 0,
     this.pendingBreaks = 0,
     this.assetsToReturn = 0,
-    this.pendingExpenses = 0,
-    this.monthlyExpenses = 0,
     this.expiringCompliance = 0,
     this.payroll,
     this.branchStats = const [],
@@ -50,12 +44,9 @@ class DashboardModel {
       onLeaveToday: (json['on_leave_today'] as num?)?.toInt() ?? 0,
       totalBranches: (json['total_branches'] as num?)?.toInt() ?? 0,
       pendingLeaves: (json['pending_leaves'] as num?)?.toInt() ?? 0,
-      pendingLetters: (json['pending_letters'] as num?)?.toInt() ?? 0,
       pendingLoans: (json['pending_loans'] as num?)?.toInt() ?? 0,
       pendingBreaks: (json['pending_breaks'] as num?)?.toInt() ?? 0,
       assetsToReturn: (json['assets_to_return'] as num?)?.toInt() ?? 0,
-      pendingExpenses: (json['pending_expenses'] as num?)?.toInt() ?? 0,
-      monthlyExpenses: (json['monthly_expenses'] as num?)?.toDouble() ?? 0,
       expiringCompliance: (json['expiring_compliance'] as num?)?.toInt() ?? 0,
       payroll: json['payroll_summary'] is Map<String, dynamic>
           ? PayrollSummary.fromJson(

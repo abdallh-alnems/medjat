@@ -124,4 +124,10 @@ class UserModel {
       isHR ||
       isManager ||
       permissions.contains('manage_documents');
+
+  /// Mirrors the backend `manage_deduction_rules` permission (general_manager
+  /// and hr by default). Used to gate the deduction-rules settings entry so
+  /// only users who can actually save the rules can open the page.
+  bool get canManageDeductionRules =>
+      isGeneralManager || isHR || permissions.contains('manage_deduction_rules');
 }

@@ -2,12 +2,21 @@
 
 final class LoanModel {
     public const TYPES = ['loan', 'advance'];
-    public const STATUSES = ['pending', 'active', 'completed', 'cancelled'];
+    public const STATUSES = ['pending', 'active', 'completed', 'cancelled', 'rejected'];
 
     public static function countPending(int $tenantId): int {
         return (int) (Database::fetchOne(
             "SELECT COUNT(*) AS c FROM employee_loans WHERE tenant_id = ? AND status = 'pending'",
             [$tenantId]
+        )['c'] ?? 0);
+    }
+
+    /** Pending advance/loan requests an employee already has awaiting a decision. */
+    public static function countPendingForEmployee(int $employeeId, int $tenantId): int {
+        return (int) (Database::fetchOne(
+            "SELECT COUNT(*) AS c FROM employee_loans
+             WHERE employee_id = ? AND tenant_id = ? AND status = 'pending'",
+            [$employeeId, $tenantId]
         )['c'] ?? 0);
     }
 
@@ -20,7 +29,7 @@ final class LoanModel {
         int $installmentsCount,
         string $startMonth,
         ?string $reason,
-        int $createdBy
+        ?int $createdBy
     ): int {
         Database::execute(
             "INSERT INTO employee_loans
@@ -151,6 +160,23 @@ final class LoanModel {
             $con->rollBack();
             throw $e;
         }
+    }
+
+    /**
+     * Reject a still-pending request. Distinct from cancel() so the employee's
+     * history shows a rejection rather than a withdrawal. No installments exist
+     * yet (they're only generated on approval), so nothing to clean up.
+     */
+    public static function reject(int $loanId, int $tenantId): bool {
+        $loan = self::findById($loanId, $tenantId);
+        if (!$loan || $loan['status'] !== 'pending') {
+            return false;
+        }
+        Database::execute(
+            "UPDATE employee_loans SET status = 'rejected' WHERE id = ? AND tenant_id = ?",
+            [$loanId, $tenantId]
+        );
+        return true;
     }
 
     public static function cancel(int $loanId, int $tenantId): bool {

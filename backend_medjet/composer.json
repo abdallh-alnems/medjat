@@ -5,7 +5,8 @@
     "require": {
         "php": ">=7.4",
         "kreait/firebase-php": "^7.0",
-        "mpdf/mpdf": "^8.3"
+        "mpdf/mpdf": "^8.3",
+        "phpoffice/phpword": "^1.2"
     },
     "autoload": {
         "psr-4": {

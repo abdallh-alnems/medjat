@@ -9,5 +9,7 @@ abstract class AppRoutes {
   static const String users = '/users';
   static const String audit = '/audit';
   static const String notifications = '/notifications';
-  static const String forceUpdate = '/force-update';
+  static const String supportInbox = '/support-inbox';
+  static const String supportThread = '/support-thread';
+  static const String appControl = '/app-control';
 }

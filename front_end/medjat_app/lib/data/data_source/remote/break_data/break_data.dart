@@ -31,4 +31,13 @@ class BreakData {
   Future<Map<String, dynamic>> cancel(int id) async {
     return await _crud.postData(AppLinks.breakCancel, {'break_id': id});
   }
+
+  /// Respond to a manager's suggested alternative time. [action] is
+  /// 'accept' or 'reject'.
+  Future<Map<String, dynamic>> respondPostpone(int id, String action) async {
+    return await _crud.postData(
+      AppLinks.breakRespondPostpone,
+      {'break_id': id, 'action': action},
+    );
+  }
 }

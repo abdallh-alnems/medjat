@@ -53,13 +53,18 @@ class PayrollScreen extends StatelessWidget {
           ),
           Text(controller.selectedMonth, style: AppTextStyles.h3(context)),
           IconButton(
-            onPressed: () {
-              final current = DateTime.parse('${controller.selectedMonth}-01');
-              final next = DateTime(current.year, current.month + 1);
-              controller.changeMonth(
-                '${next.year}-${next.month.toString().padLeft(2, '0')}',
-              );
-            },
+            // Future months haven't happened yet — disable forward navigation
+            // once the current month is reached.
+            onPressed: controller.canGoNext
+                ? () {
+                    final current =
+                        DateTime.parse('${controller.selectedMonth}-01');
+                    final next = DateTime(current.year, current.month + 1);
+                    controller.changeMonth(
+                      '${next.year}-${next.month.toString().padLeft(2, '0')}',
+                    );
+                  }
+                : null,
             icon: const Icon(Icons.chevron_left),
           ),
         ],
@@ -77,14 +82,14 @@ class PayrollScreen extends StatelessWidget {
 
     final deductions = _lines(slip['deductions_breakdown']);
     final additions = _lines(slip['bonuses_breakdown']);
-    final isDraft = slip['status'] == 'draft';
+    final status = slip['status']?.toString() ?? 'draft';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isDraft) _draftNote(context),
+          _statusBanner(context, status, slip['paid_at']),
 
           // ---- Summary ----
           _sectionCard(
@@ -148,21 +153,64 @@ class PayrollScreen extends StatelessWidget {
     );
   }
 
-  Widget _draftNote(BuildContext context) {
+  /// A status banner shown above the slip details. It always tells the
+  /// employee whether the salary has been deposited yet ("لم ينزل بعد") or
+  /// already paid, while the full breakdown stays visible below.
+  Widget _statusBanner(BuildContext context, String status, dynamic paidAt) {
+    final Color color;
+    final IconData icon;
+    final String label;
+    final String? sub;
+
+    switch (status) {
+      case 'paid':
+        color = _green;
+        icon = Icons.check_circle;
+        label = 'salary_paid'.tr;
+        final date = paidAt?.toString().split(' ').first ?? '';
+        sub = date.isNotEmpty ? '${'paid_on'.tr} $date' : null;
+        break;
+      case 'approved':
+        color = const Color(0xFF1565C0);
+        icon = Icons.verified;
+        label = 'salary_not_paid'.tr;
+        sub = 'salary_approved_awaiting'.tr;
+        break;
+      default: // draft
+        color = Colors.orange;
+        icon = Icons.schedule;
+        label = 'salary_not_paid'.tr;
+        sub = 'payroll_draft_note'.tr;
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.orange.withValues(alpha: 0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline, color: Colors.orange, size: 20),
-          const SizedBox(width: 8),
+          Icon(icon, color: color, size: 22),
+          const SizedBox(width: 10),
           Expanded(
-            child: Text('payroll_draft_note'.tr,
-                style: AppTextStyles.bodySecondary(context)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: AppTextStyles.body(context)
+                      .copyWith(color: color, fontWeight: FontWeight.w700),
+                ),
+                if (sub != null && sub.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(sub, style: AppTextStyles.bodySecondary(context)),
+                ],
+              ],
+            ),
           ),
         ],
       ),

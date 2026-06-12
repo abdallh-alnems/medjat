@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
-import '../../../core/services/locale_service.dart';
+import '../../widget/date_formatter.dart';
 
 class AttendanceSuccessScreen extends StatefulWidget {
   const AttendanceSuccessScreen({super.key});
@@ -69,44 +69,10 @@ class _AttendanceSuccessScreenState extends State<AttendanceSuccessScreen>
     final isLight = Theme.of(context).brightness == Brightness.light;
     final colors = isLight ? AppColors.light : AppColors.dark;
     final now = DateTime.now();
-    final localeSvc = Get.find<LocaleService>();
-    final isAr = localeSvc.isArabic;
 
-    String dayName;
-    String monthName;
-
-    if (isAr) {
-      final weekdays = [
-        '', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس',
-        'الجمعة', 'السبت', 'الأحد'
-      ];
-      final months = [
-        '', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو',
-        'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر',
-        'نوفمبر', 'ديسمبر'
-      ];
-      dayName = weekdays[now.weekday];
-      monthName = months[now.month];
-    } else {
-      final weekdays = [
-        '', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
-        'Friday', 'Saturday', 'Sunday'
-      ];
-      final months = [
-        '', 'January', 'February', 'March', 'April', 'May',
-        'June', 'July', 'August', 'September', 'October',
-        'November', 'December'
-      ];
-      dayName = weekdays[now.weekday];
-      monthName = months[now.month];
-    }
-
-    final hour = now.hour;
-    final minute = now.minute.toString().padLeft(2, '0');
-    final period = hour >= 12 ? 'pm'.tr : 'am'.tr;
-    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
-    final timeStr = '$displayHour:$minute $period';
-    final dateStr = '$dayName ${now.day} $monthName ${now.year}';
+    final formatted = DateFormatter.format(now);
+    final timeStr = DateFormatter.formatTime(now);
+    final dateStr = '${formatted.dayName} ${now.day} ${formatted.monthName} ${now.year}';
 
     final title = isCheckOut ? 'check_out_registered'.tr : 'check_in_registered'.tr;
 

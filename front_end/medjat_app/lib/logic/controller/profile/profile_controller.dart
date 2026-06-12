@@ -3,10 +3,9 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:open_filex/open_filex.dart';
-import 'package:path_provider/path_provider.dart';
 import '../../../core/class/status_request.dart';
 import '../../../data/data_source/remote/profile_data/profile_data.dart';
+import '../../../view/widget/pdf_preview_screen.dart';
 
 class ProfileController extends GetxController {
   final ProfileData _profileData = Get.find<ProfileData>();
@@ -128,15 +127,9 @@ class ProfileController extends GetxController {
       return;
     }
 
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/doc_$docId.pdf');
-    await file.writeAsBytes(data, flush: true);
-
-    final result = await OpenFilex.open(file.path);
-    if (result.type != ResultType.done) {
-      Get.snackbar('error'.tr, 'document_open_failed'.tr,
-          snackPosition: SnackPosition.BOTTOM);
-    }
+    // PDFs: preview in-app (no external viewer).
+    unawaited(
+        Get.to<void>(() => PdfPreviewScreen(bytes: data, title: originalName)));
   }
 }
 

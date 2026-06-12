@@ -121,15 +121,23 @@ final class LeaveModel {
         return Database::fetchOne($sql, $params) !== null;
     }
 
+    /** Statutory long-service entitlement: >=30 days after 10 years (Egyptian labour law). */
+    private const SENIORITY_ENTITLEMENT_MONTHS = 120;
+    private const SENIORITY_ENTITLEMENT_DAYS = 30;
+
     /**
      * Dynamic annual leave balance for an employee in a given year.
-     * entitlement = employees.annual_leave_days ?? tenants.default_annual_leave_days (default 21).
-     * carried     = leave_year_balances.carried_over_days for that year (0 when no row).
-     * total       = entitlement + carried; remaining = max(0, total - used).
+     * entitlement = employees.annual_leave_days ?? tenants.default_annual_leave_days (default 0),
+     *               bumped to >=30 after 10 years service when the tenant enables the legal rule.
+     * carried     = leave_year_balances.carried_over_days, EXCLUDING any unused days that have
+     *               expired (carried days are consumed before the fresh entitlement).
+     * total       = entitlement + effective carried; remaining = max(0, total - used).
      */
     public static function getBalance(int $employeeId, int $tenantId, int $year): array {
         $entRow = Database::fetchOne(
-            "SELECT COALESCE(e.annual_leave_days, t.default_annual_leave_days, 21) AS entitlement_days
+            "SELECT COALESCE(e.annual_leave_days, t.default_annual_leave_days, 0) AS entitlement_days,
+                    e.hire_date,
+                    t.apply_legal_seniority_entitlement
              FROM employees e
              JOIN tenants t ON t.id = e.tenant_id
              WHERE e.id = ? AND e.tenant_id = ? LIMIT 1",
@@ -137,12 +145,22 @@ final class LeaveModel {
         );
         $entitlementDays = (int) ($entRow['entitlement_days'] ?? 21);
 
+        if ($entRow && (int) ($entRow['apply_legal_seniority_entitlement'] ?? 0) === 1) {
+            $tenure = LeaveCarryoverPolicyModel::tenureMonths($entRow['hire_date'] ?? null);
+            if ($tenure >= self::SENIORITY_ENTITLEMENT_MONTHS) {
+                $entitlementDays = max($entitlementDays, self::SENIORITY_ENTITLEMENT_DAYS);
+            }
+        }
+
         $carryRow = Database::fetchOne(
-            "SELECT carried_over_days FROM leave_year_balances
+            "SELECT carried_over_days,
+                    DATE_FORMAT(carryover_expires_on, '%Y-%m-%d') AS carryover_expires_on
+             FROM leave_year_balances
              WHERE employee_id = ? AND tenant_id = ? AND year = ? LIMIT 1",
             [$employeeId, $tenantId, $year]
         );
         $carriedOverDays = (int) ($carryRow['carried_over_days'] ?? 0);
+        $expiresOn = $carryRow['carryover_expires_on'] ?? null;
 
         $row = Database::fetchOne(
             "SELECT COALESCE(SUM(DATEDIFF(end_date, start_date) + 1), 0) as used_days
@@ -152,40 +170,62 @@ final class LeaveModel {
             [$employeeId, $tenantId, $year]
         );
         $usedDays = (int) ($row['used_days'] ?? 0);
-        $totalDays = $entitlementDays + $carriedOverDays;
+
+        // Carried days are spent first; any unused carried days drop once expired.
+        $effectiveCarried = $carriedOverDays;
+        $expired = false;
+        if ($expiresOn !== null && $carriedOverDays > 0 && $expiresOn < date('Y-m-d')) {
+            $usedAgainstCarry = min($usedDays, $carriedOverDays);
+            $effectiveCarried = $usedAgainstCarry;
+            $expired = true;
+        }
+
+        $totalDays = $entitlementDays + $effectiveCarried;
 
         return [
             'year' => $year,
             'entitlement_days' => $entitlementDays,
-            'carried_over_days' => $carriedOverDays,
+            'carried_over_days' => $effectiveCarried,
             'total_days' => $totalDays,
             'used_days' => $usedDays,
             'remaining_days' => max(0, $totalDays - $usedDays),
+            'carryover_expires_on' => $expiresOn,
+            'carryover_expired' => $expired,
         ];
     }
 
     /**
-     * Carry remaining annual balance from $fromYear into $fromYear + 1 for every active employee.
-     * carried = min(remaining, tenants.leave_carryover_max_days); 0 when carryover is disabled (NULL).
+     * Carry remaining annual balance from $fromYear into $fromYear + 1 for every active employee,
+     * applying each employee's resolved carryover policy (cap, expiry, encashment, legal floor).
+     *
+     * Per employee, given the remaining balance R and the resolved policy:
+     *   - carried  = enabled ? min(R, cap)  (cap NULL = carry all) : 0
+     *   - excess   = R - carried
+     *   - encashed = encash_excess ? excess : 0, then topped up so that
+     *                (carried + encashed) >= min(legal_min_carry_days, R) — the statutory
+     *                floor is never forfeited (rescued as cash rather than lost)
+     *   - dropped  = R - carried - encashed
+     * Carried days expire on (toYear-01-01 + expiry_months) when expiry is set.
+     * Encashed days become a pending leave_encashments row (daily rate = base_salary / 30).
+     *
      * Upserts one leave_year_balances row per employee for the target year, inside a transaction.
      *
-     * @return array{from_year:int, to_year:int, processed:int, carryover_max:?int}
+     * @return array{from_year:int,to_year:int,processed:int,total_carried:int,total_encashed:int,total_dropped:int}
      */
     public static function rolloverYear(int $tenantId, int $fromYear): array {
         $tenant = Database::fetchOne(
-            "SELECT default_annual_leave_days, leave_carryover_max_days FROM tenants WHERE id = ? LIMIT 1",
+            "SELECT default_annual_leave_days FROM tenants WHERE id = ? LIMIT 1",
             [$tenantId]
         );
         if (!$tenant) {
             throw new RuntimeException('Tenant not found');
         }
-        $carryoverMax = $tenant['leave_carryover_max_days'] !== null
-            ? (int) $tenant['leave_carryover_max_days']
-            : null;
         $toYear = $fromYear + 1;
+        $defaultEntitlement = (int) $tenant['default_annual_leave_days'];
 
         $employees = Database::fetchAll(
-            "SELECT id FROM employees WHERE tenant_id = ? AND status != 'terminated'",
+            "SELECT id, annual_leave_days, base_salary FROM employees
+             WHERE tenant_id = ? AND status != 'terminated'",
             [$tenantId]
         );
 
@@ -193,27 +233,68 @@ final class LeaveModel {
         $con->beginTransaction();
         try {
             $processed = 0;
+            $totalCarried = 0;
+            $totalEncashed = 0;
+            $totalDropped = 0;
+
             foreach ($employees as $emp) {
                 $employeeId = (int) $emp['id'];
-                $balance = self::getBalance($employeeId, $tenantId, $fromYear);
-                $remaining = (int) $balance['remaining_days'];
-                $carried = $carryoverMax === null ? 0 : min($remaining, $carryoverMax);
+                $remaining = (int) self::getBalance($employeeId, $tenantId, $fromYear)['remaining_days'];
+                $policy = LeaveCarryoverPolicyModel::resolve($employeeId, $tenantId);
 
-                // Entitlement for the new year (per-employee override else tenant default).
-                $entRow = Database::fetchOne(
-                    "SELECT COALESCE(annual_leave_days, ?) AS entitlement_days
-                     FROM employees WHERE id = ? AND tenant_id = ? LIMIT 1",
-                    [(int) $tenant['default_annual_leave_days'], $employeeId, $tenantId]
-                );
-                $entitlement = (int) ($entRow['entitlement_days'] ?? $tenant['default_annual_leave_days']);
+                if ($policy['carryover_enabled']) {
+                    $cap = $policy['carryover_max_days'];
+                    $carried = $cap === null ? $remaining : min($remaining, $cap);
+                } else {
+                    $carried = 0;
+                }
+                $excess = $remaining - $carried;
+                $encashed = $policy['encash_excess'] ? $excess : 0;
+
+                // Statutory floor: at least legal_min days must survive (carried or cashed).
+                if ($policy['legal_min_carry_days'] !== null) {
+                    $minSurvive = min($policy['legal_min_carry_days'], $remaining);
+                    $shortfall = $minSurvive - ($carried + $encashed);
+                    if ($shortfall > 0) {
+                        $encashed += $shortfall;
+                    }
+                }
+                $dropped = $remaining - $carried - $encashed;
+
+                // Expiry date for the carried portion.
+                $expiresOn = null;
+                if ($carried > 0 && $policy['expiry_months'] !== null) {
+                    $expiresOn = (new DateTime("$toYear-01-01"))
+                        ->modify('+' . (int) $policy['expiry_months'] . ' months')
+                        ->format('Y-m-d');
+                }
+
+                // Entitlement snapshot for the new year (per-employee override else tenant default).
+                $entitlement = $emp['annual_leave_days'] !== null
+                    ? (int) $emp['annual_leave_days']
+                    : $defaultEntitlement;
 
                 Database::execute(
-                    "INSERT INTO leave_year_balances (tenant_id, employee_id, year, entitlement_days, carried_over_days)
-                     VALUES (?, ?, ?, ?, ?)
-                     ON DUPLICATE KEY UPDATE entitlement_days = VALUES(entitlement_days),
-                                             carried_over_days = VALUES(carried_over_days)",
-                    [$tenantId, $employeeId, $toYear, $entitlement, $carried]
+                    "INSERT INTO leave_year_balances
+                        (tenant_id, employee_id, year, entitlement_days, carried_over_days,
+                         carryover_expires_on, carryover_encashed_days)
+                     VALUES (?, ?, ?, ?, ?, ?, ?)
+                     ON DUPLICATE KEY UPDATE
+                        entitlement_days = VALUES(entitlement_days),
+                        carried_over_days = VALUES(carried_over_days),
+                        carryover_expires_on = VALUES(carryover_expires_on),
+                        carryover_encashed_days = VALUES(carryover_encashed_days)",
+                    [$tenantId, $employeeId, $toYear, $entitlement, $carried, $expiresOn, $encashed]
                 );
+
+                if ($encashed > 0) {
+                    $dailyRate = round(((float) $emp['base_salary']) / 30, 2);
+                    LeaveEncashmentModel::create($tenantId, $employeeId, $fromYear, $encashed, $dailyRate);
+                }
+
+                $totalCarried += $carried;
+                $totalEncashed += $encashed;
+                $totalDropped += max(0, $dropped);
                 $processed++;
             }
             $con->commit();
@@ -226,7 +307,9 @@ final class LeaveModel {
             'from_year' => $fromYear,
             'to_year' => $toYear,
             'processed' => $processed,
-            'carryover_max' => $carryoverMax,
+            'total_carried' => $totalCarried,
+            'total_encashed' => $totalEncashed,
+            'total_dropped' => $totalDropped,
         ];
     }
 

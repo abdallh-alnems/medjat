@@ -43,8 +43,6 @@ TRUNCATE TABLE break_requests;
 TRUNCATE TABLE candidates;
 TRUNCATE TABLE custom_roles;
 TRUNCATE TABLE deduction_rules;
-TRUNCATE TABLE document_requests;
-TRUNCATE TABLE document_templates;
 TRUNCATE TABLE employee_activation_codes;
 TRUNCATE TABLE employee_allowances;
 TRUNCATE TABLE employee_auth_tokens;
@@ -57,7 +55,6 @@ TRUNCATE TABLE employee_settlements;
 TRUNCATE TABLE employee_shift_schedule;
 TRUNCATE TABLE employee_suspensions;
 TRUNCATE TABLE employees;
-TRUNCATE TABLE expense_claims;
 TRUNCATE TABLE holidays;
 TRUNCATE TABLE job_openings;
 TRUNCATE TABLE kiosk_pins;
@@ -88,8 +85,6 @@ TRUNCATE TABLE required_document_employees;
 TRUNCATE TABLE required_documents;
 TRUNCATE TABLE shift_swap_requests;
 TRUNCATE TABLE shifts;
-TRUNCATE TABLE signature_parties;
-TRUNCATE TABLE signature_requests;
 TRUNCATE TABLE station_recognition_logs;
 TRUNCATE TABLE subscriptions;
 TRUNCATE TABLE super_admin_audit_log;
@@ -379,7 +374,7 @@ INSERT INTO deduction_rules (tenant_id, rule_key, rule_type, rule_value, descrip
 
 INSERT INTO payroll_statutory_settings (tenant_id, social_insurance_enabled, si_employee_rate, si_employer_rate,
   si_min_wage, si_max_wage, income_tax_enabled, income_tax_brackets, tax_personal_exemption, eosb_enabled, eosb_days_per_year)
-VALUES (3, 1, 9.75, 11.75, 1500.00, 45000.00, 0, JSON_ARRAY(JSON_OBJECT('upto',60000,'rate',0)), 0.00, 1, 21.00);
+VALUES (3, 1, 9.75, 11.75, 1500.00, 45000.00, 0, JSON_ARRAY(JSON_OBJECT('up_to',60000,'rate',0)), 0.00, 1, 21.00);
 
 INSERT INTO payroll_export_templates (tenant_id, name, delimiter, include_bom, include_header_row, decimal_places, columns, is_active, created_by) VALUES
  (3, 'تحويل بنكي (مصرف الراجحي)', ',', 1, 1, 2, JSON_ARRAY(JSON_OBJECT('label','IBAN','field','bank_iban'),JSON_OBJECT('label','الصافي','field','net_salary')), 1, 3),
@@ -406,19 +401,6 @@ INSERT INTO loan_installments (tenant_id, loan_id, employee_id, month, seq, amou
  (3, 3, 6, DATE_FORMAT(@D - INTERVAL 4 MONTH,'%Y-%m'), 1, 1000.00, 'paid', NOW() - INTERVAL 110 DAY),
  (3, 3, 6, DATE_FORMAT(@D - INTERVAL 3 MONTH,'%Y-%m'), 2, 1000.00, 'paid', NOW() - INTERVAL 80 DAY),
  (3, 3, 6, DATE_FORMAT(@D - INTERVAL 2 MONTH,'%Y-%m'), 3, 1000.00, 'paid', NOW() - INTERVAL 50 DAY);
-
--- ---------------------------------------------------------------------------
--- 13) EXPENSE CLAIMS — every category + status
--- ---------------------------------------------------------------------------
-INSERT INTO expense_claims (tenant_id, employee_id, category, amount, currency, description, expense_date,
-  receipt_url, status, rejection_reason, reviewed_by, reviewed_at, created_by) VALUES
- (3, 1,  'travel',        450.00, 'SAR', 'تذاكر طيران داخلي', @D - INTERVAL 5 DAY, '/uploads/receipts/r1.pdf', 'approved',   NULL, 3, NOW() - INTERVAL 3 DAY, 3),
- (3, 4,  'meals',         120.00, 'SAR', 'وجبة عمل مع عميل',  @D - INTERVAL 4 DAY, NULL, 'pending',    NULL, NULL, NULL, NULL),
- (3, 6,  'accommodation', 800.00, 'SAR', 'فندق مهمة عمل',     @D - INTERVAL 6 DAY, '/uploads/receipts/r3.pdf', 'rejected',   'لا يوجد فاتورة أصلية', 3, NOW() - INTERVAL 2 DAY, 10),
- (3, 1,  'supplies',      75.00,  'SAR', 'قرطاسية',          @D - INTERVAL 7 DAY, NULL, 'reimbursed', NULL, 3, NOW() - INTERVAL 1 DAY, 3),
- (3, 12, 'communication', 200.00, 'SAR', 'باقة إنترنت',      @D - INTERVAL 3 DAY, NULL, 'pending',    NULL, NULL, NULL, NULL),
- (3, 13, 'medical',       300.00, 'SAR', 'علاج',             @D - INTERVAL 2 DAY, NULL, 'approved',   NULL, 3, NOW(), 3),
- (3, 2,  'other',         60.00,  'SAR', 'مصاريف متنوعة',    @D - INTERVAL 1 DAY, NULL, 'pending',    NULL, NULL, NULL, NULL);
 
 -- ---------------------------------------------------------------------------
 -- 14) ASSET CUSTODY — every type + status
@@ -483,16 +465,6 @@ INSERT INTO employee_documents (tenant_id, employee_id, required_document_id, fi
  (3, 9,  4, '/uploads/docs/emp9_license.pdf',  'license.pdf',  150000, 'application/pdf', 'rejected', @D + INTERVAL 365 DAY, 3, NULL, 'صورة غير واضحة', NULL, NULL),
  (3, 6,  3, '/uploads/docs/emp6_health.pdf',   'health.pdf',   120000, 'application/pdf', 'required', NULL, NULL, 'مطلوب رفعها', NULL, NULL, NULL);
 
-INSERT INTO document_templates (id, tenant_id, template_key, name_ar, name_en, body_ar, body_en, is_system, is_active, sort_order) VALUES
- (1, 3, 'salary_cert', 'شهادة راتب', 'Salary Certificate', 'نشهد بأن الموظف {{name}} يعمل لدينا براتب {{salary}}.', 'This certifies {{name}} earns {{salary}}.', 1, 1, 1),
- (2, 3, 'experience',  'شهادة خبرة', 'Experience Letter',   'نشهد بأن {{name}} عمل لدينا في وظيفة {{job_title}}.', NULL, 1, 1, 2),
- (3, 3, 'custom_warn', 'خطاب مخصص',  NULL,                  'نص خطاب مخصص لـ {{name}}.', NULL, 0, 1, 3);
-
-INSERT INTO document_requests (tenant_id, employee_id, template_id, doc_type, status, extra_fields,
-  rejection_reason, pdf_path, requested_by_employee, issued_by, processed_at) VALUES
- (3, 1,  1, 'salary_cert', 'approved', JSON_OBJECT('addressed_to','البنك'), NULL, '/uploads/docs/req1.pdf', 1, 3, NOW() - INTERVAL 1 DAY),
- (3, 4,  2, 'experience',  'pending',  NULL, NULL, NULL, 1, NULL, NULL),
- (3, 12, 1, 'salary_cert', 'rejected', NULL, 'بيانات ناقصة', NULL, 0, 3, NOW());
 
 -- ---------------------------------------------------------------------------
 -- 17) SCHEDULING — schedule cells, open shifts/claims, swaps, availability
@@ -685,34 +657,25 @@ INSERT INTO notifications (tenant_id, admin_id, employee_id, type, title, title_
 -- ---------------------------------------------------------------------------
 INSERT INTO approval_chains (id, tenant_id, name, name_ar, request_type, is_active, min_amount, max_amount, branch_id, priority, created_by) VALUES
  (1, 3, 'Leave approval',   'اعتماد الإجازات', 'leave',   1, NULL, NULL, NULL, 10, 3),
- (2, 3, 'High expense',     'مصروف كبير',      'expense', 1, 500.00, NULL, NULL, 20, 3),
  (3, 3, 'Loan approval',    'اعتماد القروض',   'loan',    1, NULL, NULL, NULL, 10, 3);
 
 INSERT INTO approval_chain_steps (tenant_id, chain_id, step_order, approver_type, approver_role, approver_admin_id, label) VALUES
  (3, 1, 1, 'role',  'branch_manager', NULL, 'مدير الفرع'),
  (3, 1, 2, 'role',  'hr',             NULL, 'الموارد البشرية'),
- (3, 2, 1, 'role',  'hr',             NULL, 'الموارد البشرية'),
- (3, 2, 2, 'admin', NULL,             3,    'المدير العام'),
  (3, 3, 1, 'role',  'general_manager',NULL, 'المدير العام');
 
 INSERT INTO approval_requests (id, tenant_id, chain_id, entity_type, entity_id, requested_by_admin_id,
   requested_by_employee_id, context_amount, current_step, total_steps, status, decided_at) VALUES
  (1, 3, 1, 'leave',   2, NULL, 6,  NULL,   1, 2, 'pending',   NULL),
- (2, 3, 2, 'expense', 3, NULL, 6,  800.00, 2, 2, 'pending',   NULL),
  (3, 3, 1, 'leave',   3, NULL, 4,  NULL,   2, 2, 'approved',  NOW() - INTERVAL 11 DAY),
- (4, 3, 2, 'expense', 3, NULL, 6,  800.00, 1, 2, 'rejected',  NOW() - INTERVAL 2 DAY),
  (5, 3, 3, 'loan',    4, 3,    NULL,1500.00,1, 1, 'cancelled', NOW());
 
 INSERT INTO approval_request_steps (tenant_id, request_id, step_order, approver_type, approver_role,
   approver_admin_id, label, status, decided_by, decided_at, note) VALUES
  (3, 1, 1, 'role',  'branch_manager', NULL, 'مدير الفرع',     'pending',  NULL, NULL, NULL),
  (3, 1, 2, 'role',  'hr',             NULL, 'الموارد البشرية', 'pending',  NULL, NULL, NULL),
- (3, 2, 1, 'role',  'hr',             NULL, 'الموارد البشرية', 'approved', 10, NOW() - INTERVAL 1 DAY, 'موافق'),
- (3, 2, 2, 'admin', NULL,             3,    'المدير العام',   'pending',  NULL, NULL, NULL),
  (3, 3, 1, 'role',  'branch_manager', NULL, 'مدير الفرع',     'approved', 11, NOW() - INTERVAL 12 DAY, NULL),
  (3, 3, 2, 'role',  'hr',             NULL, 'الموارد البشرية', 'approved', 10, NOW() - INTERVAL 11 DAY, NULL),
- (3, 4, 1, 'role',  'hr',             NULL, 'الموارد البشرية', 'rejected', 10, NOW() - INTERVAL 2 DAY, 'تجاوز الميزانية'),
- (3, 4, 2, 'admin', NULL,             3,    'المدير العام',   'skipped',  NULL, NULL, NULL),
  (3, 5, 1, 'role',  'general_manager',NULL, 'المدير العام',   'pending',  NULL, NULL, NULL);
 
 -- ---------------------------------------------------------------------------
@@ -745,25 +708,6 @@ INSERT INTO support_messages (ticket_id, sender_type, sender_admin_id, sender_su
  (4, 'user',    3, NULL, 'كانت لدي مشكلة دخول'),
  (4, 'support', NULL, 1, 'تم الحل، نعتذر عن الإزعاج');
 
--- ---------------------------------------------------------------------------
--- 26) E-SIGNATURE — requests + parties (all statuses/methods)
--- ---------------------------------------------------------------------------
-INSERT INTO signature_requests (id, tenant_id, entity_type, entity_id, title, source_pdf_path, source_hash,
-  signed_pdf_path, signed_hash, verify_code, signing_order, current_party, total_parties, status, expires_at, created_by, completed_at) VALUES
- (1, 3, 'document_request', 1, 'شهادة راتب', '/uploads/sig/src1.pdf', SHA2('src1',256), '/uploads/sig/signed1.pdf', SHA2('signed1',256), 'VERIFY-0001', 'sequential', 3, 2, 'completed', NULL, 3, NOW() - INTERVAL 1 DAY),
- (2, 3, 'document_request', 2, 'خطاب خبرة', '/uploads/sig/src2.pdf', SHA2('src2',256), NULL, NULL, 'VERIFY-0002', 'sequential', 1, 2, 'pending', NOW() + INTERVAL 7 DAY, 3, NULL),
- (3, 3, 'document_request', 3, 'خطاب مرفوض', '/uploads/sig/src3.pdf', SHA2('src3',256), NULL, NULL, 'VERIFY-0003', 'parallel', 1, 2, 'declined', NULL, 3, NULL),
- (4, 3, 'document_request', 1, 'خطاب ملغى', '/uploads/sig/src4.pdf', SHA2('src4',256), NULL, NULL, 'VERIFY-0004', 'sequential', 1, 1, 'voided', NULL, 3, NULL);
-
-INSERT INTO signature_parties (tenant_id, signature_request_id, party_order, signer_type, signer_employee_id,
-  signer_admin_id, signer_name, role_label, status, sign_method, typed_name, consent_given, signed_at) VALUES
- (3, 1, 1, 'employee', 1, NULL, 'عبدالله القحطاني', 'الموظف', 'signed', 'drawn', NULL, 1, NOW() - INTERVAL 2 DAY),
- (3, 1, 2, 'admin', NULL, 3, 'farkha.nims', 'المدير المفوض', 'signed', 'typed', 'farkha.nims', 1, NOW() - INTERVAL 1 DAY),
- (3, 2, 1, 'employee', 4, NULL, 'محمد علي', 'الموظف', 'pending', NULL, NULL, 0, NULL),
- (3, 2, 2, 'admin', NULL, 3, 'farkha.nims', 'المدير المفوض', 'pending', NULL, NULL, 0, NULL),
- (3, 3, 1, 'employee', 12, NULL, 'عبدالله (تجريبي)', 'الموظف', 'declined', NULL, NULL, 0, NULL),
- (3, 3, 2, 'external', NULL, NULL, 'طرف خارجي', 'شاهد', 'pending', NULL, NULL, 0, NULL),
- (3, 4, 1, 'employee', 1, NULL, 'عبدالله القحطاني', 'الموظف', 'pending', NULL, NULL, 0, NULL);
 
 -- ---------------------------------------------------------------------------
 -- 27) ANALYTICS DASHBOARD + LOGS
@@ -840,13 +784,6 @@ INSERT INTO performance_reviews (tenant_id, employee_id, cycle_id, reviewer_id, 
   strengths, areas_for_improvement, review, status) VALUES
  (3, 4, 3, 30, 'subordinate', 3.90, 'منفتح للنقاش', 'الحزم في القرارات', 'تقييم 360° من مرؤوس', 'submitted');
 
--- 28.9 signature_parties.sign_method = otp  (new completed request)
-INSERT INTO signature_requests (id, tenant_id, entity_type, entity_id, title, source_pdf_path, source_hash,
-  signed_pdf_path, signed_hash, verify_code, signing_order, current_party, total_parties, status, created_by, completed_at) VALUES
- (5, 3, 'document_request', 2, 'إقرار موقّع بـ OTP', '/uploads/sig/src5.pdf', SHA2('src5',256), '/uploads/sig/signed5.pdf', SHA2('signed5',256), 'VERIFY-0005', 'sequential', 2, 1, 'completed', 3, NOW() - INTERVAL 2 HOUR);
-INSERT INTO signature_parties (tenant_id, signature_request_id, party_order, signer_type, signer_employee_id,
-  signer_name, role_label, status, sign_method, otp_hash, consent_given, signed_at) VALUES
- (3, 5, 1, 'employee', 1, 'عبدالله القحطاني', 'الموظف', 'signed', 'otp', SHA2('otp-123456',256), 1, NOW() - INTERVAL 2 HOUR);
 
 -- 28.10 recurring_leaves.day_of_week = remaining days
 INSERT INTO recurring_leaves (tenant_id, branch_id, day_of_week, type, reason, is_active) VALUES

@@ -12,6 +12,16 @@ class PayrollController extends GetxController {
   Map<String, dynamic>? slipData;
   String selectedMonth = '';
 
+  /// The current calendar month in `YYYY-MM` format.
+  String get _currentMonth {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}';
+  }
+
+  /// Whether the employee can move forward a month. Future months haven't
+  /// happened yet, so navigating past the current month is not allowed.
+  bool get canGoNext => selectedMonth.compareTo(_currentMonth) < 0;
+
   @override
   void onInit() {
     super.onInit();
@@ -35,6 +45,11 @@ class PayrollController extends GetxController {
 
     if (responseStatus == StatusRequest.success) {
       slipData = response['data'] as Map<String, dynamic>?;
+      status = StatusRequest.success;
+    } else if (response['statusCode'] == 404) {
+      // No payroll slip generated for this month yet — show the friendly
+      // "no slip this month" empty state instead of the generic error screen.
+      slipData = null;
       status = StatusRequest.success;
     } else if (responseStatus == StatusRequest.offline) {
       status = StatusRequest.offline;

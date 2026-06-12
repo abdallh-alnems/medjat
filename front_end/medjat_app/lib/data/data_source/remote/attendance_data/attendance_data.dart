@@ -9,14 +9,16 @@ class AttendanceData {
     required int branchId,
     required double latitude,
     required double longitude,
-    required String qrCode,
+    String? qrCode,
     bool isVpn = false,
   }) async {
     return await _crud.postData(AppLinks.checkIn, {
       'branch_id': branchId,
       'latitude': latitude,
       'longitude': longitude,
-      'qr_code': qrCode,
+      // Empty when checking in by GPS only; the backend resolves the method
+      // from the presence of a QR code.
+      'qr_code': qrCode ?? '',
       'is_vpn': isVpn ? 1 : 0,
     });
   }

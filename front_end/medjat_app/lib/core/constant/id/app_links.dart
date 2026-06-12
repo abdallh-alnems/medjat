@@ -39,6 +39,16 @@ class AppLinks {
   static String get breakRequest => '$base/app/breaks/request.php';
   static String get myBreaks => '$base/app/breaks/my_list.php';
   static String get breakCancel => '$base/app/breaks/cancel.php';
+  static String get breakRespondPostpone =>
+      '$base/app/breaks/respond_postpone.php';
+
+  static String get advanceRequest => '$base/app/loans/request.php';
+  static String get myAdvances => '$base/app/loans/my_list.php';
+  static String get advanceCancel => '$base/app/loans/cancel_request.php';
+
+  static String get myAssets => '$base/app/assets/my_list.php';
+  static String get assetRequestReturn =>
+      '$base/app/assets/request_return.php';
 
   static String get notifications => '$base/app/notifications/list.php';
   static String notificationRead(int id) =>

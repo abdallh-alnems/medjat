@@ -53,11 +53,21 @@ final class GpsService {
             return ['valid' => false, 'message' => 'Branch not found'];
         }
 
-        $allowedRadius = self::DEFAULT_GPS_RADIUS;
-        $distance = self::distanceInMeters(
-            $userLat, $userLon,
-            (float) $branch['latitude'], (float) $branch['longitude']
-        );
+        // Resolve the geofence: branch center if set, else the company-wide
+        // default. No center anywhere → nothing to validate against, so GPS
+        // check-in is allowed from anywhere until a center is configured.
+        $geo = BranchModel::effectiveGeofence($branchId, $tenantId);
+        $branchLat = $geo['lat'];
+        $branchLon = $geo['lng'];
+        if ($branchLat === null || $branchLon === null || ($branchLat == 0.0 && $branchLon == 0.0)) {
+            return ['valid' => true, 'distance' => null, 'allowed_radius' => null];
+        }
+
+        $allowedRadius = (int) ($geo['radius'] ?? self::DEFAULT_GPS_RADIUS);
+        if ($allowedRadius <= 0) {
+            $allowedRadius = self::DEFAULT_GPS_RADIUS;
+        }
+        $distance = self::distanceInMeters($userLat, $userLon, $branchLat, $branchLon);
 
         if ($distance > $allowedRadius) {
             return [

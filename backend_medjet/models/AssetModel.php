@@ -48,6 +48,49 @@ final class AssetModel {
         );
     }
 
+    /** Edit a custody item's editable fields (only meaningful while assigned). */
+    public static function update(
+        int $id,
+        int $tenantId,
+        string $type,
+        string $name,
+        ?string $description,
+        ?float $value,
+        ?string $currency,
+        ?string $serialNo,
+        int $quantity,
+        string $assignedAt,
+        ?string $notes
+    ): void {
+        Database::execute(
+            "UPDATE asset_custody
+             SET type = ?, name = ?, description = ?, value = ?, currency = ?,
+                 serial_no = ?, quantity = ?, assigned_at = ?, notes = ?
+             WHERE id = ? AND tenant_id = ?",
+            [
+                $type, $name, $description, $value, $currency ?: 'SAR',
+                $serialNo, $quantity, $assignedAt, $notes, $id, $tenantId,
+            ]
+        );
+    }
+
+    public static function delete(int $id, int $tenantId): void {
+        Database::execute(
+            "DELETE FROM asset_custody WHERE id = ? AND tenant_id = ?",
+            [$id, $tenantId]
+        );
+    }
+
+    /** Outstanding (not yet returned) custody for an employee — used at offboarding. */
+    public static function outstandingForEmployee(int $employeeId, int $tenantId): array {
+        return Database::fetchAll(
+            "SELECT * FROM asset_custody
+             WHERE tenant_id = ? AND employee_id = ? AND status != 'returned'
+             ORDER BY created_at DESC",
+            [$tenantId, $employeeId]
+        );
+    }
+
     public static function listByTenant(int $tenantId, ?string $status = null, ?int $employeeId = null): array {
         $sql = "SELECT ac.*, e.name AS employee_name
                 FROM asset_custody ac

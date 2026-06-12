@@ -7,7 +7,9 @@ import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
 import '../../../core/services/payslip_pdf_exporter.dart';
+import '../../../core/services/payslip_word_exporter.dart';
 import '../../../core/utils/currency.dart';
+import '../../widget/report/report_export.dart';
 import '../../../core/widget/month_grid_picker.dart';
 import '../../../core/widget/shimmer_box.dart';
 import '../../../data/model/branch_model.dart';
@@ -30,11 +32,23 @@ Future<void> _openQuickAdjust(
 }
 
 Future<void> _exportPayslip(BuildContext context, PayrollModel p) async {
+  final box = context.findRenderObject() as RenderBox?;
+  final origin = (box != null && box.hasSize)
+      ? box.localToGlobal(Offset.zero) & box.size
+      : null;
+  final format = await showExportFormatSheet(context);
+  if (format == null) return;
+  final currency = Get.find<PayrollController>().currency;
   try {
-    await PayslipPdfExporter.exportAndShare(
-      payroll: p,
-      currencyIso: Get.find<PayrollController>().currency,
-    );
+    if (format == 'pdf') {
+      await PayslipPdfExporter.exportAndShare(payroll: p, currencyIso: currency);
+    } else {
+      await PayslipWordExporter.exportAndShare(
+        payroll: p,
+        currencyIso: currency,
+        sharePositionOrigin: origin,
+      );
+    }
   } catch (_) {
     Get.snackbar('error'.tr, 'payslip_export_failed'.tr,
         snackPosition: SnackPosition.BOTTOM);

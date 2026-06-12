@@ -74,6 +74,34 @@ final class ShiftModel {
         return count($employeeIds);
     }
 
+    public static function countEmployees(int $shiftId, int $tenantId): int {
+        $row = Database::fetchOne(
+            "SELECT COUNT(*) AS c FROM employees
+             WHERE shift_id = ? AND tenant_id = ? AND status != 'terminated'",
+            [$shiftId, $tenantId]
+        );
+        return (int) ($row['c'] ?? 0);
+    }
+
+    public static function transferEmployees(int $fromShiftId, int $toShiftId, int $tenantId): int {
+        return Database::execute(
+            "UPDATE employees SET shift_id = ? WHERE shift_id = ? AND tenant_id = ?",
+            [$toShiftId, $fromShiftId, $tenantId]
+        );
+    }
+
+    /**
+     * Copy the shift's start/end times onto each member's personal work hours,
+     * so their attendance schedule stays identical after the shift is removed.
+     */
+    public static function applyTimesToEmployees(int $shiftId, string $startTime, string $endTime, int $tenantId): int {
+        return Database::execute(
+            "UPDATE employees SET work_start_time = ?, work_end_time = ?
+             WHERE shift_id = ? AND tenant_id = ?",
+            [$startTime, $endTime, $shiftId, $tenantId]
+        );
+    }
+
     public static function unassignEmployees(int $shiftId, array $employeeIds, int $tenantId): int {
         if (empty($employeeIds)) return 0;
         $placeholders = implode(',', array_fill(0, count($employeeIds), '?'));

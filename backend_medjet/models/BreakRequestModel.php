@@ -144,6 +144,45 @@ final class BreakRequestModel
         );
     }
 
+    /**
+     * Employee accepts the manager's suggested alternative time: the request
+     * adopts the suggested slot and becomes approved at that time. Returns true
+     * if a postponed request was actually updated.
+     */
+    public static function acceptPostpone(
+        int $id, int $employeeId, int $tenantId, int $durationMinutes
+    ): bool {
+        $affected = Database::execute(
+            "UPDATE break_requests
+                SET `date` = suggested_date,
+                    start_time = suggested_start_time,
+                    end_time = suggested_end_time,
+                    duration_minutes = ?,
+                    status = 'approved',
+                    decided_at = NOW(),
+                    suggested_date = NULL,
+                    suggested_start_time = NULL,
+                    suggested_end_time = NULL
+              WHERE id = ? AND employee_id = ? AND tenant_id = ?
+                AND status = 'postponed' AND suggested_date IS NOT NULL",
+            [$durationMinutes, $id, $employeeId, $tenantId]
+        );
+        return $affected > 0;
+    }
+
+    /** Employee declines the suggested alternative time → request is cancelled. */
+    public static function rejectPostpone(int $id, int $employeeId, int $tenantId): bool
+    {
+        $affected = Database::execute(
+            "UPDATE break_requests
+                SET status = 'cancelled',
+                    decision_note = 'رفض الموظف الوقت البديل المقترح'
+              WHERE id = ? AND employee_id = ? AND tenant_id = ? AND status = 'postponed'",
+            [$id, $employeeId, $tenantId]
+        );
+        return $affected > 0;
+    }
+
     public static function cancel(int $id, int $employeeId, int $tenantId): void
     {
         Database::execute(

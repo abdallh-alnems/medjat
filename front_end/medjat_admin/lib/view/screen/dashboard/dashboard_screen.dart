@@ -44,24 +44,32 @@ class DashboardScreen extends StatelessWidget {
                 case 'notifications':
                   Get.toNamed(AppRoutes.notifications);
                   break;
-                case 'force_update':
-                  Get.toNamed(AppRoutes.forceUpdate);
+                case 'support':
+                  Get.toNamed(AppRoutes.supportInbox);
+                  break;
+                case 'app_control':
+                  Get.toNamed(AppRoutes.appControl);
                   break;
                 case 'logout':
                   Get.find<AuthController>().logout();
                   break;
               }
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'tenants', child: Text('الشركات')),
-              const PopupMenuItem(value: 'subscriptions', child: Text('الاشتراكات')),
-              const PopupMenuItem(value: 'plans', child: Text('الباقات')),
-              const PopupMenuItem(value: 'users', child: Text('المستخدمين')),
-              const PopupMenuItem(value: 'audit', child: Text('سجل العمليات')),
-              const PopupMenuItem(value: 'notifications', child: Text('الإشعارات')),
-              const PopupMenuItem(value: 'force_update', child: Text('تحديث إجباري')),
-              const PopupMenuItem(value: 'logout', child: Text('تسجيل الخروج')),
-            ],
+            itemBuilder: (context) {
+              final isAdmin = Get.find<AuthController>().admin?.role == 'superadmin';
+              return [
+                const PopupMenuItem(value: 'tenants', child: Text('الشركات')),
+                const PopupMenuItem(value: 'subscriptions', child: Text('الاشتراكات')),
+                const PopupMenuItem(value: 'plans', child: Text('الباقات')),
+                const PopupMenuItem(value: 'users', child: Text('المستخدمين')),
+                const PopupMenuItem(value: 'audit', child: Text('سجل العمليات')),
+                const PopupMenuItem(value: 'notifications', child: Text('الإشعارات')),
+                const PopupMenuItem(value: 'support', child: Text('الدعم الفني')),
+                if (isAdmin)
+                  const PopupMenuItem(value: 'app_control', child: Text('التحكم بالتطبيقات')),
+                const PopupMenuItem(value: 'logout', child: Text('تسجيل الخروج')),
+              ];
+            },
           ),
         ],
       ),
@@ -93,6 +101,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _buildQuickActions(BuildContext context, AppColorScheme colors) {
+    final isSuperAdmin = Get.find<AuthController>().admin?.role == 'superadmin';
     final actions = [
       _QuickAction(icon: Icons.business, label: 'الشركات', route: AppRoutes.tenants),
       _QuickAction(icon: Icons.card_membership, label: 'الاشتراكات', route: AppRoutes.subscriptions),
@@ -100,7 +109,9 @@ class DashboardScreen extends StatelessWidget {
       _QuickAction(icon: Icons.people, label: 'المستخدمين', route: AppRoutes.users),
       _QuickAction(icon: Icons.history, label: 'سجل العمليات', route: AppRoutes.audit),
       _QuickAction(icon: Icons.notifications, label: 'الإشعارات', route: AppRoutes.notifications),
-      _QuickAction(icon: Icons.system_update, label: 'تحديث إجباري', route: AppRoutes.forceUpdate),
+      _QuickAction(icon: Icons.headset_mic, label: 'الدعم الفني', route: AppRoutes.supportInbox),
+      if (isSuperAdmin)
+        _QuickAction(icon: Icons.settings_applications, label: 'التحكم بالتطبيقات', route: AppRoutes.appControl),
     ];
 
     return Column(

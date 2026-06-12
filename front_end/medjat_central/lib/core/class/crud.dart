@@ -158,6 +158,34 @@ class CRUD {
     }
   }
 
+  /// POSTs a JSON body and returns the raw binary response (e.g. a generated
+  /// .docx) with auth headers. Returns {status, bytes} on success.
+  Future<Map<String, dynamic>> postBytes(
+      String url, Map<String, dynamic> data) async {
+    final connectivity = await _checkConnectivity();
+    if (connectivity == StatusRequest.offline) {
+      return {'status': StatusRequest.offline};
+    }
+
+    try {
+      final headers = await _headers();
+      final response = await _client
+          .post(Uri.parse(url), headers: headers, body: jsonEncode(data))
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return {'status': StatusRequest.success, 'bytes': response.bodyBytes};
+      }
+      return {
+        'status': StatusRequest.failure,
+        'statusCode': response.statusCode,
+      };
+    } catch (e) {
+      debugPrint('POST BYTES Error: $e');
+      return {'status': StatusRequest.failure, 'error': e.toString()};
+    }
+  }
+
   Future<Map<String, dynamic>> postData(String url, Map<String, dynamic> data,
       {bool auth = true}) async {
     final connectivity = await _checkConnectivity();

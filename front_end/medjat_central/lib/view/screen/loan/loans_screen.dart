@@ -29,31 +29,35 @@ class LoansScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.s4,
-              vertical: AppSpacing.s2,
-            ),
-            child: Row(
-              children: [
-                _Chip(
-                  label: 'all'.tr,
-                  selected: ctrl.statusFilter == null,
-                  onTap: () => ctrl.filterByStatus(null),
-                ),
-                const SizedBox(width: AppSpacing.s2),
-                _Chip(
-                  label: 'status_pending'.tr,
-                  selected: ctrl.statusFilter == 'pending',
-                  onTap: () => ctrl.filterByStatus('pending'),
-                ),
-                const SizedBox(width: AppSpacing.s2),
-                _Chip(
-                  label: 'loan_active'.tr,
-                  selected: ctrl.statusFilter == 'active',
-                  onTap: () => ctrl.filterByStatus('active'),
-                ),
-              ],
+          // Wrapped in GetBuilder so the chips' selected state tracks the
+          // active filter; otherwise the highlight stays stuck on "all".
+          GetBuilder<LoanController>(
+            builder: (ctrl) => Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.s4,
+                vertical: AppSpacing.s2,
+              ),
+              child: Row(
+                children: [
+                  _Chip(
+                    label: 'all'.tr,
+                    selected: ctrl.statusFilter == null,
+                    onTap: () => ctrl.filterByStatus(null),
+                  ),
+                  const SizedBox(width: AppSpacing.s2),
+                  _Chip(
+                    label: 'status_pending'.tr,
+                    selected: ctrl.statusFilter == 'pending',
+                    onTap: () => ctrl.filterByStatus('pending'),
+                  ),
+                  const SizedBox(width: AppSpacing.s2),
+                  _Chip(
+                    label: 'loan_active'.tr,
+                    selected: ctrl.statusFilter == 'active',
+                    onTap: () => ctrl.filterByStatus('active'),
+                  ),
+                ],
+              ),
             ),
           ),
           Expanded(
@@ -146,7 +150,7 @@ class LoansScreen extends StatelessWidget {
     final installmentsCtrl = TextEditingController(text: '1');
     final reasonCtrl = TextEditingController();
     int? selectedEmployeeId;
-    String selectedType = 'loan';
+    const selectedType = 'advance';
     DateTime startMonth = DateTime(DateTime.now().year, DateTime.now().month);
 
     final employeeData = Get.find<EmployeeData>();
@@ -197,25 +201,6 @@ class LoansScreen extends StatelessWidget {
                             setSheetState(() => selectedEmployeeId = v),
                       );
                     },
-                  ),
-                  const SizedBox(height: AppSpacing.s3),
-                  _label('loan_type'.tr, colors),
-                  const SizedBox(height: AppSpacing.s2),
-                  Wrap(
-                    spacing: AppSpacing.s2,
-                    children: [
-                      _Chip(
-                        label: 'loan_type_loan'.tr,
-                        selected: selectedType == 'loan',
-                        onTap: () => setSheetState(() => selectedType = 'loan'),
-                      ),
-                      _Chip(
-                        label: 'loan_type_advance'.tr,
-                        selected: selectedType == 'advance',
-                        onTap: () =>
-                            setSheetState(() => selectedType = 'advance'),
-                      ),
-                    ],
                   ),
                   const SizedBox(height: AppSpacing.s3),
                   PrimaryInput(
@@ -293,7 +278,7 @@ class LoansScreen extends StatelessWidget {
                           Expanded(
                             child: Text(
                               'loan_installment_preview'.trParams({
-                                'amount': perInstallment.toStringAsFixed(2),
+                                'amount': perInstallment.toStringAsFixed(0),
                                 'count': count.toString(),
                               }),
                               style: TextStyle(
@@ -547,7 +532,7 @@ class _LoanTile extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                loan.totalAmount.toStringAsFixed(2),
+                loan.totalAmount.toStringAsFixed(0),
                 style: TextStyle(
                   fontFamily: 'Geist',
                   fontSize: 14,
@@ -560,7 +545,7 @@ class _LoanTile extends StatelessWidget {
           const SizedBox(height: AppSpacing.s2),
           Text(
             'loan_installment_line'.trParams({
-              'amount': loan.installmentAmount.toStringAsFixed(2),
+              'amount': loan.installmentAmount.toStringAsFixed(0),
               'count': loan.installmentsCount.toString(),
             }),
             style: TextStyle(
@@ -585,7 +570,7 @@ class _LoanTile extends StatelessWidget {
               'loan_progress_line'.trParams({
                 'paid': loan.installmentsPaid.toString(),
                 'total': loan.installmentsCount.toString(),
-                'remaining': loan.remainingAmount.toStringAsFixed(2),
+                'remaining': loan.remainingAmount.toStringAsFixed(0),
               }),
               style: TextStyle(
                 fontFamily: 'IBM Plex Sans Arabic',
@@ -652,6 +637,8 @@ class _LoanTile extends StatelessWidget {
       case 'completed':
         return colors.success;
       case 'cancelled':
+        return colors.textTertiary;
+      case 'rejected':
         return colors.error;
       default:
         return colors.textTertiary;

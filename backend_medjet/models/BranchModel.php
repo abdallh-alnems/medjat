@@ -65,6 +65,26 @@ final class BranchModel {
         return 'MED-' . strtoupper(bin2hex(random_bytes(8)));
     }
 
+    /**
+     * Ensure a branch has a QR payload, generating + persisting one if missing.
+     * Returns the (existing or new) qr_code. Pass $force to regenerate.
+     */
+    public static function ensureQrCode(int $id, int $tenantId, bool $force = false): ?string {
+        $branch = self::findById($id, $tenantId);
+        if (!$branch) {
+            return null;
+        }
+        if (!$force && !empty($branch['qr_code'])) {
+            return $branch['qr_code'];
+        }
+        $code = self::generateQrCode();
+        Database::execute(
+            "UPDATE branches SET qr_code = ? WHERE id = ? AND tenant_id = ?",
+            [$code, $id, $tenantId]
+        );
+        return $code;
+    }
+
     public static function updateAttendanceMethods(int $id, int $tenantId, ?array $methods, int $gpsRadiusMeters = 100, ?bool $allowOffline = null): void {
         $sql = "UPDATE branches SET attendance_methods = ?, gps_radius_meters = ?";
         $params = [$methods !== null ? json_encode($methods) : null, $gpsRadiusMeters];
@@ -88,6 +108,58 @@ final class BranchModel {
         }
         $tenant = TenantModel::findById($tenantId);
         return (bool) ($tenant['allow_offline_attendance'] ?? true);
+    }
+
+    /**
+     * Resolve the GPS geofence in effect for a branch: the branch's own
+     * latitude/longitude when set, otherwise the company (tenant) default.
+     * Returns ['lat'=>?float, 'lng'=>?float, 'radius'=>int]. lat/lng are null
+     * when no center is configured anywhere (no geofence to enforce).
+     */
+    public static function effectiveGeofence(int $branchId, int $tenantId): array {
+        $branch = self::findById($branchId, $tenantId);
+        // branches.latitude/longitude are NOT NULL; an unset branch reads as
+        // 0,0 — treat that as "no branch center" and fall back to the company.
+        $bLat = $branch !== null && $branch['latitude'] !== null ? (float) $branch['latitude'] : null;
+        $bLng = $branch !== null && $branch['longitude'] !== null ? (float) $branch['longitude'] : null;
+        if ($bLat !== null && $bLng !== null && !($bLat == 0.0 && $bLng == 0.0)) {
+            return [
+                'lat' => $bLat,
+                'lng' => $bLng,
+                'radius' => (int) ($branch['gps_radius_meters'] ?? 100),
+            ];
+        }
+        $tenant = TenantModel::findById($tenantId);
+        if ($tenant && ($tenant['gps_latitude'] ?? null) !== null && ($tenant['gps_longitude'] ?? null) !== null) {
+            return [
+                'lat' => (float) $tenant['gps_latitude'],
+                'lng' => (float) $tenant['gps_longitude'],
+                'radius' => (int) ($tenant['gps_radius_meters'] ?? ($branch['gps_radius_meters'] ?? 100)),
+            ];
+        }
+        return [
+            'lat' => null,
+            'lng' => null,
+            'radius' => (int) ($branch['gps_radius_meters'] ?? 100),
+        ];
+    }
+
+    /**
+     * Resolve the attendance methods actually in effect for a branch: the
+     * branch override when set, otherwise the company (tenant) default.
+     * Always returns a non-empty list, defaulting to ['qr_gps'].
+     */
+    public static function effectiveMethods(int $branchId, int $tenantId): array {
+        $branch = self::findById($branchId, $tenantId);
+        if ($branch && $branch['attendance_methods'] !== null) {
+            $methods = json_decode($branch['attendance_methods'], true);
+            if (is_array($methods) && !empty($methods)) {
+                return array_values($methods);
+            }
+        }
+        $tenant = TenantModel::findById($tenantId);
+        $methods = json_decode($tenant['attendance_methods'] ?? '["qr_gps"]', true);
+        return (is_array($methods) && !empty($methods)) ? array_values($methods) : ['qr_gps'];
     }
 
     public static function updateStationSettings(int $id, int $tenantId, array $data): void {

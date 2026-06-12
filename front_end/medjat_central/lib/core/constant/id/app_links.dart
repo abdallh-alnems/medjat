@@ -113,6 +113,10 @@ class AppLinks {
   static String get branchUpdate => '$base/app/branches/update.php';
   static String get branchUpdateAttendanceMethod =>
       '$base/app/branches/update_attendance_method.php';
+  static String get setAttendanceMethodOverride =>
+      '$base/app/attendance/set_method_override.php';
+  static String get branchGenerateQr =>
+      '$base/app/branches/generate_qr.php';
 
   // ── Attendance ─────────────────────────────────────────
   static String get attendance =>
@@ -171,23 +175,6 @@ class AppLinks {
   static String get exportTemplateDelete =>
       '$base/app/payroll/export_templates/delete.php';
 
-  // ── Letters & Certificates (document requests + templates) ──
-  static String get letterTemplates => '$base/app/letters/templates_list.php';
-  static String get letterTemplateCreate =>
-      '$base/app/letters/template_create.php';
-  static String get letterTemplateUpdate =>
-      '$base/app/letters/template_update.php';
-  static String letterTemplateDelete(int id) =>
-      '$base/app/letters/template_delete.php?id=$id';
-  static String get letterRequests => '$base/app/letters/requests_list.php';
-  static String get letterRequestCreate =>
-      '$base/app/letters/request_create.php';
-  static String letterRequestApprove(int id) =>
-      '$base/app/letters/request_approve.php?id=$id';
-  static String letterRequestReject(int id) =>
-      '$base/app/letters/request_reject.php?id=$id';
-  static String letterRequestPdf(int id) =>
-      '$base/app/letters/request_pdf.php?id=$id';
   static String get companyUploadBranding =>
       '$base/app/settings/upload_branding.php';
 
@@ -205,6 +192,14 @@ class AppLinks {
   static String get leaveBalance => '$base/app/leaves/get_balance.php';
   static String get leaveSettings => '$base/app/settings/leave_settings.php';
   static String get leaveRollover => '$base/app/leaves/rollover.php';
+  static String get leaveCarryoverPolicies =>
+      '$base/app/leaves/carryover_policies_list.php';
+  static String get leaveCarryoverPolicySave =>
+      '$base/app/leaves/carryover_policy_save.php';
+  static String get leaveCarryoverPolicyDelete =>
+      '$base/app/leaves/carryover_policy_delete.php';
+  static String get leaveEncashments =>
+      '$base/app/leaves/encashments_list.php';
 
   // ── Breaks / Permissions ───────────────────────────────
   static String get breakRequest   => '$base/app/breaks/request.php';
@@ -218,6 +213,8 @@ class AppLinks {
 
   // ── Deductions / Bonuses ───────────────────────────────
   static String get deductionRules => '$base/app/deductions/get_rules.php';
+  static String get deductionSaveConfig =>
+      '$base/app/deductions/save_config.php';
   static String get deductionManualAdd =>
       '$base/app/deductions/add_manual.php';
   static String get deductionManualUpdate =>
@@ -231,16 +228,24 @@ class AppLinks {
   /// Bulk bonus/deduction applied to every employee in a branch/shift/category.
   static String get payrollBulkAdjust => '$base/app/payroll/bulk_adjust.php';
 
-  // ── Expenses (claims with receipts) ────────────────────
-  static String get expenses => '$base/app/expenses/list.php';
-  static String get expenseCreate => '$base/app/expenses/create.php';
-  static String get expenseApprove => '$base/app/expenses/approve.php';
-  static String get expenseReject => '$base/app/expenses/reject.php';
-  static String get expenseReimburse => '$base/app/expenses/reimburse.php';
+  // ── Bulk adjustments (tracked batches: deduction/bonus to a scope) ──
+  static String get bulkAdjustmentList =>
+      '$base/app/bulk_adjustments/list.php';
+  static String get bulkAdjustmentGet => '$base/app/bulk_adjustments/get.php';
+  static String get bulkAdjustmentCreate =>
+      '$base/app/bulk_adjustments/create.php';
+  static String get bulkAdjustmentUpdate =>
+      '$base/app/bulk_adjustments/update.php';
+  static String get bulkAdjustmentDelete =>
+      '$base/app/bulk_adjustments/delete.php';
+  static String get bulkAdjustmentRemoveMember =>
+      '$base/app/bulk_adjustments/remove_member.php';
 
   // ── Assets & Custody (items handed to employees) ───────
   static String get assets => '$base/app/assets/list.php';
   static String get assetCreate => '$base/app/assets/create.php';
+  static String get assetUpdate => '$base/app/assets/update.php';
+  static String get assetDelete => '$base/app/assets/delete.php';
   static String get assetApproveReturn => '$base/app/assets/approve_return.php';
   static String get assetRejectReturn => '$base/app/assets/reject_return.php';
 
@@ -280,9 +285,15 @@ class AppLinks {
   static String get reportPayroll => '$base/app/reports/payroll.php';
   static String get reportEmployees => '$base/app/reports/employees.php';
   static String get reportLeaves => '$base/app/reports/leaves.php';
+  static String get reportExportWord => '$base/app/reports/export_word.php';
+
+  // ── Activity log ──────────
+  static String get auditLog => '$base/app/audit/list.php';
 
   // ── Settings (TODO: backend endpoint missing) ──────────
   static String get companySettings => '$base/app/settings/company.php';
+  static String get statutoryPayrollSettings =>
+      '$base/app/settings/statutory_payroll.php';
   static String get notifications => '$base/app/notifications/list.php';
   static String notificationRead(int id) =>
       '$base/app/notifications/read.php?id=$id';
@@ -314,7 +325,12 @@ class AppLinks {
   static String get managerInvitations => '$base/app/managers/list_invitations.php';
   static String managerCancelInvitation(int id) =>
       '$base/app/managers/cancel_invitation.php?id=$id';
+  static String managerResendInvitation(int id) =>
+      '$base/app/managers/resend_invitation.php?id=$id';
   static String get adminsList => '$base/app/managers/list_admins.php';
+  static String get adminUpdate => '$base/app/managers/update_admin.php';
+  static String get adminSetActive => '$base/app/managers/set_admin_active.php';
+  static String get adminRemove => '$base/app/managers/remove_admin.php';
 
   // ── Admin Permissions ──────────────────────────────────
   static String adminPermissions(int id) =>

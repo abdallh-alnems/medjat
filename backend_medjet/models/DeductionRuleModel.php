@@ -17,11 +17,12 @@ final class DeductionRuleModel {
         );
     }
 
-    public static function addManualDeduction(int $employeeId, int $tenantId, float $amount, string $reason, int $createdBy): int {
+    public static function addManualDeduction(int $employeeId, int $tenantId, float $amount, string $reason, int $createdBy, ?int $batchId = null, ?string $month = null): int {
+        $month = $month ?: date('Y-m');
         Database::execute(
-            "INSERT INTO manual_deductions (tenant_id, employee_id, amount, reason, month, created_by)
-             VALUES (?, ?, ?, ?, DATE_FORMAT(NOW(), '%Y-%m'), ?)",
-            [$tenantId, $employeeId, $amount, $reason, $createdBy]
+            "INSERT INTO manual_deductions (tenant_id, employee_id, batch_id, amount, reason, month, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [$tenantId, $employeeId, $batchId, $amount, $reason, $month, $createdBy]
         );
         return (int) Database::lastInsertId();
     }
@@ -69,6 +70,46 @@ final class DeductionRuleModel {
                     $rule['rule_type'] ?? 'numeric',
                     $rule['rule_value'],
                     $rule['description'] ?? null
+                );
+            }
+            $con->commit();
+        } catch (Exception $e) {
+            $con->rollBack();
+            throw $e;
+        }
+    }
+
+    // ── Tiered late-arrival deductions ──────────────────────────────────
+
+    /** Late tiers for a tenant, ascending by threshold (ladder order). */
+    public static function getLateTiers(int $tenantId): array {
+        return Database::fetchAll(
+            "SELECT id, threshold_minutes, deduction_days
+             FROM late_deduction_tiers
+             WHERE tenant_id = ?
+             ORDER BY threshold_minutes ASC",
+            [$tenantId]
+        );
+    }
+
+    /**
+     * Atomically persist the deduction config: the late tier ladder plus the
+     * scalar rules (late_type, absence_multiplier). $tiers is a list of
+     * ['threshold_minutes' => int, 'deduction_days' => float].
+     */
+    public static function saveConfig(int $tenantId, array $tiers, float $absenceDays): void {
+        $con = Database::getInstance();
+        $con->beginTransaction();
+        try {
+            self::upsert($tenantId, 'late_type', 'text', 'tiered', 'نوع خصم التأخير');
+            self::upsert($tenantId, 'absence_multiplier', 'numeric', (string) $absenceDays, 'خصم الغياب (أيام لكل يوم غياب)');
+
+            Database::execute("DELETE FROM late_deduction_tiers WHERE tenant_id = ?", [$tenantId]);
+            foreach ($tiers as $tier) {
+                Database::execute(
+                    "INSERT INTO late_deduction_tiers (tenant_id, threshold_minutes, deduction_days)
+                     VALUES (?, ?, ?)",
+                    [$tenantId, (int) $tier['threshold_minutes'], (float) $tier['deduction_days']]
                 );
             }
             $con->commit();

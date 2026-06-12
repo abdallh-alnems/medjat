@@ -1,7 +1,7 @@
 <?php
 
 final class ApprovalChainModel {
-    public const REQUEST_TYPES = ['leave','expense','loan','bonus','warning','document','generic'];
+    public const REQUEST_TYPES = ['leave','loan','bonus','warning','document','generic'];
     public const APPROVER_TYPES = ['role','admin'];
     public const APPROVER_ROLES = ['general_manager','hr','branch_manager','attendance','viewer'];
 

@@ -7,8 +7,8 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../../data/model/payroll_model.dart';
-import '../../logic/controller/auth/auth_controller.dart';
 import '../utils/currency.dart';
+import '../utils/pdf_helpers.dart';
 
 /// Renders a one-page payslip for a single employee and hands it to the
 /// platform share sheet. The figures shown are whatever's on the model —
@@ -77,15 +77,14 @@ class PayslipPdfExporter {
       theme: pw.ThemeData.withFont(base: _regular!, bold: _bold!),
     );
 
-    final companyName =
-        Get.find<AuthController>().user?.name ?? 'app_name'.tr;
+    final companyName = pdfCompanyTitle();
     final cycleLabel =
         '${'month_${payroll.month}'.tr} ${payroll.year}';
 
     doc.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
-        textDirection: pw.TextDirection.rtl,
+        textDirection: pdfTextDirection(),
         margin: const pw.EdgeInsets.fromLTRB(40, 50, 40, 40),
         build: (ctx) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,

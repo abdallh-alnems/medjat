@@ -1,13 +1,10 @@
-import 'dart:io';
-import 'dart:typed_data';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:open_filex/open_filex.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:printing/printing.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/class/crud.dart';
+import '../../../view/widget/pdf_preview_screen.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/id/app_links.dart';
 import '../../../data/data_source/remote/employee_data/employee_data.dart';
@@ -15,7 +12,6 @@ import '../../../data/data_source/remote/attendance_data/attendance_data.dart';
 import '../../../data/data_source/remote/document_data/document_data.dart';
 import '../../../data/data_source/remote/required_documents_data/required_documents_data.dart';
 import '../../../data/data_source/remote/payroll_data/payroll_data.dart';
-import '../../../data/data_source/remote/letter_data/letter_data.dart';
 import '../../../data/data_source/remote/performance_data/performance_data.dart';
 import '../../../data/model/employee_model.dart';
 import '../../../data/model/attendance_model.dart';
@@ -33,7 +29,6 @@ class EmployeeDetailController extends GetxController {
   final DocumentData _documentData = Get.find<DocumentData>();
   final RequiredDocumentsData _requiredData = Get.find<RequiredDocumentsData>();
   final PayrollData _payrollData = Get.find<PayrollData>();
-  final LetterData _letterData = Get.find<LetterData>();
   final PerformanceData _performanceData = Get.find<PerformanceData>();
   final CRUD _crud = Get.find<CRUD>();
 
@@ -137,7 +132,6 @@ class EmployeeDetailController extends GetxController {
   List<FinancialHistoryEntry> financialHistory = [];
   List<LoanSummary> financialLoans = [];
   EosbInfo? eosb;
-  List<Map<String, dynamic>> letterTemplates = [];
   List<Allowance> allowances = [];
   List<SalaryChange> salaryHistory = [];
   DateTime financialMonth = DateTime(DateTime.now().year, DateTime.now().month);
@@ -253,7 +247,6 @@ class EmployeeDetailController extends GetxController {
         financialMonth = currentCycleLabelMonth();
         loadFinancialMonth();
         loadEosb();
-        loadLetterTemplates();
         loadAllowances();
       }
     } else {
@@ -396,67 +389,6 @@ class EmployeeDetailController extends GetxController {
         eosb = EosbInfo.fromJson(data);
         update();
       }
-    }
-  }
-
-  /// Loads the active letter/certificate templates so the financial tab can
-  /// render quick-issue buttons (salary cert, bank letter, etc.). Silent on
-  /// failure.
-  Future<void> loadLetterTemplates() async {
-    if (!canManagePayroll) return;
-    final response = await _letterData.getTemplates();
-    if (response['status'] == StatusRequest.success) {
-      dynamic data = response['data'];
-      if (data is Map && data['data'] is Map) {
-        data = data['data'];
-      }
-      if (data is Map<String, dynamic> && data['templates'] is List) {
-        letterTemplates = (data['templates'] as List)
-            .whereType<Map<String, dynamic>>()
-            .where((t) => (t['is_active'] as num?)?.toInt() == 1)
-            .toList();
-        update();
-      }
-    }
-  }
-
-  /// Issues a new document request for [templateId] (auto-approved server-
-  /// side) and opens the generated PDF in the native print/share sheet.
-  /// [extraFields] feeds template placeholders such as `addressed_to` for the
-  /// bank letter template.
-  Future<void> issueAndOpenLetter(int templateId,
-      {Map<String, String>? extraFields}) async {
-    Get.snackbar('letter_issuing'.tr, '',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(seconds: 1));
-    final response = await _letterData.issueDocument(
-      employeeId: employeeId,
-      templateId: templateId,
-      extraFields: extraFields,
-    );
-    if (response['status'] != StatusRequest.success) {
-      Get.snackbar('error'.tr, 'letter_issue_failed'.tr,
-          snackPosition: SnackPosition.BOTTOM);
-      return;
-    }
-    dynamic data = response['data'];
-    if (data is Map && data['data'] is Map) data = data['data'];
-    final requestId = data is Map ? (data['request_id'] as num?)?.toInt() : null;
-    if (requestId == null) {
-      Get.snackbar('error'.tr, 'letter_issue_failed'.tr,
-          snackPosition: SnackPosition.BOTTOM);
-      return;
-    }
-    final pdf = await _letterData.downloadPdf(requestId);
-    if (pdf['status'] == StatusRequest.success && pdf['bytes'] is Uint8List) {
-      final bytes = pdf['bytes'] as Uint8List;
-      await Printing.layoutPdf(
-        onLayout: (_) async => bytes,
-        name: 'letter_$requestId.pdf',
-      );
-    } else {
-      Get.snackbar('error'.tr, 'letter_pdf_failed'.tr,
-          snackPosition: SnackPosition.BOTTOM);
     }
   }
 
@@ -721,6 +653,10 @@ class EmployeeDetailController extends GetxController {
       if (payload is Map<String, dynamic>) {
         _applyActivationPayload(payload);
         if (payload['device_revoked'] == true && employee != null) {
+          // Clear the loading state before reloading the profile, otherwise it
+          // stays stuck on `loading` (loadEmployee only touches `status`) and
+          // the regenerate/reset buttons remain disabled after a device reset.
+          activationStatus = StatusRequest.success;
           await loadEmployee();
           return true;
         }
@@ -900,16 +836,9 @@ class EmployeeDetailController extends GetxController {
         return;
       }
 
-      // PDFs: write to a temp file and open with the device viewer.
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/doc_$docId.pdf');
-      await file.writeAsBytes(data, flush: true);
-      final result = await OpenFilex.open(file.path);
-      if (result.type != ResultType.done) {
-        Get.snackbar('error'.tr,
-            '${'document_open_failed'.tr} (${result.message})',
-            snackPosition: SnackPosition.BOTTOM);
-      }
+      // PDFs: preview in-app (no external viewer).
+      unawaited(
+          Get.to<void>(() => PdfPreviewScreen(bytes: data, title: originalName)));
     } catch (e) {
       Get.snackbar('error'.tr, '${'document_open_failed'.tr}: $e',
           snackPosition: SnackPosition.BOTTOM);

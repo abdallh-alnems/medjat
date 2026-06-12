@@ -100,6 +100,8 @@ class LoanModel {
         return 'loan_completed'.tr;
       case 'cancelled':
         return 'loan_cancelled'.tr;
+      case 'rejected':
+        return 'loan_rejected'.tr;
       default:
         return status;
     }

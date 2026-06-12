@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../../core/class/handling_data_request.dart';
+import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/constant/theme/theme.dart';
 import '../../../core/shared/buttons/primary_button.dart';
 import '../../../core/shared/input_fields/primary_input.dart';
@@ -38,7 +39,7 @@ class LeaveSettingsScreen extends StatelessWidget {
                     controller: ctrl.defaultDaysController,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    hint: '21',
+                    hint: '0',
                   ),
                   const SizedBox(height: AppSpacing.s5),
                   Text('leave_carryover_section'.tr,
@@ -50,22 +51,26 @@ class LeaveSettingsScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(AppRadius.md),
                       border: Border.all(color: colors.borderHairline),
                     ),
-                    child: SwitchListTile(
-                      title: Text('leave_carryover_enabled'.tr,
-                          style: const TextStyle(
-                            fontFamily: 'IBM Plex Sans Arabic',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          )),
-                      subtitle: Text(
-                        ctrl.carryoverEnabled
-                            ? 'leave_carryover_on_hint'.tr
-                            : 'leave_carryover_off_hint'.tr,
-                        style: AppTextStyles.sm(context),
+                    child: Material(
+                      type: MaterialType.transparency,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      child: SwitchListTile(
+                        title: Text('leave_carryover_enabled'.tr,
+                            style: const TextStyle(
+                              fontFamily: 'IBM Plex Sans Arabic',
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            )),
+                        subtitle: Text(
+                          ctrl.carryoverEnabled
+                              ? 'leave_carryover_on_hint'.tr
+                              : 'leave_carryover_off_hint'.tr,
+                          style: AppTextStyles.sm(context),
+                        ),
+                        value: ctrl.carryoverEnabled,
+                        onChanged: ctrl.setCarryoverEnabled,
+                        activeThumbColor: colors.brand,
                       ),
-                      value: ctrl.carryoverEnabled,
-                      onChanged: ctrl.setCarryoverEnabled,
-                      activeColor: colors.brand,
                     ),
                   ),
                   if (ctrl.carryoverEnabled) ...[
@@ -77,12 +82,86 @@ class LeaveSettingsScreen extends StatelessWidget {
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       hint: '0',
                     ),
+                    const SizedBox(height: AppSpacing.s3),
+                    _switchTile(
+                      context,
+                      title: 'leave_expiry_enabled'.tr,
+                      subtitle: 'leave_expiry_hint'.tr,
+                      value: ctrl.expiryEnabled,
+                      onChanged: ctrl.setExpiryEnabled,
+                    ),
+                    if (ctrl.expiryEnabled) ...[
+                      const SizedBox(height: AppSpacing.s3),
+                      PrimaryInput(
+                        label: 'leave_expiry_months_label'.tr,
+                        controller: ctrl.expiryMonthsController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        hint: '3',
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.s3),
+                    _switchTile(
+                      context,
+                      title: 'leave_encash_enabled'.tr,
+                      subtitle: 'leave_encash_hint'.tr,
+                      value: ctrl.encashExcess,
+                      onChanged: ctrl.setEncashExcess,
+                    ),
+                    const SizedBox(height: AppSpacing.s3),
+                    PrimaryInput(
+                      label: 'leave_legal_min_label'.tr,
+                      controller: ctrl.legalMinController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      hint: '0',
+                    ),
                   ],
+                  const SizedBox(height: AppSpacing.s5),
+                  Text('leave_automation_section'.tr,
+                      style: AppTextStyles.h3(context)),
+                  const SizedBox(height: AppSpacing.s3),
+                  _switchTile(
+                    context,
+                    title: 'leave_auto_rollover_enabled'.tr,
+                    subtitle: 'leave_auto_rollover_hint'.tr,
+                    value: ctrl.autoRolloverEnabled,
+                    onChanged: ctrl.setAutoRollover,
+                  ),
+                  const SizedBox(height: AppSpacing.s3),
+                  _switchTile(
+                    context,
+                    title: 'leave_seniority_entitlement_enabled'.tr,
+                    subtitle: 'leave_seniority_entitlement_hint'.tr,
+                    value: ctrl.applyLegalSeniority,
+                    onChanged: ctrl.setApplyLegalSeniority,
+                  ),
                   const SizedBox(height: AppSpacing.s6),
                   PrimaryButton(
                     text: 'save'.tr,
                     isLoading: ctrl.saving,
                     onPressed: ctrl.saveSettings,
+                  ),
+                  const Divider(height: AppSpacing.s7 * 2),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.tune, color: colors.brand),
+                    title: Text('leave_scope_policies_title'.tr,
+                        style: AppTextStyles.body(context)),
+                    subtitle: Text('leave_scope_policies_hint'.tr,
+                        style: AppTextStyles.sm(context)),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Get.toNamed<void>(AppRoutes.leaveCarryoverPolicies),
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(Icons.payments_outlined, color: colors.brand),
+                    title: Text('leave_encashments_title'.tr,
+                        style: AppTextStyles.body(context)),
+                    subtitle: Text('leave_encashments_hint'.tr,
+                        style: AppTextStyles.sm(context)),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Get.toNamed<void>(AppRoutes.leaveEncashments),
                   ),
                   const Divider(height: AppSpacing.s7 * 2),
                   Text('leave_rollover_section'.tr,
@@ -118,6 +197,39 @@ class LeaveSettingsScreen extends StatelessWidget {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _switchTile(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    final colors = AppColors.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: SwitchListTile(
+          title: Text(title,
+              style: const TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              )),
+          subtitle: Text(subtitle, style: AppTextStyles.sm(context)),
+          value: value,
+          onChanged: onChanged,
+          activeThumbColor: colors.brand,
+        ),
       ),
     );
   }

@@ -22,13 +22,15 @@ class CompanySettingsHubScreen extends StatelessWidget {
             subtitle: 'edit_company_info'.tr,
             onTap: () => Get.toNamed<void>(AppRoutes.companySettings),
           ),
-          const SizedBox(height: AppSpacing.s2),
-          _HubTile(
-            icon: Icons.tune_outlined,
-            title: 'deduction_rules'.tr,
-            subtitle: 'set_late_absence_rules'.tr,
-            onTap: () => Get.toNamed<void>(AppRoutes.deductionRules),
-          ),
+          if (auth.user?.canManageDeductionRules == true) ...[
+            const SizedBox(height: AppSpacing.s2),
+            _HubTile(
+              icon: Icons.tune_outlined,
+              title: 'deduction_rules'.tr,
+              subtitle: 'set_late_absence_rules'.tr,
+              onTap: () => Get.toNamed<void>(AppRoutes.deductionRules),
+            ),
+          ],
           const SizedBox(height: AppSpacing.s2),
           _HubTile(
             icon: Icons.fact_check_outlined,
@@ -43,6 +45,16 @@ class CompanySettingsHubScreen extends StatelessWidget {
             subtitle: 'leave_settings_subtitle'.tr,
             onTap: () => Get.toNamed<void>(AppRoutes.leaveSettings),
           ),
+          if (auth.user?.canManagePayroll == true) ...[
+            const SizedBox(height: AppSpacing.s2),
+            _HubTile(
+              icon: Icons.account_balance_outlined,
+              title: 'statutory_settings_title'.tr,
+              subtitle: 'statutory_settings_subtitle'.tr,
+              onTap: () =>
+                  Get.toNamed<void>(AppRoutes.statutoryPayrollSettings),
+            ),
+          ],
           const SizedBox(height: AppSpacing.s2),
           _HubTile(
             icon: Icons.description_outlined,

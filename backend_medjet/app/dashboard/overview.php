@@ -124,12 +124,9 @@ $pendingLeaves = LeaveModel::countPending($tenantId);
 $payroll = PayrollModel::getTotalByMonth($tenantId, $currentMonth);
 
 // Approval queues + financials for the home action list (tenant-wide).
-$pendingLetters = DocumentRequestModel::countPending($tenantId);
 $pendingLoans = LoanModel::countPending($tenantId);
 $pendingBreaks = BreakRequestModel::countPending($tenantId);
 $assetsToReturn = AssetModel::countReturnRequested($tenantId);
-$pendingExpenses = ExpenseModel::countPending($tenantId);
-$monthlyExpenses = ExpenseModel::totalForMonth($tenantId, $currentMonth);
 // Credentials (iqama/passport/work-permit/contract/health) expiring within 30
 // days or already expired — surfaced as a compliance alert.
 $expiringCompliance = count(EmployeeModel::getExpiringCompliance($tenantId, 30, null, true));
@@ -147,12 +144,9 @@ Response::success([
     'branch_stats' => $branchStats,
     'total_branches' => $totalBranches,
     'pending_leaves' => $pendingLeaves,
-    'pending_letters' => $pendingLetters,
     'pending_loans' => $pendingLoans,
     'pending_breaks' => $pendingBreaks,
     'assets_to_return' => $assetsToReturn,
-    'pending_expenses' => $pendingExpenses,
-    'monthly_expenses' => $monthlyExpenses,
     'expiring_compliance' => $expiringCompliance,
     'payroll_summary' => [
         'employee_count' => (int) ($payroll['employee_count'] ?? 0),

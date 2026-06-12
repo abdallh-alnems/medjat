@@ -192,6 +192,7 @@ final class PayrollCalculator {
     private static function calculateDeductions(int $employeeId, string $month, int $tenantId, float $baseSalary, string $cycleStart, ?string $effectiveEnd): array {
         $deductions = [];
         $rules = DeductionRuleModel::getActiveByTenant($tenantId);
+        $lateTiers = DeductionRuleModel::getLateTiers($tenantId);
         $attendances = $effectiveEnd === null
             ? []
             : AttendanceModel::getByEmployeeDateRange($employeeId, $cycleStart, $effectiveEnd, $tenantId);
@@ -246,7 +247,18 @@ final class PayrollCalculator {
 
             if ($att['late_minutes'] > 0) {
                 $lateType = self::getRuleValue($rules, 'late_type', 'proportional');
-                if ($lateType === 'proportional') {
+                if ($lateType === 'tiered') {
+                    $chosen = self::matchLateTier($lateTiers, (int) $att['late_minutes']);
+                    if ($chosen !== null) {
+                        $days = (float) $chosen['deduction_days'];
+                        $deductions[] = [
+                            'type' => 'late',
+                            'date' => $att['date'],
+                            'amount' => round($dailyRate * $days, 2),
+                            'description' => "تأخير {$att['late_minutes']} دقيقة",
+                        ];
+                    }
+                } elseif ($lateType === 'proportional') {
                     $unitMinutes = self::getRuleValue($rules, 'late_unit_minutes', 15);
                     $deductionPerUnit = self::getRuleValue($rules, 'late_deduction_per_unit', $dailyRate / 4);
                     $units = ceil($att['late_minutes'] / $unitMinutes);
@@ -405,6 +417,19 @@ final class PayrollCalculator {
             ];
         }
 
+        // Pending annual-leave encashments (cash payout of carried-over days).
+        // Surfaced as a bonus line; flipped to 'paid' once payroll is approved.
+        $encashments = LeaveEncashmentModel::getPendingForMonth($employeeId, $month, $tenantId);
+        foreach ($encashments as $enc) {
+            $bonuses[] = [
+                'id' => $enc['id'],
+                'type' => 'leave_encashment',
+                'date' => null,
+                'amount' => $enc['amount'],
+                'description' => "تصفية رصيد إجازات {$enc['source_year']} ({$enc['days']} يوم)",
+            ];
+        }
+
         return $bonuses;
     }
 
@@ -492,7 +517,9 @@ final class PayrollCalculator {
         $prevLimit = 0.0;
 
         foreach ($brackets as $bracket) {
-            $upTo = $bracket['up_to'] !== null ? (float) $bracket['up_to'] : PHP_FLOAT_MAX;
+            // Tolerate the legacy `upto` key from older seed data.
+            $upToRaw = $bracket['up_to'] ?? $bracket['upto'] ?? null;
+            $upTo = $upToRaw !== null ? (float) $upToRaw : PHP_FLOAT_MAX;
             $rate = (float) ($bracket['rate'] ?? 0);
 
             if ($annualTaxable <= $prevLimit) {
@@ -521,5 +548,25 @@ final class PayrollCalculator {
             }
         }
         return $default;
+    }
+
+    /**
+     * Ladder match for tiered late deductions: returns the tier with the
+     * highest threshold that is still <= $lateMinutes, or null when the late
+     * time is below every threshold. $tiers MUST be ordered ascending by
+     * threshold_minutes (as DeductionRuleModel::getLateTiers returns them).
+     *
+     * Public so it can be unit-tested in isolation without a database.
+     */
+    public static function matchLateTier(array $tiers, int $lateMinutes): ?array {
+        $chosen = null;
+        foreach ($tiers as $tier) {
+            if ($lateMinutes >= (int) $tier['threshold_minutes']) {
+                $chosen = $tier;
+            } else {
+                break;
+            }
+        }
+        return $chosen;
     }
 }

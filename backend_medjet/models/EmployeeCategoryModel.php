@@ -2,9 +2,13 @@
 
 final class EmployeeCategoryModel {
     public static function listByTenant(int $tenantId, bool $activeOnly = false): array {
+        // Count only non-terminated employees so the tile figure matches the
+        // employee list (which never shows terminated staff).
         $sql = "SELECT ec.*,
                 (SELECT COUNT(*) FROM employee_category_assignments eca
-                 WHERE eca.category_id = ec.id AND eca.tenant_id = ec.tenant_id) AS employee_count
+                 JOIN employees e ON e.id = eca.employee_id AND e.tenant_id = eca.tenant_id
+                 WHERE eca.category_id = ec.id AND eca.tenant_id = ec.tenant_id
+                   AND e.status != 'terminated') AS employee_count
                 FROM employee_categories ec
                 WHERE ec.tenant_id = ?";
         $params = [$tenantId];
@@ -107,6 +111,14 @@ final class EmployeeCategoryModel {
             [$employeeId, $tenantId]
         );
         return array_map(fn($r) => (int) $r['category_id'], $rows);
+    }
+
+    /** Set (or clear, with null) the attendance-method override for a category. */
+    public static function setAttendanceMethods(int $id, int $tenantId, ?array $methods): bool {
+        return Database::execute(
+            "UPDATE employee_categories SET attendance_methods = ? WHERE id = ? AND tenant_id = ?",
+            [$methods !== null ? json_encode(array_values($methods)) : null, $id, $tenantId]
+        ) >= 0;
     }
 
     public static function getEmployeesInCategory(int $categoryId, int $tenantId): array {

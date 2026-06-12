@@ -10,7 +10,20 @@ $month = $_GET['month'] ?? date('Y-m');
 $slip = PayrollModel::getSlip($employee['id'], $month, $tenantId);
 
 if (!$slip) {
-    Response::notFound('Payroll slip');
+    // No saved slip yet — the admin hasn't generated/approved payroll for this
+    // month. Instead of an error, show the employee a live preview computed
+    // from attendance, loans, deductions and bonuses up to today, flagged as
+    // not-yet-paid so they always see their salary breakdown.
+    $live = PayrollCalculator::calculate(
+        (int) $employee['id'], $month, $tenantId, date('Y-m-d')
+    );
+    if (empty($live)) {
+        Response::notFound('Payroll slip');
+    }
+    $live['status'] = 'live';
+    $live['deductions_breakdown'] = $live['deductions_breakdown'] ?? [];
+    $live['bonuses_breakdown'] = $live['bonuses_breakdown'] ?? [];
+    Response::success($live);
 }
 
 // `breakdown` is stored as a JSON string (the full PayrollCalculator output).

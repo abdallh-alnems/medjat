@@ -6,6 +6,9 @@ import '../../../../core/constant/theme/app_colors.dart';
 import '../../../../core/constant/theme/app_text_styles.dart';
 import '../../../../core/constant/theme/app_spacing.dart';
 import '../../../../logic/controller/profile/profile_controller.dart';
+import '../../widget/stat_item.dart';
+import 'widgets/profile_header.dart';
+import 'widgets/quick_access_card.dart';
 
 class MyProfileScreen extends StatelessWidget {
   const MyProfileScreen({super.key});
@@ -38,7 +41,10 @@ class MyProfileScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _profileHeader(context, emp),
+          ProfileHeader(
+            name: emp['name']?.toString() ?? '',
+            jobTitle: emp['job_title']?.toString() ?? '',
+          ),
           const SizedBox(height: 24),
           _sectionTitle(context, 'employment_data'.tr),
           const SizedBox(height: 8),
@@ -79,35 +85,28 @@ class MyProfileScreen extends StatelessWidget {
           const SizedBox(height: 24),
           _sectionTitle(context, 'quick_services'.tr),
           const SizedBox(height: 8),
-          _quickAccessCards(context, controller),
+          _quickAccessCards(context),
         ],
       ),
     );
   }
 
-  Widget _quickAccessCards(BuildContext context, ProfileController controller) {
+  Widget _quickAccessCards(BuildContext context) {
     return Column(
       children: [
         Row(
           children: [
             Expanded(
-              child: _quickAccessCard(
-                context,
+              child: QuickAccessCard(
                 icon: Icons.folder_outlined,
-                activeIcon: Icons.folder,
                 label: 'my_documents'.tr,
-                badge: controller.documents.isNotEmpty
-                    ? '${controller.documents.length}'
-                    : null,
                 onTap: () => Get.toNamed<void>(AppRoutes.myDocuments),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _quickAccessCard(
-                context,
+              child: QuickAccessCard(
                 icon: Icons.beach_access_outlined,
-                activeIcon: Icons.beach_access,
                 label: 'leaves'.tr,
                 onTap: () => Get.toNamed<void>(AppRoutes.leaves),
               ),
@@ -118,12 +117,30 @@ class MyProfileScreen extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: _quickAccessCard(
-                context,
+              child: QuickAccessCard(
                 icon: Icons.free_breakfast_outlined,
-                activeIcon: Icons.free_breakfast,
                 label: 'break_requests'.tr,
                 onTap: () => Get.toNamed<void>(AppRoutes.breaks),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: QuickAccessCard(
+                icon: Icons.account_balance_wallet_outlined,
+                label: 'advances'.tr,
+                onTap: () => Get.toNamed<void>(AppRoutes.advances),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: QuickAccessCard(
+                icon: Icons.inventory_2_outlined,
+                label: 'my_assets'.tr,
+                onTap: () => Get.toNamed<void>(AppRoutes.myAssets),
               ),
             ),
             const SizedBox(width: 12),
@@ -131,100 +148,6 @@ class MyProfileScreen extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-
-  Widget _quickAccessCard(
-    BuildContext context, {
-    required IconData icon,
-    required IconData activeIcon,
-    required String label,
-    String? badge,
-    required VoidCallback onTap,
-  }) {
-    final brand = AppColors.brand(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        decoration: BoxDecoration(
-          border: Border.all(color: brand.withValues(alpha: 0.2)),
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          color: brand.withValues(alpha: 0.04),
-        ),
-        child: Column(
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(icon, size: 28, color: brand),
-                if (badge != null)
-                  Positioned(
-                    right: -8,
-                    top: -8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: brand,
-                        borderRadius: BorderRadius.circular(AppRadius.full),
-                      ),
-                      constraints: const BoxConstraints(minWidth: 18),
-                      child: Text(
-                        badge,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(label, style: AppTextStyles.body(context)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _profileHeader(BuildContext context, Map<String, dynamic> emp) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.brand(context).withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 32,
-            backgroundColor: AppColors.brand(context),
-            child: Text(
-              (emp['name']?.toString() ?? '?').substring(0, 1).toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(emp['name']?.toString() ?? '', style: AppTextStyles.h3(context)),
-                const SizedBox(height: 2),
-                Text(emp['job_title']?.toString() ?? '', style: AppTextStyles.bodySecondary(context)),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -284,21 +207,11 @@ class MyProfileScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _balanceItem(context, 'balance'.tr, balance['total_days']?.toString() ?? '0'),
-          _balanceItem(context, 'used'.tr, balance['used_days']?.toString() ?? '0'),
-          _balanceItem(context, 'remaining'.tr, balance['remaining_days']?.toString() ?? '0'),
+          StatItem(label: 'balance'.tr, value: balance['total_days']?.toString() ?? '0'),
+          StatItem(label: 'used'.tr, value: balance['used_days']?.toString() ?? '0'),
+          StatItem(label: 'remaining'.tr, value: balance['remaining_days']?.toString() ?? '0'),
         ],
       ),
     );
   }
-
-  Widget _balanceItem(BuildContext context, String label, String value) {
-    return Column(
-      children: [
-        Text(value, style: AppTextStyles.h2(context)),
-        Text(label, style: AppTextStyles.xs(context)),
-      ],
-    );
-  }
-
 }

@@ -9,3 +9,14 @@ Thumbs.db
 .env*
 !.env.example
 specify/
+
+vendor/
+*.cache
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+pubspec.lock
+coverage/
+.gradle/

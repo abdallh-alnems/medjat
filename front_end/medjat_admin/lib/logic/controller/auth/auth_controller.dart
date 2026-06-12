@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/services/token_storage_service.dart';
+import '../../../core/services/push_notification_service.dart';
 import '../../../data/data_source/remote/admin_auth_data/admin_auth_data.dart';
 import '../../../data/model/admin_model.dart';
 
@@ -44,6 +45,7 @@ class AuthController extends GetxController {
       }
       isLoggedIn.value = true;
       status.value = StatusRequest.success;
+      _initPushNotifications();
       Get.offAllNamed(AppRoutes.home);
     } else {
       status.value = response['status'] as StatusRequest? ?? StatusRequest.failure;
@@ -82,6 +84,16 @@ class AuthController extends GetxController {
     final hasToken = await TokenStorageService.hasToken();
     if (!hasToken) return false;
     await _loadCachedAdmin();
+    if (admin != null) {
+      _initPushNotifications();
+    }
     return admin != null;
+  }
+
+  void _initPushNotifications() {
+    try {
+      final pushService = Get.find<PushNotificationService>();
+      pushService.init();
+    } catch (_) {}
   }
 }

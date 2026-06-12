@@ -24,14 +24,16 @@ AssetModel::approveReturn($id, $tenantId, $auth['admin_id']);
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'asset.return_approve', 'asset', $id);
 
-try {
-    Database::execute(
-        "INSERT INTO notifications (tenant_id, employee_id, type, title, title_ar, body, body_ar, data, sent_via, created_at)
-         VALUES (?, ?, 'general', 'Custody Return Confirmed', 'تم تأكيد إرجاع العهدة', 'Your custody return has been confirmed.', 'تم تأكيد إرجاع العهدة الخاصة بك.', ?, 'in_app', NOW())",
-        [$tenantId, (int) $asset['employee_id'], json_encode(['asset_id' => $id, 'action' => 'return_approve'])]
-    );
-} catch (Exception $e) {
-    error_log('Notification insert error: ' . $e->getMessage());
-}
+$assetName = (string) ($asset['name'] ?? '');
+NotificationService::notifyEmployee(
+    $tenantId,
+    (int) $asset['employee_id'],
+    'approval',
+    'Custody Return Confirmed',
+    'تم تأكيد إرجاع العهدة',
+    "Your return of \"{$assetName}\" has been confirmed.",
+    "تم تأكيد إرجاع العهدة: {$assetName}.",
+    ['type' => 'asset', 'asset_id' => $id, 'action' => 'return_approve']
+);
 
 Response::success(['message' => 'Custody return confirmed']);

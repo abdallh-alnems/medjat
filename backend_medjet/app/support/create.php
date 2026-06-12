@@ -45,4 +45,14 @@ try {
     error_log('Support email error: ' . $e->getMessage());
 }
 
+try {
+    NotificationService::sendToSupportTeam(
+        'New Support Ticket',
+        $subject,
+        ['type' => 'support', 'ticket_id' => $ticketId]
+    );
+} catch (Throwable $e) {
+    error_log('Support push error: ' . $e->getMessage());
+}
+
 Response::success(['ticket_id' => $ticketId]);

@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:open_filex/open_filex.dart';
-import 'package:path_provider/path_provider.dart';
+import '../../../view/widget/pdf_preview_screen.dart';
 import '../../../core/class/status_request.dart';
 import '../../../data/data_source/remote/document_data/document_data.dart';
 import '../../../data/data_source/remote/required_documents_data/required_documents_data.dart';
@@ -157,16 +155,9 @@ class RequiredDocumentSubmissionsController extends GetxController {
       return;
     }
 
-    // PDFs: write to a temp file and open with the device's PDF viewer.
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/doc_$docId.pdf');
-    await file.writeAsBytes(data, flush: true);
-
-    final result = await OpenFilex.open(file.path);
-    if (result.type != ResultType.done) {
-      Get.snackbar('error'.tr, 'document_open_failed'.tr,
-          snackPosition: SnackPosition.BOTTOM);
-    }
+    // PDFs: preview in-app (no external viewer).
+    unawaited(
+        Get.to<void>(() => PdfPreviewScreen(bytes: data, title: originalName)));
   }
 }
 

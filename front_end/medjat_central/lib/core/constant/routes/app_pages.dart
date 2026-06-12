@@ -15,6 +15,7 @@ import '../../../data/data_source/remote/performance_data/performance_data.dart'
 import '../../../data/data_source/remote/branch_data/branch_data.dart';
 import '../../../data/data_source/remote/document_data/document_data.dart';
 import '../../../data/data_source/remote/deduction_rule_data/deduction_rule_data.dart';
+import '../../../logic/controller/settings/deduction_rules_controller.dart';
 import '../../../data/data_source/remote/company_settings_data/company_settings_data.dart';
 import '../../../data/data_source/remote/shift_data/shift_data.dart';
 import '../../../data/data_source/remote/report_data/report_data.dart';
@@ -36,10 +37,14 @@ import '../../../view/screen/attendance/attendance_screen.dart';
 import '../../../view/screen/payroll/payroll_screen.dart';
 import '../../../view/screen/leave/leave_screen.dart';
 import '../../../view/screen/break/break_screen.dart';
-import '../../../view/screen/expense/expenses_screen.dart';
 import '../../../view/screen/loan/loans_screen.dart';
-import '../../../data/data_source/remote/expense_data/expense_data.dart';
 import '../../../data/data_source/remote/loan_data/loan_data.dart';
+import '../../../view/screen/payroll/bulk_adjustments_screen.dart';
+import '../../../view/screen/payroll/bulk_adjustment_create_screen.dart';
+import '../../../view/screen/payroll/bulk_adjustment_detail_screen.dart';
+import '../../../data/data_source/remote/bulk_adjustment_data/bulk_adjustment_data.dart';
+import '../../../view/screen/audit/audit_log_screen.dart';
+import '../../../data/data_source/remote/audit_data/audit_data.dart';
 import '../../../view/screen/asset/assets_screen.dart';
 import '../../../data/data_source/remote/asset_data/asset_data.dart';
 import '../../../view/screen/branch/branch_screen.dart';
@@ -55,6 +60,10 @@ import '../../../view/screen/settings/company_settings_screen.dart';
 import '../../../view/screen/settings/company_settings_hub_screen.dart';
 import '../../../view/screen/settings/leave_settings_screen.dart';
 import '../../../logic/controller/settings/leave_settings_controller.dart';
+import '../../../view/screen/settings/leave_carryover_policies_screen.dart';
+import '../../../logic/controller/settings/leave_carryover_policies_controller.dart';
+import '../../../view/screen/settings/leave_encashments_screen.dart';
+import '../../../logic/controller/settings/leave_encashments_controller.dart';
 import '../../../view/screen/settings/account_settings_screen.dart';
 import '../../../view/screen/settings/app_settings_screen.dart';
 import '../../../view/screen/shift/shifts_screen.dart';
@@ -74,19 +83,17 @@ import '../../../view/screen/settings/required_documents_screen.dart';
 import '../../../view/screen/settings/required_document_submissions_screen.dart';
 import '../../../view/screen/report/documents_report_screen.dart';
 import '../../../view/screen/category/categories_screen.dart';
+import '../../../view/screen/category/category_employees_screen.dart';
+import '../../../logic/controller/category/category_employees_controller.dart';
 import '../../../view/screen/notification/notifications_screen.dart';
 import '../../../view/screen/notification/notification_prefs_screen.dart';
-// TODO: statutory payroll settings screen not yet implemented; route disabled below.
-// import '../../../view/screen/settings/statutory_payroll_settings_screen.dart';
-import '../../../view/screen/letter/letters_hub_screen.dart';
-import '../../../view/screen/letter/letter_template_edit_screen.dart';
+import '../../../view/screen/settings/statutory_payroll_settings_screen.dart';
 import '../../../view/screen/dashboard/status_employees_screen.dart';
 import '../../../logic/controller/dashboard/status_employees_controller.dart';
 import '../../../view/screen/dashboard/expiring_compliance_screen.dart';
 import '../../../logic/controller/dashboard/expiring_compliance_controller.dart';
 import '../../../data/data_source/remote/compliance_data/compliance_data.dart';
 import '../../../data/data_source/remote/live_attendance_data/live_attendance_data.dart';
-import '../../../data/data_source/remote/letter_data/letter_data.dart';
 import '../../../data/data_source/remote/support_data/support_data.dart';
 import '../../../logic/controller/support/support_controller.dart';
 import '../../../logic/controller/export_template/export_template_controller.dart';
@@ -94,10 +101,8 @@ import '../../../view/screen/payroll/export_templates_screen.dart';
 import '../../../view/screen/support/support_tickets_screen.dart';
 import '../../../view/screen/support/support_chat_screen.dart';
 import '../../../view/screen/support/new_ticket_screen.dart';
-import '../../../logic/controller/letter/letter_request_controller.dart';
-import '../../../logic/controller/letter/letter_template_controller.dart';
 import '../../../logic/controller/notification/notification_controller.dart';
-// import '../../../logic/controller/settings/statutory_payroll_settings_controller.dart';
+import '../../../logic/controller/settings/statutory_payroll_settings_controller.dart';
 import '../../../data/data_source/remote/station_data/station_data.dart';
 import '../../../data/data_source/remote/biometric_data/biometric_data.dart';
 import '../../../data/data_source/remote/required_documents_data/required_documents_data.dart';
@@ -242,17 +247,7 @@ List<GetPage<dynamic>> getPages = [
     binding: BindingsBuilder<void>(() {
       Get.lazyPut<AssetData>(() => AssetData());
       Get.lazyPut<EmployeeData>(() => EmployeeData());
-    }),
-    middlewares: [AuthMiddleware()],
-    transition: Transition.fadeIn,
-    transitionDuration: AppMotion.transition,
-  ),
-  GetPage(
-    name: AppRoutes.expenses,
-    page: () => const ExpensesScreen(),
-    binding: BindingsBuilder<void>(() {
-      Get.lazyPut<ExpenseData>(() => ExpenseData());
-      Get.lazyPut<EmployeeData>(() => EmployeeData());
+      Get.lazyPut<CategoryData>(() => CategoryData());
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
@@ -264,6 +259,52 @@ List<GetPage<dynamic>> getPages = [
     binding: BindingsBuilder<void>(() {
       Get.lazyPut<LoanData>(() => LoanData());
       Get.lazyPut<EmployeeData>(() => EmployeeData());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.bulkAdjustments,
+    page: () => const BulkAdjustmentsScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<BulkAdjustmentData>(() => BulkAdjustmentData());
+      Get.lazyPut<BranchData>(() => BranchData());
+      Get.lazyPut<CategoryData>(() => CategoryData());
+      Get.lazyPut<EmployeeData>(() => EmployeeData());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.bulkAdjustmentCreate,
+    page: () => const BulkAdjustmentCreateScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<BulkAdjustmentData>(() => BulkAdjustmentData());
+      Get.lazyPut<BranchData>(() => BranchData());
+      Get.lazyPut<CategoryData>(() => CategoryData());
+      Get.lazyPut<EmployeeData>(() => EmployeeData());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.bulkAdjustmentDetail,
+    page: () => const BulkAdjustmentDetailScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<BulkAdjustmentData>(() => BulkAdjustmentData());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.auditLog,
+    page: () => const AuditLogScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<AuditData>(() => AuditData());
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
@@ -347,6 +388,7 @@ List<GetPage<dynamic>> getPages = [
     page: () => const DeductionRulesScreen(),
     binding: BindingsBuilder<void>(() {
       Get.lazyPut<DeductionRuleData>(() => DeductionRuleData());
+      Get.lazyPut<DeductionRulesController>(() => DeductionRulesController());
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
@@ -380,6 +422,32 @@ List<GetPage<dynamic>> getPages = [
     binding: BindingsBuilder<void>(() {
       Get.lazyPut<CompanySettingsData>(() => CompanySettingsData());
       Get.lazyPut<LeaveSettingsController>(() => LeaveSettingsController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.leaveCarryoverPolicies,
+    page: () => const LeaveCarryoverPoliciesScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<CompanySettingsData>(() => CompanySettingsData());
+      Get.lazyPut<BranchData>(() => BranchData());
+      Get.lazyPut<CategoryData>(() => CategoryData());
+      Get.lazyPut<LeaveCarryoverPoliciesController>(
+          () => LeaveCarryoverPoliciesController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.leaveEncashments,
+    page: () => const LeaveEncashmentsScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<CompanySettingsData>(() => CompanySettingsData());
+      Get.lazyPut<LeaveEncashmentsController>(
+          () => LeaveEncashmentsController());
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
@@ -585,6 +653,18 @@ List<GetPage<dynamic>> getPages = [
     transitionDuration: AppMotion.transition,
   ),
   GetPage(
+    name: AppRoutes.categoryEmployees,
+    page: () => const CategoryEmployeesScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<EmployeeData>(() => EmployeeData());
+      Get.lazyPut<CategoryEmployeesController>(
+          () => CategoryEmployeesController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
     name: AppRoutes.notifications,
     page: () => const NotificationsScreen(),
     binding: BindingsBuilder<void>(() {
@@ -599,30 +679,6 @@ List<GetPage<dynamic>> getPages = [
     page: () => const NotificationPrefsScreen(),
     binding: BindingsBuilder<void>(() {
       Get.lazyPut<NotificationController>(() => NotificationController());
-    }),
-    middlewares: [AuthMiddleware()],
-    transition: Transition.fadeIn,
-    transitionDuration: AppMotion.transition,
-  ),
-  GetPage(
-    name: AppRoutes.letters,
-    page: () => const LettersHubScreen(),
-    binding: BindingsBuilder<void>(() {
-      Get.lazyPut<LetterData>(() => LetterData());
-      Get.lazyPut<EmployeeData>(() => EmployeeData());
-      Get.lazyPut<LetterTemplateController>(() => LetterTemplateController());
-      Get.lazyPut<LetterRequestController>(() => LetterRequestController());
-    }),
-    middlewares: [AuthMiddleware()],
-    transition: Transition.fadeIn,
-    transitionDuration: AppMotion.transition,
-  ),
-  GetPage(
-    name: AppRoutes.letterTemplateEdit,
-    page: () => const LetterTemplateEditScreen(),
-    binding: BindingsBuilder<void>(() {
-      Get.lazyPut<LetterData>(() => LetterData());
-      Get.lazyPut<LetterTemplateController>(() => LetterTemplateController());
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
@@ -654,18 +710,18 @@ List<GetPage<dynamic>> getPages = [
     transition: Transition.fadeIn,
     transitionDuration: AppMotion.transition,
   ),
-  // TODO: statutory payroll settings screen/controller not yet implemented.
-  // GetPage(
-  //   name: AppRoutes.statutoryPayrollSettings,
-  //   page: () => const StatutoryPayrollSettingsScreen(),
-  //   binding: BindingsBuilder<void>(() {
-  //     Get.lazyPut<StatutoryPayrollSettingsController>(
-  //         () => StatutoryPayrollSettingsController());
-  //   }),
-  //   middlewares: [AuthMiddleware()],
-  //   transition: Transition.fadeIn,
-  //   transitionDuration: AppMotion.transition,
-  // ),
+  GetPage(
+    name: AppRoutes.statutoryPayrollSettings,
+    page: () => const StatutoryPayrollSettingsScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<CompanySettingsData>(() => CompanySettingsData());
+      Get.lazyPut<StatutoryPayrollSettingsController>(
+          () => StatutoryPayrollSettingsController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
   GetPage(
     name: AppRoutes.support,
     page: () => const SupportTicketsScreen(),
@@ -728,6 +784,10 @@ class MoreScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = Get.find<AuthController>();
     final canManageCompany = auth.user?.canManageCompanySettings ?? false;
+    // Users with the deduction permission but no company-settings access (e.g.
+    // HR) reach the company hub indirectly; give them a direct entry instead.
+    final canManageDeductionRules =
+        auth.user?.canManageDeductionRules ?? false;
 
     return Scaffold(
       appBar: AppBar(title: Text('more'.tr)),
@@ -753,28 +813,21 @@ class MoreScreen extends StatelessWidget {
               title: 'break_requests'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.breakManage),
             ),
-          if (auth.user?.canManageDocuments == true)
-            _MenuTile(
-              icon: Icons.description_outlined,
-              title: 'letters'.tr,
-              subtitle: 'letters_hint'.tr,
-              onTap: () => Get.toNamed<void>(AppRoutes.letters),
-            ),
           const SizedBox(height: AppSpacing.s4),
           _MoreSectionHeader(title: 'finance_section'.tr),
-          if (auth.user?.canManagePayroll == true)
-            _MenuTile(
-              icon: Icons.receipt_long_outlined,
-              title: 'expenses'.tr,
-              subtitle: 'expenses_hint'.tr,
-              onTap: () => Get.toNamed<void>(AppRoutes.expenses),
-            ),
           if (auth.user?.canManagePayroll == true)
             _MenuTile(
               icon: Icons.account_balance_wallet_outlined,
               title: 'loans'.tr,
               subtitle: 'loans_hint'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.loans),
+            ),
+          if (auth.user?.canManagePayroll == true)
+            _MenuTile(
+              icon: Icons.tune_outlined,
+              title: 'bulk_adjustments'.tr,
+              subtitle: 'bulk_adjustments_hint'.tr,
+              onTap: () => Get.toNamed<void>(AppRoutes.bulkAdjustments),
             ),
           if (auth.user?.canManageAssets == true)
             _MenuTile(
@@ -800,6 +853,20 @@ class MoreScreen extends StatelessWidget {
               title: 'company_settings'.tr,
               subtitle: 'company_settings_hint'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.settingsCompany),
+            ),
+          if (!canManageCompany && canManageDeductionRules)
+            _MenuTile(
+              icon: Icons.tune_outlined,
+              title: 'deduction_rules'.tr,
+              subtitle: 'set_late_absence_rules'.tr,
+              onTap: () => Get.toNamed<void>(AppRoutes.deductionRules),
+            ),
+          if (canManageCompany)
+            _MenuTile(
+              icon: Icons.history,
+              title: 'activity_log'.tr,
+              subtitle: 'activity_log_hint'.tr,
+              onTap: () => Get.toNamed<void>(AppRoutes.auditLog),
             ),
           _MenuTile(
             icon: Icons.person_outline,

@@ -61,6 +61,27 @@ final class EmployeeModel {
         );
     }
 
+    /** Set (or clear, with null) the attendance-method override for one employee. */
+    public static function setAttendanceMethods(int $id, int $tenantId, ?array $methods): bool {
+        return Database::execute(
+            "UPDATE employees SET attendance_methods = ? WHERE id = ? AND tenant_id = ?",
+            [$methods !== null ? json_encode(array_values($methods)) : null, $id, $tenantId]
+        ) >= 0;
+    }
+
+    /** Employees with an explicit attendance-method override (for the settings list). */
+    public static function listAttendanceOverrides(int $tenantId): array {
+        return Database::fetchAll(
+            "SELECT e.id, e.name, e.attendance_methods, b.name AS branch_name
+             FROM employees e
+             LEFT JOIN branches b ON b.id = e.branch_id
+             WHERE e.tenant_id = ? AND e.attendance_methods IS NOT NULL
+               AND e.status != 'terminated'
+             ORDER BY e.name ASC",
+            [$tenantId]
+        );
+    }
+
     public static function findByAdminId(int $adminId, int $tenantId): ?array {
         return Database::fetchOne(
             "SELECT * FROM employees WHERE admin_id = ? AND tenant_id = ? LIMIT 1",
@@ -74,24 +95,37 @@ final class EmployeeModel {
      * lines (fixed manual bonus/deduction, or a percentage of base_salary)
      * and notify each linked employee account.
      *
-     * $scopeType: 'branch' | 'shift' | 'category'. Unknown types yield [].
+     * $scopeType: 'all' | 'branch' | 'shift' | 'category' | 'employee'.
+     * Terminated AND suspended employees are excluded (a suspended employee
+     * should not receive a new payroll adjustment). Unknown types yield [].
      */
     public static function listForScope(string $scopeType, int $scopeId, int $tenantId): array {
         switch ($scopeType) {
+            case 'all':
+                // Every eligible employee of the tenant; $scopeId is ignored.
+                return Database::fetchAll(
+                    "SELECT id, admin_id, base_salary FROM employees
+                     WHERE tenant_id = ? AND status NOT IN ('terminated','suspended')",
+                    [$tenantId]
+                );
+            case 'employee':
+                $sql = "SELECT id, admin_id, base_salary FROM employees
+                        WHERE tenant_id = ? AND id = ? AND status NOT IN ('terminated','suspended')";
+                break;
             case 'branch':
                 $sql = "SELECT id, admin_id, base_salary FROM employees
-                        WHERE tenant_id = ? AND branch_id = ? AND status != 'terminated'";
+                        WHERE tenant_id = ? AND branch_id = ? AND status NOT IN ('terminated','suspended')";
                 break;
             case 'shift':
                 $sql = "SELECT id, admin_id, base_salary FROM employees
-                        WHERE tenant_id = ? AND shift_id = ? AND status != 'terminated'";
+                        WHERE tenant_id = ? AND shift_id = ? AND status NOT IN ('terminated','suspended')";
                 break;
             case 'category':
                 $sql = "SELECT e.id, e.admin_id, e.base_salary FROM employees e
                         JOIN employee_category_assignments eca
                           ON eca.employee_id = e.id AND eca.tenant_id = e.tenant_id
                         WHERE e.tenant_id = ? AND eca.category_id = ?
-                          AND e.status != 'terminated'";
+                          AND e.status NOT IN ('terminated','suspended')";
                 break;
             default:
                 return [];
@@ -329,9 +363,10 @@ final class EmployeeModel {
         string $dir = 'asc'
     ): array {
         $sql = "SELECT e.*, s.start_time AS shift_start, s.end_time AS shift_end,
-                       s.name AS shift_name
+                       s.name AS shift_name, b.name AS branch_name
                 FROM employees e
                 LEFT JOIN shifts s ON s.id = e.shift_id
+                LEFT JOIN branches b ON b.id = e.branch_id
                 WHERE e.tenant_id = ? AND e.status != 'terminated'";
         $params = [$tenantId];
 
@@ -374,7 +409,9 @@ final class EmployeeModel {
         }
 
         if ($search) {
-            $sql .= " AND (name LIKE ? OR phone LIKE ? OR national_id LIKE ? OR job_title LIKE ?)";
+            // Qualify with the `e` alias: `shifts` (joined above) also has a
+            // `name` column, so an unqualified `name` is ambiguous and errors.
+            $sql .= " AND (e.name LIKE ? OR e.phone LIKE ? OR e.national_id LIKE ? OR e.job_title LIKE ?)";
             $searchParam = "%{$search}%";
             $params[] = $searchParam;
             $params[] = $searchParam;

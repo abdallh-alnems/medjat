@@ -118,4 +118,24 @@ class BreakController extends GetxController {
     Get.snackbar('error'.tr, msg, snackPosition: SnackPosition.BOTTOM);
     return false;
   }
+
+  /// Accept ('accept') or decline ('reject') the manager's suggested time.
+  Future<bool> respondPostpone(int id, String action) async {
+    final response = await _breakData.respondPostpone(id, action);
+    final responseStatus = response['status'] as StatusRequest?;
+    if (responseStatus == StatusRequest.success) {
+      Get.snackbar(
+        'success'.tr,
+        action == 'accept'
+            ? 'break_postpone_accepted'.tr
+            : 'break_postpone_rejected'.tr,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      await loadMyBreaks();
+      return true;
+    }
+    final msg = (response['message'] as String?) ?? 'error'.tr;
+    Get.snackbar('error'.tr, msg, snackPosition: SnackPosition.BOTTOM);
+    return false;
+  }
 }

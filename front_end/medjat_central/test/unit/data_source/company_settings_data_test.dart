@@ -32,13 +32,13 @@ void main() {
       verify(() => mockCrud.getData(any())).called(1);
     });
 
-    test('updateCompanySettings ينادي putData', () async {
-      when(() => mockCrud.putData(any(), any()))
+    test('updateCompanySettings ينادي postData', () async {
+      when(() => mockCrud.postData(any(), any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
 
       await data.updateCompanySettings({'name': 'شركة'});
 
-      verify(() => mockCrud.putData(any(), {'name': 'شركة'})).called(1);
+      verify(() => mockCrud.postData(any(), {'name': 'شركة'})).called(1);
     });
 
     test('getLeaveSettings ينادي getData', () async {
@@ -56,12 +56,19 @@ void main() {
 
       await data.updateLeaveSettings(
         defaultAnnualLeaveDays: 21,
+        carryoverEnabled: true,
         carryoverMaxDays: 5,
       );
 
       verify(() => mockCrud.postData(any(), {
         'default_annual_leave_days': 21,
+        'carryover_enabled': true,
         'leave_carryover_max_days': 5,
+        'carryover_expiry_months': null,
+        'carryover_encash_excess': false,
+        'carryover_legal_min_days': null,
+        'auto_rollover_enabled': false,
+        'apply_legal_seniority_entitlement': true,
       })).called(1);
     });
 

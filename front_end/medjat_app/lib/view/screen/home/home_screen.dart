@@ -3,10 +3,11 @@ import 'package:get/get.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
-import '../../../core/services/locale_service.dart';
-import '../../../data/model/today_status_model.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
 import '../../../logic/controller/home/home_controller.dart';
+import '../../widget/date_formatter.dart';
+import 'widgets/attendance_button.dart';
+import 'widgets/status_card.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -32,9 +33,20 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.s7),
                   _buildDate(context),
                   const SizedBox(height: AppSpacing.s6),
-                  _buildStatusCard(context, colors, controller),
+                  StatusCard(
+                    colors: colors,
+                    todayStatus: controller.todayStatus,
+                    status: controller.attendanceStatus,
+                  ),
                   const SizedBox(height: AppSpacing.s7),
-                  _buildAttendanceButton(context, colors, controller),
+                  AttendanceButton(
+                    colors: colors,
+                    isDayDone: controller.isDayDone,
+                    canCheckOut: controller.canCheckOut,
+                    buttonText: controller.attendanceButtonText,
+                    icon: controller.attendanceButtonIcon,
+                    onTap: controller.startAttendanceFlow,
+                  ),
                   const SizedBox(height: AppSpacing.s7),
                   _buildBranchInfo(context, colors, controller),
                   if (controller.isOffline) ...[
@@ -75,183 +87,12 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildDate(BuildContext context) {
     final now = DateTime.now();
-    final localeSvc = Get.find<LocaleService>();
-    final isAr = localeSvc.isArabic;
-
-    String dayName;
-    String monthName;
-
-    if (isAr) {
-      final weekdays = [
-        '', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس',
-        'الجمعة', 'السبت', 'الأحد'
-      ];
-      final months = [
-        '', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو',
-        'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر',
-        'نوفمبر', 'ديسمبر'
-      ];
-      dayName = weekdays[now.weekday];
-      monthName = months[now.month];
-    } else {
-      final weekdays = [
-        '', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
-        'Friday', 'Saturday', 'Sunday'
-      ];
-      final months = [
-        '', 'January', 'February', 'March', 'April', 'May',
-        'June', 'July', 'August', 'September', 'October',
-        'November', 'December'
-      ];
-      dayName = weekdays[now.weekday];
-      monthName = months[now.month];
-    }
+    final formatted = DateFormatter.format(now);
 
     return Text(
-      '$dayName — ${now.day} $monthName ${now.year}',
+      '${formatted.dayName} — ${now.day} ${formatted.monthName} ${now.year}',
       textAlign: TextAlign.center,
       style: AppTextStyles.sm(context),
-    );
-  }
-
-  Widget _buildStatusCard(
-      BuildContext context, AppColorScheme colors, HomeController controller) {
-    final todayStatus = controller.todayStatus;
-    final status = controller.attendanceStatus;
-    final isLate = todayStatus?.isLate ?? false;
-
-    Color statusColor;
-    IconData statusIcon;
-    String statusText;
-    String? timeText;
-    String? subText;
-
-    switch (status) {
-      case AttendanceStatus.notCheckedIn:
-        statusColor = colors.warning;
-        statusIcon = Icons.schedule_outlined;
-        statusText = 'not_checked_in'.tr;
-        timeText = null;
-        subText = null;
-        break;
-      case AttendanceStatus.checkedIn:
-        statusColor = isLate ? colors.warning : colors.success;
-        statusIcon = isLate ? Icons.warning_amber : Icons.check_circle_outline;
-        statusText = 'checked_in'.tr;
-        timeText = _formatTime(todayStatus?.checkInAt);
-        subText = isLate
-            ? 'late_minutes'.trParams({'minutes': '${todayStatus?.lateMinutes ?? 0}'})
-            : 'not_checked_out'.tr;
-        break;
-      case AttendanceStatus.checkedOut:
-        statusColor = colors.success;
-        statusIcon = Icons.check_circle;
-        statusText = 'day_done'.tr;
-        timeText =
-            '${_formatTime(todayStatus?.checkInAt)} — ${_formatTime(todayStatus?.checkOutAt)}';
-        subText = null;
-        break;
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.s5),
-      decoration: BoxDecoration(
-        border: Border.all(color: colors.borderHairline),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        color: colors.surface,
-      ),
-      child: Column(
-        children: [
-          Text('your_status_today'.tr, style: AppTextStyles.xs(context)),
-          const SizedBox(height: AppSpacing.s2),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(statusIcon, size: 20, color: statusColor),
-              const SizedBox(width: AppSpacing.s2),
-              Text(statusText, style: AppTextStyles.h3(context)),
-            ],
-          ),
-          if (timeText != null) ...[
-            const SizedBox(height: AppSpacing.s1),
-            Text(timeText, style: AppTextStyles.sm(context)),
-          ],
-          if (subText != null) ...[
-            const SizedBox(height: AppSpacing.s1),
-            Text(
-              subText,
-              style: TextStyle(
-                fontFamily: AppTextStyles.arabicFamily,
-                fontSize: 13,
-                color: statusColor,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAttendanceButton(
-      BuildContext context, AppColorScheme colors, HomeController controller) {
-    final isDone = controller.isDayDone;
-    final isCheckOut = controller.canCheckOut;
-
-    Color bgColor;
-    if (isDone) {
-      bgColor = colors.sunken;
-    } else if (isCheckOut) {
-      bgColor = colors.accentWarm;
-    } else {
-      bgColor = colors.brand;
-    }
-
-    return Center(
-      child: GestureDetector(
-        onTap: isDone ? null : controller.startAttendanceFlow,
-        child: Container(
-          width: 180,
-          height: 180,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: bgColor,
-            boxShadow: isDone
-                ? null
-                : [
-                    BoxShadow(
-                      color: bgColor.withValues(alpha: 0.3),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                isDone
-                    ? Icons.check_rounded
-                    : Icons.qr_code_scanner,
-                size: 48,
-                color: isDone ? colors.textTertiary : Colors.white,
-              ),
-              const SizedBox(height: AppSpacing.s2),
-              Text(
-                controller.attendanceButtonText,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: AppTextStyles.arabicFamily,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: isDone ? colors.textTertiary : Colors.white,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -313,15 +154,6 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String? _formatTime(DateTime? dt) {
-    if (dt == null) return null;
-    final hour = dt.hour;
-    final minute = dt.minute.toString().padLeft(2, '0');
-    final period = hour >= 12 ? 'pm'.tr : 'am'.tr;
-    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
-    return '$displayHour:$minute $period';
   }
 
   String _formatDistance(double meters) {

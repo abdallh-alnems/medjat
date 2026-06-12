@@ -78,7 +78,21 @@ class AdminModel {
         role: json['role'] as String? ?? 'viewer',
         branchId: (json['branch_id'] as num?)?.toInt(),
         branchName: json['branch_name'] as String?,
-        isActive: (json['is_active'] as num?)?.toInt() == 1,
+        isActive: _parseBool(json['is_active']),
         lastLoginAt: json['last_login_at'] as String?,
       );
+
+  static bool _parseBool(dynamic v) {
+    if (v is bool) return v;
+    if (v is num) return v.toInt() == 1;
+    if (v is String) return v == '1' || v.toLowerCase() == 'true';
+    return false;
+  }
+
+  /// Date-only portion of the last login, or null if never signed in.
+  String? get lastLoginShort {
+    final v = lastLoginAt;
+    if (v == null || v.isEmpty) return null;
+    return v.length >= 16 ? v.substring(0, 16) : v;
+  }
 }

@@ -1,6 +1,8 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:get/get.dart';
+import 'package:timezone/data/latest_all.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 import '../../../core/class/status_request.dart';
 import '../../../data/data_source/remote/company_settings_data/company_settings_data.dart';
 
@@ -12,19 +14,18 @@ class CompanySettingsController extends GetxController {
   Map<String, dynamic> companyData = {};
 
   final nameController = TextEditingController();
-  final commercialRegisterController = TextEditingController();
 
   // Localization preferences (sent to the backend on save).
   String currency = 'EGP';
   String timezone = 'Africa/Cairo';
 
-  // Whether each letterhead asset has been uploaded (drives the UI state).
-  bool hasLogo = false;
-  bool hasStamp = false;
-  bool hasSignature = false;
+  // Full list of IANA timezone identifiers offered in the picker, loaded from
+  // the device at startup (falls back to a minimal set if unavailable).
+  List<String> availableTimezones = const ['UTC', 'Africa/Cairo'];
 
-  // The branding asset currently uploading (logo/stamp/signature), or null.
-  String? uploadingType;
+  // True when [timezone] was auto-filled from the device location rather than
+  // an explicit company choice. Cleared once the user picks one manually.
+  bool timezoneAutoDetected = false;
 
   // Company default attendance cycle start day (1-28). Branches may override.
   int cycleStartDay = 1;
@@ -35,13 +36,43 @@ class CompanySettingsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    loadSettings();
+    _init();
+  }
+
+  Future<void> _init() async {
+    await _loadAvailableTimezones();
+    await loadSettings();
+  }
+
+  /// Loads the full IANA timezone list from the bundled tz database (pure
+  /// Dart, so it does not depend on a native platform call succeeding).
+  Future<void> _loadAvailableTimezones() async {
+    try {
+      tz_data.initializeTimeZones();
+      final ids = tz.timeZoneDatabase.locations.keys.toList()..sort();
+      if (ids.isNotEmpty) {
+        availableTimezones = ids;
+      }
+    } catch (_) {
+      // Keep the minimal fallback list defined above.
+    }
+    update();
+  }
+
+  /// The device's current timezone (driven by the OS region/location setting),
+  /// or null if it cannot be resolved.
+  Future<String?> _detectDeviceTimezone() async {
+    try {
+      final info = await FlutterTimezone.getLocalTimezone();
+      return info.identifier.isNotEmpty ? info.identifier : null;
+    } catch (_) {
+      return null;
+    }
   }
 
   @override
   void onClose() {
     nameController.dispose();
-    commercialRegisterController.dispose();
     super.onClose();
   }
 
@@ -60,15 +91,21 @@ class CompanySettingsController extends GetxController {
       if (data is Map<String, dynamic>) {
         companyData = data;
         nameController.text = (data['name'] as String?) ?? '';
-        commercialRegisterController.text =
-            (data['commercial_register'] as String?) ?? '';
         currency = (data['currency'] as String?)?.toUpperCase() ?? 'EGP';
         timezone = (data['timezone'] as String?) ?? 'Africa/Cairo';
-        hasLogo = data['has_logo'] == true;
-        hasStamp = data['has_stamp'] == true;
-        hasSignature = data['has_signature'] == true;
         cycleStartDay = (data['cycle_start_day'] as num?)?.toInt() ?? 1;
         weekStartDay = (data['week_start_day'] as num?)?.toInt() ?? 6;
+
+        // Auto-detect from the device when the company is still on the system
+        // default ('Africa/Cairo' is the column default), so a fresh company
+        // gets its real timezone without manual setup.
+        if (timezone == 'Africa/Cairo') {
+          final device = await _detectDeviceTimezone();
+          if (device != null && device != timezone) {
+            timezone = device;
+            timezoneAutoDetected = true;
+          }
+        }
       }
       status = StatusRequest.success;
     } else {
@@ -94,6 +131,7 @@ class CompanySettingsController extends GetxController {
 
   void setTimezone(String value) {
     timezone = value;
+    timezoneAutoDetected = false;
     update();
   }
 
@@ -103,7 +141,6 @@ class CompanySettingsController extends GetxController {
 
     final data = {
       'name': nameController.text.trim(),
-      'commercial_register': commercialRegisterController.text.trim(),
       'currency': currency,
       'timezone': timezone,
       'cycle_start_day': cycleStartDay.clamp(1, 28),
@@ -122,37 +159,6 @@ class CompanySettingsController extends GetxController {
           snackPosition: SnackPosition.BOTTOM);
       status = (response['status'] as StatusRequest?) ?? StatusRequest.failure;
     }
-    update();
-  }
-
-  /// Uploads a branding asset ([type] = logo/stamp/signature) and reflects the
-  /// new state in the UI on success.
-  Future<void> uploadBranding(String type, File file) async {
-    uploadingType = type;
-    update();
-
-    final response = await _companySettingsData.uploadBranding(type, file);
-
-    if (response['status'] == StatusRequest.success) {
-      switch (type) {
-        case 'logo':
-          hasLogo = true;
-          break;
-        case 'stamp':
-          hasStamp = true;
-          break;
-        case 'signature':
-          hasSignature = true;
-          break;
-      }
-      Get.snackbar('done'.tr, 'branding_uploaded'.tr,
-          snackPosition: SnackPosition.BOTTOM);
-    } else {
-      Get.snackbar(
-          'error'.tr, (response['message'] as String?) ?? 'an_error_occurred'.tr,
-          snackPosition: SnackPosition.BOTTOM);
-    }
-    uploadingType = null;
     update();
   }
 }

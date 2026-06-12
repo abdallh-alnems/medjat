@@ -15,6 +15,15 @@ class AssetData {
     return await _crud.postData(AppLinks.assetCreate, data);
   }
 
+  Future<Map<String, dynamic>> updateAsset(
+      int id, Map<String, dynamic> data) async {
+    return await _crud.postData(AppLinks.assetUpdate, {...data, 'id': id});
+  }
+
+  Future<Map<String, dynamic>> deleteAsset(int id) async {
+    return await _crud.postData(AppLinks.assetDelete, {'id': id});
+  }
+
   Future<Map<String, dynamic>> approveReturn(int id) async {
     return await _crud.postData(AppLinks.assetApproveReturn, {'id': id});
   }

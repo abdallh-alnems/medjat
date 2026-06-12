@@ -88,6 +88,9 @@ class PayrollData {
   /// Apply a manual bonus/deduction to every employee in a scope
   /// (branch/shift/category) at once. [kind] is 'bonus' or 'deduction';
   /// [scopeType] is 'branch', 'shift', or 'category'.
+  ///
+  /// Routed through the tracked bulk-adjustments endpoint so these scope-screen
+  /// shortcuts produce the same managed batches as the dedicated screen.
   Future<Map<String, dynamic>> bulkAdjust({
     required String kind,
     required String scopeType,
@@ -96,7 +99,7 @@ class PayrollData {
     required String reason,
     String amountType = 'fixed', // 'fixed' | 'percent'
   }) async {
-    return await _crud.postData(AppLinks.payrollBulkAdjust, {
+    return await _crud.postData(AppLinks.bulkAdjustmentCreate, {
       'kind': kind,
       'scope_type': scopeType,
       'scope_id': scopeId,

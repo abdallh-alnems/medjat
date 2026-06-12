@@ -13,8 +13,41 @@ if (!$id) Response::fail('Shift ID required', 422);
 $shift = ShiftModel::findById($id, $tenantId);
 if (!$shift) Response::notFound('Shift');
 
+$transferToShiftId = (int) ($auth['input']['transfer_to_shift_id'] ?? 0);
+$affected = 0;
+$action = 'kept_times';
+
+if ($transferToShiftId > 0) {
+    if ($transferToShiftId === $id) {
+        Response::fail('Cannot transfer employees to the shift being deleted', 422);
+    }
+    $target = ShiftModel::findById($transferToShiftId, $tenantId);
+    if (!$target) Response::fail('Target shift not found', 422);
+
+    // Move members onto the chosen shift before deleting.
+    $affected = ShiftModel::transferEmployees($id, $transferToShiftId, $tenantId);
+    $action = 'transferred';
+} else {
+    // No target: preserve each member's schedule by copying this shift's
+    // times onto their personal work hours, then let the FK null out shift_id.
+    $affected = ShiftModel::applyTimesToEmployees(
+        $id,
+        $shift['start_time'],
+        $shift['end_time'],
+        $tenantId
+    );
+}
+
 ShiftModel::delete($id, $tenantId);
 
-AuditLogModel::log($tenantId, $auth['admin_id'], 'shift.delete', 'shift', $id);
+AuditLogModel::log($tenantId, $auth['admin_id'], 'shift.delete', 'shift', $id, [
+    'action' => $action,
+    'affected' => $affected,
+    'transfer_to_shift_id' => $transferToShiftId ?: null,
+]);
 
-Response::success(['message' => 'Deleted']);
+Response::success([
+    'message' => 'Deleted',
+    'action' => $action,
+    'affected' => $affected,
+]);

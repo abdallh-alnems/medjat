@@ -89,24 +89,77 @@ class ShiftsScreen extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context, ShiftController ctrl, ShiftModel shift) {
+    // Shifts the members can be moved to (any other shift).
+    final otherShifts =
+        ctrl.shifts.where((s) => s.id != shift.id).toList(growable: false);
+    final hasMembers = shift.employeeCount > 0;
+
+    // null target = keep each member's attendance times equal to this shift.
+    final selectedTarget = Rxn<int>();
+
+    Future<void> doDelete() async {
+      Get.back();
+      final ok = await ctrl.deleteShift(
+        shift.id,
+        transferToShiftId: selectedTarget.value,
+      );
+      if (ok) {
+        Get.snackbar('done'.tr, 'shift_deleted'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+      }
+    }
+
     Get.dialog<void>(
       AlertDialog(
         title: Text('delete'.tr),
-        content: Text('${'confirm_delete'.tr} "${shift.name}"؟'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${'confirm_delete'.tr} "${shift.name}"؟'),
+            if (hasMembers) ...[
+              const SizedBox(height: AppSpacing.s4),
+              Text(
+                'shift_delete_members_hint'
+                    .trParams({'count': '${shift.employeeCount}'}),
+                style: AppTextStyles.bodySecondary(context),
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              Obx(
+                () => DropdownButtonFormField<int?>(
+                  initialValue: selectedTarget.value,
+                  isExpanded: true,
+                  decoration: InputDecoration(
+                    labelText: 'shift_delete_transfer_to'.tr,
+                  ),
+                  items: [
+                    DropdownMenuItem<int?>(
+                      value: null,
+                      child: Text(
+                        'shift_delete_keep_times'.tr,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    ...otherShifts.map(
+                      (s) => DropdownMenuItem<int?>(
+                        value: s.id,
+                        child: Text(s.name, overflow: TextOverflow.ellipsis),
+                      ),
+                    ),
+                  ],
+                  onChanged: (v) => selectedTarget.value = v,
+                ),
+              ),
+            ],
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
             child: Text('cancel'.tr),
           ),
           TextButton(
-            onPressed: () async {
-              Get.back();
-              final ok = await ctrl.deleteShift(shift.id);
-              if (ok) {
-                Get.snackbar('done'.tr, 'shift_deleted'.tr,
-                    snackPosition: SnackPosition.BOTTOM);
-              }
-            },
+            onPressed: doDelete,
             style: TextButton.styleFrom(foregroundColor: AppColors.of(context).error),
             child: Text('delete'.tr),
           ),

@@ -25,14 +25,18 @@ AssetModel::rejectReturn($id, $tenantId, $auth['admin_id'], $reason);
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'asset.return_reject', 'asset', $id);
 
-try {
-    Database::execute(
-        "INSERT INTO notifications (tenant_id, employee_id, type, title, title_ar, body, body_ar, data, sent_via, created_at)
-         VALUES (?, ?, 'general', 'Custody Return Rejected', 'تم رفض إرجاع العهدة', 'Your custody return request was rejected.', 'تم رفض طلب إرجاع العهدة الخاص بك.', ?, 'in_app', NOW())",
-        [$tenantId, (int) $asset['employee_id'], json_encode(['asset_id' => $id, 'action' => 'return_reject'])]
-    );
-} catch (Exception $e) {
-    error_log('Notification insert error: ' . $e->getMessage());
-}
+$assetName = (string) ($asset['name'] ?? '');
+NotificationService::notifyEmployee(
+    $tenantId,
+    (int) $asset['employee_id'],
+    'approval',
+    'Custody Return Rejected',
+    'تم رفض إرجاع العهدة',
+    "Your request to return \"{$assetName}\" was rejected."
+        . ($reason ? " Reason: {$reason}" : ''),
+    "تم رفض طلب إرجاع العهدة: {$assetName}."
+        . ($reason ? " السبب: {$reason}" : ''),
+    ['type' => 'asset', 'asset_id' => $id, 'action' => 'return_reject']
+);
 
 Response::success(['message' => 'Return request rejected']);

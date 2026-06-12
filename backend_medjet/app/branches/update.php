@@ -24,6 +24,15 @@ foreach (['name', 'address', 'latitude', 'longitude'] as $field) {
     }
 }
 
+// GPS geofence radius (meters) for QR+GPS / GPS-only attendance.
+if (array_key_exists('gps_radius_meters', $input)) {
+    $radius = (int) $input['gps_radius_meters'];
+    if ($radius < 5 || $radius > 5000) {
+        Response::fail('gps_radius_meters must be between 5 and 5000', 422);
+    }
+    $updateData['gps_radius_meters'] = $radius;
+}
+
 // Per-branch attendance cycle override: 1-28, or null to inherit company default.
 if (array_key_exists('cycle_start_day', $input)) {
     $val = $input['cycle_start_day'];

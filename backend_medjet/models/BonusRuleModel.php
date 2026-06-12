@@ -17,11 +17,12 @@ final class BonusRuleModel {
         );
     }
 
-    public static function addManualBonus(int $employeeId, int $tenantId, float $amount, string $reason, int $createdBy): int {
+    public static function addManualBonus(int $employeeId, int $tenantId, float $amount, string $reason, int $createdBy, ?int $batchId = null, ?string $month = null): int {
+        $month = $month ?: date('Y-m');
         Database::execute(
-            "INSERT INTO manual_bonuses (tenant_id, employee_id, amount, reason, month, created_by)
-             VALUES (?, ?, ?, ?, DATE_FORMAT(NOW(), '%Y-%m'), ?)",
-            [$tenantId, $employeeId, $amount, $reason, $createdBy]
+            "INSERT INTO manual_bonuses (tenant_id, employee_id, batch_id, amount, reason, month, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [$tenantId, $employeeId, $batchId, $amount, $reason, $month, $createdBy]
         );
         return (int) Database::lastInsertId();
     }

@@ -108,13 +108,53 @@ class AssetController extends GetxController {
 
     final response = await _data.createAsset(data);
     if (response['status'] == StatusRequest.success) {
-      Get.snackbar('done'.tr, 'asset_created'.tr,
-          snackPosition: SnackPosition.BOTTOM);
+      // Snackbar is shown by the caller *after* closing the sheet — showing it
+      // here would make Get.back() pop the snackbar instead of the sheet.
       loadAssets();
       return true;
     }
     _failSnack(response, fallback: 'asset_create_failed'.tr);
     return false;
+  }
+
+  Future<bool> updateAsset({
+    required int id,
+    required String type,
+    required String name,
+    required DateTime assignedAt,
+    double? value,
+    String? serialNo,
+    int quantity = 1,
+    String? notes,
+  }) async {
+    final data = <String, dynamic>{
+      'type': type,
+      'name': name.trim(),
+      'assigned_at': _fmt(assignedAt),
+      'quantity': quantity,
+      'value': (value != null && value > 0) ? value : '',
+      'serial_no': serialNo?.trim() ?? '',
+      'notes': notes?.trim() ?? '',
+    };
+
+    final response = await _data.updateAsset(id, data);
+    if (response['status'] == StatusRequest.success) {
+      loadAssets();
+      return true;
+    }
+    _failSnack(response, fallback: 'asset_update_failed'.tr);
+    return false;
+  }
+
+  Future<void> deleteAsset(int id) async {
+    final response = await _data.deleteAsset(id);
+    if (response['status'] == StatusRequest.success) {
+      Get.snackbar('done'.tr, 'asset_deleted'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      loadAssets();
+    } else {
+      _failSnack(response);
+    }
   }
 
   void _failSnack(Map<String, dynamic> response, {String? fallback}) {

@@ -56,8 +56,9 @@ class ShiftController extends GetxController {
     return false;
   }
 
-  Future<bool> deleteShift(int id) async {
-    final response = await _data.deleteShift(id);
+  Future<bool> deleteShift(int id, {int? transferToShiftId}) async {
+    final response =
+        await _data.deleteShift(id, transferToShiftId: transferToShiftId);
     if (response['status'] == StatusRequest.success) {
       await loadShifts();
       return true;

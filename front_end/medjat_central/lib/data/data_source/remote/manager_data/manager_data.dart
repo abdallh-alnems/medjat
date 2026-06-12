@@ -20,6 +20,10 @@ class ManagerData {
     return await _crud.postData(AppLinks.managerCancelInvitation(id), {});
   }
 
+  Future<Map<String, dynamic>> resendInvitation(int id) async {
+    return await _crud.postData(AppLinks.managerResendInvitation(id), {});
+  }
+
   Future<Map<String, dynamic>> getAdmins() async {
     return await _crud.getData(AppLinks.adminsList);
   }
@@ -43,5 +47,32 @@ class ManagerData {
       AppLinks.adminPermissionsReset,
       {'admin_id': adminId},
     );
+  }
+
+  Future<Map<String, dynamic>> updateAdmin({
+    required int adminId,
+    String? role,
+    int? branchId,
+    bool branchProvided = false,
+  }) async {
+    return await _crud.postData(AppLinks.adminUpdate, {
+      'admin_id': adminId,
+      if (role != null) 'role': role,
+      if (branchProvided) 'branch_id': branchId,
+    });
+  }
+
+  Future<Map<String, dynamic>> setAdminActive({
+    required int adminId,
+    required bool isActive,
+  }) async {
+    return await _crud.postData(AppLinks.adminSetActive, {
+      'admin_id': adminId,
+      'is_active': isActive,
+    });
+  }
+
+  Future<Map<String, dynamic>> removeAdmin(int adminId) async {
+    return await _crud.postData(AppLinks.adminRemove, {'admin_id': adminId});
   }
 }

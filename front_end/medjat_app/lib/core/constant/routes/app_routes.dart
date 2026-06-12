@@ -4,6 +4,7 @@ abstract class AppRoutes {
   static const String forceUpdate = '/force-update';
   static const String home = '/home';
   static const String scanQr = '/scan-qr';
+  static const String gpsCheckIn = '/gps-check-in';
   static const String joinScan = '/join-scan';
   static const String attendanceSuccess = '/attendance-success';
   static const String myProfile = '/my-profile';
@@ -11,6 +12,8 @@ abstract class AppRoutes {
   static const String payroll = '/payroll';
   static const String leaves = '/leaves';
   static const String breaks = '/breaks';
+  static const String advances = '/advances';
+  static const String myAssets = '/my-assets';
   static const String notifications = '/notifications';
   static const String settings = '/settings';
   static const String kioskPair = '/kiosk-pair';

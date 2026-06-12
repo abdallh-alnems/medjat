@@ -332,6 +332,20 @@ CREATE TABLE IF NOT EXISTS `deduction_rules` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE IF NOT EXISTS `late_deduction_tiers` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `threshold_minutes` int unsigned NOT NULL,
+  `deduction_days` decimal(5,2) NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_tenant_threshold` (`tenant_id`,`threshold_minutes`),
+  CONSTRAINT `late_deduction_tiers_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE IF NOT EXISTS `employee_activation_codes` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `tenant_id` int unsigned NOT NULL,
@@ -572,12 +586,57 @@ CREATE TABLE IF NOT EXISTS `leave_year_balances` (
   `year` smallint NOT NULL,
   `entitlement_days` int NOT NULL COMMENT 'Entitlement for this year at row-generation time',
   `carried_over_days` int NOT NULL DEFAULT '0' COMMENT 'Days carried over from the previous year',
+  `carryover_expires_on` date DEFAULT NULL COMMENT 'Carried-over days expire (drop if unused) on this date; NULL = never',
+  `carryover_encashed_days` int NOT NULL DEFAULT '0' COMMENT 'Days that were cashed out for this year instead of carried',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_lyb_employee_year` (`employee_id`,`year`),
   KEY `idx_lyb_tenant` (`tenant_id`),
   CONSTRAINT `fk_lyb_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_lyb_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE IF NOT EXISTS `leave_carryover_policies` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `scope_type` enum('tenant','branch','category','employee') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'tenant',
+  `scope_id` int unsigned DEFAULT NULL COMMENT 'branch/category/employee id; NULL for tenant scope',
+  `min_seniority_months` int unsigned NOT NULL DEFAULT '0' COMMENT 'Seniority tier threshold in months (0 = applies to everyone)',
+  `carryover_enabled` tinyint(1) NOT NULL DEFAULT '1' COMMENT '0 = remaining is dropped (unless legal_min/encash apply)',
+  `carryover_max_days` int DEFAULT NULL COMMENT 'Max days carried; NULL = unlimited',
+  `expiry_months` int unsigned DEFAULT NULL COMMENT 'Carried days expire N months into the new year; NULL = never',
+  `encash_excess` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Pay out days above the cap instead of dropping them',
+  `legal_min_carry_days` int unsigned DEFAULT NULL COMMENT 'Statutory floor that must be carried or encashed, never forfeited',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_lcp_scope` (`tenant_id`,`scope_type`,`scope_id`,`min_seniority_months`),
+  KEY `idx_lcp_tenant` (`tenant_id`),
+  CONSTRAINT `fk_lcp_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE IF NOT EXISTS `leave_encashments` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `tenant_id` int unsigned NOT NULL,
+  `employee_id` int unsigned NOT NULL,
+  `source_year` smallint NOT NULL COMMENT 'Year whose remaining balance is being cashed out',
+  `days` int NOT NULL DEFAULT '0',
+  `daily_rate` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `status` enum('pending','paid','cancelled') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `payroll_month` varchar(7) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'YYYY-MM where it was paid',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_enc_employee_year` (`employee_id`,`source_year`),
+  KEY `idx_enc_tenant` (`tenant_id`),
+  KEY `idx_enc_month` (`tenant_id`,`payroll_month`),
+  CONSTRAINT `fk_enc_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_enc_employee` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1016,8 +1075,10 @@ CREATE TABLE IF NOT EXISTS `tenants` (
   `attendance_methods` json DEFAULT NULL COMMENT 'Enabled methods, e.g. ["qr_gps","manual","station"]',
   `manual_attendance_admin_ids` json DEFAULT NULL COMMENT 'NULL = all admins with manage_attendance; array = restricted set',
   `allow_offline_attendance` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'Company-level toggle for offline attendance capture',
-  `default_annual_leave_days` int NOT NULL DEFAULT '21' COMMENT 'Default annual leave entitlement for all employees',
+  `default_annual_leave_days` int NOT NULL DEFAULT '0' COMMENT 'Default annual leave entitlement for all employees (0 until admin sets it)',
   `leave_carryover_max_days` int DEFAULT NULL COMMENT 'NULL = no carryover; number = max days carried to next year',
+  `auto_rollover_enabled` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 = cron runs year-end rollover automatically on Jan 1',
+  `apply_legal_seniority_entitlement` tinyint(1) NOT NULL DEFAULT '1' COMMENT '1 = bump annual entitlement to >=30 days after 10 years service (Egyptian labour law)',
   `cycle_start_day` tinyint unsigned NOT NULL DEFAULT '1' COMMENT 'Attendance cycle start day (1-28); cycle labeled by its end month',
   `week_start_day` tinyint unsigned NOT NULL DEFAULT '6' COMMENT 'Weekly schedule start weekday (ISO: 1=Mon..7=Sun, default 6=Sat)',
   `stamp_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Company stamp image for generated letters',
@@ -1072,34 +1133,6 @@ CREATE TABLE IF NOT EXISTS `payroll_statutory_settings` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
-CREATE TABLE IF NOT EXISTS `expense_claims` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `tenant_id` int unsigned NOT NULL,
-  `employee_id` int unsigned NOT NULL,
-  `category` enum('travel','meals','accommodation','supplies','medical','communication','other') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'other',
-  `amount` decimal(12,2) NOT NULL,
-  `currency` varchar(8) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'SAR',
-  `description` text COLLATE utf8mb4_unicode_ci,
-  `expense_date` date NOT NULL,
-  `receipt_url` varchar(512) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `status` enum('pending','approved','rejected','reimbursed') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
-  `rejection_reason` text COLLATE utf8mb4_unicode_ci,
-  `reviewed_by` int unsigned DEFAULT NULL,
-  `reviewed_at` timestamp NULL DEFAULT NULL,
-  `created_by` int unsigned DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_exp_tenant_status` (`tenant_id`,`status`),
-  KEY `idx_exp_employee` (`employee_id`),
-  KEY `reviewed_by` (`reviewed_by`),
-  KEY `created_by` (`created_by`),
-  CONSTRAINT `expense_claims_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `expense_claims_ibfk_2` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `expense_claims_ibfk_3` FOREIGN KEY (`reviewed_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `expense_claims_ibfk_4` FOREIGN KEY (`created_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
 CREATE TABLE IF NOT EXISTS `employee_loans` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `tenant_id` int unsigned NOT NULL,
@@ -1111,7 +1144,7 @@ CREATE TABLE IF NOT EXISTS `employee_loans` (
   `installments_paid` int unsigned NOT NULL DEFAULT '0',
   `start_month` varchar(7) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'YYYY-MM',
   `reason` text COLLATE utf8mb4_unicode_ci,
-  `status` enum('pending','active','completed','cancelled') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `status` enum('pending','active','completed','cancelled','rejected') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
   `created_by` int unsigned DEFAULT NULL,
   `approved_by` int unsigned DEFAULT NULL,
   `approved_at` timestamp NULL DEFAULT NULL,
@@ -1183,52 +1216,6 @@ CREATE TABLE IF NOT EXISTS `asset_custody` (
   CONSTRAINT `asset_custody_ibfk_4` FOREIGN KEY (`return_approved_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `document_templates` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `tenant_id` int unsigned NOT NULL,
-  `template_key` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'salary_certificate|employment_verification|bank_letter for system templates, NULL for custom',
-  `name_ar` varchar(120) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name_en` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `body_ar` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Template body with {{placeholders}}',
-  `body_en` text COLLATE utf8mb4_unicode_ci,
-  `is_system` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 = seeded default, cannot be deleted',
-  `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `sort_order` int NOT NULL DEFAULT '0',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_doctpl_tenant` (`tenant_id`),
-  KEY `idx_doctpl_tenant_key` (`tenant_id`,`template_key`),
-  CONSTRAINT `document_templates_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
-CREATE TABLE IF NOT EXISTS `document_requests` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `tenant_id` int unsigned NOT NULL,
-  `employee_id` int unsigned NOT NULL,
-  `template_id` int unsigned DEFAULT NULL,
-  `doc_type` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Snapshot of template_key/name at request time',
-  `status` enum('pending','approved','rejected') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
-  `extra_fields` json DEFAULT NULL COMMENT 'Free-form fields e.g. {"bank_name":"..","addressed_to":".."}',
-  `rejection_reason` text COLLATE utf8mb4_unicode_ci,
-  `pdf_path` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Generated PDF path once approved',
-  `requested_by_employee` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1 = raised from employee app, 0 = issued by admin',
-  `issued_by` int unsigned DEFAULT NULL COMMENT 'Admin who approved/issued',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `processed_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_docreq_tenant_status` (`tenant_id`,`status`),
-  KEY `idx_docreq_employee` (`employee_id`),
-  KEY `idx_docreq_template` (`template_id`),
-  KEY `issued_by` (`issued_by`),
-  CONSTRAINT `document_requests_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `document_requests_ibfk_2` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `document_requests_ibfk_3` FOREIGN KEY (`template_id`) REFERENCES `document_templates` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `document_requests_ibfk_4` FOREIGN KEY (`issued_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
 -- ============================================
 -- Seed data
@@ -1720,7 +1707,7 @@ CREATE TABLE IF NOT EXISTS `approval_chains` (
   `tenant_id` int unsigned NOT NULL,
   `name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL,
   `name_ar` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `request_type` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'leave|expense|loan|bonus|warning|document|generic',
+  `request_type` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'leave|loan|bonus|warning|document|generic',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `min_amount` decimal(14,2) DEFAULT NULL COMMENT 'Condition: context amount >= this (NULL=no min)',
   `max_amount` decimal(14,2) DEFAULT NULL COMMENT 'Condition: context amount <= this (NULL=no max)',
@@ -1836,64 +1823,3 @@ CREATE TABLE IF NOT EXISTS `break_requests` (
   CONSTRAINT `break_requests_ibfk_3` FOREIGN KEY (`decided_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- ============ SIGNATURE REQUESTS ============
-CREATE TABLE IF NOT EXISTS `signature_requests` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `tenant_id` int unsigned NOT NULL,
-  `entity_type` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'document_request (phase 1)',
-  `entity_id` int unsigned NOT NULL COMMENT 'document_requests.id',
-  `title` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'snapshot of document title at send time',
-  `source_pdf_path` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'unsigned PDF path at open time',
-  `source_hash` char(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'sha256 of original file',
-  `signed_pdf_path` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'filled on completion',
-  `signed_hash` char(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'sha256 of final signed PDF',
-  `verify_code` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'unique public verification code',
-  `signing_order` enum('sequential','parallel') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'sequential',
-  `current_party` tinyint unsigned NOT NULL DEFAULT '1' COMMENT 'current party_order pointer',
-  `total_parties` tinyint unsigned NOT NULL,
-  `status` enum('pending','completed','declined','voided') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
-  `expires_at` timestamp NULL DEFAULT NULL,
-  `created_by` int unsigned DEFAULT NULL COMMENT 'admins.id who sent for signature',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `completed_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uniq_sig_verify_code` (`verify_code`),
-  KEY `idx_sig_tenant_status` (`tenant_id`,`status`),
-  KEY `idx_sig_entity` (`tenant_id`,`entity_type`,`entity_id`),
-  CONSTRAINT `signature_requests_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `signature_requests_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ============ SIGNATURE PARTIES ============
-CREATE TABLE IF NOT EXISTS `signature_parties` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `tenant_id` int unsigned NOT NULL,
-  `signature_request_id` int unsigned NOT NULL,
-  `party_order` tinyint unsigned NOT NULL COMMENT 'starts from 1',
-  `signer_type` enum('employee','admin','external') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `signer_employee_id` int unsigned DEFAULT NULL,
-  `signer_admin_id` int unsigned DEFAULT NULL,
-  `signer_name` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'snapshot of name at creation',
-  `role_label` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'e.g. Employee / Authorized Manager',
-  `status` enum('pending','signed','declined') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
-  `sign_method` enum('drawn','typed','otp') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `signature_image_path` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'when drawn: saved signature image',
-  `typed_name` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'when typed',
-  `consent_given` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'consented to electronic signature',
-  `otp_hash` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'password_hash of sent OTP',
-  `otp_expires_at` timestamp NULL DEFAULT NULL,
-  `signed_at` timestamp NULL DEFAULT NULL,
-  `signed_ip` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `signed_user_agent` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `decline_reason` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uniq_party_order` (`signature_request_id`,`party_order`),
-  KEY `idx_party_tenant_status` (`tenant_id`,`status`),
-  KEY `idx_party_employee` (`signer_employee_id`),
-  KEY `idx_party_admin` (`signer_admin_id`),
-  CONSTRAINT `signature_parties_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `signature_parties_ibfk_2` FOREIGN KEY (`signature_request_id`) REFERENCES `signature_requests` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `signature_parties_ibfk_3` FOREIGN KEY (`signer_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `signature_parties_ibfk_4` FOREIGN KEY (`signer_admin_id`) REFERENCES `admins` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

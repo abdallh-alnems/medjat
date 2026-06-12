@@ -1,25 +1,49 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
+import '../../../core/class/status_request.dart';
 import '../../../data/model/branch_model.dart';
+import '../../../data/data_source/remote/branch_data/branch_data.dart';
 import '../../../logic/controller/branch/branch_controller.dart';
+import '../../widget/branch/branch_location_sheet.dart';
 
 /// Print-ready QR poster for a branch (PRD §5.1 — QR + GPS attendance).
 ///
 /// Receives the branch via Get.arguments: either a `BranchModel` directly
 /// (`{'branch': branch}`) or just a branch id (`{'branch_id': 5}`) — in the
 /// latter case the screen resolves it from BranchController if available.
-class BranchQrPosterScreen extends StatelessWidget {
+class BranchQrPosterScreen extends StatefulWidget {
   const BranchQrPosterScreen({super.key});
+
+  @override
+  State<BranchQrPosterScreen> createState() => _BranchQrPosterScreenState();
+}
+
+class _BranchQrPosterScreenState extends State<BranchQrPosterScreen> {
+  final GlobalKey _posterKey = GlobalKey();
+  BranchModel? _branch;
+  bool _generating = false;
+  bool _sharing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _branch = _resolveBranch();
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final branch = _resolveBranch();
+    final branch = _branch;
 
     if (branch == null) {
       return Scaffold(
@@ -42,14 +66,6 @@ class BranchQrPosterScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('qr_poster_title'.tr),
-        actions: [
-          if (hasQrCode)
-            IconButton(
-              tooltip: 'copy_qr_payload'.tr,
-              icon: const Icon(Icons.content_copy, size: 20),
-              onPressed: () => _copyPayload(branch.qrCode!),
-            ),
-        ],
       ),
       backgroundColor: colors.sunken,
       body: SafeArea(
@@ -61,8 +77,85 @@ class BranchQrPosterScreen extends StatelessWidget {
                 child: Center(
                   child: SingleChildScrollView(
                     child: hasQrCode
-                        ? _Poster(branch: branch)
-                        : _MissingQrCard(branchName: branch.name),
+                        ? RepaintBoundary(
+                            key: _posterKey,
+                            child: _Poster(branch: branch),
+                          )
+                        : _MissingQrCard(
+                            branchName: branch.name,
+                            generating: _generating,
+                            onGenerate: _generateQr,
+                          ),
+                  ),
+                ),
+              ),
+              if (hasQrCode) ...[
+                const SizedBox(height: AppSpacing.s3),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _sharing ? null : _sharePoster,
+                    icon: _sharing
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.share_outlined, size: 18),
+                    label: Text(
+                      'share_qr'.tr,
+                      style: const TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colors.brand,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md)),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: AppSpacing.s3),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => showBranchLocationSheet(
+                    context,
+                    branchId: branch.id,
+                    branchName: branch.name,
+                    initialLat: branch.lat,
+                    initialLng: branch.lng,
+                    initialRadius: branch.gpsRadiusMeters,
+                    onSaved: (lat, lng, radius) {
+                      setState(() {
+                        _branch = branch.copyWith(
+                            lat: lat, lng: lng, gpsRadiusMeters: radius);
+                      });
+                      if (Get.isRegistered<BranchController>()) {
+                        Get.find<BranchController>().loadBranches();
+                      }
+                    },
+                  ),
+                  icon: const Icon(Icons.my_location, size: 18),
+                  label: Text(
+                    'set_branch_gps'.tr,
+                    style: const TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: colors.brand,
+                    side: BorderSide(color: colors.brand),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md)),
+                    padding:
+                        const EdgeInsets.symmetric(vertical: AppSpacing.s3),
                   ),
                 ),
               ),
@@ -94,9 +187,56 @@ class BranchQrPosterScreen extends StatelessWidget {
     return null;
   }
 
-  Future<void> _copyPayload(String payload) async {
-    await Clipboard.setData(ClipboardData(text: payload));
-    Get.snackbar('done'.tr, 'qr_payload_copied'.tr,
+  Future<void> _sharePoster() async {
+    if (_sharing) return;
+    setState(() => _sharing = true);
+    try {
+      final boundary = _posterKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+      if (boundary == null) return;
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return;
+      final bytes = byteData.buffer.asUint8List();
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/branch_qr_${_branch?.id ?? 0}.png');
+      await file.writeAsBytes(bytes);
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          text: _branch?.name,
+        ),
+      );
+    } catch (_) {
+      Get.snackbar('error'.tr, 'share_failed'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    } finally {
+      if (mounted) setState(() => _sharing = false);
+    }
+  }
+
+  Future<void> _generateQr() async {
+    final branch = _branch;
+    if (branch == null || _generating) return;
+    setState(() => _generating = true);
+    final res = await BranchData().generateBranchQr(branch.id);
+    if (!mounted) return;
+    setState(() => _generating = false);
+    if (res['status'] == StatusRequest.success) {
+      dynamic data = res['data'];
+      if (data is Map && data['data'] is Map) data = data['data'];
+      final code = data is Map ? data['qr_code'] as String? : null;
+      if (code != null && code.isNotEmpty) {
+        setState(() => _branch = branch.copyWith(qrCode: code));
+        if (Get.isRegistered<BranchController>()) {
+          Get.find<BranchController>().loadBranches();
+        }
+        Get.snackbar('done'.tr, 'qr_generated'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+    }
+    Get.snackbar('error'.tr, 'qr_generate_failed'.tr,
         snackPosition: SnackPosition.BOTTOM);
   }
 }
@@ -231,7 +371,13 @@ class _Poster extends StatelessWidget {
 
 class _MissingQrCard extends StatelessWidget {
   final String branchName;
-  const _MissingQrCard({required this.branchName});
+  final bool generating;
+  final VoidCallback onGenerate;
+  const _MissingQrCard({
+    required this.branchName,
+    required this.generating,
+    required this.onGenerate,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -254,6 +400,34 @@ class _MissingQrCard extends StatelessWidget {
             'qr_not_generated_yet'.tr,
             style: AppTextStyles.bodySecondary(context),
             textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.s4),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: generating ? null : onGenerate,
+              icon: generating
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.qr_code_2, size: 18),
+              label: Text(
+                'generate_qr_now'.tr,
+                style: const TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colors.brand,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md)),
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+              ),
+            ),
           ),
         ],
       ),

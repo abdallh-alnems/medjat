@@ -1,6 +1,42 @@
 <?php
 
 final class NotificationService {
+    /**
+     * Push the SAME notification to many admin accounts in one shot. Collects
+     * every active device token for the given admin ids and sends them via FCM
+     * multicast in chunks of 500 (the FCM per-call limit), so a bulk action on
+     * hundreds of employees is a few HTTP calls instead of one-per-employee.
+     * Returns the number of chunks that reported at least one success.
+     */
+    public static function sendToManyAdmins(array $adminIds, string $title, string $body, ?array $data = null): int {
+        $ids = array_values(array_unique(array_map('intval', array_filter($adminIds))));
+        if (empty($ids)) {
+            return 0;
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $rows = Database::fetchAll(
+            "SELECT fcm_token FROM admin_devices
+             WHERE is_active = 1 AND admin_id IN ($placeholders)",
+            $ids
+        );
+        $tokens = array_values(array_filter(array_column($rows, 'fcm_token')));
+        if (empty($tokens)) {
+            return 0;
+        }
+
+        $sent = 0;
+        foreach (array_chunk($tokens, 500) as $chunk) {
+            try {
+                if (self::sendMulticast($chunk, $title, $body, $data)) {
+                    $sent++;
+                }
+            } catch (Throwable $e) {
+                error_log('sendToManyAdmins chunk failed: ' . $e->getMessage());
+            }
+        }
+        return $sent;
+    }
+
     public static function sendToUser(int $adminId, string $title, string $body, ?array $data = null): bool {
         $tokens = Database::fetchAll(
             "SELECT fcm_token FROM admin_devices WHERE admin_id = ? AND is_active = 1",
@@ -115,6 +151,98 @@ final class NotificationService {
         );
 
         return $success ? count($tokens) : 0;
+    }
+
+    public static function sendToSupportTeam(string $title, string $body, ?array $data = null): bool {
+        $tokens = Database::fetchAll(
+            "SELECT fcm_token FROM super_admin_devices WHERE is_active = 1"
+        );
+
+        if (empty($tokens)) {
+            return false;
+        }
+
+        return self::sendMulticast(
+            array_column($tokens, 'fcm_token'),
+            $title,
+            $body,
+            $data
+        );
+    }
+
+    /**
+     * Full notification to a single employee: persists an in-app row (visible in
+     * the employee app's notification list, which filters by the recipient's
+     * account id = employees.admin_id) and fires an FCM push. Arabic strings are
+     * used for the push since both apps are Arabic-first; the in-app row keeps
+     * both languages so the app can localise.
+     */
+    public static function notifyEmployee(
+        int $tenantId,
+        int $employeeId,
+        string $type,
+        string $titleEn,
+        string $titleAr,
+        string $bodyEn,
+        string $bodyAr,
+        ?array $data = null
+    ): void {
+        $emp = Database::fetchOne(
+            "SELECT admin_id FROM employees WHERE id = ? AND tenant_id = ?",
+            [$employeeId, $tenantId]
+        );
+        $accountId = ($emp && $emp['admin_id']) ? (int) $emp['admin_id'] : null;
+        if ($accountId !== null) {
+            try {
+                Database::execute(
+                    "INSERT INTO notifications
+                        (tenant_id, admin_id, employee_id, type, title, title_ar, body, body_ar, data, sent_via, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'push,in_app', NOW())",
+                    [
+                        $tenantId, $accountId, $employeeId, $type,
+                        $titleEn, $titleAr, $bodyEn, $bodyAr,
+                        $data ? json_encode($data, JSON_UNESCAPED_UNICODE) : null,
+                    ]
+                );
+            } catch (Exception $e) {
+                error_log('notifyEmployee insert error: ' . $e->getMessage());
+            }
+        }
+        self::sendToEmployee($employeeId, $titleAr, $bodyAr, $data);
+    }
+
+    /**
+     * Full notification to the tenant's managers (anyone who isn't a plain
+     * employee or pending admin): one in-app row per manager + an FCM push.
+     */
+    public static function notifyManagers(
+        int $tenantId,
+        string $type,
+        string $titleEn,
+        string $titleAr,
+        string $bodyEn,
+        string $bodyAr,
+        ?array $data = null
+    ): void {
+        $managers = Database::fetchAll(
+            "SELECT id FROM admins
+             WHERE tenant_id = ? AND role NOT IN ('employee', 'pending')",
+            [$tenantId]
+        );
+        $payload = $data ? json_encode($data, JSON_UNESCAPED_UNICODE) : null;
+        foreach ($managers as $m) {
+            try {
+                Database::execute(
+                    "INSERT INTO notifications
+                        (tenant_id, admin_id, type, title, title_ar, body, body_ar, data, sent_via, created_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'push,in_app', NOW())",
+                    [$tenantId, (int) $m['id'], $type, $titleEn, $titleAr, $bodyEn, $bodyAr, $payload]
+                );
+            } catch (Exception $e) {
+                error_log('notifyManagers insert error: ' . $e->getMessage());
+            }
+        }
+        self::sendToTenantManagers($tenantId, $titleAr, $bodyAr, $data);
     }
 
     private static function sendMulticast(array $tokens, string $title, string $body, ?array $data = null): bool {

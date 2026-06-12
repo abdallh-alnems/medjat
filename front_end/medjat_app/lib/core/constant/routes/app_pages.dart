@@ -12,6 +12,8 @@ import '../../../data/data_source/remote/profile_data/profile_data.dart';
 import '../../../data/data_source/remote/payroll_data/payroll_data.dart';
 import '../../../data/data_source/remote/leave_data/leave_data.dart';
 import '../../../data/data_source/remote/break_data/break_data.dart';
+import '../../../data/data_source/remote/advance_data/advance_data.dart';
+import '../../../data/data_source/remote/asset_data/asset_data.dart';
 import '../../../data/data_source/remote/notification_data/notification_data.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
 import '../../../logic/bindings/home_binding.dart';
@@ -22,12 +24,15 @@ import '../../services/deep_link_service.dart';
 import '../../../view/screen/splash/splash_screen.dart';
 import '../../../view/screen/home/home_screen.dart';
 import '../../../view/screen/attendance/scan_qr_screen.dart';
+import '../../../view/screen/attendance/gps_check_in_screen.dart';
 import '../../../view/screen/attendance/attendance_success_screen.dart';
 import '../../../view/screen/profile/my_profile_screen.dart';
 import '../../../view/screen/documents/my_documents_screen.dart';
 import '../../../view/screen/payroll/payroll_screen.dart';
 import '../../../view/screen/leave/leave_screen.dart';
 import '../../../view/screen/break/break_screen.dart';
+import '../../../view/screen/advance/advance_screen.dart';
+import '../../../view/screen/asset/my_assets_screen.dart';
 import '../../../view/screen/notifications/notifications_screen.dart';
 import '../../../view/screen/settings/settings_screen.dart';
 import '../../../view/screen/kiosk/kiosk_pair_screen.dart';
@@ -52,6 +57,8 @@ class AppBindings extends Bindings {
     // it would otherwise drop LeaveData, breaking a second visit to /leaves.
     Get.lazyPut<LeaveData>(() => LeaveData(), fenix: true);
     Get.lazyPut<BreakData>(() => BreakData(), fenix: true);
+    Get.lazyPut<AdvanceData>(() => AdvanceData(), fenix: true);
+    Get.lazyPut<AssetData>(() => AssetData(), fenix: true);
     Get.lazyPut<NotificationData>(() => NotificationData());
     Get.put<ConnectivityService>(ConnectivityService(), permanent: true);
     Get.put<LocationService>(LocationService(), permanent: true);
@@ -105,6 +112,13 @@ List<GetPage<dynamic>> getPages = [
     transitionDuration: AppMotion.transition,
   ),
   GetPage(
+    name: AppRoutes.gpsCheckIn,
+    page: () => const GpsCheckInScreen(),
+    binding: AttendanceBinding(),
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
     name: AppRoutes.joinScan,
     page: () => const JoinScanScreen(),
     transition: Transition.fadeIn,
@@ -133,6 +147,14 @@ List<GetPage<dynamic>> getPages = [
   GetPage(
     name: AppRoutes.breaks,
     page: () => const BreakScreen(),
+  ),
+  GetPage(
+    name: AppRoutes.advances,
+    page: () => const AdvanceScreen(),
+  ),
+  GetPage(
+    name: AppRoutes.myAssets,
+    page: () => const MyAssetsScreen(),
   ),
   GetPage(
     name: AppRoutes.notifications,

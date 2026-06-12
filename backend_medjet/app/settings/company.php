@@ -25,8 +25,12 @@ if ($method === 'GET') {
         return [
             'id' => (int) $b['id'],
             'name' => $b['name'],
+            'qr_code' => $b['qr_code'] ?? null,
             'attendance_methods' => $methods,
             'gps_radius_meters' => (int) ($b['gps_radius_meters'] ?? 100),
+            // latitude/longitude are NOT NULL; 0,0 means "unset".
+            'lat' => ((float) ($b['latitude'] ?? 0)) != 0.0 ? (float) $b['latitude'] : null,
+            'lng' => ((float) ($b['longitude'] ?? 0)) != 0.0 ? (float) $b['longitude'] : null,
             'cycle_start_day' => $b['cycle_start_day'] !== null
                 ? (int) $b['cycle_start_day']
                 : null,
@@ -38,6 +42,33 @@ if ($method === 'GET') {
         ? json_decode($tenant['manual_attendance_admin_ids'], true)
         : null;
 
+    // Category overrides (attendance_methods != null = custom, else inherit).
+    $categoryList = array_map(function ($c) {
+        $methods = null;
+        if (isset($c['attendance_methods']) && $c['attendance_methods'] !== null) {
+            $methods = json_decode($c['attendance_methods'], true);
+        }
+        return [
+            'id' => (int) $c['id'],
+            'name' => $c['name'],
+            'color' => $c['color'] ?? null,
+            'employee_count' => (int) ($c['employee_count'] ?? 0),
+            'attendance_methods' => $methods,
+        ];
+    }, EmployeeCategoryModel::listByTenant($tenantId, true));
+
+    // Employees with an explicit override.
+    $employeeOverrides = array_map(function ($e) {
+        return [
+            'id' => (int) $e['id'],
+            'name' => $e['name'],
+            'branch_name' => $e['branch_name'] ?? null,
+            'attendance_methods' => $e['attendance_methods'] !== null
+                ? json_decode($e['attendance_methods'], true)
+                : null,
+        ];
+    }, EmployeeModel::listAttendanceOverrides($tenantId));
+
     Response::success([
         'name' => $tenant['name'] ?? '',
         'address' => $tenant['domain'] ?? '',
@@ -46,11 +77,16 @@ if ($method === 'GET') {
         'attendance_methods' => $tenantMethods,
         'manual_attendance_admin_ids' => $manualAdminIds,
         'allow_offline_attendance' => (bool) ($tenant['allow_offline_attendance'] ?? true),
+        'gps_latitude' => $tenant['gps_latitude'] !== null ? (float) $tenant['gps_latitude'] : null,
+        'gps_longitude' => $tenant['gps_longitude'] !== null ? (float) $tenant['gps_longitude'] : null,
+        'gps_radius_meters' => $tenant['gps_radius_meters'] !== null ? (int) $tenant['gps_radius_meters'] : null,
         'cycle_start_day' => (int) ($tenant['cycle_start_day'] ?? 1),
         'week_start_day' => (int) ($tenant['week_start_day'] ?? 6),
         'currency' => $tenant['currency'] ?? 'EGP',
         'timezone' => $tenant['timezone'] ?? 'Africa/Cairo',
         'branches' => $branchList,
+        'categories' => $categoryList,
+        'employee_overrides' => $employeeOverrides,
         // Letter/certificate branding & company text data
         'commercial_register' => $tenant['commercial_register'] ?? '',
         'company_address' => $tenant['company_address'] ?? '',
@@ -164,6 +200,25 @@ if ($method === 'PUT' || $method === 'POST') {
             Response::fail('allow_offline_attendance must be true or false', 422);
         }
         TenantModel::updateAllowOffline($tenantId, $allowOffline);
+    }
+
+    // Company-wide GPS geofence (default for branches without their own center).
+    // Send all three together; null clears the company location.
+    if (array_key_exists('gps_latitude', $input)
+        || array_key_exists('gps_longitude', $input)
+        || array_key_exists('gps_radius_meters', $input)) {
+        $gLat = $input['gps_latitude'] ?? null;
+        $gLng = $input['gps_longitude'] ?? null;
+        $gRadius = $input['gps_radius_meters'] ?? null;
+        if ($gLat === null || $gLng === null) {
+            TenantModel::updateGeofence($tenantId, null, null, null);
+        } else {
+            $radius = (int) $gRadius;
+            if ($radius < 5 || $radius > 5000) {
+                Response::fail('gps_radius_meters must be between 5 and 5000', 422);
+            }
+            TenantModel::updateGeofence($tenantId, (float) $gLat, (float) $gLng, $radius);
+        }
     }
 
     if (!empty($updateData)) {

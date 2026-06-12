@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constant/theme/theme.dart';
+import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/class/handling_data_request.dart';
 import '../../../data/model/employee_category_model.dart';
 import '../../../logic/controller/category/category_controller.dart';
@@ -31,12 +32,15 @@ class CategoriesScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(AppSpacing.s4),
                       itemCount: ctrl.categories.length,
                       itemBuilder: (context, index) {
+                        final cat = ctrl.categories[index];
                         return _CategoryTile(
-                          cat: ctrl.categories[index],
-                          onEdit: () => _showEditDialog(
-                              context, ctrl, ctrl.categories[index]),
-                          onDelete: () =>
-                              _confirmDelete(context, ctrl, ctrl.categories[index]),
+                          cat: cat,
+                          onTap: () => Get.toNamed(
+                            AppRoutes.categoryEmployees,
+                            arguments: {'id': cat.id, 'name': cat.name},
+                          ),
+                          onEdit: () => _showEditDialog(context, ctrl, cat),
+                          onDelete: () => _confirmDelete(context, ctrl, cat),
                         );
                       },
                     ),
@@ -198,11 +202,13 @@ class HexColor extends Color {
 
 class _CategoryTile extends StatelessWidget {
   final EmployeeCategoryModel cat;
+  final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _CategoryTile({
     required this.cat,
+    required this.onTap,
     required this.onEdit,
     required this.onDelete,
   });
@@ -211,7 +217,10 @@ class _CategoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
 
-    return Container(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.s2),
       padding: const EdgeInsets.all(AppSpacing.s3),
       decoration: BoxDecoration(
@@ -293,6 +302,7 @@ class _CategoryTile extends StatelessWidget {
             constraints: const BoxConstraints(),
           ),
         ],
+      ),
       ),
     );
   }

@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:get/get.dart';
 import '../../../../core/class/crud.dart';
 import '../../../../core/constant/id/app_links.dart';
@@ -12,16 +11,8 @@ class CompanySettingsData {
 
   Future<Map<String, dynamic>> updateCompanySettings(
       Map<String, dynamic> data) async {
-    return await _crud.putData(AppLinks.companySettings, data);
-  }
-
-  /// Uploads a company branding asset. [type] is one of logo/stamp/signature.
-  Future<Map<String, dynamic>> uploadBranding(String type, File file) async {
-    return await _crud.postFile(
-      AppLinks.companyUploadBranding,
-      file,
-      fields: {'type': type},
-    );
+    // POST (not PUT): the backend uses POST and PUT is unreliable on the host.
+    return await _crud.postData(AppLinks.companySettings, data);
   }
 
   Future<Map<String, dynamic>> updateAttendanceConfig({
@@ -36,7 +27,47 @@ class CompanySettingsData {
     if (allowOfflineAttendance != null) {
       data['allow_offline_attendance'] = allowOfflineAttendance;
     }
-    return await _crud.putData(AppLinks.companySettings, data);
+    // POST (not PUT): the backend uses POST and PUT is unreliable on the host.
+    return await _crud.postData(AppLinks.companySettings, data);
+  }
+
+  /// Set or clear (lat/lng null) the company-wide GPS geofence — the default
+  /// center + radius applied to branches that don't set their own.
+  Future<Map<String, dynamic>> setCompanyLocation({
+    double? lat,
+    double? lng,
+    int? radius,
+  }) async {
+    return await _crud.postData(AppLinks.companySettings, {
+      'gps_latitude': lat,
+      'gps_longitude': lng,
+      'gps_radius_meters': radius,
+    });
+  }
+
+  /// Set or clear (methods = null) the attendance-method override for a
+  /// category or a single employee.
+  Future<Map<String, dynamic>> setMethodOverride({
+    required String scopeType, // 'category' | 'employee'
+    required int scopeId,
+    List<String>? methods,
+  }) async {
+    return await _crud.postData(AppLinks.setAttendanceMethodOverride, {
+      'scope_type': scopeType,
+      'scope_id': scopeId,
+      'attendance_methods': methods,
+    });
+  }
+
+  // ── Statutory payroll settings ─────────────────────────
+  Future<Map<String, dynamic>> getStatutoryPayrollSettings() async {
+    return await _crud.getData(AppLinks.statutoryPayrollSettings);
+  }
+
+  Future<Map<String, dynamic>> updateStatutoryPayrollSettings(
+      Map<String, dynamic> data) async {
+    // POST (not PUT): the backend uses POST and PUT is unreliable on the host.
+    return await _crud.postData(AppLinks.statutoryPayrollSettings, data);
   }
 
   // ── Leave settings ─────────────────────────────────────
@@ -47,11 +78,23 @@ class CompanySettingsData {
   /// [carryoverMaxDays] = null means "no carryover" (remaining is dropped).
   Future<Map<String, dynamic>> updateLeaveSettings({
     required int defaultAnnualLeaveDays,
+    required bool carryoverEnabled,
     required int? carryoverMaxDays,
+    int? expiryMonths,
+    bool encashExcess = false,
+    int? legalMinDays,
+    bool autoRolloverEnabled = false,
+    bool applyLegalSeniorityEntitlement = true,
   }) async {
     return await _crud.postData(AppLinks.leaveSettings, {
       'default_annual_leave_days': defaultAnnualLeaveDays,
+      'carryover_enabled': carryoverEnabled,
       'leave_carryover_max_days': carryoverMaxDays,
+      'carryover_expiry_months': expiryMonths,
+      'carryover_encash_excess': encashExcess,
+      'carryover_legal_min_days': legalMinDays,
+      'auto_rollover_enabled': autoRolloverEnabled,
+      'apply_legal_seniority_entitlement': applyLegalSeniorityEntitlement,
     });
   }
 
@@ -60,5 +103,44 @@ class CompanySettingsData {
     return await _crud.postData(AppLinks.leaveRollover, {
       'from_year': fromYear,
     });
+  }
+
+  // ── Per-scope carryover policies ───────────────────────
+  Future<Map<String, dynamic>> getCarryoverPolicies() async {
+    return await _crud.getData(AppLinks.leaveCarryoverPolicies);
+  }
+
+  Future<Map<String, dynamic>> saveCarryoverPolicy({
+    required String scopeType, // 'branch' | 'category' | 'employee'
+    required int scopeId,
+    int minSeniorityMonths = 0,
+    required bool carryoverEnabled,
+    int? carryoverMaxDays,
+    int? expiryMonths,
+    bool encashExcess = false,
+    int? legalMinCarryDays,
+  }) async {
+    return await _crud.postData(AppLinks.leaveCarryoverPolicySave, {
+      'scope_type': scopeType,
+      'scope_id': scopeId,
+      'min_seniority_months': minSeniorityMonths,
+      'carryover_enabled': carryoverEnabled,
+      'carryover_max_days': carryoverMaxDays,
+      'expiry_months': expiryMonths,
+      'encash_excess': encashExcess,
+      'legal_min_carry_days': legalMinCarryDays,
+    });
+  }
+
+  Future<Map<String, dynamic>> deleteCarryoverPolicy(int id) async {
+    return await _crud.postData(AppLinks.leaveCarryoverPolicyDelete, {'id': id});
+  }
+
+  // ── Leave encashments ──────────────────────────────────
+  Future<Map<String, dynamic>> getEncashments({String? status}) async {
+    final url = status == null || status.isEmpty
+        ? AppLinks.leaveEncashments
+        : '${AppLinks.leaveEncashments}?status=$status';
+    return await _crud.getData(url);
   }
 }

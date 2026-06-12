@@ -91,6 +91,8 @@ class PushNotificationService {
       if (ticketId != null) {
         _navigateToSupportChat(ticketId);
       }
+    } else if (type == 'asset') {
+      Get.toNamed<void>(AppRoutes.assets);
     }
   }
 

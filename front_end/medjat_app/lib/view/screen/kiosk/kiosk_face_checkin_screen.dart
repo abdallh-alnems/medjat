@@ -1,9 +1,9 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../../core/constant/theme/app_text_styles.dart';
 import '../../../../core/services/face/face_service.dart';
 import '../../../../logic/controller/station/station_controller.dart';
+import 'widgets/kiosk_app_bar.dart';
 
 class KioskFaceCheckInScreen extends StatefulWidget {
   const KioskFaceCheckInScreen({super.key});
@@ -203,7 +203,7 @@ class _KioskFaceCheckInScreenState extends State<KioskFaceCheckInScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            _buildAppBar(context),
+            const KioskAppBar(title: 'face_checkin'),
             Expanded(
               child: Stack(
                 fit: StackFit.expand,
@@ -216,26 +216,6 @@ class _KioskFaceCheckInScreenState extends State<KioskFaceCheckInScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      color: Colors.black54,
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Get.back<void>(),
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'face_checkin'.tr,
-            style: AppTextStyles.h3(context).copyWith(color: Colors.white),
-          ),
-        ],
       ),
     );
   }

@@ -30,7 +30,7 @@ try {
     $bodyEn = "Your document \"{$docName}\" was rejected. Reason: {$reason}";
     Database::execute(
         "INSERT INTO notifications (tenant_id, employee_id, type, title, title_ar, body, body_ar, data, sent_via, created_at)
-         VALUES (?, ?, 'document', 'Document Rejected', 'تم رفض مستندك', ?, ?, ?, 'push,in_app', NOW())",
+         VALUES (?, ?, 'approval', 'Document Rejected', 'تم رفض مستندك', ?, ?, ?, 'push,in_app', NOW())",
         [$tenantId, $doc['employee_id'], $bodyEn, $bodyAr,
          json_encode(['employee_document_id' => $docId, 'action' => 'reject', 'reason' => $reason])]
     );

@@ -4,9 +4,10 @@ import '../../../core/class/handling_data_request.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
-import '../../../core/services/pdf_export_service.dart';
+import '../../widget/report/report_export.dart';
 import '../../../logic/controller/report/leaves_report_controller.dart';
 import '../../../data/model/report_model.dart';
+import '../../widget/report/report_period_selector.dart';
 
 class LeavesReportScreen extends StatelessWidget {
   const LeavesReportScreen({super.key});
@@ -21,11 +22,13 @@ class LeavesReportScreen extends StatelessWidget {
         title: Text('leaves_report'.tr),
         actions: [
           IconButton(
-            icon: const Icon(Icons.picture_as_pdf_outlined),
-            tooltip: 'export_pdf'.tr,
+            icon: const Icon(Icons.ios_share),
+            tooltip: 'export_as'.tr,
             onPressed: () {
-              PdfExportService.exportReport(
+              exportReportWithFormat(
+                context,
                 title: 'leaves_report'.tr,
+                subtitle: reportPeriodLabel(ctrl.startDate, ctrl.endDate),
                 headers: [
                   'employee'.tr,
                   'type'.tr,
@@ -49,7 +52,11 @@ class LeavesReportScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          _DateRangeBar(ctrl: ctrl),
+          ReportPeriodSelector(
+            startDate: ctrl.startDate,
+            endDate: ctrl.endDate,
+            onChanged: ctrl.setDateRange,
+          ),
           Expanded(
             child: RefreshIndicator(
               onRefresh: ctrl.loadReport,
@@ -100,67 +107,6 @@ class LeavesReportScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-class _DateRangeBar extends StatelessWidget {
-  final LeavesReportController ctrl;
-  const _DateRangeBar({required this.ctrl});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.s4,
-        vertical: AppSpacing.s2,
-      ),
-      child: InkWell(
-        onTap: () async {
-          final picked = await showDateRangePicker(
-            context: context,
-            firstDate: DateTime(2024, 1, 1),
-            lastDate: DateTime.now(),
-          );
-          if (picked != null) {
-            ctrl.setDateRange(picked.start, picked.end);
-          }
-        },
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.s4, vertical: AppSpacing.s3),
-          decoration: BoxDecoration(
-            color: colors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: colors.borderHairline),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.calendar_today_outlined,
-                  size: 18, color: colors.brand),
-              const SizedBox(width: AppSpacing.s2),
-              Expanded(
-                child: Text(
-                  '${_fmtDate(ctrl.startDate)}  —  ${_fmtDate(ctrl.endDate)}',
-                  style: TextStyle(
-                    fontFamily: 'IBM Plex Sans Arabic',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: colors.textPrimary,
-                  ),
-                ),
-              ),
-              Icon(Icons.arrow_drop_down, color: colors.textTertiary),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  String _fmtDate(DateTime d) =>
-      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 }
 
 class _SummaryCards extends StatelessWidget {

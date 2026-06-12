@@ -18,8 +18,10 @@ class ShiftData {
     return await _crud.postData(AppLinks.shiftUpdate(id), data);
   }
 
-  Future<Map<String, dynamic>> deleteShift(int id) async {
-    return await _crud.postData(AppLinks.shiftDelete(id), {});
+  Future<Map<String, dynamic>> deleteShift(int id, {int? transferToShiftId}) async {
+    return await _crud.postData(AppLinks.shiftDelete(id), {
+      if (transferToShiftId != null) 'transfer_to_shift_id': transferToShiftId,
+    });
   }
 
   Future<Map<String, dynamic>> assignEmployees({

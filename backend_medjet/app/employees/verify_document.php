@@ -28,7 +28,7 @@ try {
     $bodyEn = "Your document \"{$docName}\" has been approved.";
     Database::execute(
         "INSERT INTO notifications (tenant_id, employee_id, type, title, title_ar, body, body_ar, data, sent_via, created_at)
-         VALUES (?, ?, 'document', 'Document Approved', 'تم قبول مستندك', ?, ?, ?, 'push,in_app', NOW())",
+         VALUES (?, ?, 'approval', 'Document Approved', 'تم قبول مستندك', ?, ?, ?, 'push,in_app', NOW())",
         [$tenantId, $doc['employee_id'], $bodyEn, $bodyAr,
          json_encode(['employee_document_id' => $docId, 'action' => 'approve'])]
     );

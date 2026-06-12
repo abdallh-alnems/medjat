@@ -356,13 +356,6 @@ class _DashboardContent extends StatelessWidget {
       route: AppRoutes.breakManage,
     );
     add(
-      d?.pendingLetters ?? 0,
-      'pending_letters',
-      Icons.description_outlined,
-      colors.brand,
-      route: AppRoutes.letters,
-    );
-    add(
       d?.pendingLoans ?? 0,
       'pending_loans',
       Icons.account_balance_wallet_outlined,
@@ -438,12 +431,10 @@ class _DashboardContent extends StatelessWidget {
     );
   }
 
-  /// Payroll summary plus this month's expense total, when either is available.
+  /// Payroll summary, when available.
   List<Widget> _financials(BuildContext context, DashboardModel? d) {
-    final colors = AppColors.of(context);
     final hasPayroll = d?.payroll != null && d?.payroll?.isEmpty == false;
-    final hasExpenses = (d?.monthlyExpenses ?? 0) > 0;
-    if (!hasPayroll && !hasExpenses) return const [];
+    if (!hasPayroll) return const [];
 
     final monthLabel = DateFormat(
       'MMMM yyyy',
@@ -454,17 +445,7 @@ class _DashboardContent extends StatelessWidget {
       const SizedBox(height: AppSpacing.s6),
       _sectionHeader(context, labelKey: 'financials', trailing: monthLabel),
       const SizedBox(height: AppSpacing.s3),
-      if (hasPayroll) _PayrollSummaryCard(payroll: d!.payroll!),
-      if (hasPayroll && hasExpenses) const SizedBox(height: AppSpacing.s2),
-      if (hasExpenses)
-        StatCard(
-          title: 'monthly_expenses'.tr,
-          value: _money(d?.monthlyExpenses ?? 0),
-          icon: Icons.receipt_long_outlined,
-          color: colors.accentWarm,
-          compact: true,
-          onTap: () => Get.toNamed<void>(AppRoutes.expenses),
-        ),
+      _PayrollSummaryCard(payroll: d!.payroll!),
     ];
   }
 
@@ -537,7 +518,7 @@ class _DashboardContent extends StatelessWidget {
             const SizedBox(height: AppSpacing.s6),
             _needsAttention(context, d),
 
-            // Financials — payroll totals and this month's expenses.
+            // Financials — payroll totals.
             ..._financials(context, d),
             if (d?.branchStats.isNotEmpty == true) ...[
               const SizedBox(height: AppSpacing.s6),

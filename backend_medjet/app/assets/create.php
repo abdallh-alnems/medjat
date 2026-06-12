@@ -44,14 +44,15 @@ $id = AssetModel::create(
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'asset.create', 'asset', $id, ['name' => $name, 'type' => $type]);
 
-try {
-    Database::execute(
-        "INSERT INTO notifications (tenant_id, employee_id, type, title, title_ar, body, body_ar, data, sent_via, created_at)
-         VALUES (?, ?, 'general', 'Custody Assigned', 'تم تسليمك عهدة', 'A custody item has been assigned to you.', 'تم تسليمك عهدة جديدة.', ?, 'in_app', NOW())",
-        [$tenantId, $employeeId, json_encode(['asset_id' => $id, 'action' => 'assign'])]
-    );
-} catch (Exception $e) {
-    error_log('Notification insert error: ' . $e->getMessage());
-}
+NotificationService::notifyEmployee(
+    $tenantId,
+    $employeeId,
+    'general',
+    'Custody Assigned',
+    'تم تسليمك عهدة',
+    "A new custody item has been assigned to you: {$name}.",
+    "تم تسليمك عهدة جديدة: {$name}.",
+    ['type' => 'asset', 'asset_id' => $id, 'action' => 'assign']
+);
 
 Response::success(['id' => $id, 'message' => 'Custody assigned']);

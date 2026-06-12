@@ -72,7 +72,13 @@ void main() {
           });
       when(() => mockData.updateLeaveSettings(
             defaultAnnualLeaveDays: any(named: 'defaultAnnualLeaveDays'),
+            carryoverEnabled: any(named: 'carryoverEnabled'),
             carryoverMaxDays: any(named: 'carryoverMaxDays'),
+            expiryMonths: any(named: 'expiryMonths'),
+            encashExcess: any(named: 'encashExcess'),
+            legalMinDays: any(named: 'legalMinDays'),
+            autoRolloverEnabled: any(named: 'autoRolloverEnabled'),
+            applyLegalSeniorityEntitlement: any(named: 'applyLegalSeniorityEntitlement'),
           )).thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
 
       final controller = LeaveSettingsController();
@@ -82,7 +88,13 @@ void main() {
 
       verify(() => mockData.updateLeaveSettings(
             defaultAnnualLeaveDays: any(named: 'defaultAnnualLeaveDays'),
+            carryoverEnabled: any(named: 'carryoverEnabled'),
             carryoverMaxDays: any(named: 'carryoverMaxDays'),
+            expiryMonths: any(named: 'expiryMonths'),
+            encashExcess: any(named: 'encashExcess'),
+            legalMinDays: any(named: 'legalMinDays'),
+            autoRolloverEnabled: any(named: 'autoRolloverEnabled'),
+            applyLegalSeniorityEntitlement: any(named: 'applyLegalSeniorityEntitlement'),
           )).called(1);
       await settleSnackbars(tester);
     });

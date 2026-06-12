@@ -49,6 +49,26 @@ final class PayrollModel {
         );
     }
 
+    /**
+     * Of the given employee ids, those whose payroll slip for $month is already
+     * frozen (approved or paid) — a later manual adjustment would not change
+     * their net pay, so callers should skip them. Returns a list of int ids.
+     */
+    public static function lockedEmployeeIds(int $tenantId, string $month, array $employeeIds): array {
+        if (empty($employeeIds)) {
+            return [];
+        }
+        $ids = array_values(array_map('intval', $employeeIds));
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $rows = Database::fetchAll(
+            "SELECT employee_id FROM payroll
+             WHERE tenant_id = ? AND month = ? AND status IN ('approved','paid')
+               AND employee_id IN ($placeholders)",
+            array_merge([$tenantId, $month], $ids)
+        );
+        return array_map(static fn($r) => (int) $r['employee_id'], $rows);
+    }
+
     public static function getSlipsByMonth(int $tenantId, string $month, ?int $branchId = null, int $page = 1, int $limit = 20): array {
         $sql = "SELECT p.*, e.name as employee_name, e.job_title, b.name as branch_name
                 FROM payroll p
@@ -218,10 +238,17 @@ final class PayrollModel {
     }
 
     public static function approve(int $payrollId, int $tenantId, int $approvedBy): void {
+        $slip = Database::fetchOne(
+            "SELECT employee_id, month FROM payroll WHERE id = ? AND tenant_id = ? LIMIT 1",
+            [$payrollId, $tenantId]
+        );
         Database::execute(
             "UPDATE payroll SET status = 'approved', approved_by = ?, approved_at = NOW() WHERE id = ? AND tenant_id = ?",
             [$approvedBy, $payrollId, $tenantId]
         );
+        if ($slip) {
+            LeaveEncashmentModel::markPaidForEmployees([(int) $slip['employee_id']], $slip['month'], $tenantId);
+        }
     }
 
     /**
@@ -280,6 +307,15 @@ final class PayrollModel {
              WHERE id IN ($tp) AND tenant_id = ?",
             array_merge([$approvedBy], $touchedIds, [$tenantId])
         );
+
+        // Settle any pending leave encashments for the approved slips (grouped by month).
+        $byMonth = [];
+        foreach ($touched as $r) {
+            $byMonth[$r['month']][] = (int) $r['employee_id'];
+        }
+        foreach ($byMonth as $month => $employeeIds) {
+            LeaveEncashmentModel::markPaidForEmployees($employeeIds, $month, $tenantId);
+        }
 
         return $touched;
     }

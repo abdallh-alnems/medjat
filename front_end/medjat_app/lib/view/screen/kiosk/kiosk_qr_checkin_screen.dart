@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../../core/constant/theme/app_colors.dart';
-import '../../../../core/constant/theme/app_text_styles.dart';
 import '../../../../logic/controller/station/station_controller.dart';
+import 'widgets/kiosk_app_bar.dart';
 
 class KioskQrCheckInScreen extends StatefulWidget {
   const KioskQrCheckInScreen({super.key});
@@ -32,7 +32,7 @@ class _KioskQrCheckInScreenState extends State<KioskQrCheckInScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            _buildAppBar(context),
+            const KioskAppBar(title: 'qr_checkin'),
             Expanded(
               child: Stack(
                 children: [
@@ -47,26 +47,6 @@ class _KioskQrCheckInScreenState extends State<KioskQrCheckInScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      color: Colors.black54,
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Get.back<void>(),
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'qr_checkin'.tr,
-            style: AppTextStyles.h3(context).copyWith(color: Colors.white),
-          ),
-        ],
       ),
     );
   }

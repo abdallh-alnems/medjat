@@ -37,8 +37,16 @@ class AppLinks {
   static String get users => '$base/admin/users/list.php';
   static String get auditLog => '$base/admin/audit/list.php';
 
-  // Force Update (DEPRECATED — table removed from schema)
-  // The endpoint file still exists at admin/force_update/trigger.php but won't work.
-  // Delete the data layer that references this getter when convenient.
-  static String get forceUpdateTrigger => '$base/admin/force_update/trigger.php';
+  // Support
+  static String get supportList => '$base/admin_support/list.php';
+  static String get supportMessages => '$base/admin_support/messages.php';
+  static String get supportReply => '$base/admin_support/reply.php';
+  static String get supportStatus => '$base/admin_support/status.php';
+
+  // App Control
+  static String get appControlGet => '$base/admin_app_control/get.php';
+  static String get appControlSet => '$base/admin_app_control/set.php';
+
+  // Device Registration
+  static String get deviceRegister => '$base/admin/devices/register.php';
 }
