@@ -144,7 +144,13 @@ class MyProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            const Expanded(child: SizedBox()),
+            Expanded(
+              child: QuickAccessCard(
+                icon: Icons.history_outlined,
+                label: 'attendance_history'.tr,
+                onTap: () => Get.toNamed<void>(AppRoutes.attendanceHistory),
+              ),
+            ),
           ],
         ),
       ],

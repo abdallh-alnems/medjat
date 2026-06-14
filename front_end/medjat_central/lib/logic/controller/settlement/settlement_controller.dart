@@ -36,7 +36,7 @@ class SettlementController extends GetxController {
 
   /// Unwrap the {status, data:{status, data:{...}}} envelope to the inner map.
   Map<String, dynamic>? _payload(Map<String, dynamic> response) {
-    dynamic body = response['data'];
+    final dynamic body = response['data'];
     if (body is Map && body['data'] is Map) {
       return Map<String, dynamic>.from(body['data'] as Map);
     }

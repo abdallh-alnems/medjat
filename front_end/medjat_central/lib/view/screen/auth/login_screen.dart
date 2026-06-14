@@ -119,7 +119,7 @@ class LoginScreen extends StatelessWidget {
                   Align(
                     alignment: Alignment.centerRight,
                     child: GestureDetector(
-                      onTap: () => Get.toNamed(AppRoutes.forgotPassword),
+                      onTap: () => Get.toNamed<void>(AppRoutes.forgotPassword),
                       child: Padding(
                         padding: const EdgeInsets.only(top: AppSpacing.s1),
                         child: Text(
@@ -204,7 +204,7 @@ class LoginScreen extends StatelessWidget {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => Get.toNamed(AppRoutes.signup),
+                        onTap: () => Get.toNamed<void>(AppRoutes.signup),
                         child: Text(
                           'create_account'.tr,
                           style: TextStyle(

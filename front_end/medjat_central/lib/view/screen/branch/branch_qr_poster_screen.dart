@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -137,7 +138,7 @@ class _BranchQrPosterScreenState extends State<BranchQrPosterScreen> {
                             lat: lat, lng: lng, gpsRadiusMeters: radius);
                       });
                       if (Get.isRegistered<BranchController>()) {
-                        Get.find<BranchController>().loadBranches();
+          unawaited(Get.find<BranchController>().loadBranches());
                       }
                     },
                   ),
@@ -229,7 +230,7 @@ class _BranchQrPosterScreenState extends State<BranchQrPosterScreen> {
       if (code != null && code.isNotEmpty) {
         setState(() => _branch = branch.copyWith(qrCode: code));
         if (Get.isRegistered<BranchController>()) {
-          Get.find<BranchController>().loadBranches();
+          unawaited(Get.find<BranchController>().loadBranches());
         }
         Get.snackbar('done'.tr, 'qr_generated'.tr,
             snackPosition: SnackPosition.BOTTOM);

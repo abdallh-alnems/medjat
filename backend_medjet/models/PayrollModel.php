@@ -105,7 +105,7 @@ final class PayrollModel {
                           WHERE employee_id = e.id) AS category_ids
                 FROM employees e
                 LEFT JOIN branches b ON b.id = e.branch_id
-                WHERE e.tenant_id = ? AND e.status = 'active' AND e.deleted_at IS NULL";
+                WHERE e.tenant_id = ? AND e.status = 'active'";
         $params = [$tenantId];
         if ($branchId !== null) {
             $sql .= " AND e.branch_id = ?";
@@ -224,7 +224,7 @@ final class PayrollModel {
         // Total count of active (filterable) employees so the client can
         // tell whether more pages exist.
         $countSql = "SELECT COUNT(*) AS c FROM employees e
-                     WHERE e.tenant_id = ? AND e.status = 'active' AND e.deleted_at IS NULL";
+                     WHERE e.tenant_id = ? AND e.status = 'active'";
         $countParams = [$tenantId];
         if ($branchId !== null) {
             $countSql .= " AND e.branch_id = ?";
@@ -356,6 +356,107 @@ final class PayrollModel {
         }
 
         return $touched;
+    }
+
+    /**
+     * Drive one employee's slip for $month all the way to 'paid', creating and
+     * approving it along the way as needed. This collapses the
+     * generate → approve → pay state machine into a single operation so the
+     * payroll screen can offer a one-tap "disburse salary" for an employee who
+     * has no saved slip yet ('live'), a draft, or an approved slip.
+     *
+     * Idempotent: a slip already 'paid' is left untouched. Mirrors approve.php
+     * exactly for the draft → approved transition (re-freeze final figures,
+     * settle loans, settle leave encashment) so disbursement and manual
+     * approval stay consistent.
+     *
+     * Returns ['result' => 'paid'|'already_paid'|'skipped',
+     *          'payroll_id' => int|null, 'employee_id' => int, 'month' => string].
+     */
+    public static function disburseEmployee(
+        int $employeeId,
+        string $month,
+        int $tenantId,
+        int $adminId,
+        ?string $paidAt = null
+    ): array {
+        $slip = Database::fetchOne(
+            "SELECT id, status FROM payroll
+             WHERE employee_id = ? AND month = ? AND tenant_id = ? LIMIT 1",
+            [$employeeId, $month, $tenantId]
+        );
+
+        if ($slip) {
+            $payrollId = (int) $slip['id'];
+            $status = $slip['status'];
+        } else {
+            // No saved slip yet ('live') — materialise a fresh draft for this
+            // employee+month before we can approve and pay it.
+            $calc = PayrollCalculator::calculate($employeeId, $month, $tenantId);
+            if (empty($calc)) {
+                return ['result' => 'skipped', 'payroll_id' => null,
+                        'employee_id' => $employeeId, 'month' => $month];
+            }
+            $emp = Database::fetchOne(
+                "SELECT branch_id FROM employees WHERE id = ? AND tenant_id = ? LIMIT 1",
+                [$employeeId, $tenantId]
+            );
+            Database::execute(
+                "INSERT INTO payroll
+                    (tenant_id, employee_id, branch_id, month, base_salary,
+                     total_deductions, total_bonuses, net_salary, breakdown, status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft')",
+                [
+                    $tenantId, $employeeId,
+                    $emp['branch_id'] ?? null, $month,
+                    $calc['base_salary'], $calc['total_deductions'],
+                    $calc['total_bonuses'], $calc['net_salary'],
+                    json_encode($calc, JSON_UNESCAPED_UNICODE),
+                ]
+            );
+            $payrollId = (int) Database::lastInsertId();
+            $status = 'draft';
+        }
+
+        if ($status === 'paid') {
+            return ['result' => 'already_paid', 'payroll_id' => $payrollId,
+                    'employee_id' => $employeeId, 'month' => $month];
+        }
+
+        // draft → approved: re-freeze with the final full-cycle figures, flip
+        // to approved, then settle loans + leave encashment (see approve.php).
+        if ($status === 'draft') {
+            $finalCalc = PayrollCalculator::calculate($employeeId, $month, $tenantId);
+            if (!empty($finalCalc)) {
+                Database::execute(
+                    "UPDATE payroll
+                        SET base_salary = ?, total_deductions = ?, total_bonuses = ?,
+                            net_salary = ?, breakdown = ?
+                      WHERE id = ? AND tenant_id = ?",
+                    [
+                        $finalCalc['base_salary'], $finalCalc['total_deductions'],
+                        $finalCalc['total_bonuses'], $finalCalc['net_salary'],
+                        json_encode($finalCalc, JSON_UNESCAPED_UNICODE),
+                        $payrollId, $tenantId,
+                    ]
+                );
+            }
+            self::approve($payrollId, $tenantId, $adminId);
+            try {
+                LoanModel::settleMonth($employeeId, $month, $tenantId);
+            } catch (Throwable $e) {
+                error_log('Loan settlement (disburse): ' . $e->getMessage());
+            }
+            $status = 'approved';
+        }
+
+        // approved → paid.
+        if ($status === 'approved') {
+            self::markPaidMany([$payrollId], $tenantId, $paidAt);
+        }
+
+        return ['result' => 'paid', 'payroll_id' => $payrollId,
+                'employee_id' => $employeeId, 'month' => $month];
     }
 
     public static function getTotalByMonth(int $tenantId, string $month, ?int $branchId = null): array {

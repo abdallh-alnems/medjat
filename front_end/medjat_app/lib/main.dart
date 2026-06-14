@@ -8,6 +8,7 @@ import 'core/constant/routes/app_routes.dart';
 import 'core/constant/theme/theme.dart';
 import 'core/services/initialization.dart';
 import 'core/services/locale_service.dart';
+import 'view/widget/ad/banner_ad_widget.dart';
 
 void main() async {
   await initialServices();
@@ -45,7 +46,14 @@ class MedjatEmployeeApp extends StatelessWidget {
         return Directionality(
           textDirection:
               locale.languageCode == 'ar' ? TextDirection.rtl : TextDirection.ltr,
-          child: child ?? const SizedBox.shrink(),
+          // Host the app content above a persistent AdMob banner so the ad
+          // appears on every screen across the app.
+          child: Column(
+            children: [
+              Expanded(child: child ?? const SizedBox.shrink()),
+              const BannerAdWidget(),
+            ],
+          ),
         );
       },
     );

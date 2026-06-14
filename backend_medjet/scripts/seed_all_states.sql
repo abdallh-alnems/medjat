@@ -3,7 +3,7 @@
 -- Wipes every operational table and rebuilds one full company (tenant 3)
 -- with at least one row per enum/status across the whole schema.
 --
--- PRESERVED (not wiped): `plans`, `super_admins`
+-- PRESERVED (not wiped): `super_admins`
 -- PRESERVED logins recreated with original firebase_uid:
 --   admin 3 = farkha.nims (general_manager, tenant 3)  -> management app login
 --   employee 12 (+201023809407)                        -> employee app login
@@ -18,13 +18,11 @@ SET @PREV := DATE_FORMAT(@D - INTERVAL 1 MONTH, '%Y-%m');   -- previous month
 SET @YR := YEAR(@D);
 
 -- ---------------------------------------------------------------------------
--- 1) WIPE — every table except plans + super_admins
+-- 1) WIPE — every table except super_admins
 -- ---------------------------------------------------------------------------
 SET FOREIGN_KEY_CHECKS = 0;
-TRUNCATE TABLE activation_codes;
 TRUNCATE TABLE admin_devices;
 TRUNCATE TABLE admin_notification_prefs;
-TRUNCATE TABLE admin_sessions;
 TRUNCATE TABLE admins;
 TRUNCATE TABLE analytics_dashboards;
 TRUNCATE TABLE announcement_reads;
@@ -35,7 +33,6 @@ TRUNCATE TABLE approval_request_steps;
 TRUNCATE TABLE approval_requests;
 TRUNCATE TABLE asset_custody;
 TRUNCATE TABLE attendance;
-TRUNCATE TABLE attendance_stations;
 TRUNCATE TABLE audit_log;
 TRUNCATE TABLE bonus_rules;
 TRUNCATE TABLE branches;
@@ -57,7 +54,6 @@ TRUNCATE TABLE employee_suspensions;
 TRUNCATE TABLE employees;
 TRUNCATE TABLE holidays;
 TRUNCATE TABLE job_openings;
-TRUNCATE TABLE kiosk_pins;
 TRUNCATE TABLE kudos;
 TRUNCATE TABLE leave_year_balances;
 TRUNCATE TABLE leaves;
@@ -71,9 +67,7 @@ TRUNCATE TABLE onboarding_tasks;
 TRUNCATE TABLE onboarding_templates;
 TRUNCATE TABLE open_shift_claims;
 TRUNCATE TABLE open_shifts;
-TRUNCATE TABLE payment_transactions;
 TRUNCATE TABLE payroll;
-TRUNCATE TABLE payroll_export_templates;
 TRUNCATE TABLE payroll_line_overrides;
 TRUNCATE TABLE payroll_statutory_settings;
 TRUNCATE TABLE performance_cycles;
@@ -85,8 +79,6 @@ TRUNCATE TABLE required_document_employees;
 TRUNCATE TABLE required_documents;
 TRUNCATE TABLE shift_swap_requests;
 TRUNCATE TABLE shifts;
-TRUNCATE TABLE station_recognition_logs;
-TRUNCATE TABLE subscriptions;
 TRUNCATE TABLE super_admin_audit_log;
 TRUNCATE TABLE super_admin_sessions;
 TRUNCATE TABLE survey_answers;
@@ -101,58 +93,48 @@ TRUNCATE TABLE warnings;
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ---------------------------------------------------------------------------
--- 2) TENANT + subscription/payments
+-- 2) TENANT
 -- ---------------------------------------------------------------------------
-INSERT INTO tenants (id, name, domain, plan, timezone, currency, country_code, is_active,
-  email_verified_at, attendance_method, attendance_methods, allow_offline_attendance,
+INSERT INTO tenants (id, name, timezone, currency, country_code, is_active,
+  email_verified_at, attendance_methods, allow_offline_attendance,
   default_annual_leave_days, leave_carryover_max_days, cycle_start_day,
   commercial_register, company_address, company_phone)
-VALUES (3, 'شركة مدجات التجريبية', 'medjat-demo', 'pro', 'Asia/Riyadh', 'SAR', 'SA', 1,
-  NOW(), 'qr_gps', JSON_ARRAY('qr_gps','manual','station','offline'), 1,
+VALUES (3, 'شركة مدجات التجريبية', 'Asia/Riyadh', 'SAR', 'SA', 1,
+  NOW(), JSON_ARRAY('qr_gps','manual','offline'), 1,
   21, 10, 1, 'CR-1010101010', 'الرياض - حي العليا - طريق الملك فهد', '+966112345678');
 
-INSERT INTO subscriptions (id, tenant_id, plan_id, start_date, end_date, status, payment_method, auto_renew)
-VALUES (1, 3, 3, @D - INTERVAL 2 MONTH, @D + INTERVAL 10 MONTH, 'active', 'card', 1);
-
-INSERT INTO payment_transactions (tenant_id, subscription_id, plan_id, amount, currency, provider,
-  provider_order_id, provider_transaction_id, payment_method, status, paid_at) VALUES
- (3, 1, 3, 699.00, 'SAR', 'paymob', 'ORD-1001', 'TXN-1001', 'card',   'success',   @D - INTERVAL 2 MONTH),
- (3, 1, 3, 699.00, 'SAR', 'paymob', 'ORD-1002', NULL,       'card',   'pending',   NULL),
- (3, 1, 3, 699.00, 'SAR', 'paymob', 'ORD-1003', 'TXN-1003', 'wallet', 'failed',    NULL),
- (3, 1, 3, 699.00, 'SAR', 'paymob', 'ORD-1004', 'TXN-1004', 'card',   'refunded',  @D - INTERVAL 1 MONTH),
- (3, 1, 3, 699.00, 'SAR', 'paymob', 'ORD-1005', NULL,       'card',   'cancelled', NULL);
+-- payment_transactions seed removed — table dropped 2026-06-13 (unused)
 
 -- ---------------------------------------------------------------------------
 -- 3) BRANCHES (active x2, inactive x1)
 -- ---------------------------------------------------------------------------
 INSERT INTO branches (id, tenant_id, name, address, latitude, longitude, qr_code, is_active,
-  attendance_method, gps_radius_meters, cycle_start_day, station_enabled, station_methods,
-  station_gps_radius_meters, station_confidence_threshold, station_anti_spoofing_enabled, allow_offline_attendance)
+  gps_radius_meters, cycle_start_day, allow_offline_attendance)
 VALUES
  (1, 3, 'فرع الرياض الرئيسي', 'الرياض - حي العليا', 24.7136000, 46.6753000, 'MED-RIYADH-0001', 1,
-   'qr_gps', 150, NULL, 1, 'both_available', 30, 0.85, 1, 1),
+   150, NULL, 1),
  (2, 3, 'فرع جدة', 'جدة - حي الروضة', 21.5433000, 39.1728000, 'MED-JEDDAH-0002', 1,
-   'gps_only', 200, NULL, 0, 'face_only', 30, 0.85, 1, NULL),
+   200, NULL, NULL),
  (3, 3, 'فرع الدمام (مغلق)', 'الدمام - حي الشاطئ', 26.4207000, 50.0888000, 'MED-DAMMAM-0003', 0,
-   NULL, 100, NULL, 0, 'fingerprint_only', 30, 0.85, 1, 0);
+   100, NULL, 0);
 
 -- ---------------------------------------------------------------------------
 -- 4) ADMINS — preserved Google logins (2,3,4) + one per role
 -- ---------------------------------------------------------------------------
-INSERT INTO admins (id, firebase_uid, tenant_id, branch_id, name, phone, email, password_hash,
-  auth_provider, role, is_active, two_factor_enabled, active_device_id) VALUES
- (2,  'VefQrxBWg9VJgTRxB1yOUCjXUBX2', NULL, NULL, 'عبدالله مصطفي', NULL, 'abdallhmoustafa295@gmail.com', NULL, 'google', 'pending', 1, 0, NULL),
- (3,  'GACuXzpg9RZJSdkJWARghUTbeBp2', 3,    NULL, 'farkha.nims',   NULL, 'farkha.nims@gmail.com',       NULL, 'google', 'general_manager', 1, 0, NULL),
+INSERT INTO admins (id, firebase_uid, tenant_id, branch_id, name, phone, email,
+  auth_provider, role, is_active, active_device_id) VALUES
+ (2,  'VefQrxBWg9VJgTRxB1yOUCjXUBX2', NULL, NULL, 'عبدالله مصطفي', NULL, 'abdallhmoustafa295@gmail.com', 'google', 'pending', 1, NULL),
+ (3,  'GACuXzpg9RZJSdkJWARghUTbeBp2', 3,    NULL, 'farkha.nims',   NULL, 'farkha.nims@gmail.com',       'google', 'general_manager', 1, NULL),
  -- (admin 4 = nimss.dev@gmail.com removed: deleted from Firebase + DB on request)
- (10, NULL, 3, NULL, 'منى الإدارية (HR)',      '+966500000010', 'hr.test@medjat.test',         NULL, 'email', 'hr',             1, 1, NULL),
- (11, NULL, 3, 1,    'طارق مدير الفرع',         '+966500000011', 'bm.test@medjat.test',         NULL, 'email', 'branch_manager', 1, 0, NULL),
- (12, NULL, 3, 1,    'حسام مسؤول الحضور',       '+966500000012', 'att.test@medjat.test',        NULL, 'email', 'attendance',     1, 0, NULL),
- (13, NULL, 3, NULL, 'سعد المراقب (Viewer)',    '+966500000013', 'viewer.test@medjat.test',     NULL, 'email', 'viewer',         1, 0, NULL),
- (14, NULL, 3, NULL, 'حساب معطّل قديم',         '+966500000014', 'old.test@medjat.test',        NULL, 'email', 'viewer',         0, 1, NULL),
+ (10, NULL, 3, NULL, 'منى الإدارية (HR)',      '+966500000010', 'hr.test@medjat.test',         'email', 'hr',             1, NULL),
+ (11, NULL, 3, 1,    'طارق مدير الفرع',         '+966500000011', 'bm.test@medjat.test',         'email', 'branch_manager', 1, NULL),
+ (12, NULL, 3, 1,    'حسام مسؤول الحضور',       '+966500000012', 'att.test@medjat.test',        'email', 'attendance',     1, NULL),
+ (13, NULL, 3, NULL, 'سعد المراقب (Viewer)',    '+966500000013', 'viewer.test@medjat.test',     'email', 'viewer',         1, NULL),
+ (14, NULL, 3, NULL, 'حساب معطّل قديم',         '+966500000014', 'old.test@medjat.test',        'email', 'viewer',         0, NULL),
  -- employee-linked admin accounts (employee app)
- (30, 'employee:1',  3, 1, 'عبدالله القحطاني', '+966500000001', NULL, NULL, 'employee_code', 'employee', 1, 0, 'dev-emp-1'),
- (31, 'employee:12', 3, 1, 'عبدالله (تجريبي)', '+201023809407', NULL, NULL, 'employee_code', 'employee', 1, 0, 'dev-emp-12'),
- (32, 'employee:3',  3, 1, 'سارة أحمد',        '+966500001003', NULL, NULL, 'employee_code', 'employee', 1, 0, 'dev-emp-3');
+ (30, 'employee:1',  3, 1, 'عبدالله القحطاني', '+966500000001', NULL, 'employee_code', 'employee', 1, 'dev-emp-1'),
+ (31, 'employee:12', 3, 1, 'عبدالله (تجريبي)', '+201023809407', NULL, 'employee_code', 'employee', 1, 'dev-emp-12'),
+ (32, 'employee:3',  3, 1, 'سارة أحمد',        '+966500001003', NULL, 'employee_code', 'employee', 1, 'dev-emp-3');
 
 INSERT INTO admin_notification_prefs (admin_id, tenant_id, prefs) VALUES
  (3,  3, JSON_OBJECT('attendance',true,'payroll',true,'leave',true,'support',true)),
@@ -164,10 +146,7 @@ INSERT INTO admin_devices (admin_id, fcm_token, platform, device_id, device_mode
  (10, 'fcm-token-hr-ios-0003',     'ios',     'dev-hr-ios', 'iPhone 15',  '1.0.0', 1),
  (14, 'fcm-token-old-0004',        'android', 'dev-old',    'Galaxy S20', '0.9.0', 0);
 
-INSERT INTO admin_sessions (admin_id, token_hash, refresh_token_hash, device_id, platform, ip, user_agent, expires_at, revoked_at) VALUES
- (3,  SHA2('sess-active-gm',256),  SHA2('refresh-gm',256),  'dev-gm-and', 'android', '127.0.0.1', 'MedjatAdmin/1.0', NOW() + INTERVAL 7 DAY, NULL),
- (10, SHA2('sess-active-hr',256),  SHA2('refresh-hr',256),  'dev-hr-ios', 'ios',     '127.0.0.1', 'MedjatAdmin/1.0', NOW() + INTERVAL 7 DAY, NULL),
- (14, SHA2('sess-revoked',256),    NULL,                    'dev-old',    'android', '127.0.0.1', 'MedjatAdmin/0.9', NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 2 DAY);
+-- admin_sessions seed removed — table dropped 2026-06-13 (unused)
 
 INSERT INTO custom_roles (tenant_id, admin_id, branch_id, name, permissions) VALUES
  (3, 13, 1, 'مراقب الفرع', JSON_OBJECT('view_attendance',true,'view_employees',true,'manage_payroll',false));
@@ -236,9 +215,7 @@ INSERT INTO employee_activation_codes (tenant_id, employee_id, code, token, expi
  (3, 12, 'ACT12C', 'tok-act-12-112233445566778', NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 2 DAY, 'employee:12'), -- used
  (3, 14, 'ACT14X', 'tok-act-14-99aabbccddeeff0', NOW() - INTERVAL 1 DAY, NULL, NULL);                 -- expired unused
 
-INSERT INTO activation_codes (tenant_id, employee_id, code_hash, code_preview, phone, expires_at, used_at, used_device_id, attempt_count, generated_by) VALUES
- (3, 7,  SHA2('111111',256), '111111', '+966500000007', NOW() + INTERVAL 1 DAY, NULL, NULL, 0, 3),
- (3, 12, SHA2('222222',256), '222222', '+201023809407', NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 2 DAY, 'dev-emp-12', 1, 3);
+-- activation_codes seed removed — table dropped 2026-06-13 (superseded by employee_activation_codes)
 
 INSERT INTO employee_auth_tokens (tenant_id, employee_id, token_hash, device_id, device_model, platform, app_version, revoked_at, revoke_reason) VALUES
  (3, 1,  SHA2('emp1-token',256),  'dev-emp-1',  'Pixel 6',   'android', '1.0.0', NULL, NULL),
@@ -323,10 +300,10 @@ INSERT INTO recurring_leaves (tenant_id, branch_id, day_of_week, type, reason, i
  (3, 1,    'saturday', 'weekly_off', 'راحة فرع الرياض',     1),
  (3, 3,    'sunday',   'weekly_off', 'فرع مغلق',            0);
 
-INSERT INTO holidays (tenant_id, branch_id, name, date, is_paid, notes, created_by) VALUES
- (3, NULL, 'اليوم الوطني',        @D - INTERVAL 5 DAY, 1, 'إجازة رسمية مدفوعة', 3),
- (3, NULL, 'يوم التأسيس',         @D + INTERVAL 30 DAY,1, NULL, 3),
- (3, 1,    'مناسبة خاصة بالفرع',  @D + INTERVAL 15 DAY,0, 'غير مدفوعة', 3);
+INSERT INTO holidays (tenant_id, branch_id, name, date, notes, created_by) VALUES
+ (3, NULL, 'اليوم الوطني',        @D - INTERVAL 5 DAY, 'إجازة رسمية مدفوعة', 3),
+ (3, NULL, 'يوم التأسيس',         @D + INTERVAL 30 DAY, NULL, 3),
+ (3, 1,    'مناسبة خاصة بالفرع',  @D + INTERVAL 15 DAY, 'غير مدفوعة', 3);
 
 -- ---------------------------------------------------------------------------
 -- 10) BREAK / PERMISSION REQUESTS — every type + status
@@ -345,14 +322,14 @@ INSERT INTO break_requests (tenant_id, employee_id, date, start_time, end_time, 
 -- 11) PAYROLL — draft / approved / paid + bonuses/deductions/rules/settings
 -- ---------------------------------------------------------------------------
 INSERT INTO payroll (tenant_id, employee_id, branch_id, month, base_salary, total_deductions, total_bonuses,
-  net_salary, working_days, present_days, absent_days, leave_days, late_total_minutes, overtime_total_minutes,
+  net_salary, working_days, present_days, absent_days, overtime_total_minutes,
   breakdown, status, approved_by, approved_at, paid_at) VALUES
- (3, 1, 1, @PREV, 5000.00, 200.00, 1300.00, 6100.00, 26, 24, 1, 1, 35, 150, JSON_OBJECT('allowances',1300,'absence',200), 'paid',     3, NOW() - INTERVAL 20 DAY, NOW() - INTERVAL 18 DAY),
- (3, 2, 1, @PREV, 4500.00, 250.00, 0.00,    4250.00, 26, 23, 2, 1, 0,  0,   JSON_OBJECT('absence',250), 'paid',     3, NOW() - INTERVAL 20 DAY, NOW() - INTERVAL 18 DAY),
- (3, 4, 2, @PREV, 8000.00, 0.00,   1650.00, 9650.00, 26, 26, 0, 0, 0,  300, JSON_OBJECT('allowances',1650), 'approved', 3, NOW() - INTERVAL 2 DAY,  NULL),
- (3, 1, 1, @MON,  5000.00, 0.00,   1300.00, 6300.00, 26, 20, 0, 1, 35, 150, JSON_OBJECT('allowances',1300), 'draft',    NULL, NULL, NULL),
- (3, 6, 2, @MON,  7000.00, 230.00, 0.00,    6770.00, 26, 19, 1, 0, 2,  0,   JSON_OBJECT('absence',230), 'draft',    NULL, NULL, NULL),
- (3, 12,1, @MON, 12000.00, 0.00,   1300.00,13300.00, 26, 21, 0, 0, 0,  0,   JSON_OBJECT('allowances',1300), 'draft',    NULL, NULL, NULL);
+ (3, 1, 1, @PREV, 5000.00, 200.00, 1300.00, 6100.00, 26, 24, 1, 150, JSON_OBJECT('allowances',1300,'absence',200), 'paid',     3, NOW() - INTERVAL 20 DAY, NOW() - INTERVAL 18 DAY),
+ (3, 2, 1, @PREV, 4500.00, 250.00, 0.00,    4250.00, 26, 23, 2, 0,   JSON_OBJECT('absence',250), 'paid',     3, NOW() - INTERVAL 20 DAY, NOW() - INTERVAL 18 DAY),
+ (3, 4, 2, @PREV, 8000.00, 0.00,   1650.00, 9650.00, 26, 26, 0, 300, JSON_OBJECT('allowances',1650), 'approved', 3, NOW() - INTERVAL 2 DAY,  NULL),
+ (3, 1, 1, @MON,  5000.00, 0.00,   1300.00, 6300.00, 26, 20, 0, 150, JSON_OBJECT('allowances',1300), 'draft',    NULL, NULL, NULL),
+ (3, 6, 2, @MON,  7000.00, 230.00, 0.00,    6770.00, 26, 19, 1, 0,   JSON_OBJECT('absence',230), 'draft',    NULL, NULL, NULL),
+ (3, 12,1, @MON, 12000.00, 0.00,   1300.00,13300.00, 26, 21, 0, 0,   JSON_OBJECT('allowances',1300), 'draft',    NULL, NULL, NULL);
 
 INSERT INTO manual_bonuses (tenant_id, employee_id, amount, reason, month, created_by) VALUES
  (3, 1,  500.00, 'مكافأة أداء',   @MON, 3),
@@ -372,13 +349,9 @@ INSERT INTO deduction_rules (tenant_id, rule_key, rule_type, rule_value, descrip
  (3, 'absence_per_day',    'numeric', '1',    'خصم أيام الغياب',     1),
  (3, 'grace_minutes',      'numeric', '10',   'سماح التأخير',         1);
 
-INSERT INTO payroll_statutory_settings (tenant_id, social_insurance_enabled, si_employee_rate, si_employer_rate,
+INSERT INTO payroll_statutory_settings (tenant_id, social_insurance_enabled, si_employee_rate,
   si_min_wage, si_max_wage, income_tax_enabled, income_tax_brackets, tax_personal_exemption, eosb_enabled, eosb_days_per_year)
-VALUES (3, 1, 9.75, 11.75, 1500.00, 45000.00, 0, JSON_ARRAY(JSON_OBJECT('up_to',60000,'rate',0)), 0.00, 1, 21.00);
-
-INSERT INTO payroll_export_templates (tenant_id, name, delimiter, include_bom, include_header_row, decimal_places, columns, is_active, created_by) VALUES
- (3, 'تحويل بنكي (مصرف الراجحي)', ',', 1, 1, 2, JSON_ARRAY(JSON_OBJECT('label','IBAN','field','bank_iban'),JSON_OBJECT('label','الصافي','field','net_salary')), 1, 3),
- (3, 'كشف داخلي', ';', 0, 1, 2, JSON_ARRAY(JSON_OBJECT('label','الموظف','field','name'),JSON_OBJECT('label','الأساسي','field','base_salary'),JSON_OBJECT('label','الصافي','field','net_salary')), 1, 3);
+VALUES (3, 1, 9.75, 1500.00, 45000.00, 0, JSON_ARRAY(JSON_OBJECT('up_to',60000,'rate',0)), 0.00, 1, 21.00);
 
 INSERT INTO payroll_line_overrides (tenant_id, employee_id, month, line_kind, line_type, line_date, line_desc, line_hash, waived, override_amount, reason, created_by) VALUES
  (3, 2, @MON, 'deduction', 'late', NULL, 'خصم تأخير', SHA1('late|null|late-desc'), 1, NULL, 'إعفاء استثنائي', 3),
@@ -504,30 +477,6 @@ INSERT INTO employee_availability (tenant_id, employee_id, kind, day_of_week, sp
  (3, 11, 'date',   NULL, @D + INTERVAL 3 DAY, 'unavailable', NULL, NULL, 'ظرف خاص');
 
 -- ---------------------------------------------------------------------------
--- 18) STATIONS / KIOSK / RECOGNITION LOGS
--- ---------------------------------------------------------------------------
-INSERT INTO attendance_stations (id, tenant_id, branch_id, device_token, device_name, is_activated,
-  activated_at, last_heartbeat_at, last_known_lat, last_known_lng, is_active, is_locked, locked_reason, created_by_user_id) VALUES
- (1, 3, 1, 'station-token-active-001',  'كشك المدخل الرئيسي', 1, NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 5 MINUTE, 24.7136, 46.6753, 1, 0, NULL, 3),
- (2, 3, 1, 'station-token-locked-002',  'كشك البوابة الخلفية', 1, NOW() - INTERVAL 20 DAY, NOW() - INTERVAL 2 DAY, 24.7137, 46.6754, 1, 1, 'اشتباه تلاعب', 3),
- (3, 3, 2, 'station-token-pending-003', 'كشك فرع جدة',         0, NULL, NULL, NULL, NULL, 1, 0, NULL, 3);
-
-INSERT INTO kiosk_pins (station_id, branch_id, tenant_id, pin_hash, expires_at, used_at, created_by) VALUES
- (1, 1, 3, SHA2('1234',256), NOW() + INTERVAL 1 HOUR, NULL, 3),
- (1, 1, 3, SHA2('9999',256), NOW() - INTERVAL 1 HOUR, NOW() - INTERVAL 90 MINUTE, 3);
-
-INSERT INTO station_recognition_logs (tenant_id, branch_id, station_id, matched_employee_id, verification_method,
-  confidence_score, result, failure_reason, gps_lat, gps_lng) VALUES
- (3, 1, 1, 1,    'face',        0.972, 'success',           NULL, 24.7136, 46.6753),
- (3, 1, 1, NULL, 'face',        0.610, 'low_confidence',    'الثقة أقل من الحد', 24.7136, 46.6753),
- (3, 1, 1, NULL, 'face',        NULL,  'no_match',          'لا يوجد تطابق', 24.7136, 46.6753),
- (3, 1, 2, NULL, 'face',        NULL,  'spoofing_detected', 'صورة غير حقيقية', 24.7137, 46.6754),
- (3, 1, 1, 6,    'fingerprint', 0.910, 'success',           NULL, 24.7136, 46.6753),
- (3, 1, 1, 1,    'both',        0.880, 'manual_fallback',   'تحقق يدوي', 24.7136, 46.6753),
- (3, 1, 1, 1,    'qr',          NULL,  'too_soon',          'تسجيل مبكر جداً', 24.7136, 46.6753),
- (3, 1, 2, NULL, 'face',        NULL,  'out_of_range',      'خارج النطاق الجغرافي', 24.9000, 46.9000);
-
--- ---------------------------------------------------------------------------
 -- 19) RECRUITMENT — job openings + candidates (all stages) + onboarding
 -- ---------------------------------------------------------------------------
 INSERT INTO job_openings (id, tenant_id, branch_id, title, department, description, employment_type,
@@ -600,10 +549,10 @@ INSERT INTO survey_questions (id, survey_id, tenant_id, question, question_ar, q
  (5, 3, 3, 'Preferred shift',          'الوردية المفضلة',          'single_choice', JSON_ARRAY('صباحي','مسائي','ليلي'), 1, 4),
  (6, 3, 3, 'Perks you value',          'المزايا المهمة',           'multi_choice',  JSON_ARRAY('تأمين','بدل نقل','مرونة','تدريب'), 0, 5);
 
-INSERT INTO survey_responses (id, survey_id, tenant_id, employee_id, submitted_at) VALUES
- (1, 1, 3, NULL, NOW() - INTERVAL 1 DAY),   -- anonymous
- (2, 3, 3, 1,    NOW() - INTERVAL 15 DAY),
- (3, 3, 3, 4,    NOW() - INTERVAL 14 DAY);
+INSERT INTO survey_responses (id, survey_id, tenant_id, employee_id) VALUES
+ (1, 1, 3, NULL),   -- anonymous
+ (2, 3, 3, 1),
+ (3, 3, 3, 4);
 
 INSERT INTO survey_answers (response_id, question_id, tenant_id, answer_value, answer_text) VALUES
  (1, 1, 3, 9,    NULL),
@@ -655,9 +604,9 @@ INSERT INTO notifications (tenant_id, admin_id, employee_id, type, title, title_
 -- ---------------------------------------------------------------------------
 -- 23) APPROVAL ENGINE — chains/steps + requests/steps (all statuses)
 -- ---------------------------------------------------------------------------
-INSERT INTO approval_chains (id, tenant_id, name, name_ar, request_type, is_active, min_amount, max_amount, branch_id, priority, created_by) VALUES
- (1, 3, 'Leave approval',   'اعتماد الإجازات', 'leave',   1, NULL, NULL, NULL, 10, 3),
- (3, 3, 'Loan approval',    'اعتماد القروض',   'loan',    1, NULL, NULL, NULL, 10, 3);
+INSERT INTO approval_chains (id, tenant_id, name, name_ar, request_type, is_active, min_amount, branch_id, priority, created_by) VALUES
+ (1, 3, 'Leave approval',   'اعتماد الإجازات', 'leave',   1, NULL, NULL, 10, 3),
+ (3, 3, 'Loan approval',    'اعتماد القروض',   'loan',    1, NULL, NULL, 10, 3);
 
 INSERT INTO approval_chain_steps (tenant_id, chain_id, step_order, approver_type, approver_role, approver_admin_id, label) VALUES
  (3, 1, 1, 'role',  'branch_manager', NULL, 'مدير الفرع'),
@@ -712,11 +661,11 @@ INSERT INTO support_messages (ticket_id, sender_type, sender_admin_id, sender_su
 -- ---------------------------------------------------------------------------
 -- 27) ANALYTICS DASHBOARD + LOGS
 -- ---------------------------------------------------------------------------
-INSERT INTO analytics_dashboards (tenant_id, admin_id, name, layout, is_default) VALUES
+INSERT INTO analytics_dashboards (tenant_id, admin_id, name, layout) VALUES
  (3, 3, 'Default', JSON_ARRAY(JSON_OBJECT('key','attendance_rate','type','kpi','position',1,'size','sm'),
                               JSON_OBJECT('key','headcount','type','kpi','position',2,'size','sm'),
-                              JSON_OBJECT('key','payroll_trend','type','chart','position',3,'size','lg')), 1),
- (3, 10,'HR View', JSON_ARRAY(JSON_OBJECT('key','turnover','type','chart','position',1,'size','lg')), 0);
+                              JSON_OBJECT('key','payroll_trend','type','chart','position',3,'size','lg'))),
+ (3, 10,'HR View', JSON_ARRAY(JSON_OBJECT('key','turnover','type','chart','position',1,'size','lg')));
 
 INSERT INTO login_attempts (identifier, identifier_type, tenant_id, admin_id, success, failure_reason, ip, user_agent) VALUES
  ('farkha.nims@gmail.com', 'email', 3, 3, 1, NULL, '127.0.0.1', 'MedjatAdmin/1.0'),
@@ -736,13 +685,11 @@ INSERT INTO audit_log (tenant_id, admin_id, action, target_type, target_id, payl
 -- ============================================================================
 
 -- 28.1 admins.auth_provider = apple
-INSERT INTO admins (id, firebase_uid, tenant_id, branch_id, name, phone, email, password_hash,
-  auth_provider, role, is_active, two_factor_enabled) VALUES
- (15, 'apple-uid-0001', 3, NULL, 'مدير عبر Apple', '+966500000015', 'apple.test@medjat.test', NULL, 'apple', 'viewer', 1, 0);
+INSERT INTO admins (id, firebase_uid, tenant_id, branch_id, name, phone, email,
+  auth_provider, role, is_active) VALUES
+ (15, 'apple-uid-0001', 3, NULL, 'مدير عبر Apple', '+966500000015', 'apple.test@medjat.test', 'apple', 'viewer', 1);
 
--- 28.2 admin_sessions.platform = web
-INSERT INTO admin_sessions (admin_id, token_hash, refresh_token_hash, device_id, platform, ip, user_agent, expires_at, revoked_at) VALUES
- (3, SHA2('sess-web-gm',256), SHA2('refresh-web',256), 'dev-gm-web', 'web', '127.0.0.1', 'Chrome/120', NOW() + INTERVAL 7 DAY, NULL);
+-- 28.2 admin_sessions seed removed — table dropped 2026-06-13 (unused)
 
 -- 28.3 bonus_rules.rule_type = text   |   deduction_rules.rule_type = text, boolean
 INSERT INTO bonus_rules (tenant_id, rule_key, rule_type, rule_value, description, is_active) VALUES
@@ -766,10 +713,9 @@ INSERT INTO manager_invitations (tenant_id, email, name, role, branch_id, permis
   expires_at, accepted_at, accepted_admin_id, cancelled_at, invited_by) VALUES
  (3, 'invite.gm@medjat.test', 'دعوة مدير عام', 'general_manager', NULL, NULL, SHA2('inv-gm',256), NOW() + INTERVAL 3 DAY, NULL, NULL, NULL, 3);
 
--- 28.6 notifications.type = general, subscription, invite, support
+-- 28.6 notifications.type = general, invite, support
 INSERT INTO notifications (tenant_id, admin_id, employee_id, type, title, title_ar, body, body_ar, data, sent_via, read_at) VALUES
  (3, 3, NULL, 'general',      'General notice',  'إشعار عام',     'General message',   'رسالة عامة لكل المسؤولين',  NULL, 'in_app',       NULL),
- (3, 3, NULL, 'subscription', 'Renewal soon',    'تجديد الاشتراك','Subscription ends', 'اشتراكك قارب على الانتهاء', NULL, 'in_app,email', NULL),
  (3, 3, NULL, 'invite',       'Invite accepted', 'قبول دعوة',     'Manager joined',    'انضم مدير جديد عبر دعوة',   NULL, 'in_app',       NOW() - INTERVAL 1 DAY),
  (3, 3, NULL, 'support',      'Support reply',   'رد الدعم',      'Support replied',   'رد فريق الدعم على تذكرتك',  NULL, 'push,in_app',  NULL);
 
@@ -792,19 +738,12 @@ INSERT INTO recurring_leaves (tenant_id, branch_id, day_of_week, type, reason, i
  (3, NULL, 'wednesday', 'weekly_off', 'تغطية حالة', 1),
  (3, NULL, 'thursday',  'weekly_off', 'تغطية حالة', 0);
 
--- 28.11 EXTRA TENANTS → subscriptions.status (expired/suspended/cancelled/trial)
---        + tenants.attendance_method = gps_only  (super-admin testing data)
-INSERT INTO tenants (id, name, plan, timezone, currency, country_code, is_active, attendance_method, trial_ends_at) VALUES
- (4, 'شركة منتهية الاشتراك', 'starter', 'Asia/Riyadh', 'SAR', 'SA', 1, 'gps_only', NULL),
- (5, 'شركة موقوفة',          'growth',  'Asia/Riyadh', 'SAR', 'SA', 0, 'qr_gps',   NULL),
- (6, 'شركة ملغاة',           'starter', 'Africa/Cairo','EGP', 'EG', 0, 'qr_gps',   NULL),
- (7, 'شركة تجريبية (Trial)', 'pro',     'Asia/Riyadh', 'SAR', 'SA', 1, 'qr_gps',   NOW() + INTERVAL 9 DAY);
-
-INSERT INTO subscriptions (id, tenant_id, plan_id, start_date, end_date, status, payment_method, auto_renew) VALUES
- (2, 4, 1, @D - INTERVAL 14 MONTH, @D - INTERVAL 2 MONTH, 'expired',   'card',   0),
- (3, 5, 2, @D - INTERVAL 6 MONTH,  @D + INTERVAL 6 MONTH,  'suspended', 'card',   1),
- (4, 6, 1, @D - INTERVAL 8 MONTH,  @D - INTERVAL 1 MONTH,  'cancelled', 'wallet', 0),
- (5, 7, 3, @D - INTERVAL 5 DAY,    @D + INTERVAL 9 DAY,    'trial',     NULL,     1);
+-- 28.11 EXTRA TENANTS → active/inactive states (super-admin testing data)
+INSERT INTO tenants (id, name, timezone, currency, country_code, is_active) VALUES
+ (4, 'شركة نشطة',   'Asia/Riyadh', 'SAR', 'SA', 1),
+ (5, 'شركة موقوفة', 'Asia/Riyadh', 'SAR', 'SA', 0),
+ (6, 'شركة موقوفة 2','Africa/Cairo','EGP', 'EG', 0),
+ (7, 'شركة نشطة 2', 'Asia/Riyadh', 'SAR', 'SA', 1);
 
 -- 28.12 super_admins.role = readonly, admin  (preserved table → INSERT IGNORE for re-runs)
 SET @sa_hash := (SELECT password_hash FROM super_admins WHERE username = 'superadmin' LIMIT 1);

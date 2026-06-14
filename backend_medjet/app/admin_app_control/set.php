@@ -12,7 +12,7 @@ $maintenance = $input['maintenance'] ?? null;
 
 Validator::required($app, 'app');
 
-$validApps = ['medjat_app', 'medjat_central', 'medjat_admin'];
+$validApps = ['medjat_app', 'medjat_central'];
 Validator::enum($app, $validApps, 'app');
 
 if ($minVersion !== null && $minVersion !== '') {
@@ -22,9 +22,6 @@ if ($minVersion !== null && $minVersion !== '') {
 }
 
 if ($maintenance !== null) {
-    if ($app === 'medjat_admin') {
-        Response::fail('Maintenance control not available for Admin App', 422);
-    }
     if (!is_bool($maintenance)) {
         Response::fail('Maintenance must be a boolean', 422);
     }
@@ -56,6 +53,16 @@ if ($maintenance !== null) {
         'app' => $app,
         'from' => $maintenanceResult['previous_maintenance'],
         'to' => $maintenance,
+    ]);
+
+    // Push an instant signal to every device of the target app so maintenance
+    // takes effect immediately, without waiting for the Remote Config realtime
+    // stream (which only reacts while the app is foregrounded). Subscribers
+    // listen on the per-app topic "maintenance_<app>".
+    NotificationService::sendToTopic("maintenance_{$app}", [
+        'type' => 'maintenance_mode',
+        'app' => $app,
+        'enabled' => $maintenance ? '1' : '0',
     ]);
 }
 

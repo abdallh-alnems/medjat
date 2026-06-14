@@ -40,7 +40,7 @@ void main() {
       expect(controller.nameController.text, 'شركة الاختبار');
       expect(controller.currency, 'SAR');
       expect(controller.timezone, 'Asia/Riyadh');
-      expect(controller.hasLogo, true);
+      expect(controller.companyData['has_logo'], true);
       expect(controller.cycleStartDay, 5);
     });
 
@@ -58,7 +58,7 @@ void main() {
       await pumpSnackbarHost(tester);
       when(() => mockData.getCompanySettings()).thenAnswer((_) async => {
             'status': StatusRequest.success,
-            'data': {'name': '', 'currency': 'EGP', 'timezone': 'Africa/Cairo'},
+            'data': {'name': '', 'currency': 'EGP', 'timezone': 'Asia/Riyadh'},
           });
       when(() => mockData.updateCompanySettings(any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});

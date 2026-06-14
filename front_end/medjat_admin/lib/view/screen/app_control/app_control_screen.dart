@@ -31,7 +31,7 @@ class AppControlScreen extends StatelessWidget {
               widget: ListView.separated(
                 padding: const EdgeInsets.all(AppSpacing.s4),
                 itemCount: controller.apps.length,
-                separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s3),
+                separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.s3),
                 itemBuilder: (context, index) {
                   return _AppCard(app: controller.apps[index]);
                 },
@@ -216,7 +216,7 @@ class _VersionRow extends StatelessWidget {
       return;
     }
 
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('تأكيد تغيير الإصدار'),
@@ -298,7 +298,7 @@ class _MaintenanceRow extends StatelessWidget {
     bool newValue,
   ) {
     if (newValue) {
-      showDialog(
+      showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('تأكيد تفعيل الصيانة'),

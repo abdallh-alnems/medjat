@@ -13,7 +13,7 @@ class SupportData {
     return await _crud.getData(
       AppLinks.supportTickets,
       queryParameters: {
-        if (status != null) 'status': status,
+        'status': ?status,
         'page': page,
         'limit': limit,
       },

@@ -15,9 +15,9 @@ class DeviceData {
     return await _crud.postData(AppLinks.deviceRegister, {
       'fcm_token': fcmToken,
       'platform': platform,
-      if (deviceId != null) 'device_id': deviceId,
-      if (deviceModel != null) 'device_model': deviceModel,
-      if (appVersion != null) 'app_version': appVersion,
+      'device_id': ?deviceId,
+      'device_model': ?deviceModel,
+      'app_version': ?appVersion,
     });
   }
 }

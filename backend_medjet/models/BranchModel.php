@@ -10,7 +10,13 @@ final class BranchModel {
 
     public static function getAll(int $tenantId): array {
         return Database::fetchAll(
-            "SELECT * FROM branches WHERE tenant_id = ? ORDER BY name ASC",
+            "SELECT b.*, (
+                 SELECT COUNT(*) FROM employees e
+                 WHERE e.branch_id = b.id
+                   AND e.tenant_id = b.tenant_id
+                   AND e.status != 'terminated'
+             ) AS employee_count
+             FROM branches b WHERE b.tenant_id = ? ORDER BY b.name ASC",
             [$tenantId]
         );
     }
@@ -116,16 +122,28 @@ final class BranchModel {
      * Returns ['lat'=>?float, 'lng'=>?float, 'radius'=>int]. lat/lng are null
      * when no center is configured anywhere (no geofence to enforce).
      */
-    public static function effectiveGeofence(int $branchId, int $tenantId): array {
+    public static function effectiveGeofence(int $branchId, int $tenantId, bool $allowCompanyFallback = true): array {
         $branch = self::findById($branchId, $tenantId);
         // branches.latitude/longitude are NOT NULL; an unset branch reads as
-        // 0,0 — treat that as "no branch center" and fall back to the company.
+        // 0,0 — treat that as "no branch center".
         $bLat = $branch !== null && $branch['latitude'] !== null ? (float) $branch['latitude'] : null;
         $bLng = $branch !== null && $branch['longitude'] !== null ? (float) $branch['longitude'] : null;
         if ($bLat !== null && $bLng !== null && !($bLat == 0.0 && $bLng == 0.0)) {
             return [
                 'lat' => $bLat,
                 'lng' => $bLng,
+                'radius' => (int) ($branch['gps_radius_meters'] ?? 100),
+            ];
+        }
+        // The branch has no center of its own. When validating a check-in we do
+        // NOT fall back to the company center: with multiple branches that would
+        // let an employee check into a branch they are nowhere near (e.g. the
+        // Jeddah branch while standing at the head office). The fallback is only
+        // for display/info contexts that explicitly opt in.
+        if (!$allowCompanyFallback) {
+            return [
+                'lat' => null,
+                'lng' => null,
                 'radius' => (int) ($branch['gps_radius_meters'] ?? 100),
             ];
         }
@@ -162,22 +180,4 @@ final class BranchModel {
         return (is_array($methods) && !empty($methods)) ? array_values($methods) : ['qr_gps'];
     }
 
-    public static function updateStationSettings(int $id, int $tenantId, array $data): void {
-        $fields = [];
-        $values = [];
-        $allowed = ['station_enabled', 'station_methods', 'station_gps_radius_meters', 'station_confidence_threshold', 'station_admin_pin_hash', 'station_anti_spoofing_enabled'];
-        foreach ($data as $key => $value) {
-            if (in_array($key, $allowed, true)) {
-                $fields[] = "{$key} = ?";
-                $values[] = $value;
-            }
-        }
-        if (empty($fields)) return;
-        $values[] = $id;
-        $values[] = $tenantId;
-        Database::execute(
-            "UPDATE branches SET " . implode(', ', $fields) . " WHERE id = ? AND tenant_id = ?",
-            $values
-        );
-    }
 }

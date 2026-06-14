@@ -35,7 +35,7 @@ class CategoriesScreen extends StatelessWidget {
                         final cat = ctrl.categories[index];
                         return _CategoryTile(
                           cat: cat,
-                          onTap: () => Get.toNamed(
+                          onTap: () => Get.toNamed<void>(
                             AppRoutes.categoryEmployees,
                             arguments: {'id': cat.id, 'name': cat.name},
                           ),
@@ -165,7 +165,7 @@ class CategoriesScreen extends StatelessWidget {
 
   void _confirmDelete(BuildContext context, CategoryController ctrl,
       EmployeeCategoryModel cat) {
-    Get.defaultDialog(
+    Get.defaultDialog<void>(
       title: 'confirm_delete'.tr,
       middleText: cat.name,
       textConfirm: 'delete'.tr,
@@ -174,23 +174,14 @@ class CategoriesScreen extends StatelessWidget {
       confirmTextColor: Colors.white,
       onConfirm: () {
         ctrl.deleteCategory(cat.id);
-        Get.back();
+        Get.back<void>();
       },
     );
-  }
-
-  Color? _parseColor(String? hex) {
-    if (hex == null || hex.isEmpty) return null;
-    try {
-      return HexColor.fromHex(hex);
-    } catch (_) {
-      return null;
-    }
   }
 }
 
 class HexColor extends Color {
-  HexColor._(int value) : super(value);
+  HexColor._(super.value);
   static Color? fromHex(String hex) {
     hex = hex.replaceAll('#', '');
     if (hex.length == 6) hex = 'FF$hex';

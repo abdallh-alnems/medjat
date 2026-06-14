@@ -5,39 +5,36 @@ final class BiometricModel {
         Database::execute(
             "UPDATE employees SET
                 face_embedding = ?,
-                face_photo_url = ?,
                 face_enrolled_at = NOW(),
                 face_quality_score = ?,
                 biometric_enrollment_status = CASE
-                    WHEN fingerprint_template IS NOT NULL THEN 'both'
+                    WHEN fingerprint_enrolled_at IS NOT NULL THEN 'both'
                     ELSE 'face_only'
                 END
              WHERE id = ? AND tenant_id = ?",
-            [$embeddingJson, $photoUrl, $qualityScore, $employeeId, $tenantId]
+            [$embeddingJson, $qualityScore, $employeeId, $tenantId]
         );
     }
 
     public static function enrollFingerprint(int $employeeId, int $tenantId, string $encryptedTemplate): void {
         Database::execute(
             "UPDATE employees SET
-                fingerprint_template = ?,
                 fingerprint_enrolled_at = NOW(),
                 biometric_enrollment_status = CASE
                     WHEN face_embedding IS NOT NULL THEN 'both'
                     ELSE 'fingerprint_only'
                 END
              WHERE id = ? AND tenant_id = ?",
-            [$encryptedTemplate, $employeeId, $tenantId]
+            [$employeeId, $tenantId]
         );
     }
 
     public static function deleteFace(int $employeeId, int $tenantId): void {
         $emp = EmployeeModel::findById($employeeId, $tenantId);
-        $newStatus = ($emp && $emp['fingerprint_template']) ? 'fingerprint_only' : 'not_enrolled';
+        $newStatus = ($emp && $emp['fingerprint_enrolled_at']) ? 'fingerprint_only' : 'not_enrolled';
         Database::execute(
             "UPDATE employees SET
                 face_embedding = NULL,
-                face_photo_url = NULL,
                 face_enrolled_at = NULL,
                 face_quality_score = NULL,
                 biometric_enrollment_status = ?
@@ -51,7 +48,6 @@ final class BiometricModel {
         $newStatus = ($emp && $emp['face_embedding']) ? 'face_only' : 'not_enrolled';
         Database::execute(
             "UPDATE employees SET
-                fingerprint_template = NULL,
                 fingerprint_enrolled_at = NULL,
                 biometric_enrollment_status = ?
              WHERE id = ? AND tenant_id = ?",
@@ -71,7 +67,7 @@ final class BiometricModel {
 
     public static function findEmployeesForBranch(int $branchId, int $tenantId): array {
         return Database::fetchAll(
-            "SELECT id, name, biometric_enrollment_status, face_embedding, fingerprint_template
+            "SELECT id, name, biometric_enrollment_status, face_embedding
              FROM employees
              WHERE branch_id = ? AND tenant_id = ? AND status = 'active'
                AND biometric_enrollment_status != 'not_enrolled'",

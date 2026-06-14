@@ -17,15 +17,6 @@ class AppLinks {
   static String get tenantActivate => '$base/admin/tenants/activate.php';
   static String get tenantDeactivate => '$base/admin/tenants/deactivate.php';
 
-  // Subscriptions
-  static String get subscriptions => '$base/admin/subscriptions/list.php';
-  static String get subscriptionUpdate => '$base/admin/subscriptions/update.php';
-
-  // Plans
-  static String get plans => '$base/admin/plans/list.php';
-  static String get planCreate => '$base/admin/plans/create.php';
-  static String get planUpdate => '$base/admin/plans/update.php';
-
   // Dashboard
   static String get dashboardOverview => '$base/admin/dashboard/overview.php';
 
@@ -35,18 +26,19 @@ class AppLinks {
 
   // Users + Audit
   static String get users => '$base/admin/users/list.php';
+  static String get userCreate => '$base/admin/users/create.php';
   static String get auditLog => '$base/admin/audit/list.php';
 
   // Support
-  static String get supportList => '$base/admin_support/list.php';
-  static String get supportMessages => '$base/admin_support/messages.php';
-  static String get supportReply => '$base/admin_support/reply.php';
-  static String get supportStatus => '$base/admin_support/status.php';
+  static String get supportList => '$base/app/admin_support/list.php';
+  static String get supportMessages => '$base/app/admin_support/messages.php';
+  static String get supportReply => '$base/app/admin_support/reply.php';
+  static String get supportStatus => '$base/app/admin_support/status.php';
 
   // App Control
-  static String get appControlGet => '$base/admin_app_control/get.php';
-  static String get appControlSet => '$base/admin_app_control/set.php';
+  static String get appControlGet => '$base/app/admin_app_control/get.php';
+  static String get appControlSet => '$base/app/admin_app_control/set.php';
 
   // Device Registration
-  static String get deviceRegister => '$base/admin/devices/register.php';
+  static String get deviceRegister => '$base/app/admin/devices/register.php';
 }

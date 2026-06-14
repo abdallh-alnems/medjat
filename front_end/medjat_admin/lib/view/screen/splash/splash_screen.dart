@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constant/theme/app_colors.dart';
@@ -18,7 +19,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _init() async {
-    await Future.delayed(const Duration(milliseconds: 1500));
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
     if (!mounted) return;
 
     final AuthController authController = Get.find<AuthController>();
@@ -26,9 +27,9 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     if (hasAuth) {
-      Get.offAllNamed('/home');
+      unawaited(Get.offAllNamed<void>('/home'));
     } else {
-      Get.offAllNamed('/login');
+      unawaited(Get.offAllNamed<void>('/login'));
     }
   }
 

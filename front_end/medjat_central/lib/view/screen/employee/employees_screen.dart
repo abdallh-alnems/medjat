@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/class/handling_data_request.dart';
@@ -24,9 +25,9 @@ class EmployeesScreen extends StatelessWidget {
             icon: const Icon(Icons.person_add_outlined),
             tooltip: 'add_employee'.tr,
             onPressed: () async {
-              final result = await Get.toNamed(AppRoutes.employeeAdd);
+              final result = await Get.toNamed<dynamic>(AppRoutes.employeeAdd);
               if (result == true) {
-                ctrl.loadEmployees();
+                unawaited(ctrl.loadEmployees());
               }
             },
           ),
@@ -109,11 +110,11 @@ class EmployeesScreen extends StatelessWidget {
                               AppSpacing.s7,
                             ),
                             itemCount: ctrl.employees.length,
-                            separatorBuilder: (_, __) =>
+                            separatorBuilder: (_, _) =>
                                 const SizedBox(height: AppSpacing.s3),
                             itemBuilder: (_, i) => EmployeeCard(
                               employee: ctrl.employees[i],
-                              onTap: () => Get.toNamed(
+                              onTap: () => Get.toNamed<void>(
                                 AppRoutes.employeeDetail
                                     .replaceAll(':id', '${ctrl.employees[i].id}'),
                                 arguments: {'id': ctrl.employees[i].id},
@@ -131,13 +132,13 @@ class EmployeesScreen extends StatelessWidget {
   }
 
   void _showFilterSheet(BuildContext context, EmployeeController ctrl) {
-    int? _branch = ctrl.branchFilter;
-    int? _shift = ctrl.shiftFilter;
-    int? _category = ctrl.categoryFilter;
-    String? _status = ctrl.statusFilter;
-    int? _expiring = ctrl.expiringFilter;
+    int? branch = ctrl.branchFilter;
+    int? shift = ctrl.shiftFilter;
+    int? category = ctrl.categoryFilter;
+    String? status = ctrl.statusFilter;
+    int? expiring = ctrl.expiringFilter;
 
-    Get.bottomSheet(
+    Get.bottomSheet<void>(
       StatefulBuilder(
         builder: (context, setSheetState) {
           final colors = AppColors.of(context);
@@ -162,11 +163,11 @@ class EmployeesScreen extends StatelessWidget {
                         TextButton(
                           onPressed: () {
                             setSheetState(() {
-                              _branch = null;
-                              _shift = null;
-                              _category = null;
-                              _status = null;
-                              _expiring = null;
+                              branch = null;
+                              shift = null;
+                              category = null;
+                              status = null;
+                              expiring = null;
                             });
                           },
                           child: Text('clear_all'.tr),
@@ -180,7 +181,7 @@ class EmployeesScreen extends StatelessWidget {
                     spacing: AppSpacing.s2,
                     runSpacing: AppSpacing.s1,
                     children: EmployeeController.filterableStatuses.map((s) {
-                      final selected = _status == s;
+                      final selected = status == s;
                       return ChoiceChip(
                         label: Text(
                           ctrl.statusLabel(s),
@@ -195,7 +196,7 @@ class EmployeesScreen extends StatelessWidget {
                         selected: selected,
                         showCheckmark: false,
                         onSelected: (_) =>
-                            setSheetState(() => _status = selected ? null : s),
+                            setSheetState(() => status = selected ? null : s),
                         selectedColor:
                             AppColors.of(context).brand.withValues(alpha: 0.12),
                         side: BorderSide(
@@ -213,7 +214,7 @@ class EmployeesScreen extends StatelessWidget {
                     spacing: AppSpacing.s2,
                     runSpacing: AppSpacing.s1,
                     children: EmployeeController.expiringWindows.map((d) {
-                      final selected = _expiring == d;
+                      final selected = expiring == d;
                       return ChoiceChip(
                         label: Text(
                           '${'within'.tr} $d ${'days_unit'.tr}',
@@ -233,7 +234,7 @@ class EmployeesScreen extends StatelessWidget {
                                 ? AppColors.of(context).warning
                                 : AppColors.of(context).textTertiary),
                         onSelected: (_) =>
-                            setSheetState(() => _expiring = selected ? null : d),
+                            setSheetState(() => expiring = selected ? null : d),
                         selectedColor: AppColors.of(context)
                             .warning
                             .withValues(alpha: 0.14),
@@ -250,7 +251,7 @@ class EmployeesScreen extends StatelessWidget {
                     _FilterLabel(text: 'branch'.tr),
                     const SizedBox(height: AppSpacing.s2),
                     _FilterDropdown(
-                      value: _branch,
+                      value: branch,
                       hint: 'all_branches'.tr,
                       items: ctrl.branches
                           .map((b) => DropdownMenuItem<int?>(
@@ -263,7 +264,7 @@ class EmployeesScreen extends StatelessWidget {
                               ))
                           .toList(),
                       onChanged: (v) =>
-                          setSheetState(() => _branch = v),
+                          setSheetState(() => branch = v),
                     ),
                     const SizedBox(height: AppSpacing.s3),
                   ],
@@ -271,7 +272,7 @@ class EmployeesScreen extends StatelessWidget {
                     _FilterLabel(text: 'shift'.tr),
                     const SizedBox(height: AppSpacing.s2),
                     _FilterDropdown(
-                      value: _shift,
+                      value: shift,
                       hint: 'all_shifts'.tr,
                       items: ctrl.shifts
                           .map((s) => DropdownMenuItem<int?>(
@@ -285,7 +286,7 @@ class EmployeesScreen extends StatelessWidget {
                               ))
                           .toList(),
                       onChanged: (v) =>
-                          setSheetState(() => _shift = v),
+                          setSheetState(() => shift = v),
                     ),
                     const SizedBox(height: AppSpacing.s3),
                   ],
@@ -293,7 +294,7 @@ class EmployeesScreen extends StatelessWidget {
                     _FilterLabel(text: 'employee_categories'.tr),
                     const SizedBox(height: AppSpacing.s2),
                     _FilterDropdown(
-                      value: _category,
+                      value: category,
                       hint: 'all_categories'.tr,
                       items: ctrl.categories
                           .map((c) => DropdownMenuItem<int?>(
@@ -306,7 +307,7 @@ class EmployeesScreen extends StatelessWidget {
                               ))
                           .toList(),
                       onChanged: (v) =>
-                          setSheetState(() => _category = v),
+                          setSheetState(() => category = v),
                     ),
                     const SizedBox(height: AppSpacing.s4),
                   ],
@@ -316,13 +317,13 @@ class EmployeesScreen extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: () {
                         ctrl.applyFilters(
-                          branchId: _branch,
-                          shiftId: _shift,
-                          categoryId: _category,
-                          status: _status,
-                          expiringWithin: _expiring,
+                          branchId: branch,
+                          shiftId: shift,
+                          categoryId: category,
+                          status: status,
+                          expiringWithin: expiring,
                         );
-                        Get.back();
+                        Get.back<void>();
                       },
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(0, 48),
@@ -384,7 +385,7 @@ class _StatsHeader extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(
             AppSpacing.s4, AppSpacing.s2, AppSpacing.s4, 0),
         itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.s2),
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.s2),
         itemBuilder: (_, i) {
           final it = items[i];
           final selected = it.key == null
@@ -465,8 +466,8 @@ class _EmployeesSkeletonState extends State<_EmployeesSkeleton>
       padding: const EdgeInsets.fromLTRB(
           AppSpacing.s4, 0, AppSpacing.s4, AppSpacing.s7),
       itemCount: 7,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s3),
-      itemBuilder: (_, __) => FadeTransition(
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.s3),
+      itemBuilder: (_, _) => FadeTransition(
         opacity: Tween(begin: 0.4, end: 1.0).animate(_c),
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.s4),
@@ -553,8 +554,8 @@ class _EmptyEmployees extends StatelessWidget {
               const SizedBox(height: AppSpacing.s4),
               ElevatedButton.icon(
                 onPressed: () async {
-                  final result = await Get.toNamed(AppRoutes.employeeAdd);
-                  if (result == true) ctrl.loadEmployees();
+                  final result = await Get.toNamed<dynamic>(AppRoutes.employeeAdd);
+                  if (result == true) unawaited(ctrl.loadEmployees());
                 },
                 icon: const Icon(Icons.person_add_outlined,
                     size: 18, color: Colors.white),
@@ -627,7 +628,6 @@ class _FilterDropdown extends StatelessWidget {
           icon: Icon(Icons.expand_more, color: colors.textTertiary),
           items: [
             DropdownMenuItem<int?>(
-              value: null,
               child: Text(hint,
                   style: TextStyle(
                     fontFamily: 'IBM Plex Sans Arabic',

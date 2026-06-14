@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:medjat_central/core/class/status_request.dart';
 import 'package:medjat_central/data/data_source/remote/asset_data/asset_data.dart';
-import 'package:medjat_central/data/model/asset_custody_model.dart';
 import 'package:medjat_central/logic/controller/asset/asset_controller.dart';
 import '../helpers/test_helpers.dart';
 
@@ -53,7 +52,7 @@ void main() {
 
     test('filterByStatus يحدث statusFilter ويُعيد التحميل', () async {
       when(() => mockData.getAssets(status: any(named: 'status')))
-          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': []});
+          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
 
       controller = AssetController();
       await controller.loadAssets();
@@ -69,7 +68,7 @@ void main() {
       when(() => mockData.createAsset(any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
       when(() => mockData.getAssets(status: any(named: 'status')))
-          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': []});
+          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
 
       controller = AssetController();
       await controller.loadAssets();
@@ -78,7 +77,7 @@ void main() {
         employeeId: 1,
         type: 'equipment',
         name: 'شاشة',
-        assignedAt: DateTime(2025, 1, 1),
+        assignedAt: DateTime(2025),
       );
 
       expect(result, isTrue);
@@ -90,7 +89,7 @@ void main() {
       when(() => mockData.createAsset(any()))
           .thenAnswer((_) async => {'status': StatusRequest.failure});
       when(() => mockData.getAssets(status: any(named: 'status')))
-          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': []});
+          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
 
       controller = AssetController();
       await controller.loadAssets();
@@ -99,7 +98,7 @@ void main() {
         employeeId: 1,
         type: 'equipment',
         name: 'شاشة',
-        assignedAt: DateTime(2025, 1, 1),
+        assignedAt: DateTime(2025),
       );
 
       expect(result, isFalse);
@@ -111,7 +110,7 @@ void main() {
       when(() => mockData.approveReturn(any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
       when(() => mockData.getAssets(status: any(named: 'status')))
-          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': []});
+          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
 
       controller = AssetController();
       await controller.loadAssets();
@@ -127,7 +126,7 @@ void main() {
       when(() => mockData.rejectReturn(any(), reason: any(named: 'reason')))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
       when(() => mockData.getAssets(status: any(named: 'status')))
-          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': []});
+          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
 
       controller = AssetController();
       await controller.loadAssets();

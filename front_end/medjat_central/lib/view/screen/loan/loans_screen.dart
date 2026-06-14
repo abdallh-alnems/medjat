@@ -90,7 +90,7 @@ class LoansScreen extends StatelessWidget {
                               AppSpacing.s7,
                             ),
                             itemCount: ctrl.loans.length,
-                            separatorBuilder: (_, __) =>
+                            separatorBuilder: (_, _) =>
                                 const SizedBox(height: AppSpacing.s2),
                             itemBuilder: (_, i) => _LoanTile(
                               loan: ctrl.loans[i],
@@ -226,7 +226,7 @@ class LoansScreen extends StatelessWidget {
                       final picked = await showDatePicker(
                         context: context,
                         initialDate: startMonth,
-                        firstDate: DateTime(2024, 1, 1),
+                        firstDate: DateTime(2024),
                         lastDate: DateTime(2030, 12, 31),
                       );
                       if (picked != null) {

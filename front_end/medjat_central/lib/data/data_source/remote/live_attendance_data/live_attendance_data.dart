@@ -5,7 +5,6 @@ import '../../../../core/constant/id/app_links.dart';
 class LiveAttendanceData {
   final CRUD _crud = Get.find<CRUD>();
 
-  // TODO: Backend must support category_id param on live_attendance.php.
   // If not yet supported, the default behaviour returns all employees.
   Future<Map<String, dynamic>> getLiveBoard(
       {int? branchId, int? shiftId, int? categoryId}) {

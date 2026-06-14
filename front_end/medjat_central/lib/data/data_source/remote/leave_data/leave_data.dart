@@ -24,7 +24,7 @@ class LeaveData {
   Future<Map<String, dynamic>> rejectLeave(int id, {String? reason}) async {
     return await _crud.postData(AppLinks.leaveReject(id), {
       'leave_id': id,
-      if (reason != null) 'rejection_reason': reason,
+      'rejection_reason': ?reason,
     });
   }
 

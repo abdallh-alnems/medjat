@@ -9,33 +9,6 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE IF NOT EXISTS `activation_codes` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `tenant_id` int unsigned NOT NULL,
-  `employee_id` int unsigned NOT NULL,
-  `code_hash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'SHA-256 of the 6-char code',
-  `code_preview` varchar(6) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Plain code, shown to admin until used',
-  `phone` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Phone number to verify against',
-  `expires_at` timestamp NOT NULL,
-  `used_at` timestamp NULL DEFAULT NULL,
-  `used_device_id` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `used_ip` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `attempt_count` int unsigned NOT NULL DEFAULT '0',
-  `generated_by` int unsigned DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_actcode_tenant` (`tenant_id`),
-  KEY `idx_actcode_emp` (`employee_id`),
-  KEY `idx_actcode_hash` (`code_hash`),
-  KEY `idx_actcode_expires` (`expires_at`),
-  KEY `generated_by` (`generated_by`),
-  CONSTRAINT `activation_codes_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `activation_codes_ibfk_2` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `activation_codes_ibfk_3` FOREIGN KEY (`generated_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE IF NOT EXISTS `admin_devices` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `admin_id` int unsigned NOT NULL,
@@ -67,29 +40,6 @@ CREATE TABLE IF NOT EXISTS `admin_notification_prefs` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE IF NOT EXISTS `admin_sessions` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `admin_id` int unsigned NOT NULL,
-  `token_hash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `refresh_token_hash` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `device_id` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `platform` enum('android','ios','web') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `ip` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `user_agent` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `expires_at` timestamp NOT NULL,
-  `revoked_at` timestamp NULL DEFAULT NULL,
-  `last_used_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `token_hash` (`token_hash`),
-  KEY `idx_session_hash` (`token_hash`),
-  KEY `idx_session_expires` (`expires_at`),
-  KEY `idx_session_admin` (`admin_id`),
-  CONSTRAINT `admin_sessions_ibfk_1` FOREIGN KEY (`admin_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE IF NOT EXISTS `admins` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `firebase_uid` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -98,12 +48,9 @@ CREATE TABLE IF NOT EXISTS `admins` (
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `phone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `email` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `password_hash` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Null for Google/Apple-only accounts',
   `auth_provider` enum('email','google','apple','employee_code') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'email',
   `role` enum('general_manager','hr','branch_manager','attendance','viewer','employee','pending') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `two_factor_enabled` tinyint(1) NOT NULL DEFAULT '0',
-  `two_factor_secret` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `email_verified_at` timestamp NULL DEFAULT NULL,
   `last_login_at` timestamp NULL DEFAULT NULL,
   `last_login_ip` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -132,8 +79,6 @@ CREATE TABLE IF NOT EXISTS `attendance` (
   `check_out_time` time DEFAULT NULL,
   `check_in_latitude` decimal(10,7) DEFAULT NULL,
   `check_in_longitude` decimal(10,7) DEFAULT NULL,
-  `check_out_latitude` decimal(10,7) DEFAULT NULL,
-  `check_out_longitude` decimal(10,7) DEFAULT NULL,
   `worked_minutes` int unsigned DEFAULT '0',
   `overtime_minutes` int unsigned DEFAULT '0',
   `late_minutes` int unsigned DEFAULT '0',
@@ -147,7 +92,6 @@ CREATE TABLE IF NOT EXISTS `attendance` (
   `is_offline` tinyint(1) NOT NULL DEFAULT '0',
   `is_vpn` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'VPN detected on device at check-in (advisory)',
   `is_mock_location` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Mock-location flag reported by client (advisory)',
-  `is_rooted_device` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Root/jailbreak flag reported by client (advisory)',
   `synced_at` timestamp NULL DEFAULT NULL COMMENT 'When offline record was synced',
   `recorded_by` int unsigned DEFAULT NULL COMMENT 'User who manually recorded this',
   `deduction_mode` enum('auto','days','amount') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'auto' COMMENT 'How an absent day is deducted: auto=company rule, days=value*daily rate, amount=fixed value',
@@ -165,40 +109,6 @@ CREATE TABLE IF NOT EXISTS `attendance` (
   CONSTRAINT `attendance_ibfk_2` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `attendance_ibfk_3` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
   CONSTRAINT `attendance_ibfk_4` FOREIGN KEY (`recorded_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE IF NOT EXISTS `attendance_stations` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `tenant_id` int unsigned NOT NULL,
-  `branch_id` int unsigned NOT NULL,
-  `device_token` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `device_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `activation_qr_payload` text COLLATE utf8mb4_unicode_ci,
-  `activation_qr_expires_at` timestamp NULL DEFAULT NULL,
-  `is_activated` tinyint(1) NOT NULL DEFAULT '0',
-  `activated_at` timestamp NULL DEFAULT NULL,
-  `last_sync_at` timestamp NULL DEFAULT NULL,
-  `last_heartbeat_at` timestamp NULL DEFAULT NULL,
-  `last_known_lat` decimal(10,7) DEFAULT NULL,
-  `last_known_lng` decimal(10,7) DEFAULT NULL,
-  `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `is_locked` tinyint(1) NOT NULL DEFAULT '0',
-  `locked_reason` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `locked_at` timestamp NULL DEFAULT NULL,
-  `created_by_user_id` int unsigned DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `deactivated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `device_token` (`device_token`),
-  KEY `idx_station_tenant` (`tenant_id`),
-  KEY `idx_station_branch` (`branch_id`),
-  KEY `idx_station_token` (`device_token`),
-  KEY `created_by_user_id` (`created_by_user_id`),
-  CONSTRAINT `attendance_stations_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `attendance_stations_ibfk_2` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `attendance_stations_ibfk_3` FOREIGN KEY (`created_by_user_id`) REFERENCES `admins` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -275,16 +185,9 @@ CREATE TABLE IF NOT EXISTS `branches` (
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `attendance_method` enum('qr_gps','gps_only') COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Branch-level override; NULL inherits tenants.attendance_method',
   `attendance_methods` json DEFAULT NULL COMMENT 'Branch override; NULL inherits tenants.attendance_methods',
   `gps_radius_meters` int unsigned NOT NULL DEFAULT '100' COMMENT 'Allowed GPS radius for check-in in meters',
   `cycle_start_day` tinyint unsigned DEFAULT NULL COMMENT 'Per-branch override of attendance cycle start day; NULL = inherit company',
-  `station_enabled` tinyint(1) NOT NULL DEFAULT '0',
-  `station_methods` enum('face_only','fingerprint_only','both_available') COLLATE utf8mb4_unicode_ci DEFAULT 'face_only',
-  `station_gps_radius_meters` int DEFAULT '30',
-  `station_confidence_threshold` decimal(3,2) DEFAULT '0.85',
-  `station_admin_pin_hash` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `station_anti_spoofing_enabled` tinyint(1) NOT NULL DEFAULT '1',
   `allow_offline_attendance` tinyint(1) DEFAULT NULL COMMENT 'NULL = inherit tenant; 1 = forced on; 0 = forced off',
   PRIMARY KEY (`id`),
   UNIQUE KEY `qr_code` (`qr_code`),
@@ -495,14 +398,11 @@ CREATE TABLE IF NOT EXISTS `employees` (
   `bank_account_number` varchar(34) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `bank_iban` varchar(34) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `bank_swift` varchar(11) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `face_photo_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `face_enrolled_at` datetime DEFAULT NULL,
   `face_quality_score` decimal(4,3) DEFAULT NULL,
-  `fingerprint_template` blob,
   `fingerprint_enrolled_at` datetime DEFAULT NULL,
   `biometric_enrollment_status` enum('not_enrolled','face_only','fingerprint_only','both') COLLATE utf8mb4_unicode_ci DEFAULT 'not_enrolled',
   `has_linked_account` tinyint(1) DEFAULT '0',
-  `deleted_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -532,7 +432,6 @@ CREATE TABLE IF NOT EXISTS `holidays` (
   `branch_id` int unsigned DEFAULT NULL COMMENT 'Null = all branches',
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `date` date NOT NULL,
-  `is_paid` tinyint(1) NOT NULL DEFAULT '1',
   `notes` text COLLATE utf8mb4_unicode_ci,
   `created_by` int unsigned DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -586,7 +485,6 @@ CREATE TABLE IF NOT EXISTS `leave_year_balances` (
   `year` smallint NOT NULL,
   `entitlement_days` int NOT NULL COMMENT 'Entitlement for this year at row-generation time',
   `carried_over_days` int NOT NULL DEFAULT '0' COMMENT 'Days carried over from the previous year',
-  `carryover_expires_on` date DEFAULT NULL COMMENT 'Carried-over days expire (drop if unused) on this date; NULL = never',
   `carryover_encashed_days` int NOT NULL DEFAULT '0' COMMENT 'Days that were cashed out for this year instead of carried',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -737,7 +635,7 @@ CREATE TABLE IF NOT EXISTS `notifications` (
   `tenant_id` int unsigned DEFAULT NULL COMMENT 'Null = system-wide from super admin',
   `admin_id` int unsigned DEFAULT NULL,
   `employee_id` int unsigned DEFAULT NULL COMMENT 'For Employee-app recipients',
-  `type` enum('general','attendance','payroll','leave','warning','system','subscription','invite','support','approval') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'general',
+  `type` enum('general','attendance','payroll','leave','warning','system','invite','support','approval') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'general',
   `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `title_ar` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `body` text COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -758,35 +656,6 @@ CREATE TABLE IF NOT EXISTS `notifications` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE IF NOT EXISTS `payment_transactions` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `tenant_id` int unsigned NOT NULL,
-  `subscription_id` int unsigned DEFAULT NULL,
-  `plan_id` int unsigned DEFAULT NULL,
-  `amount` decimal(12,2) NOT NULL,
-  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'EGP',
-  `provider` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'paymob',
-  `provider_order_id` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `provider_transaction_id` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `payment_method` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'card, wallet, kiosk, etc.',
-  `status` enum('pending','success','failed','refunded','cancelled') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
-  `payload` json DEFAULT NULL,
-  `paid_at` timestamp NULL DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_pay_tenant` (`tenant_id`),
-  KEY `idx_pay_status` (`status`),
-  KEY `idx_pay_provider_order` (`provider_order_id`),
-  KEY `subscription_id` (`subscription_id`),
-  KEY `plan_id` (`plan_id`),
-  CONSTRAINT `payment_transactions_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `payment_transactions_ibfk_2` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `payment_transactions_ibfk_3` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE IF NOT EXISTS `payroll` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `tenant_id` int unsigned NOT NULL,
@@ -800,8 +669,6 @@ CREATE TABLE IF NOT EXISTS `payroll` (
   `working_days` int unsigned NOT NULL DEFAULT '0',
   `present_days` int unsigned NOT NULL DEFAULT '0',
   `absent_days` int unsigned NOT NULL DEFAULT '0',
-  `leave_days` int unsigned NOT NULL DEFAULT '0',
-  `late_total_minutes` int unsigned NOT NULL DEFAULT '0',
   `overtime_total_minutes` int unsigned NOT NULL DEFAULT '0',
   `breakdown` json DEFAULT NULL,
   `status` enum('draft','approved','paid') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
@@ -821,23 +688,6 @@ CREATE TABLE IF NOT EXISTS `payroll` (
   CONSTRAINT `payroll_ibfk_3` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `payroll_ibfk_4` FOREIGN KEY (`approved_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE IF NOT EXISTS `plans` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name_ar` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `price` decimal(10,2) NOT NULL DEFAULT '0.00',
-  `max_employees` int unsigned NOT NULL DEFAULT '10',
-  `max_branches` int unsigned NOT NULL DEFAULT '1',
-  `features` json DEFAULT NULL,
-  `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uniq_plan_name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -951,53 +801,6 @@ CREATE TABLE IF NOT EXISTS `employee_shift_schedule` (
   CONSTRAINT `fk_sched_shift` FOREIGN KEY (`shift_id`) REFERENCES `shifts` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_sched_admin` FOREIGN KEY (`created_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-CREATE TABLE IF NOT EXISTS `station_recognition_logs` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `tenant_id` int unsigned NOT NULL,
-  `branch_id` int unsigned NOT NULL,
-  `station_id` int unsigned NOT NULL,
-  `matched_employee_id` int unsigned DEFAULT NULL,
-  `verification_method` enum('face','fingerprint','both') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `confidence_score` decimal(4,3) DEFAULT NULL,
-  `result` enum('success','low_confidence','no_match','spoofing_detected','manual_fallback','too_soon') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `failure_reason` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `captured_image_path` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `gps_lat` decimal(10,7) DEFAULT NULL,
-  `gps_lng` decimal(10,7) DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_reclog_tenant` (`tenant_id`),
-  KEY `idx_reclog_branch` (`branch_id`),
-  KEY `idx_reclog_station` (`station_id`),
-  KEY `idx_reclog_employee` (`matched_employee_id`),
-  KEY `idx_reclog_created` (`created_at`),
-  CONSTRAINT `station_recognition_logs_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `station_recognition_logs_ibfk_2` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `station_recognition_logs_ibfk_3` FOREIGN KEY (`station_id`) REFERENCES `attendance_stations` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `station_recognition_logs_ibfk_4` FOREIGN KEY (`matched_employee_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE IF NOT EXISTS `subscriptions` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `tenant_id` int unsigned NOT NULL,
-  `plan_id` int unsigned NOT NULL,
-  `start_date` date NOT NULL,
-  `end_date` date NOT NULL,
-  `status` enum('active','expired','suspended','cancelled','trial') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
-  `payment_method` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `auto_renew` tinyint(1) NOT NULL DEFAULT '1',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uniq_tenant_sub` (`tenant_id`),
-  KEY `idx_sub_status` (`status`),
-  KEY `plan_id` (`plan_id`),
-  CONSTRAINT `subscriptions_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `subscriptions_ibfk_2` FOREIGN KEY (`plan_id`) REFERENCES `plans` (`id`) ON DELETE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE IF NOT EXISTS `super_admin_audit_log` (
@@ -1008,7 +811,6 @@ CREATE TABLE IF NOT EXISTS `super_admin_audit_log` (
   `target_id` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `payload` json DEFAULT NULL,
   `ip` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `user_agent` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_saalog_admin` (`admin_id`),
@@ -1044,8 +846,6 @@ CREATE TABLE IF NOT EXISTS `super_admins` (
   `display_name` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `role` enum('readonly','admin','superadmin') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'admin',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `two_factor_secret` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Mandatory TOTP for super admin',
-  `two_factor_enabled` tinyint(1) NOT NULL DEFAULT '0',
   `last_login_at` timestamp NULL DEFAULT NULL,
   `last_login_ip` varchar(45) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1060,19 +860,14 @@ CREATE TABLE IF NOT EXISTS `super_admins` (
 CREATE TABLE IF NOT EXISTS `tenants` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `domain` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `logo_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `plan` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'starter' COMMENT 'Denormalized current plan name for fast checks',
   `timezone` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Africa/Cairo',
   `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'EGP',
   `country_code` CHAR(2) COLLATE utf8mb4_unicode_ci NULL DEFAULT 'EG' COMMENT 'ISO 3166-1 alpha-2; يحدّد مُصدِّر الرواتب الافتراضي',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `email_verified_at` timestamp NULL DEFAULT NULL,
-  `trial_ends_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `attendance_method` enum('qr_gps','gps_only') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'qr_gps' COMMENT 'Default attendance method for the tenant',
-  `attendance_methods` json DEFAULT NULL COMMENT 'Enabled methods, e.g. ["qr_gps","manual","station"]',
+  `attendance_methods` json DEFAULT NULL COMMENT 'Enabled methods, e.g. ["qr_gps","manual"]',
   `manual_attendance_admin_ids` json DEFAULT NULL COMMENT 'NULL = all admins with manage_attendance; array = restricted set',
   `allow_offline_attendance` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'Company-level toggle for offline attendance capture',
   `default_annual_leave_days` int NOT NULL DEFAULT '0' COMMENT 'Default annual leave entitlement for all employees (0 until admin sets it)',
@@ -1081,13 +876,10 @@ CREATE TABLE IF NOT EXISTS `tenants` (
   `apply_legal_seniority_entitlement` tinyint(1) NOT NULL DEFAULT '1' COMMENT '1 = bump annual entitlement to >=30 days after 10 years service (Egyptian labour law)',
   `cycle_start_day` tinyint unsigned NOT NULL DEFAULT '1' COMMENT 'Attendance cycle start day (1-28); cycle labeled by its end month',
   `week_start_day` tinyint unsigned NOT NULL DEFAULT '6' COMMENT 'Weekly schedule start weekday (ISO: 1=Mon..7=Sun, default 6=Sat)',
-  `stamp_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Company stamp image for generated letters',
-  `signature_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Authorized signatory image for generated letters',
   `commercial_register` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Commercial registration number shown on letters',
   `company_address` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `company_phone` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `domain` (`domain`)
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1117,7 +909,6 @@ CREATE TABLE IF NOT EXISTS `payroll_statutory_settings` (
   `tenant_id` int unsigned NOT NULL,
   `social_insurance_enabled` tinyint(1) NOT NULL DEFAULT 0,
   `si_employee_rate` decimal(5,2) DEFAULT NULL,
-  `si_employer_rate` decimal(5,2) DEFAULT NULL,
   `si_min_wage` decimal(12,2) DEFAULT NULL,
   `si_max_wage` decimal(12,2) DEFAULT NULL,
   `income_tax_enabled` tinyint(1) NOT NULL DEFAULT 0,
@@ -1220,12 +1011,6 @@ CREATE TABLE IF NOT EXISTS `asset_custody` (
 -- ============================================
 -- Seed data
 -- ============================================
-
-INSERT IGNORE INTO `plans` (`name`, `name_ar`, `price`, `max_employees`, `max_branches`) VALUES
-('starter',    'الباقة المبتدئة',   199.00, 10,     1),
-('growth',     'باقة النمو',        399.00, 30,     3),
-('pro',        'الباقة الاحترافية', 699.00, 100,    999999),
-('enterprise', 'باقة المؤسسات',     0.00,   999999, 999999);
 
 INSERT IGNORE INTO `super_admins` (`username`, `password_hash`, `display_name`, `role`, `is_active`) VALUES
 ('superadmin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Super Admin', 'superadmin', 1);
@@ -1434,32 +1219,12 @@ CREATE TABLE IF NOT EXISTS `analytics_dashboards` (
   `admin_id` int unsigned NOT NULL COMMENT 'صاحب اللوحة — لكل مسؤول لوحته',
   `name` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Default',
   `layout` json NOT NULL COMMENT 'مصفوفة widgets: [{key,type,filters,position,size}]',
-  `is_default` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_dash_tenant_admin` (`tenant_id`,`admin_id`),
   CONSTRAINT `analytics_dashboards_ibfk_1` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE,
   CONSTRAINT `analytics_dashboards_ibfk_2` FOREIGN KEY (`admin_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ── Payroll Export Templates (custom CSV) ──
-CREATE TABLE IF NOT EXISTS `payroll_export_templates` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `tenant_id` int unsigned NOT NULL,
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'اسم القالب كما يراه المستخدم',
-  `delimiter` varchar(4) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT ',' COMMENT 'الفاصل: , ; | \t',
-  `include_bom` tinyint(1) NOT NULL DEFAULT 1 COMMENT 'إضافة UTF-8 BOM',
-  `include_header_row` tinyint(1) NOT NULL DEFAULT 1 COMMENT 'كتابة صف عناوين الأعمدة',
-  `decimal_places` tinyint unsigned NOT NULL DEFAULT 2 COMMENT 'منازل عشرية للحقول الرقمية',
-  `columns` json NOT NULL COMMENT 'مصفوفة أعمدة: [{"label":"..","field":"net_salary"}]',
-  `is_active` tinyint(1) NOT NULL DEFAULT 1,
-  `created_by` int unsigned DEFAULT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_export_tpl_tenant` (`tenant_id`, `is_active`),
-  CONSTRAINT `fk_export_tpl_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `tenants` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============ SCHEDULING INTELLIGENCE ============
@@ -1660,7 +1425,6 @@ CREATE TABLE IF NOT EXISTS `survey_responses` (
   `survey_id` int unsigned NOT NULL,
   `tenant_id` int unsigned NOT NULL,
   `employee_id` int unsigned DEFAULT NULL COMMENT 'null for anonymous surveys',
-  `submitted_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_sr_survey` (`survey_id`),
   KEY `idx_sr_tenant` (`tenant_id`),
@@ -1710,7 +1474,6 @@ CREATE TABLE IF NOT EXISTS `approval_chains` (
   `request_type` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'leave|loan|bonus|warning|document|generic',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `min_amount` decimal(14,2) DEFAULT NULL COMMENT 'Condition: context amount >= this (NULL=no min)',
-  `max_amount` decimal(14,2) DEFAULT NULL COMMENT 'Condition: context amount <= this (NULL=no max)',
   `branch_id` int unsigned DEFAULT NULL COMMENT 'Condition: request branch = this (NULL=all branches)',
   `priority` int NOT NULL DEFAULT '0' COMMENT 'Higher wins when multiple chains match',
   `created_by` int unsigned DEFAULT NULL,

@@ -83,7 +83,7 @@ class AuthController extends GetxController {
       isLoggedIn.value = false;
       hasTenant.value = false;
       if (Get.currentRoute != AppRoutes.login) {
-        Get.offAllNamed(AppRoutes.login);
+        unawaited(Get.offAllNamed<void>(AppRoutes.login));
       }
       Get.snackbar(
         'تنبيه',
@@ -112,7 +112,7 @@ class AuthController extends GetxController {
     });
     _deepLinkSub = appLinks.uriLinkStream.listen(
       _handleDeepLink,
-      onError: (e) => debugPrint('deep link error: $e'),
+      onError: (Object e) => debugPrint('deep link error: $e'),
     );
   }
 
@@ -129,7 +129,7 @@ class AuthController extends GetxController {
         if (isLoggedIn.value) {
           isLoggedIn.value = false;
           user = null;
-          Get.offAllNamed(AppRoutes.login);
+          unawaited(Get.offAllNamed<void>(AppRoutes.login));
         }
         return;
       }
@@ -142,7 +142,7 @@ class AuthController extends GetxController {
         if (current != AppRoutes.verifyEmail &&
             current != AppRoutes.login &&
             current != AppRoutes.signup) {
-          Get.offAllNamed(AppRoutes.verifyEmail);
+          unawaited(Get.offAllNamed<void>(AppRoutes.verifyEmail));
         }
         return;
       }
@@ -190,7 +190,7 @@ class AuthController extends GetxController {
         isEmailLoading.value = false;
         isEmailVerified.value = false;
         status.value = StatusRequest.success;
-        Get.offAllNamed(AppRoutes.verifyEmail);
+        unawaited(Get.offAllNamed<void>(AppRoutes.verifyEmail));
         update();
         return;
       }
@@ -261,7 +261,7 @@ class AuthController extends GetxController {
         isEmailLoading.value = false;
         status.value = StatusRequest.success;
         isEmailVerified.value = false;
-        Get.offAllNamed(AppRoutes.verifyEmail);
+        unawaited(Get.offAllNamed<void>(AppRoutes.verifyEmail));
         update();
         return;
       }
@@ -472,9 +472,9 @@ class AuthController extends GetxController {
     // Notification permission is requested from the home page (TabShell),
     // not here — so it only appears after the user has a company/tenant.
     if (hasTenant.value) {
-      Get.offAllNamed(AppRoutes.home);
+      Get.offAllNamed<void>(AppRoutes.home);
     } else {
-      Get.offAllNamed(AppRoutes.onboarding);
+      Get.offAllNamed<void>(AppRoutes.onboarding);
     }
     update();
   }
@@ -496,14 +496,19 @@ class AuthController extends GetxController {
   }
 
   Future<void> logout() async {
+    // Notify the backend first, while the Firebase token is still valid, so it
+    // can clear our active session device. Failures are ignored — the local
+    // session is cleared regardless.
+    try {
+      await _authData.logout();
+    } catch (_) {}
     try {
       await _googleSignIn.signOut();
       await _auth.signOut();
     } catch (_) {}
-    await _authData.logout();
     user = null;
     isLoggedIn.value = false;
-    Get.offAllNamed(AppRoutes.login);
+    unawaited(Get.offAllNamed<void>(AppRoutes.login));
   }
 
   /// Permanently deletes the account from the backend (DB + Firebase) and then
@@ -577,7 +582,7 @@ class AuthController extends GetxController {
       user = null;
       isLoggedIn.value = false;
       isDeletingAccount.value = false;
-      Get.offAllNamed(AppRoutes.login);
+      unawaited(Get.offAllNamed<void>(AppRoutes.login));
       Get.snackbar('done'.tr, 'delete_account_success'.tr,
           snackPosition: SnackPosition.BOTTOM);
     } catch (e) {

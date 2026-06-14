@@ -15,6 +15,7 @@ if (!$shift) Response::notFound('Shift');
 
 $transferToShiftId = (int) ($auth['input']['transfer_to_shift_id'] ?? 0);
 $affected = 0;
+$scheduleMoved = 0;
 $action = 'kept_times';
 
 if ($transferToShiftId > 0) {
@@ -24,12 +25,15 @@ if ($transferToShiftId > 0) {
     $target = ShiftModel::findById($transferToShiftId, $tenantId);
     if (!$target) Response::fail('Target shift not found', 422);
 
-    // Move members onto the chosen shift before deleting.
+    // Move members onto the chosen shift before deleting, and repoint their
+    // upcoming weekly-roster cells so scheduled days keep a valid shift too.
     $affected = ShiftModel::transferEmployees($id, $transferToShiftId, $tenantId);
+    $scheduleMoved = EmployeeShiftScheduleModel::transferShift($id, $transferToShiftId, $tenantId);
     $action = 'transferred';
 } else {
     // No target: preserve each member's schedule by copying this shift's
     // times onto their personal work hours, then let the FK null out shift_id.
+    // Roster cells on this shift CASCADE away and fall back to those same times.
     $affected = ShiftModel::applyTimesToEmployees(
         $id,
         $shift['start_time'],
@@ -43,6 +47,7 @@ ShiftModel::delete($id, $tenantId);
 AuditLogModel::log($tenantId, $auth['admin_id'], 'shift.delete', 'shift', $id, [
     'action' => $action,
     'affected' => $affected,
+    'schedule_moved' => $scheduleMoved,
     'transfer_to_shift_id' => $transferToShiftId ?: null,
 ]);
 
@@ -50,4 +55,5 @@ Response::success([
     'message' => 'Deleted',
     'action' => $action,
     'affected' => $affected,
+    'schedule_moved' => $scheduleMoved,
 ]);

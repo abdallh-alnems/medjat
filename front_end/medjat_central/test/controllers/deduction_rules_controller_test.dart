@@ -15,6 +15,7 @@ void main() {
   setUp(() {
     setupTestBinding();
     setupGetX();
+    registerFallbackValue(<String, dynamic>{});
     mockData = MockDeductionRuleData();
     Get.put<DeductionRuleData>(mockData);
   });
@@ -22,67 +23,118 @@ void main() {
   tearDown(() => teardownGetX());
 
   group('DeductionRulesController', () {
-    test('loadRules — نجاح', () async {
-      when(() => mockData.getDeductionRules()).thenAnswer((_) async => {
+    test('loadConfig — نجاح يحمّل الـ tiers و absenceDays', () async {
+      when(() => mockData.getDeductionConfig()).thenAnswer((_) async => {
             'status': StatusRequest.success,
-            'data': [
-              {'id': 1, 'name': 'خصم تأخير', 'type': 'late', 'amount': 50.0},
-            ],
+            'data': {
+              'data': {
+                'config': {
+                  'tiers': [
+                    {'threshold_minutes': 15, 'deduction_days': 0.25},
+                    {'threshold_minutes': 30, 'deduction_days': 0.5},
+                  ],
+                  'absence_days': 2.0,
+                }
+              }
+            },
           });
 
       final controller = DeductionRulesController();
-      await controller.loadRules();
+      await controller.loadConfig();
 
       expect(controller.status, StatusRequest.success);
-      expect(controller.rules.length, 1);
+      expect(controller.tiers.length, 2);
+      expect(controller.absenceDays, 2.0);
     });
 
-    test('loadRules — فشل', () async {
-      when(() => mockData.getDeductionRules())
+    test('loadConfig — فشل يضبط status', () async {
+      when(() => mockData.getDeductionConfig())
           .thenAnswer((_) async => {'status': StatusRequest.serverFailure});
 
       final controller = DeductionRulesController();
-      await controller.loadRules();
+      await controller.loadConfig();
 
       expect(controller.status, StatusRequest.serverFailure);
     });
 
-    testWidgets('deleteRule — نجاح يحذف من القائمة', (tester) async {
+    testWidgets('upsertTier — يضيف tier جديد ويحفظ', (tester) async {
       await pumpSnackbarHost(tester);
-      when(() => mockData.getDeductionRules()).thenAnswer((_) async => {
+      when(() => mockData.getDeductionConfig()).thenAnswer((_) async => {
             'status': StatusRequest.success,
-            'data': [
-              {'id': 1, 'name': 'خصم تأخير', 'type': 'late', 'amount': 50.0},
-              {'id': 2, 'name': 'خصم غياب', 'type': 'absence', 'amount': 100.0},
-            ],
+            'data': {
+              'data': {'config': {'tiers': <Map<String, dynamic>>[], 'absence_days': 1.5}}
+            },
           });
-      when(() => mockData.deleteDeductionRule(any()))
+      when(() => mockData.saveDeductionConfig(any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
 
       final controller = DeductionRulesController();
-      await controller.loadRules();
-      expect(controller.rules.length, 2);
+      await controller.loadConfig();
 
-      await controller.deleteRule(1);
+      controller.upsertTier(const LateTier(thresholdMinutes: 20, deductionDays: 0.5));
 
-      expect(controller.rules.length, 1);
-      expect(controller.rules.first.id, 2);
+      expect(controller.tiers.length, 1);
+      expect(controller.tiers.first.thresholdMinutes, 20);
       await settleSnackbars(tester);
     });
 
-    testWidgets('createRule — نجاح يعيد تحميل القواعد', (tester) async {
+    testWidgets('upsertTier — يرفض الـ threshold المكرر', (tester) async {
       await pumpSnackbarHost(tester);
-      when(() => mockData.createDeductionRule(any()))
+      when(() => mockData.getDeductionConfig()).thenAnswer((_) async => {
+            'status': StatusRequest.success,
+            'data': {
+              'data': {
+                'config': {
+                  'tiers': [
+                    {'threshold_minutes': 30, 'deduction_days': 0.5},
+                  ],
+                  'absence_days': 1.5,
+                }
+              }
+            },
+          });
+      when(() => mockData.saveDeductionConfig(any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
-      when(() => mockData.getDeductionRules())
-          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': []});
 
       final controller = DeductionRulesController();
-      await controller.loadRules();
+      await controller.loadConfig();
 
-      await controller.createRule({'name': 'قاعدة جديدة'});
+      final result = controller.upsertTier(
+        const LateTier(thresholdMinutes: 30, deductionDays: 1.0),
+      );
 
-      verify(() => mockData.getDeductionRules()).called(2);
+      expect(result, 'tier_duplicate');
+      expect(controller.tiers.length, 1);
+      await settleSnackbars(tester);
+    });
+
+    testWidgets('removeTier — يحذف من القائمة', (tester) async {
+      await pumpSnackbarHost(tester);
+      when(() => mockData.getDeductionConfig()).thenAnswer((_) async => {
+            'status': StatusRequest.success,
+            'data': {
+              'data': {
+                'config': {
+                  'tiers': [
+                    {'threshold_minutes': 15, 'deduction_days': 0.25},
+                    {'threshold_minutes': 30, 'deduction_days': 0.5},
+                  ],
+                  'absence_days': 1.5,
+                }
+              }
+            },
+          });
+      when(() => mockData.saveDeductionConfig(any()))
+          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
+
+      final controller = DeductionRulesController();
+      await controller.loadConfig();
+      expect(controller.tiers.length, 2);
+
+      controller.removeTier(controller.tiers.first);
+
+      expect(controller.tiers.length, 1);
+      expect(controller.tiers.first.thresholdMinutes, 30);
       await settleSnackbars(tester);
     });
   });

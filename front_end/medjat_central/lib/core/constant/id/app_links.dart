@@ -7,7 +7,7 @@ class AppLinks {
 
   // ── Auth ───────────────────────────────────────────────
   static String get login => '$base/app/auth/login.php';
-  static String get logout => '$base/app/auth/logout.php'; // TODO: backend endpoint missing
+  static String get logout => '$base/app/auth/logout.php'; 
   static String get me => '$base/app/auth/login.php'; // login.php returns user info
   static String get deleteAccount => '$base/app/auth/delete_account.php';
   static String get updateProfile => '$base/app/auth/update_profile.php';
@@ -37,6 +37,11 @@ class AppLinks {
   static String get employeeCreate => '$base/app/employees/create.php';
   static String get employeeUpdate => '$base/app/employees/update.php';
   static String get employeeDelete => '$base/app/employees/delete.php';
+  // Terminated (ended-service) employees + re-hire.
+  static String get employeesTerminated =>
+      '$base/app/employees/list_terminated.php';
+  static String get employeeReactivate =>
+      '$base/app/employees/reactivate.php';
   static String get employeeSuspend => '$base/app/employees/suspend.php';
   static String get employeeEndSuspension =>
       '$base/app/employees/end_suspension.php';
@@ -137,6 +142,10 @@ class AppLinks {
       '$base/app/payroll/approve_bulk.php';
   static String get payrollMarkPaid =>
       '$base/app/payroll/mark_paid.php';
+  static String get payrollDisburse =>
+      '$base/app/payroll/disburse.php';
+  static String get payrollDisburseAll =>
+      '$base/app/payroll/disburse_all.php';
   static String get payrollGenerate => '$base/app/payroll/generate.php';
   static String get payrollOverrideLine =>
       '$base/app/payroll/override_line.php';
@@ -162,21 +171,6 @@ class AppLinks {
       '$base/app/payroll/export_bank_file.php';
   static String get payrollBankPreview =>
       '$base/app/payroll/bank_file_preview.php';
-
-  // ── Export Templates (custom CSV) ────────────────────
-  static String get exportTemplateFields =>
-      '$base/app/payroll/export_templates/fields.php';
-  static String get exportTemplatesList =>
-      '$base/app/payroll/export_templates/list.php';
-  static String get exportTemplateCreate =>
-      '$base/app/payroll/export_templates/create.php';
-  static String get exportTemplateUpdate =>
-      '$base/app/payroll/export_templates/update.php';
-  static String get exportTemplateDelete =>
-      '$base/app/payroll/export_templates/delete.php';
-
-  static String get companyUploadBranding =>
-      '$base/app/settings/upload_branding.php';
 
   // ── Leaves ─────────────────────────────────────────────
   static String get leaves => '$base/app/leaves/list.php';
@@ -271,11 +265,11 @@ class AppLinks {
 
   // ── Performance Reviews ────────────────────────────────
   static String employeeReviews(int employeeId) =>
-      '$base/app/performance/list.php?employee_id=$employeeId'; // TODO: backend endpoint missing
+      '$base/app/performance/review_list.php?employee_id=$employeeId';
   static String get performanceReviews =>
-      '$base/app/performance/create.php'; // TODO: backend endpoint missing
-  static String performanceReviewDelete(int id) =>
-      '$base/app/performance/delete.php?id=$id'; // TODO: backend endpoint missing
+      '$base/app/performance/review_create.php';
+  static String get performanceReviewDelete =>
+      '$base/app/performance/review_delete.php';
 
   // ── Roles / Permissions ────────────────────────────────
   static String get roles => '$base/app/roles/list_permissions.php';
@@ -299,11 +293,6 @@ class AppLinks {
       '$base/app/notifications/read.php?id=$id';
   static String get notificationPrefs =>
       '$base/app/auth/notification_prefs.php';
-
-  // ── Forgot Password (OTP via email) ───────────────────
-  static String get forgotPasswordSend => '$base/app/auth/forgot_password.php';
-  static String get forgotPasswordVerify => '$base/app/auth/verify_reset_code.php';
-  static String get forgotPasswordReset => '$base/app/auth/reset_password.php';
 
   // ── Shifts ──────────────────────────────────────────────
   static String get shifts => '$base/app/shifts/list.php';
@@ -348,22 +337,6 @@ class AppLinks {
   static String get biometricDelete => '$base/app/biometric/delete.php';
   static String biometricStatus(int employeeId) =>
       '$base/app/biometric/status.php?employee_id=$employeeId';
-
-  // ── Stations ───────────────────────────────────────────
-  static String get stationCreate => '$base/app/stations/create.php';
-  static String get stationList => '$base/app/stations/list.php';
-  static String stationDetail(int id) =>
-      '$base/app/stations/get.php?id=$id';
-  static String get stationUpdate => '$base/app/stations/update.php';
-  static String get stationDelete => '$base/app/stations/delete.php';
-  static String get stationRegenerateQR =>
-      '$base/app/stations/regenerate_qr.php';
-  static String get stationUnlock => '$base/app/stations/unlock.php';
-  static String get stationLogs => '$base/app/stations/logs.php';
-  static String get stationBranchSettings =>
-      '$base/app/stations/update_branch_settings.php';
-  static String get stationGenerateKioskPin =>
-      '$base/app/stations/generate_kiosk_pin.php';
 
   // ── Categories ─────────────────────────────────────────
   static String get categories => '$base/app/categories/list.php';

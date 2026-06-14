@@ -46,6 +46,24 @@ class PayrollData {
     return await _crud.postData(AppLinks.payrollMarkPaid, body);
   }
 
+  /// Drive one employee's slip for `month` (YYYY-MM) all the way to paid,
+  /// creating + approving it as needed. `paidAt` is "YYYY-MM-DD"; null defaults
+  /// to today server-side.
+  Future<Map<String, dynamic>> disburseEmployee(int employeeId, String month,
+      {String? paidAt}) async {
+    final body = <String, dynamic>{'employee_id': employeeId, 'month': month};
+    if (paidAt != null) body['paid_at'] = paidAt;
+    return await _crud.postData(AppLinks.payrollDisburse, body);
+  }
+
+  /// Disburse every active employee's salary for `month` (YYYY-MM), optionally
+  /// scoped to one branch. Slips already paid are left untouched.
+  Future<Map<String, dynamic>> disburseAll(String month, {int? branchId}) async {
+    final body = <String, dynamic>{'month': month};
+    if (branchId != null) body['branch_id'] = branchId;
+    return await _crud.postData(AppLinks.payrollDisburseAll, body);
+  }
+
   /// Generate (or refresh) draft slips for every active employee for `month`
   /// (YYYY-MM). Branch-scoped when `branchId` is provided.
   Future<Map<String, dynamic>> generatePayroll(String month, {int? branchId}) async {
@@ -128,11 +146,11 @@ class PayrollData {
       'month': month,
       'line_kind': kind,
       'line_type': type,
-      if (date != null) 'line_date': date,
+      'line_date': ?date,
       'line_desc': description,
       'action': action,
-      if (amount != null) 'amount': amount,
-      if (reason != null) 'reason': reason,
+      'amount': ?amount,
+      'reason': ?reason,
     });
   }
 
@@ -158,8 +176,8 @@ class PayrollData {
       'type': type,
       'amount': amount,
       'start_month': startMonth,
-      if (endMonth != null) 'end_month': endMonth,
-      if (label != null) 'label': label,
+      'end_month': ?endMonth,
+      'label': ?label,
     });
   }
 
@@ -176,8 +194,8 @@ class PayrollData {
       'type': type,
       'amount': amount,
       'start_month': startMonth,
-      if (endMonth != null) 'end_month': endMonth,
-      if (label != null) 'label': label,
+      'end_month': ?endMonth,
+      'label': ?label,
     });
   }
 
@@ -346,56 +364,5 @@ class PayrollData {
     } catch (e) {
       return null;
     }
-  }
-
-  // ── Export Templates ────────────────────────────────
-  Future<Map<String, dynamic>> getExportFields() async {
-    return await _crud.getData(AppLinks.exportTemplateFields);
-  }
-
-  Future<Map<String, dynamic>> listExportTemplates() async {
-    return await _crud.getData(AppLinks.exportTemplatesList);
-  }
-
-  Future<Map<String, dynamic>> createExportTemplate({
-    required String name,
-    required String delimiter,
-    required int includeBom,
-    required int includeHeaderRow,
-    required int decimalPlaces,
-    required List<Map<String, String>> columns,
-  }) async {
-    return await _crud.postData(AppLinks.exportTemplateCreate, {
-      'name': name,
-      'delimiter': delimiter,
-      'include_bom': includeBom,
-      'include_header_row': includeHeaderRow,
-      'decimal_places': decimalPlaces,
-      'columns': columns,
-    });
-  }
-
-  Future<Map<String, dynamic>> updateExportTemplate({
-    required int id,
-    String? name,
-    String? delimiter,
-    int? includeBom,
-    int? includeHeaderRow,
-    int? decimalPlaces,
-    List<Map<String, String>>? columns,
-  }) async {
-    final body = <String, dynamic>{'id': id};
-    if (name != null) body['name'] = name;
-    if (delimiter != null) body['delimiter'] = delimiter;
-    if (includeBom != null) body['include_bom'] = includeBom;
-    if (includeHeaderRow != null) body['include_header_row'] = includeHeaderRow;
-    if (decimalPlaces != null) body['decimal_places'] = decimalPlaces;
-    if (columns != null) body['columns'] = columns;
-    return await _crud.postData(AppLinks.exportTemplateUpdate, body);
-  }
-
-  Future<Map<String, dynamic>> deleteExportTemplate(int id) async {
-    return await _crud
-        .postData(AppLinks.exportTemplateDelete, {'id': id});
   }
 }

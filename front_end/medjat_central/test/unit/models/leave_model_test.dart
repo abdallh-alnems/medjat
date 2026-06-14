@@ -22,7 +22,7 @@ void main() {
       expect(leave.employeeId, 5);
       expect(leave.employeeName, 'أحمد');
       expect(leave.type, 'annual');
-      expect(leave.startDate, DateTime(2024, 6, 1));
+      expect(leave.startDate, DateTime(2024, 6));
       expect(leave.endDate, DateTime(2024, 6, 5));
       expect(leave.reason, 'إجازة سنوية');
       expect(leave.rejectionReason, isNull);

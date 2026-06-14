@@ -154,7 +154,7 @@ void main() {
       expect(result['employee_code'], isNull);
       expect(result['job_title'], isNull);
       expect(result['branch_name'], isNull);
-      expect(result['permissions'], []);
+      expect(result['permissions'], <String>[]);
     });
 
     test('fromJson handles permissions with mixed types', () {
@@ -166,7 +166,7 @@ void main() {
     });
 
     test('fromJson with empty permissions list', () {
-      final user = UserModel.fromJson({'permissions': []});
+      final user = UserModel.fromJson({'permissions': <dynamic>[]});
 
       expect(user.permissions, isEmpty);
     });

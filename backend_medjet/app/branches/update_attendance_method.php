@@ -17,7 +17,7 @@ if (!$branch) {
     Response::notFound('Branch');
 }
 
-$allowedMethods = ['qr_gps', 'gps_only', 'manual', 'station'];
+$allowedMethods = ['qr_gps', 'gps_only', 'manual'];
 $attendanceMethods = $input['attendance_methods'] ?? null;
 
 if ($attendanceMethods !== null) {

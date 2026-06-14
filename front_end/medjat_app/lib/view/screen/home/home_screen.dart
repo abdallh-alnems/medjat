@@ -5,6 +5,7 @@ import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
 import '../../../logic/controller/home/home_controller.dart';
+import '../../widget/ad/native_ad_widget.dart';
 import '../../widget/date_formatter.dart';
 import 'widgets/attendance_button.dart';
 import 'widgets/status_card.dart';
@@ -37,6 +38,8 @@ class HomeScreen extends StatelessWidget {
                     colors: colors,
                     todayStatus: controller.todayStatus,
                     status: controller.attendanceStatus,
+                    scheduledTimeText: controller.scheduledTimeText,
+                    isRestDay: controller.isRestDay,
                   ),
                   const SizedBox(height: AppSpacing.s7),
                   AttendanceButton(
@@ -53,6 +56,8 @@ class HomeScreen extends StatelessWidget {
                     const SizedBox(height: AppSpacing.s3),
                     _buildOfflineBanner(colors),
                   ],
+                  const SizedBox(height: AppSpacing.s7),
+                  const NativeAdWidget(),
                   const SizedBox(height: AppSpacing.s9),
                 ],
               ),
@@ -160,6 +165,6 @@ class HomeScreen extends StatelessWidget {
     if (meters < 1000) {
       return 'm_from_branch'.trParams({'distance': '${meters.round()}'});
     }
-    return 'km_from_branch'.trParams({'distance': '${(meters / 1000).toStringAsFixed(1)}'});
+    return 'km_from_branch'.trParams({'distance': (meters / 1000).toStringAsFixed(1)});
   }
 }

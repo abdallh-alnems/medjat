@@ -17,7 +17,6 @@ class TenantDetailApi extends AdminBaseApi {
 
             $employeeCount = TenantModel::getEmployeeCount($id);
             $branchCount = TenantModel::getBranchCount($id);
-            $subscription = SubscriptionModel::findByTenant($id);
 
             $this->success([
                 'tenant' => $tenant,
@@ -25,7 +24,6 @@ class TenantDetailApi extends AdminBaseApi {
                     'employees' => $employeeCount,
                     'branches' => $branchCount,
                 ],
-                'subscription' => $subscription,
             ]);
         }, 'admin.tenants.detail');
     }

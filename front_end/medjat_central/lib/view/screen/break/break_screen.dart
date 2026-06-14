@@ -198,7 +198,7 @@ class BreakScreen extends StatelessWidget {
                               AppSpacing.s7,
                             ),
                             itemCount: ctrl.breaks.length,
-                            separatorBuilder: (_, __) =>
+                            separatorBuilder: (_, _) =>
                                 const SizedBox(height: AppSpacing.s2),
                             itemBuilder: (_, i) => _BreakTile(
                               breakItem: ctrl.breaks[i],

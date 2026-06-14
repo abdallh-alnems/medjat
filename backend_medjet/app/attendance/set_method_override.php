@@ -25,7 +25,7 @@ if (!in_array($scopeType, ['category', 'employee'], true)) {
 }
 Validator::required($scopeId, 'scope_id');
 
-$allowedMethods = ['qr_gps', 'gps_only', 'manual', 'station'];
+$allowedMethods = ['qr_gps', 'gps_only', 'manual'];
 $methods = $input['attendance_methods'] ?? null;
 
 if ($methods !== null) {

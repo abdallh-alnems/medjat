@@ -31,7 +31,7 @@ void main() {
       when(() => mockCrud.getData(any(), queryParameters: any(named: 'queryParameters')))
           .thenAnswer((_) async => {
                 'status': StatusRequest.success,
-                'data': {'notifications': [], 'unread_count': 0},
+                'data': {'notifications': <Map<String, dynamic>>[], 'unread_count': 0},
               });
 
       final result = await notificationData.list();
@@ -47,7 +47,7 @@ void main() {
       when(() => mockCrud.getData(any(), queryParameters: any(named: 'queryParameters')))
           .thenAnswer((_) async => {
                 'status': StatusRequest.success,
-                'data': {'notifications': [], 'unread_count': 0},
+                'data': {'notifications': <Map<String, dynamic>>[], 'unread_count': 0},
               });
 
       final result = await notificationData.list(unreadOnly: true);
@@ -63,7 +63,7 @@ void main() {
       when(() => mockCrud.getData(any(), queryParameters: any(named: 'queryParameters')))
           .thenAnswer((_) async => {
                 'status': StatusRequest.success,
-                'data': {'notifications': [], 'unread_count': 0},
+                'data': {'notifications': <Map<String, dynamic>>[], 'unread_count': 0},
               });
 
       await notificationData.list(limit: 10, offset: 20);

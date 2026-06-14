@@ -61,7 +61,7 @@ $result['currency'] = $tenantRow['currency'] ?? 'EGP';
 // preceded everyone's hire). Scoped to the active branch filter so the
 // picker matches what the user actually sees.
 $minSql = "SELECT MIN(hire_date) AS d FROM employees
-           WHERE tenant_id = ? AND status = 'active' AND deleted_at IS NULL
+           WHERE tenant_id = ? AND status = 'active'
              AND hire_date IS NOT NULL";
 $minParams = [$tenantId];
 if ($branchId !== null) {

@@ -125,7 +125,7 @@ class _SupportThreadScreenState extends State<SupportThreadScreen>
                   controller: _scrollController,
                   padding: const EdgeInsets.all(AppSpacing.s4),
                   itemCount: controller.messages.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s2),
+                  separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.s2),
                   itemBuilder: (context, index) {
                     final msg = controller.messages[index];
                     return _MessageBubble(message: msg);

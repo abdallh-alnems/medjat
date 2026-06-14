@@ -186,7 +186,7 @@ void main() {
 
     test('toJson includes check times as ISO strings', () {
       final checkIn = DateTime(2026, 5, 21, 8, 30);
-      final checkOut = DateTime(2026, 5, 21, 17, 0);
+      final checkOut = DateTime(2026, 5, 21, 17);
       final model = TodayStatusModel(
         status: AttendanceStatus.checkedOut,
         checkInAt: checkIn,

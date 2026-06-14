@@ -142,7 +142,7 @@ class SignUpScreen extends StatelessWidget {
                         ),
                       ),
                       TextButton(
-                        onPressed: () => Get.back(),
+                        onPressed: () => Get.back<void>(),
                         child: Text(
                           'login'.tr,
                           style: TextStyle(

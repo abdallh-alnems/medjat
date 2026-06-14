@@ -89,7 +89,7 @@ class ForgotPasswordScreen extends StatelessWidget {
                   const SizedBox(height: AppSpacing.s4),
                   Center(
                     child: TextButton(
-                      onPressed: () => Get.back(),
+                      onPressed: () => Get.back<void>(),
                       child: Text(
                         'back_to_login'.tr,
                         style: TextStyle(

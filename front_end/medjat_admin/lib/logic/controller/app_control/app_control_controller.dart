@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import '../../../core/class/status_request.dart';
 import '../../../data/data_source/remote/app_control_data/app_control_data.dart';
@@ -75,7 +76,7 @@ class AppControlController extends GetxController {
       editingApp.value = null;
       versionInput.value = '';
       Get.snackbar('تم', 'تم تحديث الإصدار الأدنى', snackPosition: SnackPosition.BOTTOM);
-      loadApps();
+      unawaited(loadApps());
     } else {
       final message = response['message'] as String? ?? 'حدث خطأ';
       Get.snackbar('خطأ', message, snackPosition: SnackPosition.BOTTOM);
@@ -91,7 +92,7 @@ class AppControlController extends GetxController {
     if (response['status'] == StatusRequest.success) {
       final label = enabled ? 'تفعيل' : 'إيقاف';
       Get.snackbar('تم', 'تم $label وضع الصيانة', snackPosition: SnackPosition.BOTTOM);
-      loadApps();
+      unawaited(loadApps());
     } else {
       final message = response['message'] as String? ?? 'حدث خطأ';
       Get.snackbar('خطأ', message, snackPosition: SnackPosition.BOTTOM);

@@ -94,7 +94,7 @@ class _EmployeeList extends StatelessWidget {
           AppSpacing.s7,
         ),
         itemCount: itemCount,
-        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s3),
+        separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.s3),
         itemBuilder: (_, i) {
           if (i >= ctrl.employees.length) {
             return const Padding(

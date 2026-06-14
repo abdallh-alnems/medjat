@@ -175,7 +175,7 @@ class _ForceUpdateScreen extends StatelessWidget {
                     icon: const Icon(Icons.shop),
                     label: Text(
                       UpdateStrings.updateNow,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: 'IBM Plex Sans Arabic',
                         fontSize: 16,
                         fontWeight: FontWeight.w700,

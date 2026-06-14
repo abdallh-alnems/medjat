@@ -31,7 +31,7 @@ class LeaveApplyForm extends StatelessWidget {
             Text('apply_leave'.tr, style: AppTextStyles.h3(context)),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: selectedType,
+              initialValue: selectedType,
               decoration: InputDecoration(
                 labelText: 'leave_type'.tr,
                 border: const OutlineInputBorder(),

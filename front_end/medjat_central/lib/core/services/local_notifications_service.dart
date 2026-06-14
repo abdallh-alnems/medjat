@@ -17,7 +17,6 @@ class LocalNotificationsService {
     'إشعارات مهمة',
     description: 'إشعارات التطبيق',
     importance: Importance.max,
-    playSound: true,
   );
 
   /// Called when the user taps a notification, with its data payload.
@@ -30,9 +29,7 @@ class LocalNotificationsService {
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      
     );
     const initSettings =
         InitializationSettings(android: androidInit, iOS: iosInit);

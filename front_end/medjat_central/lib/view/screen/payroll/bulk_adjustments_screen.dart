@@ -45,7 +45,7 @@ class BulkAdjustmentsScreen extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(
                         AppSpacing.s4, AppSpacing.s4, AppSpacing.s4, AppSpacing.s7),
                     itemCount: ctrl.batches.length,
-                    separatorBuilder: (_, __) =>
+                    separatorBuilder: (_, _) =>
                         const SizedBox(height: AppSpacing.s2),
                     itemBuilder: (_, i) => _BatchTile(batch: ctrl.batches[i]),
                   ),

@@ -73,6 +73,30 @@ final class EmployeeShiftScheduleModel {
         return $count;
     }
 
+    /**
+     * Repoint upcoming roster cells from one shift to another (used when a shift is
+     * deleted but its members are being moved to a replacement shift). Past cells are
+     * left to CASCADE away since their attendance was already computed.
+     */
+    public static function transferShift(int $fromShiftId, int $toShiftId, int $tenantId): int {
+        return Database::execute(
+            "UPDATE employee_shift_schedule
+             SET shift_id = ?
+             WHERE shift_id = ? AND tenant_id = ? AND work_date >= CURDATE()",
+            [$toShiftId, $fromShiftId, $tenantId]
+        );
+    }
+
+    /** How many upcoming roster cells still reference this shift. */
+    public static function countUpcomingForShift(int $shiftId, int $tenantId): int {
+        $row = Database::fetchOne(
+            "SELECT COUNT(*) AS c FROM employee_shift_schedule
+             WHERE shift_id = ? AND tenant_id = ? AND work_date >= CURDATE()",
+            [$shiftId, $tenantId]
+        );
+        return (int) ($row['c'] ?? 0);
+    }
+
     /** Remove a single cell (back to "unscheduled" — attendance falls back to static shift). */
     public static function clearCell(int $tenantId, int $employeeId, string $workDate): void {
         Database::execute(

@@ -19,6 +19,9 @@ if (!$employee) {
 
 EmployeeModel::delete($employeeId, $tenantId);
 
+// Sign the employee out of the employee app by revoking their device token.
+EmployeeAuthTokenModel::revokeForEmployee($employeeId, 'service_terminated');
+
 AuditLogModel::log($tenantId, $auth['admin_id'], 'employee.delete', 'employee', $employeeId);
 
 Response::success(['message' => 'Employee deactivated']);

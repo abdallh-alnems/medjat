@@ -93,9 +93,9 @@ class PayslipPdfExporter {
             pw.Container(
               padding: const pw.EdgeInsets.symmetric(
                   horizontal: 16, vertical: 12),
-              decoration: pw.BoxDecoration(
+              decoration: const pw.BoxDecoration(
                 color: PdfColor.fromInt(0xFF0D7377),
-                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+                borderRadius: pw.BorderRadius.all(pw.Radius.circular(8)),
               ),
               child: pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -136,8 +136,8 @@ class PayslipPdfExporter {
             // Figures table
             _figureRow('payslip_base_salary'.tr,
                 _money(payroll.baseSalary), PdfColors.black),
-            if ((payroll.daysInCycle > 0 &&
-                payroll.daysElapsed < payroll.daysInCycle))
+            if (payroll.daysInCycle > 0 &&
+                payroll.daysElapsed < payroll.daysInCycle)
               _figureRow(
                 'payslip_prorated_base'.tr,
                 _money(_prorated(payroll)),

@@ -154,8 +154,8 @@ class TeamController extends GetxController {
       'email': email,
       'role': role,
       if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
-      if (branchId != null) 'branch_id': branchId,
-      if (permissions != null) 'permissions': permissions,
+      'branch_id': ?branchId,
+      'permissions': ?permissions,
     });
     if (response['status'] == StatusRequest.success) {
       String? code;

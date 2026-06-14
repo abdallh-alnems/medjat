@@ -31,6 +31,113 @@ Future<void> _openQuickAdjust(
   );
 }
 
+/// Amber callout shown in the disburse dialogs when the selected cycle is
+/// still open — paying now disburses the full month in advance and freezes
+/// the figures, so anything happening in the remaining days won't be counted.
+Widget _midCycleWarningBox(AppColorScheme colors) {
+  return Container(
+    margin: const EdgeInsets.only(top: AppSpacing.s3),
+    padding: const EdgeInsets.all(AppSpacing.s3),
+    decoration: BoxDecoration(
+      color: colors.warning.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      border: Border.all(color: colors.warning.withValues(alpha: 0.4)),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.warning_amber_rounded, size: 18, color: colors.warning),
+        const SizedBox(width: AppSpacing.s2),
+        Expanded(
+          child: Text(
+            'disburse_mid_cycle_warning'.tr,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 12,
+              height: 1.4,
+              color: colors.textSecondary,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+/// Confirm + disburse one employee's salary (walks live/draft/approved → paid).
+Future<void> _openDisburse(
+    BuildContext context, PayrollController ctrl, PayrollModel p) async {
+  final colors = AppColors.of(context);
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: Text('disburse_salary'.tr,
+          style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic')),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'disburse_confirm_one'
+                .trParams({'name': p.employeeName ?? 'employee'.tr}),
+            style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic'),
+          ),
+          if (ctrl.isSelectedCycleOpen) _midCycleWarningBox(colors),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text('cancel'.tr),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: colors.success),
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text('disburse_confirm_cta'.tr),
+        ),
+      ],
+    ),
+  );
+  if (ok == true) await ctrl.disburseOne(p.employeeId);
+}
+
+/// Confirm + disburse every in-scope employee's salary for the current month.
+Future<void> _openDisburseAll(
+    BuildContext context, PayrollController ctrl) async {
+  final colors = AppColors.of(context);
+  final count = ctrl.scopedCount;
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: Text('disburse_month'.tr,
+          style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic')),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'disburse_confirm_all'.trParams({'count': '$count'}),
+            style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic'),
+          ),
+          if (ctrl.isSelectedCycleOpen) _midCycleWarningBox(colors),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: Text('cancel'.tr),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: colors.success),
+          onPressed: () => Navigator.of(context).pop(true),
+          child: Text('disburse_confirm_cta'.tr),
+        ),
+      ],
+    ),
+  );
+  if (ok == true) await ctrl.disburseMonth();
+}
+
 Future<void> _exportPayslip(BuildContext context, PayrollModel p) async {
   final box = context.findRenderObject() as RenderBox?;
   final origin = (box != null && box.hasSize)
@@ -64,7 +171,17 @@ class PayrollScreen extends StatelessWidget {
     final colors = AppColors.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text('payroll'.tr)),
+      appBar: AppBar(
+        title: Text('payroll'.tr),
+        actions: [
+          if (ctrl.canManagePayroll)
+            IconButton(
+              tooltip: 'disburse_month'.tr,
+              icon: const Icon(Icons.account_balance_wallet_outlined),
+              onPressed: () => _openDisburseAll(context, ctrl),
+            ),
+        ],
+      ),
       body: Column(
         children: [
           GetBuilder<PayrollController>(
@@ -166,6 +283,12 @@ class PayrollScreen extends StatelessWidget {
                           onAddAdjustment: () =>
                               _openQuickAdjust(context, ctrl, p),
                           onExportPdf: () => _exportPayslip(context, p),
+                          // Only offer disbursement to payroll managers, and
+                          // only for slips that aren't already paid.
+                          onDisburse:
+                              (ctrl.canManagePayroll && p.status != 'paid')
+                                  ? () => _openDisburse(context, ctrl, p)
+                                  : null,
                         );
                       },
                     ),
@@ -292,11 +415,14 @@ class _PayrollTile extends StatefulWidget {
   final PayrollModel payroll;
   final VoidCallback onAddAdjustment;
   final VoidCallback onExportPdf;
+  /// Null when disbursement isn't offered (no permission or already paid).
+  final VoidCallback? onDisburse;
 
   const _PayrollTile({
     required this.payroll,
     required this.onAddAdjustment,
     required this.onExportPdf,
+    this.onDisburse,
   });
 
   @override
@@ -310,6 +436,7 @@ class _PayrollTileState extends State<_PayrollTile> {
   PayrollModel get payroll => widget.payroll;
   VoidCallback get onAddAdjustment => widget.onAddAdjustment;
   VoidCallback get onExportPdf => widget.onExportPdf;
+  VoidCallback? get onDisburse => widget.onDisburse;
 
   @override
   Widget build(BuildContext context) {
@@ -379,11 +506,8 @@ class _PayrollTileState extends State<_PayrollTile> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (payroll.status == 'paid' ||
-                      payroll.status == 'approved') ...[
-                    const SizedBox(width: AppSpacing.s2),
-                    _StatusBadge(status: payroll.status),
-                  ],
+                  const SizedBox(width: AppSpacing.s2),
+                  _StatusBadge(status: payroll.status),
                   if (anomaly != null) ...[
                     const SizedBox(width: AppSpacing.s2),
                     _AnomalyChip(kind: anomaly),
@@ -424,6 +548,7 @@ class _PayrollTileState extends State<_PayrollTile> {
         _TileMenu(
           onAddAdjustment: onAddAdjustment,
           onExportPdf: onExportPdf,
+          onDisburse: onDisburse,
         ),
       ],
     );
@@ -463,7 +588,7 @@ class _PayrollTileState extends State<_PayrollTile> {
             Padding(
               padding: const EdgeInsets.only(bottom: 3),
               child: Text(
-                '${currencyLabel(Get.find<PayrollController>().currency)}',
+                currencyLabel(Get.find<PayrollController>().currency),
                 style: TextStyle(
                   fontFamily: _font,
                   fontSize: 12,
@@ -1199,7 +1324,6 @@ class _PayrollFilterPanelState extends State<_PayrollFilterPanel> {
                 ),
                 items: [
                   DropdownMenuItem<T>(
-                    value: null,
                     child: Text(hint),
                   ),
                   ...items,
@@ -1707,9 +1831,12 @@ class _BranchSubtotal extends StatelessWidget {
 class _TileMenu extends StatelessWidget {
   final VoidCallback onAddAdjustment;
   final VoidCallback onExportPdf;
+  /// Null hides the "disburse salary" entry (no permission or already paid).
+  final VoidCallback? onDisburse;
   const _TileMenu({
     required this.onAddAdjustment,
     required this.onExportPdf,
+    this.onDisburse,
   });
 
   @override
@@ -1721,10 +1848,25 @@ class _TileMenu extends StatelessWidget {
       padding: EdgeInsets.zero,
       icon: Icon(Icons.more_horiz, color: colors.textSecondary, size: 18),
       onSelected: (v) {
+        if (v == 'disburse') onDisburse?.call();
         if (v == 'adjust') onAddAdjustment();
         if (v == 'pdf') onExportPdf();
       },
       itemBuilder: (_) => [
+        if (onDisburse != null)
+          PopupMenuItem(
+            value: 'disburse',
+            child: Row(
+              children: [
+                Icon(Icons.account_balance_wallet_outlined,
+                    size: 16, color: colors.success),
+                const SizedBox(width: 8),
+                Text('disburse_salary'.tr,
+                    style: const TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic', fontSize: 13)),
+              ],
+            ),
+          ),
         PopupMenuItem(
           value: 'adjust',
           child: Row(
@@ -1765,9 +1907,17 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final isPaid = status == 'paid';
-    final color = isPaid ? colors.success : colors.brand;
-    final label = isPaid ? 'status_paid'.tr : 'status_approved'.tr;
+    // Every tile carries a badge so paid vs not-paid is unambiguous at a
+    // glance: green = salary disbursed, anything else is clearly not green.
+    // 'live' (no slip generated yet) and any unknown state fall through to
+    // the muted "not paid" badge.
+    final (Color color, IconData icon, String label) = switch (status) {
+      'paid' => (colors.success, Icons.check_circle, 'status_paid'.tr),
+      'approved' =>
+        (colors.brand, Icons.verified_outlined, 'status_approved'.tr),
+      'draft' => (colors.warning, Icons.edit_note, 'status_draft'.tr),
+      _ => (colors.textTertiary, Icons.schedule, 'status_not_paid'.tr),
+    };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
@@ -1779,7 +1929,7 @@ class _StatusBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isPaid ? Icons.check_circle : Icons.verified_outlined,
+            icon,
             size: 12,
             color: color,
           ),
@@ -2136,11 +2286,11 @@ class _TileSkeleton extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.s3),
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const ShimmerBox(height: 10, width: 40),
-              const ShimmerBox(height: 24, width: 90),
+              ShimmerBox(height: 10, width: 40),
+              ShimmerBox(height: 24, width: 90),
             ],
           ),
         ],

@@ -23,11 +23,15 @@ final class AttendanceModel {
         $time = $checkInTime ?? date('H:i:s');
 
         $existing = Database::fetchOne(
-            "SELECT id FROM attendance WHERE employee_id = ? AND date = ? AND tenant_id = ? LIMIT 1",
+            "SELECT id, check_in_time FROM attendance WHERE employee_id = ? AND date = ? AND tenant_id = ? LIMIT 1",
             [$employeeId, $today, $tenantId]
         );
 
-        if ($existing) {
+        // A genuine duplicate has an actual check-in time. A row with a NULL
+        // check_in_time is just a placeholder (e.g. an 'absent' row written by
+        // markAbsentSmart once the shift ended) — that must convert into a real
+        // check-in, not block it, otherwise the employee can never check in.
+        if ($existing && !empty($existing['check_in_time'])) {
             Response::fail('Already checked in today', 400);
         }
 
@@ -35,6 +39,17 @@ final class AttendanceModel {
         $employee = self::withScheduledShift($employee, $tenantId, $today);
         $expectedStart = $employee['shift_start'] ?? $employee['work_start_time'] ?? '09:00:00';
         $lateMinutes = max(0, (strtotime($time) - strtotime($expectedStart)) / 60);
+
+        if ($existing) {
+            Database::execute(
+                "UPDATE attendance
+                 SET branch_id = ?, check_in_time = ?, check_in_method = ?, late_minutes = ?,
+                     status = 'present', check_in_latitude = ?, check_in_longitude = ?, is_vpn = ?
+                 WHERE id = ?",
+                [$branchId, $time, $method, (int) $lateMinutes, $lat, $lng, $isVpn ? 1 : 0, $existing['id']]
+            );
+            return (int) $existing['id'];
+        }
 
         Database::execute(
             "INSERT INTO attendance (tenant_id, branch_id, employee_id, date, check_in_time, check_in_method, late_minutes, status, check_in_latitude, check_in_longitude, is_vpn)
@@ -63,7 +78,7 @@ final class AttendanceModel {
             $checkOut = strtotime($time);
             $workedMinutes = max(0, ($checkOut - $checkIn) / 60);
 
-            $employee = EmployeeModel::findById($record['employee_id'], $tenantId);
+            $employee = EmployeeModel::findById($employeeId, $tenantId);
             $employee = self::withScheduledShift($employee, $tenantId, $today);
             $workEndTime = $employee['shift_end'] ?? $employee['work_end_time'] ?? '17:00:00';
             $overtimeMinutes = max(0, ($checkOut - strtotime($workEndTime)) / 60);
@@ -644,6 +659,223 @@ final class AttendanceModel {
         ];
     }
 
+    /**
+     * Builds a complete, gap-free attendance calendar for one employee over a
+     * date range — the data behind the employee-profile "attendance" tab.
+     *
+     * Materialized rows are returned as-is. For every working day in the range
+     * that has no row, a *virtual* record is synthesized with the correct status
+     * so the tab never shows blank days:
+     *   - approved leave            → 'leave'   (with leave_type)
+     *   - holiday (all/this branch) → 'holiday'
+     *   - weekly-off / recurring leave / rotating rest day → 'weekly_off'
+     *   - past working no-show      → 'absent'
+     *   - today, shift already over → 'absent'
+     *   - today, shift not over yet → 'not_arrived'  ("لم يحضر")
+     *
+     * Mirrors the exclusion logic of {@see markAbsentSmart} but is scoped to a
+     * single employee and a whole range (a handful of queries, no per-day SQL).
+     * Synthetic rows carry id = null and 'synthetic' => true. Future days (after
+     * today) are not synthesized; existing rows for any date are always kept.
+     */
+    public static function getEmployeeAttendanceCalendar(
+        int $employeeId,
+        int $tenantId,
+        string $from,
+        string $to,
+        ?string $tz
+    ): array {
+        try {
+            $now = new DateTime('now', $tz ? new DateTimeZone($tz) : null);
+        } catch (Exception $e) {
+            $now = new DateTime('now');
+        }
+        $today = $now->format('Y-m-d');
+        $nowTime = $now->format('H:i:s');
+
+        // 1) Materialized rows (+ single-day approved leave type), keyed by date.
+        $rows = Database::fetchAll(
+            "SELECT
+                a.id,
+                a.employee_id,
+                DATE_FORMAT(a.date, '%Y-%m-%d') AS date,
+                CASE WHEN a.check_in_time IS NOT NULL
+                     THEN CONCAT(DATE_FORMAT(a.date, '%Y-%m-%d'), 'T', a.check_in_time)
+                END AS check_in,
+                CASE WHEN a.check_out_time IS NOT NULL
+                     THEN CONCAT(DATE_FORMAT(a.date, '%Y-%m-%d'), 'T', a.check_out_time)
+                END AS check_out,
+                a.status,
+                a.late_minutes,
+                a.overtime_minutes,
+                a.worked_minutes,
+                a.notes AS note,
+                a.deduction_mode,
+                a.deduction_value,
+                l.type AS leave_type
+             FROM attendance a
+             LEFT JOIN leaves l
+                    ON l.employee_id = a.employee_id
+                   AND l.tenant_id = a.tenant_id
+                   AND l.date = a.date
+                   AND l.start_date = l.end_date
+                   AND l.status = 'approved'
+             WHERE a.employee_id = ?
+               AND a.tenant_id = ?
+               AND a.date BETWEEN ? AND ?",
+            [$employeeId, $tenantId, $from, $to]
+        );
+        $byDate = [];
+        $out = [];
+        foreach ($rows as $r) {
+            $byDate[$r['date']] = true;
+            $r['synthetic'] = false;
+            $out[] = $r;
+        }
+
+        // 2) Employee profile: branch, weekly-off days, default shift hours.
+        $emp = Database::fetchOne(
+            "SELECT e.branch_id, e.weekly_off_days, e.shift_id,
+                    e.work_start_time, e.work_end_time,
+                    s.start_time AS shift_start, s.end_time AS shift_end
+             FROM employees e
+             LEFT JOIN shifts s ON s.id = e.shift_id
+             WHERE e.id = ? AND e.tenant_id = ?",
+            [$employeeId, $tenantId]
+        );
+        if (!$emp) {
+            usort($out, fn($a, $b) => strcmp($b['date'], $a['date']));
+            return $out;
+        }
+        $branchId = $emp['branch_id'] !== null ? (int) $emp['branch_id'] : null;
+        $weeklyOff = array_filter(array_map(
+            'trim',
+            explode(',', (string) ($emp['weekly_off_days'] ?? ''))
+        ));
+
+        // 3) Approved leaves (per-day rows, mirroring markAbsentSmart).
+        $leaveByDate = [];
+        foreach (Database::fetchAll(
+            "SELECT DATE_FORMAT(date, '%Y-%m-%d') AS d, type
+             FROM leaves
+             WHERE tenant_id = ? AND employee_id = ? AND status = 'approved'
+               AND date BETWEEN ? AND ?",
+            [$tenantId, $employeeId, $from, $to]
+        ) as $lr) {
+            $leaveByDate[$lr['d']] = $lr['type'];
+        }
+
+        // 4) Holidays (all-branch or this employee's branch).
+        $holidayDates = [];
+        foreach (Database::fetchAll(
+            "SELECT DATE_FORMAT(date, '%Y-%m-%d') AS d, branch_id
+             FROM holidays
+             WHERE tenant_id = ? AND date BETWEEN ? AND ?",
+            [$tenantId, $from, $to]
+        ) as $hr) {
+            if ($hr['branch_id'] === null
+                || ($branchId !== null && (int) $hr['branch_id'] === $branchId)) {
+                $holidayDates[$hr['d']] = true;
+            }
+        }
+
+        // 5) Recurring weekly leaves applicable to the employee's branch.
+        $recurDays = [];
+        foreach (Database::fetchAll(
+            "SELECT day_of_week, branch_id FROM recurring_leaves
+             WHERE tenant_id = ? AND is_active = 1",
+            [$tenantId]
+        ) as $rl) {
+            if ($rl['branch_id'] === null
+                || ($branchId !== null && (int) $rl['branch_id'] === $branchId)) {
+                $recurDays[strtolower((string) $rl['day_of_week'])] = true;
+            }
+        }
+
+        // 6) Rotating schedule cells in range (cell with NULL shift = rest day).
+        $schedByDate = [];
+        foreach (Database::fetchAll(
+            "SELECT DATE_FORMAT(sch.work_date, '%Y-%m-%d') AS d, sch.shift_id,
+                    s.start_time AS shift_start, s.end_time AS shift_end
+             FROM employee_shift_schedule sch
+             LEFT JOIN shifts s ON s.id = sch.shift_id
+             WHERE sch.tenant_id = ? AND sch.employee_id = ?
+               AND sch.work_date BETWEEN ? AND ?",
+            [$tenantId, $employeeId, $from, $to]
+        ) as $sr) {
+            $schedByDate[$sr['d']] = $sr;
+        }
+
+        // Walk each day up to today and synthesize the gaps.
+        $endDate = ($to <= $today) ? $to : $today;
+        $cursor = new DateTime($from);
+        $last = new DateTime($endDate);
+        while ($cursor <= $last) {
+            $d = $cursor->format('Y-m-d');
+            if (isset($byDate[$d])) {
+                $cursor->modify('+1 day');
+                continue;
+            }
+            $weekday = strtolower($cursor->format('l'));
+            $status = null;
+            $leaveType = null;
+
+            $sched = $schedByDate[$d] ?? null;
+            if (isset($leaveByDate[$d])) {
+                $status = 'leave';
+                $leaveType = $leaveByDate[$d];
+            } elseif (isset($holidayDates[$d])) {
+                $status = 'holiday';
+            } elseif (in_array($weekday, $weeklyOff, true) || isset($recurDays[$weekday])) {
+                $status = 'weekly_off';
+            } elseif ($sched !== null && $sched['shift_id'] === null) {
+                $status = 'weekly_off'; // explicit rotating rest day
+            } else {
+                // Working day with no attendance row.
+                if ($sched !== null && $sched['shift_id'] !== null) {
+                    $shiftEnd = $sched['shift_end'];
+                    $shiftStart = $sched['shift_start'];
+                } else {
+                    $shiftEnd = $emp['shift_end'] ?? $emp['work_end_time'];
+                    $shiftStart = $emp['shift_start'] ?? $emp['work_start_time'];
+                }
+
+                if ($d < $today) {
+                    $status = 'absent';
+                } elseif ($shiftEnd === null) {
+                    $status = 'not_arrived'; // can't tell when the day ends
+                } elseif ($shiftStart !== null && $shiftEnd <= $shiftStart) {
+                    $status = 'not_arrived'; // overnight shift → defer
+                } elseif ($nowTime >= $shiftEnd) {
+                    $status = 'absent';
+                } else {
+                    $status = 'not_arrived';
+                }
+            }
+
+            $out[] = [
+                'id' => null,
+                'employee_id' => $employeeId,
+                'date' => $d,
+                'check_in' => null,
+                'check_out' => null,
+                'status' => $status,
+                'late_minutes' => 0,
+                'overtime_minutes' => 0,
+                'worked_minutes' => 0,
+                'note' => null,
+                'deduction_mode' => null,
+                'deduction_value' => null,
+                'leave_type' => $leaveType,
+                'synthetic' => true,
+            ];
+            $cursor->modify('+1 day');
+        }
+
+        usort($out, fn($a, $b) => strcmp($b['date'], $a['date']));
+        return $out;
+    }
+
     /** Splits branch-scoped rows into [appliesToAllBranches, {branchId: true}]. */
     private static function scopeFlags(array $rows): array {
         $all = false;
@@ -775,8 +1007,6 @@ final class AttendanceModel {
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'offline', 'present', 1, NOW(), ?, ?, ?, ?)
                      ON DUPLICATE KEY UPDATE
                         check_out_time = COALESCE(VALUES(check_out_time), check_out_time),
-                        check_out_latitude = COALESCE(VALUES(check_in_latitude), check_out_latitude),
-                        check_out_longitude = COALESCE(VALUES(check_in_longitude), check_out_longitude),
                         check_out_method = 'offline',
                         synced_at = NOW(),
                         worked_minutes = CASE WHEN VALUES(check_out_time) IS NOT NULL THEN VALUES(worked_minutes) ELSE worked_minutes END,
@@ -838,69 +1068,6 @@ final class AttendanceModel {
         }
         $sql .= " GROUP BY e.id ORDER BY e.name ASC";
         return Database::fetchAll($sql, $params);
-    }
-
-    public static function recordStationCheckInOut(int $employeeId, int $branchId, int $tenantId, int $stationId, string $method, ?float $confidence = null): array {
-        $lastScan = Database::fetchOne(
-            "SELECT created_at FROM station_recognition_logs
-             WHERE matched_employee_id = ? AND tenant_id = ? AND result = 'success'
-               AND created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
-             LIMIT 1",
-            [$employeeId, $tenantId]
-        );
-        if ($lastScan) {
-            return ['action' => 'too_soon', 'message' => 'Double-scan protection: less than 5 minutes since last scan'];
-        }
-
-        $lastRecord = Database::fetchOne(
-            "SELECT id, check_in_time, check_out_time FROM attendance
-             WHERE employee_id = ? AND tenant_id = ?
-             ORDER BY date DESC, id DESC LIMIT 1",
-            [$employeeId, $tenantId]
-        );
-
-        $today = date('Y-m-d');
-        $time = date('H:i:s');
-
-        if (!$lastRecord || $lastRecord['check_out_time'] !== null) {
-            $employee = EmployeeModel::findById($employeeId, $tenantId);
-            $employee = self::withScheduledShift($employee, $tenantId, $today);
-            $expectedStart = $employee['shift_start'] ?? $employee['work_start_time'] ?? '09:00:00';
-            $lateMinutes = max(0, (strtotime($time) - strtotime($expectedStart)) / 60);
-
-            Database::execute(
-                "INSERT INTO attendance (tenant_id, branch_id, employee_id, date, check_in_time, check_in_method, recognition_method, recognition_confidence, station_id, late_minutes, status)
-                 VALUES (?, ?, ?, ?, ?, 'kiosk', ?, ?, ?, ?, 'present')",
-                [$tenantId, $branchId, $employeeId, $today, $time, $method, $confidence, $stationId, (int) $lateMinutes]
-            );
-            $attId = (int) Database::lastInsertId();
-            return ['action' => 'check_in', 'attendance_id' => $attId, 'timestamp' => $time];
-        }
-
-        if ($lastRecord['check_in_time'] !== null && $lastRecord['check_out_time'] === null) {
-            $checkIn = strtotime($lastRecord['check_in_time']);
-            $checkOut = strtotime($time);
-            $workedMinutes = max(0, ($checkOut - $checkIn) / 60);
-
-            $employee = EmployeeModel::findById($employeeId, $tenantId);
-            $employee = self::withScheduledShift($employee, $tenantId, $today);
-            $workEndTime = $employee['shift_end'] ?? $employee['work_end_time'] ?? '17:00:00';
-            $overtimeMinutes = max(0, ($checkOut - strtotime($workEndTime)) / 60);
-            $workStartTime = $employee['shift_start'] ?? $employee['work_start_time'] ?? '09:00:00';
-            $lateMinutes = max(0, ($checkIn - strtotime($workStartTime)) / 60);
-
-            Database::execute(
-                "UPDATE attendance SET
-                    check_out_time = ?, check_out_method = 'kiosk',
-                    recognition_method = ?, recognition_confidence = ?, station_id = ?,
-                    worked_minutes = ?, overtime_minutes = ?, late_minutes = ?
-                 WHERE id = ?",
-                [$time, $method, $confidence, $stationId, (int) $workedMinutes, (int) $overtimeMinutes, (int) $lateMinutes, $lastRecord['id']]
-            );
-            return ['action' => 'check_out', 'attendance_id' => (int) $lastRecord['id'], 'timestamp' => $time];
-        }
-
-        return ['action' => 'error', 'message' => 'Unexpected attendance state'];
     }
 
     public static function getReportSummary(

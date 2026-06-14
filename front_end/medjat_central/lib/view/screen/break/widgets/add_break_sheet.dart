@@ -587,7 +587,7 @@ class _EmployeePickerState extends State<_EmployeePicker> {
                               padding: const EdgeInsets.fromLTRB(
                                   AppSpacing.s4, 0, AppSpacing.s4, AppSpacing.s4),
                               itemCount: filtered.length,
-                              separatorBuilder: (_, __) =>
+                              separatorBuilder: (_, _) =>
                                   const SizedBox(height: AppSpacing.s1),
                               itemBuilder: (_, i) {
                                 final e = filtered[i];

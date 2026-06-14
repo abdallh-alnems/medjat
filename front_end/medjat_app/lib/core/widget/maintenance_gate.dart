@@ -2,13 +2,21 @@ import 'dart:async';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:get_storage/get_storage.dart';
 import '../constant/strings/update_strings.dart';
 import '../constant/theme/app_colors.dart';
 import '../constant/theme/app_spacing.dart';
 
+/// مفتاح التخزين الذي يحمل إشارة الصيانة الواردة عبر FCM بينما التطبيق في
+/// الخلفية أو مغلق؛ تقرأه البوابة عند أول بناء فور إعادة الفتح.
+const String kPendingMaintenanceKey = 'pending_maintenance';
+
+/// موضوع FCM الذي يشترك فيه التطبيق لاستقبال إشارات الصيانة الفورية.
+const String kMaintenanceTopic = 'maintenance_medjat_app';
+
 /// يقرأ `medjat_app_maintenance_enabled` من Remote Config ويعرض شاشة الصيانة
-/// عند تفعيلها. يستمع للتحديثات الحيّة عبر onConfigUpdated ويعيد الفحص عند
-/// عودة التطبيق للمقدمة.
+/// عند تفعيلها. يستمع للتحديثات الحيّة عبر onConfigUpdated، ويعيد الفحص عند
+/// عودة التطبيق للمقدمة، ويستجيب فورًا لإشعار FCM عبر [trigger].
 class MaintenanceGate extends StatefulWidget {
   final Widget child;
   const MaintenanceGate({super.key, required this.child});
@@ -48,6 +56,13 @@ class _MaintenanceGateState extends State<MaintenanceGate>
   }
 
   Future<void> _init() async {
+    // إشارة وصلت عبر FCM والتطبيق مغلق/في الخلفية → طبّقها فورًا ثم استهلكها.
+    final storage = GetStorage();
+    if (storage.read<bool>(kPendingMaintenanceKey) ?? false) {
+      _isMaintenance = true;
+      unawaited(storage.remove(kPendingMaintenanceKey));
+    }
+
     try {
       final rc = FirebaseRemoteConfig.instance;
       await rc.setConfigSettings(RemoteConfigSettings(

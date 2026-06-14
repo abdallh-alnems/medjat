@@ -101,14 +101,6 @@ class AccountSettingsScreen extends StatelessWidget {
             title: 'notification_settings'.tr,
             onTap: () => Get.toNamed<void>(AppRoutes.notificationPrefs),
           ),
-          const SizedBox(height: AppSpacing.s2),
-          _AccountTile(
-            icon: Icons.email_outlined,
-            title: 'email'.tr,
-            subtitle: auth.user?.email ?? '',
-            showChevron: false,
-            onTap: () {},
-          ),
           const SizedBox(height: AppSpacing.s5),
           Center(
             child: TextButton(
@@ -479,16 +471,12 @@ class _RoleChip extends StatelessWidget {
 class _AccountTile extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String? subtitle;
   final VoidCallback onTap;
-  final bool showChevron;
 
   const _AccountTile({
     required this.icon,
     required this.title,
-    this.subtitle,
     required this.onTap,
-    this.showChevron = true,
   });
 
   @override
@@ -510,35 +498,22 @@ class _AccountTile extends StatelessWidget {
             Icon(icon, size: 22, color: colors.textSecondary),
             const SizedBox(width: AppSpacing.s3),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontFamily: 'IBM Plex Sans Arabic',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle!,
-                      style: AppTextStyles.sm(context),
-                    ),
-                  ],
-                ],
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-            if (showChevron)
-              Icon(
-                Directionality.of(context) == TextDirection.rtl
-                    ? Icons.chevron_left
-                    : Icons.chevron_right,
-                size: 20,
-                color: colors.textTertiary,
-              ),
+            Icon(
+              Directionality.of(context) == TextDirection.rtl
+                  ? Icons.chevron_left
+                  : Icons.chevron_right,
+              size: 20,
+              color: colors.textTertiary,
+            ),
           ],
         ),
       ),

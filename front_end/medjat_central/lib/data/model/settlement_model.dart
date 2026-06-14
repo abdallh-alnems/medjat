@@ -141,7 +141,6 @@ class SettlementModel {
       otherAdditions: _d(s['other_additions']),
       outstandingLoans: _d(s['outstanding_loans']),
       otherDeductions: _d(s['other_deductions']),
-      status: 'new',
     );
   }
 

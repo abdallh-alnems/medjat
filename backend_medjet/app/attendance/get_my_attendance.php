@@ -28,9 +28,34 @@ if ($branchId > 0) {
     }
 }
 
+// The employee's expected attendance time for today, as configured by
+// management. A rotating schedule cell (if published) overrides the default
+// shift; a cell with no shift means an explicit rest day.
+$today = date('Y-m-d');
+$sched = EmployeeShiftScheduleModel::findEffective((int) $employee['id'], $tenantId, $today);
+if ($sched !== null) {
+    $isRestDay = empty($sched['shift_id']);
+    $shiftStart = $isRestDay ? null : ($sched['start_time'] ?? null);
+    $shiftEnd = $isRestDay ? null : ($sched['end_time'] ?? null);
+    $shiftName = null;
+} else {
+    $isRestDay = false;
+    $shiftStart = $employee['shift_start'] ?? $employee['work_start_time'] ?? null;
+    $shiftEnd = $employee['shift_end'] ?? $employee['work_end_time'] ?? null;
+    $shiftName = $employee['shift_name'] ?? null;
+}
+
+$todayShift = [
+    'start_time' => $shiftStart,
+    'end_time' => $shiftEnd,
+    'shift_name' => $shiftName,
+    'is_rest_day' => $isRestDay,
+];
+
 Response::success([
     'records' => $records,
     'month' => $month,
     'employee_id' => (int) $employee['id'],
     'attendance_config' => $attendanceConfig,
+    'today_shift' => $todayShift,
 ]);

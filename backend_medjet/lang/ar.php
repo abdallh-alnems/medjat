@@ -12,7 +12,6 @@ return [
     'branch_not_found' => 'لم يتم العثور على الفرع',
     'tenant_not_found' => 'لم يتم العثور على الشركة',
     'tenant_suspended' => 'حساب الشركة موقوف',
-    'subscription_expired' => 'الاشتراك منتهي',
     'permission_denied' => 'ليس لديك صلاحية لهذا الإجراء',
     'payroll_generated' => 'تم إنشاء كشوف الرواتب',
     'leave_applied' => 'تم تقديم طلب الإجازة',

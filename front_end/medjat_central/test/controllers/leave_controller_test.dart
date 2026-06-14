@@ -3,10 +3,16 @@ import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:medjat_central/core/class/status_request.dart';
 import 'package:medjat_central/data/data_source/remote/leave_data/leave_data.dart';
+import 'package:medjat_central/data/data_source/remote/branch_data/branch_data.dart';
+import 'package:medjat_central/data/data_source/remote/category_data/category_data.dart';
 import 'package:medjat_central/logic/controller/leave/leave_controller.dart';
 import '../helpers/test_helpers.dart';
 
 class MockLeaveData extends Mock implements LeaveData {}
+
+class MockBranchData extends Mock implements BranchData {}
+
+class MockCategoryData extends Mock implements CategoryData {}
 
 void main() {
   late MockLeaveData mockData;
@@ -17,13 +23,18 @@ void main() {
     setupGetX();
     mockData = MockLeaveData();
     Get.put<LeaveData>(mockData);
+    Get.put<BranchData>(MockBranchData());
+    Get.put<CategoryData>(MockCategoryData());
   });
 
   tearDown(() => teardownGetX());
 
   group('LeaveController — تحميل البيانات', () {
     test('نجاح الجلب يملأ القائمة', () async {
-      when(() => mockData.getLeaves(status: any(named: 'status'))).thenAnswer(
+      when(() => mockData.getLeaves(
+              status: any(named: 'status'),
+              branchId: any(named: 'branchId'),
+              categoryId: any(named: 'categoryId'))).thenAnswer(
           (_) async => <String, dynamic>{
                 'status': StatusRequest.success,
                 'data': <String, dynamic>{
@@ -52,10 +63,13 @@ void main() {
     });
 
     test('loadBalance عند النجاح', () async {
-      when(() => mockData.getLeaves(status: any(named: 'status'))).thenAnswer(
+      when(() => mockData.getLeaves(
+              status: any(named: 'status'),
+              branchId: any(named: 'branchId'),
+              categoryId: any(named: 'categoryId'))).thenAnswer(
           (_) async => <String, dynamic>{
                 'status': StatusRequest.success,
-                'data': <String, dynamic>{'items': []},
+                'data': <String, dynamic>{'items': <Map<String, dynamic>>[]},
               });
       when(() => mockData.leaveBalance(any(), year: any(named: 'year')))
           .thenAnswer((_) async => <String, dynamic>{
@@ -73,10 +87,13 @@ void main() {
     });
 
     test('loadBalance عند الفشل يبقي balanceInfo فارغ', () async {
-      when(() => mockData.getLeaves(status: any(named: 'status'))).thenAnswer(
+      when(() => mockData.getLeaves(
+              status: any(named: 'status'),
+              branchId: any(named: 'branchId'),
+              categoryId: any(named: 'categoryId'))).thenAnswer(
           (_) async => <String, dynamic>{
                 'status': StatusRequest.success,
-                'data': <String, dynamic>{'items': []},
+                'data': <String, dynamic>{'items': <Map<String, dynamic>>[]},
               });
       when(() => mockData.leaveBalance(any(), year: any(named: 'year')))
           .thenAnswer((_) async => {'status': StatusRequest.failure});
@@ -90,10 +107,13 @@ void main() {
     });
 
     test('filterByStatus يعيد التحميل', () async {
-      when(() => mockData.getLeaves(status: any(named: 'status'))).thenAnswer(
+      when(() => mockData.getLeaves(
+              status: any(named: 'status'),
+              branchId: any(named: 'branchId'),
+              categoryId: any(named: 'categoryId'))).thenAnswer(
           (_) async => <String, dynamic>{
                 'status': StatusRequest.success,
-                'data': <String, dynamic>{'items': []},
+                'data': <String, dynamic>{'items': <Map<String, dynamic>>[]},
               });
 
       controller = LeaveController();
@@ -101,7 +121,10 @@ void main() {
 
       controller.filterByStatus('approved');
 
-      verify(() => mockData.getLeaves(status: any(named: 'status'))).called(2);
+      verify(() => mockData.getLeaves(
+              status: any(named: 'status'),
+              branchId: any(named: 'branchId'),
+              categoryId: any(named: 'categoryId'))).called(2);
     });
   });
 }

@@ -23,8 +23,8 @@ if (!$branch) {
 }
 
 // Enforce the attendance method configured for this branch. Self check-in
-// from the employee app is only valid for qr_gps / gps_only; manual and
-// station are handled elsewhere (admin / station device).
+// from the employee app is only valid for qr_gps / gps_only; manual is
+// handled elsewhere (admin records it).
 $methods = AttendanceMethodResolver::resolveForEmployee($employee, $tenantId);
 $requestedMethod = $qrCode ? 'qr_gps' : 'gps_only';
 
@@ -42,9 +42,16 @@ if ($qrCode && $branch['qr_code'] !== $qrCode) {
     Response::fail('Invalid QR code for this branch', 400);
 }
 
+// Both qr_gps and gps_only require GPS, so the employee must send a real
+// location. Missing/denied location reads as 0,0 — reject it instead of
+// letting a QR code pass without any GPS verification.
+if ($latitude == 0.0 && $longitude == 0.0) {
+    Response::fail('Location is required for check-in', 400, 'LOCATION_REQUIRED');
+}
+
 $gpsResult = GpsService::validateCheckIn($latitude, $longitude, $branchId, $tenantId);
 if (!$gpsResult['valid']) {
-    Response::fail($gpsResult['message'], 400, 'GPS_OUT_OF_RANGE');
+    Response::fail($gpsResult['message'], 400, $gpsResult['reason'] ?? 'GPS_OUT_OF_RANGE');
 }
 
 AttendanceModel::checkIn($employee['id'], $branchId, $tenantId, $requestedMethod, null, $latitude ?: null, $longitude ?: null, $isVpn);

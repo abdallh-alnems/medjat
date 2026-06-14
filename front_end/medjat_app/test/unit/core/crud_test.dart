@@ -11,6 +11,7 @@ void main() {
   late CRUD crud;
 
   setUp(() {
+    setupGetTestBindings();
     registerFallbacks();
     mockClient = MockHttpClient();
     crud = CRUD(client: mockClient);
@@ -20,7 +21,6 @@ void main() {
     group('handleResponse', () {
       test('returns success on 200 with valid JSON', () {
         final response = fakeResponse(
-          statusCode: 200,
           body: jsonEncode({'message': 'ok'}),
         );
         final result = crud.handleResponse(response);
@@ -128,13 +128,12 @@ void main() {
 
       test('returns success on 200 with list body', () {
         final response = fakeResponse(
-          statusCode: 200,
           body: jsonEncode([1, 2, 3]),
         );
         final result = crud.handleResponse(response);
 
         expect(result['status'], StatusRequest.success);
-        expect(result['data'], isA<List>());
+        expect(result['data'], isA<List<dynamic>>());
       });
 
       test('returns serverFailure on 503 with message', () {
@@ -157,11 +156,11 @@ void main() {
         expect(result['statusCode'], 502);
       });
 
-      test('401 returns Arabic session expired message', () {
+      test('401 returns session expired message key', () {
         final response = fakeResponse(statusCode: 401);
         final result = crud.handleResponse(response);
 
-        expect(result['message'], 'جلستك انتهت، يرجى تسجيل الدخول مجدداً');
+        expect(result['message'], 'session_expired_server');
       });
 
       test('401 invokes onSessionExpired callback exactly once', () {
@@ -187,18 +186,18 @@ void main() {
         expect(result['status'], StatusRequest.failure);
       });
 
-      test('403 returns Arabic permission denied message', () {
+      test('403 returns permission denied message key', () {
         final response = fakeResponse(statusCode: 403);
         final result = crud.handleResponse(response);
 
-        expect(result['message'], 'ليس لديك صلاحية');
+        expect(result['message'], 'no_permission');
       });
 
-      test('404 returns Arabic default message', () {
+      test('404 returns default message key', () {
         final response = fakeResponse(statusCode: 404, body: 'not json');
         final result = crud.handleResponse(response);
 
-        expect(result['message'], 'لم يتم العثور على البيانات');
+        expect(result['message'], 'data_not_found');
       });
 
       test('404 with empty message uses default', () {
@@ -208,7 +207,7 @@ void main() {
         );
         final result = crud.handleResponse(response);
 
-        expect(result['message'], 'لم يتم العثور على البيانات');
+        expect(result['message'], 'data_not_found');
       });
 
       test('422 with non-json body uses default message', () {
@@ -216,7 +215,7 @@ void main() {
         final result = crud.handleResponse(response);
 
         expect(result['status'], StatusRequest.failure);
-        expect(result['message'], 'البيانات غير صحيحة');
+        expect(result['message'], 'invalid_data');
       });
 
       test('422 with null message uses default', () {
@@ -226,7 +225,7 @@ void main() {
         );
         final result = crud.handleResponse(response);
 
-        expect(result['message'], 'البيانات غير صحيحة');
+        expect(result['message'], 'invalid_data');
       });
 
       test('500 with non-map body returns serverFailure', () {
@@ -237,7 +236,7 @@ void main() {
         final result = crud.handleResponse(response);
 
         expect(result['status'], StatusRequest.serverFailure);
-        expect(result['message'], 'حدث خطأ، حاول مرة أخرى');
+        expect(result['message'], 'error_try_again');
       });
 
       test('500 with empty message returns default', () {
@@ -247,7 +246,7 @@ void main() {
         );
         final result = crud.handleResponse(response);
 
-        expect(result['message'], 'حدث خطأ، حاول مرة أخرى');
+        expect(result['message'], 'error_try_again');
       });
     });
   });

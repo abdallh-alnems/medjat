@@ -43,7 +43,7 @@ void main() {
 
       verify(() => mockCrud.postData(
             any(that: contains('approve.php')),
-            {},
+            {'leave_id': 1},
           )).called(1);
     });
 
@@ -55,7 +55,7 @@ void main() {
 
       verify(() => mockCrud.postData(
             any(that: contains('reject.php')),
-            {'rejection_reason': 'غير مبرر'},
+            {'leave_id': 1, 'rejection_reason': 'غير مبرر'},
           )).called(1);
     });
 
@@ -67,7 +67,7 @@ void main() {
 
       verify(() => mockCrud.postData(
             any(that: contains('reject.php')),
-            {},
+            {'leave_id': 1},
           )).called(1);
     });
 

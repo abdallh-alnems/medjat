@@ -38,4 +38,20 @@ class UserModel {
   }
 
   bool get isActiveUser => isActive == 1;
+
+  static const Map<String, String> _roleLabelsAr = {
+    'general_manager': 'المدير العام',
+    'hr': 'الموارد البشرية',
+    'branch_manager': 'مدير فرع',
+    'attendance': 'الحضور والانصراف',
+    'viewer': 'مشاهدة فقط',
+    'employee': 'موظف',
+    'pending': 'قيد الانتظار',
+  };
+
+  /// الاسم العربي للصلاحية، أو القيمة الأصلية إن لم تكن معروفة.
+  String? get roleLabelAr {
+    if (role == null) return null;
+    return _roleLabelsAr[role!] ?? role;
+  }
 }

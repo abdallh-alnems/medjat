@@ -18,11 +18,9 @@ class TenantData {
     return await _crud.postData(AppLinks.tenantCreate, {
       'name': tenant.name,
       'name_ar': tenant.nameAr,
-      'domain': tenant.domain,
       'owner_name': tenant.ownerName,
       'owner_email': tenant.ownerEmail,
       'owner_phone': tenant.ownerPhone,
-      'plan': tenant.plan,
     });
   }
 

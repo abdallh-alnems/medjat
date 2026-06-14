@@ -104,7 +104,7 @@ class LeaveScreen extends StatelessWidget {
                               AppSpacing.s7,
                             ),
                             itemCount: list.length,
-                            separatorBuilder: (_, __) =>
+                            separatorBuilder: (_, _) =>
                                 const SizedBox(height: AppSpacing.s2),
                             itemBuilder: (_, i) => _LeaveTile(
                               leave: list[i],
@@ -142,7 +142,7 @@ class LeaveScreen extends StatelessWidget {
                 filled: true,
                 fillColor: colors.surface,
                 contentPadding:
-                    const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                    const EdgeInsets.symmetric(horizontal: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppRadius.md),
                   borderSide: BorderSide(color: colors.borderHairline),

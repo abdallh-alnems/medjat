@@ -7,7 +7,7 @@ $tenantId = TenantMiddleware::requireTenant();
 
 $method = $_SERVER['REQUEST_METHOD'];
 
-$allowedMethods = ['qr_gps', 'gps_only', 'manual', 'station'];
+$allowedMethods = ['qr_gps', 'gps_only', 'manual'];
 
 if ($method === 'GET') {
     $tenant = TenantModel::findById($tenantId);
@@ -71,7 +71,7 @@ if ($method === 'GET') {
 
     Response::success([
         'name' => $tenant['name'] ?? '',
-        'address' => $tenant['domain'] ?? '',
+        'address' => $tenant['company_address'] ?? '',
         'phone' => '',
         'email' => '',
         'attendance_methods' => $tenantMethods,
@@ -91,9 +91,6 @@ if ($method === 'GET') {
         'commercial_register' => $tenant['commercial_register'] ?? '',
         'company_address' => $tenant['company_address'] ?? '',
         'company_phone' => $tenant['company_phone'] ?? '',
-        'has_logo' => !empty($tenant['logo_url']),
-        'has_stamp' => !empty($tenant['stamp_url']),
-        'has_signature' => !empty($tenant['signature_url']),
     ]);
 }
 

@@ -50,7 +50,7 @@ class TenantsScreen extends StatelessWidget {
     final ownerPhoneCtl = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
-    Get.bottomSheet(
+    Get.bottomSheet<void>(
       Container(
         padding: const EdgeInsets.all(AppSpacing.s4),
         child: Form(
@@ -98,7 +98,7 @@ class TenantsScreen extends StatelessWidget {
                       isActive: 1,
                     );
                     Get.find<TenantController>().createTenant(tenant);
-                    Get.back();
+                    Get.back<void>();
                   }
                 },
                 child: const Text('إنشاء'),
@@ -179,10 +179,6 @@ class _TenantCard extends StatelessWidget {
             Text('المالك: ${tenant.ownerName}', style: TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 14, color: colors.textSecondary)),
           if (tenant.ownerEmail != null)
             Text(tenant.ownerEmail!, style: TextStyle(fontFamily: 'Geist', fontSize: 13, color: colors.textTertiary)),
-          if (tenant.plan != null) ...[
-            const SizedBox(height: AppSpacing.s1),
-            Text('الباقة: ${tenant.plan}', style: TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 13, color: colors.textTertiary)),
-          ],
           const SizedBox(height: AppSpacing.s3),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,

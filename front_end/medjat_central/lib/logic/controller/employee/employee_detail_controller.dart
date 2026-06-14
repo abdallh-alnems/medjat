@@ -93,7 +93,7 @@ class EmployeeDetailController extends GetxController {
 
   /// Start date of the cycle whose label (majority) month is [labelMonth].
   DateTime cycleWindowFrom(DateTime labelMonth) {
-    if (cycleStartDay <= 1) return DateTime(labelMonth.year, labelMonth.month, 1);
+    if (cycleStartDay <= 1) return DateTime(labelMonth.year, labelMonth.month);
     // End-labeled: cycle ends in [labelMonth], so it starts in the prior month.
     // Start-labeled: cycle starts in [labelMonth].
     final startMonthOffset = cycleLabeledByEndMonth ? -1 : 0;
@@ -239,15 +239,15 @@ class EmployeeDetailController extends GetxController {
         attendanceFrom = null;
         attendanceTo = null;
         attendanceMonth = currentCycleLabelMonth();
-        loadAttendanceMonth();
+        unawaited(loadAttendanceMonth());
       }
       // Anchor the financial tab on the current cycle too.
       if (!_financialInitialized && canManagePayroll) {
         _financialInitialized = true;
         financialMonth = currentCycleLabelMonth();
-        loadFinancialMonth();
-        loadEosb();
-        loadAllowances();
+        unawaited(loadFinancialMonth());
+        unawaited(loadEosb());
+        unawaited(loadAllowances());
       }
     } else {
       status = (response['status'] as StatusRequest?) ?? StatusRequest.failure;
@@ -829,10 +829,10 @@ class EmployeeDetailController extends GetxController {
 
       if (!isPdf) {
         // Images: preview in-app from memory (no temp file, no native plugin).
-        Get.dialog<void>(
+        unawaited(Get.dialog<void>(
           _ImagePreviewDialog(bytes: data),
           barrierColor: Colors.black87,
-        );
+        ));
         return;
       }
 

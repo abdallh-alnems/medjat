@@ -11,7 +11,6 @@ class TenantActivateApi extends AdminBaseApi {
             Validator::required($id, 'id');
 
             TenantModel::activate($id);
-            SubscriptionModel::updateStatus($id, 'active');
 
             AdminAuth::logAction('tenant.activate', 'tenant', $id);
             $this->success(['message' => 'Tenant activated']);

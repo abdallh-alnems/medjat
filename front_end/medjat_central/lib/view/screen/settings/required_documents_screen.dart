@@ -71,7 +71,7 @@ class RequiredDocumentsScreen extends StatelessWidget {
   /// Opens the per-document-type submissions screen: who sent this document and
   /// who hasn't, with review / approve / reject from there.
   void _openSubmissions(RequiredDocumentModel doc) {
-    Get.toNamed(AppRoutes.requiredDocumentSubmissions, arguments: {
+    Get.toNamed<void>(AppRoutes.requiredDocumentSubmissions, arguments: {
       'required_document_id': doc.id,
       'document_name': doc.name,
     });
@@ -679,7 +679,7 @@ class RequiredDocumentsScreen extends StatelessWidget {
 
   void _confirmDelete(BuildContext context, RequiredDocumentsController ctrl,
       RequiredDocumentModel doc) {
-    Get.defaultDialog(
+    Get.defaultDialog<void>(
       title: 'confirm_delete'.tr,
       middleText: doc.name,
       textConfirm: 'delete'.tr,
@@ -688,7 +688,7 @@ class RequiredDocumentsScreen extends StatelessWidget {
       confirmTextColor: Colors.white,
       onConfirm: () {
         ctrl.deleteDocument(doc.id);
-        Get.back();
+        Get.back<void>();
       },
     );
   }
@@ -780,7 +780,7 @@ class _DocumentTypeTile extends StatelessWidget {
           Switch(
             value: doc.isActive,
             onChanged: (_) => onToggle(),
-            activeColor: colors.brand,
+            activeThumbColor: colors.brand,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
           PopupMenuButton<String>(

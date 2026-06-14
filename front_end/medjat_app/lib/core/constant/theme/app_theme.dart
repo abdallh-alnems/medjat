@@ -12,6 +12,10 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
+      // Global default: Arabic-first with Geist as the Latin/numeral fallback,
+      // so every Text (even without an explicit style) uses the good fonts.
+      fontFamily: 'IBM Plex Sans Arabic',
+      fontFamilyFallback: const ['Geist'],
       scaffoldBackgroundColor: c.canvas,
       colorScheme: ColorScheme(
         brightness: brightness,

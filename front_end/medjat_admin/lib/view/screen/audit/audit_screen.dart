@@ -76,9 +76,9 @@ class _AuditCard extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                if (log.targetType != null)
+                if (log.targetTypeLabel != null)
                   Text(
-                    '${log.targetType}: ${log.targetId ?? ''}',
+                    '${log.targetTypeLabel}: ${log.targetId ?? ''}',
                     style: TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 12, color: colors.textSecondary),
                   ),
                 if (log.ip != null)

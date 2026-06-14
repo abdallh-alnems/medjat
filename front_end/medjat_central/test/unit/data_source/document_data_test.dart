@@ -41,13 +41,13 @@ void main() {
       verify(() => mockCrud.postData(any(), {'file': 'test.pdf'})).called(1);
     });
 
-    test('deleteDocument ينادي deleteData', () async {
-      when(() => mockCrud.deleteData(any()))
+    test('deleteDocument ينادي postData', () async {
+      when(() => mockCrud.postData(any(), any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
 
       await documentData.deleteDocument(5, 10);
 
-      verify(() => mockCrud.deleteData(any())).called(1);
+      verify(() => mockCrud.postData(any(), {'document_id': 10})).called(1);
     });
 
     test('verifyDocument ينادي postData مع document_id', () async {

@@ -27,7 +27,7 @@ class AttendanceMethodController extends GetxController {
   List<CategoryMethodOverride> categories = [];
   List<EmployeeMethodOverride> employeeOverrides = [];
 
-  static const allMethods = ['qr_gps', 'gps_only', 'manual', 'station'];
+  static const allMethods = ['qr_gps', 'gps_only', 'manual'];
 
   int get branchOverrideCount =>
       branches.where((b) => b.attendanceMethods != null).length;

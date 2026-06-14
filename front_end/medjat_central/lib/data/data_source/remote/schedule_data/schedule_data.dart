@@ -8,7 +8,7 @@ class ScheduleData {
   Future<Map<String, dynamic>> getWeek(String weekStart, {int? branchId}) async {
     return await _crud.getData(AppLinks.scheduleWeek, queryParameters: {
       'week_start': weekStart,
-      if (branchId != null) 'branch_id': branchId,
+      'branch_id': ?branchId,
     });
   }
 
@@ -43,14 +43,14 @@ class ScheduleData {
     return await _crud.postData(AppLinks.scheduleCopyWeek, {
       'from_week_start': fromWeekStart,
       'to_week_start': toWeekStart,
-      if (branchId != null) 'branch_id': branchId,
+      'branch_id': ?branchId,
     });
   }
 
   Future<Map<String, dynamic>> publish(String weekStart, {int? branchId}) async {
     return await _crud.postData(AppLinks.schedulePublish, {
       'week_start': weekStart,
-      if (branchId != null) 'branch_id': branchId,
+      'branch_id': ?branchId,
     });
   }
 }

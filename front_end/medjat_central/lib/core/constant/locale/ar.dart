@@ -506,7 +506,6 @@ const Map<String, String> ar = {
   'change_personal_info': 'تعديل البيانات الشخصية',
   'company_info': 'بيانات الشركة',
   'deduction_bonus_rules': 'قواعد الخصم والإضافي',
-  'subscription': 'الاشتراك',
   'coming_soon': 'قريباً',
   'profile_updated': 'تم تحديث بياناتك',
   'profile_update_error': 'تعذّر تحديث البيانات',
@@ -550,7 +549,20 @@ const Map<String, String> ar = {
   'status_draft': 'مسودة',
   'status_approved': 'معتمد',
   'status_paid': 'مدفوع',
+  'status_not_paid': 'لم يُصرف',
   'status_live': 'حتى الآن',
+  // ── Salary disbursement ──
+  'disburse_salary': 'صرف الراتب',
+  'disburse_month': 'صرف رواتب الشهر',
+  'disburse_confirm_one': 'سيتم اعتماد وصرف راتب @name. هل تريد المتابعة؟',
+  'disburse_confirm_all':
+      'سيتم اعتماد وصرف رواتب @count موظف لهذا الشهر. هل تريد المتابعة؟',
+  'disburse_confirm_cta': 'صرف',
+  'disburse_mid_cycle_warning':
+      'الدورة الحالية لم تنتهِ بعد. سيُصرف راتب الشهر كاملًا مقدّمًا وتُجمّد الأرقام، ولن تُحتسب أي غيابات أو تأخير أو تعديلات تحدث في بقية الشهر.',
+  'disburse_done': 'تم صرف الراتب',
+  'disburse_all_done': 'تم صرف الرواتب',
+  'disburse_failed': 'تعذّر صرف الراتب',
   'status_pending': 'قيد المراجعة',
   'status_rejected': 'مرفوضة',
   'status_uploaded': 'مرفوعة',
@@ -609,6 +621,8 @@ const Map<String, String> ar = {
       'هذا الشفت به @count موظف. اختر شفتاً لنقلهم إليه، أو احذف الشفت وسيحتفظ كل موظف بمواعيد حضور مطابقة لهذا الشفت.',
   'shift_delete_transfer_to': 'نقل الموظفين إلى',
   'shift_delete_keep_times': 'بدون نقل (الاحتفاظ بنفس المواعيد)',
+  'shift_delete_transferred_msg': 'تم حذف الشفت ونقل @count موظف',
+  'shift_delete_kept_times_msg': 'تم حذف الشفت مع الاحتفاظ بمواعيد @count موظف',
   'shift_members': 'موظفو الشفت',
   'shift_add_member': 'إضافة موظف',
   'shift_no_members': 'لا يوجد موظفون في هذا الشفت',
@@ -795,9 +809,6 @@ const Map<String, String> ar = {
       'يسجل الموظف بناءً على موقعه داخل نطاق الفرع، دون مسح QR.',
   'method_manual_admin': 'يدوي من الإداريين',
   'method_manual_admin_desc': 'يقوم الإداري بتسجيل حضور وانصراف الموظف يدوياً.',
-  'method_station': 'محطة الحضور',
-  'method_station_desc':
-      'جهاز مشترك في الفرع (تابلت/كشك) يسجّل حضور الموظفين بالوجه أو البصمة.',
   'inherit_tenant_default': 'يتبع طرق الشركة',
   'gps_radius_meters': 'نطاق GPS (بالمتر)',
   'attendance_method_saved': 'تم حفظ الإعداد',
@@ -828,37 +839,7 @@ const Map<String, String> ar = {
   'offline_disabled': 'موقوف',
   'allow_offline_branch_label': 'الحضور دون اتصال',
 
-  // ── Station ──
-  'stations_management': 'إدارة محطات الحضور',
-  'stations_management_subtitle': 'إدارة الأجهزة والسجلات',
-  'add_station': 'إضافة محطة',
-  'device_name': 'اسم الجهاز',
-  'admin_pin': 'رمز المسؤول',
   'select_branch': 'اختر الفرع',
-  'fill_all_fields': 'يرجى ملء كل الحقول',
-  'no_stations': 'لا توجد محطات',
-  'station_qr_title': 'رمز تفعيل المحطة',
-  'qr_expires': 'صالح حتى',
-  'show_qr': 'عرض الرمز',
-  'unlock': 'فتح القفل',
-  'confirm_delete_station': 'هل تريد حذف هذه المحطة؟',
-  'station_status_active': 'نشطة',
-  'station_status_locked': 'مقفلة',
-  'station_status_deactivated': 'معطلة',
-  'station_status_pending': 'بانتظار التفعيل',
-  'last_activity': 'آخر نشاط',
-  'station_section_title': 'محطة الحضور',
-  'station_enabled': 'تفعيل محطة الحضور',
-  'station_methods_label': 'الطرق المتاحة',
-  'station_face_only': 'السيلفي فقط',
-  'station_fingerprint_only': 'البصمة فقط',
-  'station_both': 'الوجه والبصمة',
-  'station_gps_radius': 'نطاق GPS (متر)',
-  'station_confidence': 'عتبة الثقة',
-  'station_anti_spoofing': 'حماية من التزوير',
-  'set_admin_pin': 'تعيين رمز المسؤول',
-  'manage_devices': 'إدارة الأجهزة',
-  'view_recognition_logs': 'سجلات التعرف',
 
   // ── Biometric ──
   'biometric_enrollment': 'تسجيل البيانات البيومترية',
@@ -881,24 +862,11 @@ const Map<String, String> ar = {
   'enroll_biometric_suggestion':
       'هل تريد تسجيل البيانات البيومترية لهذا الموظف؟',
 
-  // ── Recognition Logs ──
-  'recognition_logs': 'سجلات التعرف',
-  'no_logs': 'لا توجد سجلات',
-  'filter_result': 'تصفية حسب النتيجة',
-  'filter_date': 'تصفية حسب التاريخ',
-  'recognition_success': 'ناجح',
-  'recognition_low_confidence': 'ثقة منخفضة',
-  'recognition_no_match': 'لا يوجد تطابق',
-  'recognition_spoofing': 'تزوير',
-  'recognition_manual': 'يدوي',
-  'recognition_too_soon': 'مسح متكرر',
   'unknown': 'غير معروف',
 
   // ── New Permissions ──
   'perm_biometric_enroll': 'تسجيل البيانات البيومترية',
   'perm_biometric_delete': 'حذف البيانات البيومترية',
-  'perm_station_manage': 'إدارة محطات الحضور',
-  'perm_station_view_logs': 'مشاهدة سجلات التعرف',
   'perm_documents_manage_types': 'إدارة أنواع الأوراق',
   'perm_documents_verify': 'مراجعة الأوراق',
   'perm_documents_view_reports': 'مشاهدة تقارير الأوراق',
@@ -1146,27 +1114,6 @@ const Map<String, String> ar = {
   'missing_bank_info': 'موظفون بدون بيانات بنكية',
   'file_saved_to': 'تم حفظ الملف في',
   'failed_load_preview': 'فشل تحميل الملخص',
-
-  // ── Export Templates ──
-  'export_templates': 'قوالب التصدير',
-  'export_templates_subtitle': 'تنسيق تصدير الرواتب',
-  'export_template_new': 'قالب جديد',
-  'export_template_edit': 'تعديل القالب',
-  'export_template_delete_confirm': 'هل تريد حذف هذا القالب؟',
-  'export_template_name': 'اسم القالب',
-  'export_template_delimiter': 'الفاصل',
-  'export_template_bom': 'إضافة UTF-8 BOM',
-  'export_template_header_row': 'صف عناوين الأعمدة',
-  'export_template_decimal_places': 'المنازل العشرية',
-  'export_template_columns': 'الأعمدة',
-  'export_template_add_column': 'إضافة عمود',
-  'export_template_column_label': 'عنوان العمود',
-  'export_template_column_field': 'الحقل',
-  'export_template_created': 'تم إنشاء القالب',
-  'export_template_updated': 'تم تحديث القالب',
-  'export_template_deleted': 'تم حذف القالب',
-  'export_template_not_found': 'القالب غير موجود',
-  'export_template_no_templates': 'لا توجد قوالب',
 
   // ── Employee Bank Fields ──
   'bank_name': 'اسم البنك',
@@ -1942,11 +1889,6 @@ const Map<String, String> ar = {
   'at_least_one_time_required': 'يجب تحديد وقت واحد على الأقل',
   'edit_times': 'تعديل الأوقات',
 
-  // ── Kiosk PIN Generation ──
-  'generate_pin': 'توليد PIN',
-  'kiosk_pin': 'رمز الكيوسك',
-  'pin_one_time_warning': 'هذا الرمز لمرة واحدة ويُستخدم خلال 10 دقائق',
-  'failed_generate_pin': 'فشل توليد الرمز',
 
   // ── Support ──
   'support_tickets': 'الدعم والمساعدة',
@@ -2145,6 +2087,19 @@ const Map<String, String> ar = {
   'settlement_mark_paid': 'تحديد كمدفوعة',
   'settlement_marked_paid': 'تم تحديد التسوية كمدفوعة',
   'settlement_paid_done': 'مدفوعة',
+
+  // ── Terminated employees / re-hire ──
+  'terminated_employees': 'الموظفون المنتهية خدماتهم',
+  'terminated_employees_hint': 'عرض من انتهت خدمتهم وإعادة تعيينهم',
+  'terminated_on': 'انتهت في',
+  'no_terminated_employees': 'لا يوجد موظفون منتهية خدماتهم',
+  'rehire_title': 'إعادة تعيين الموظف',
+  'rehire_confirm':
+      'سيُعاد تعيين @name بحالة "بانتظار التفعيل" ويعود إلى قائمة الموظفين. متابعة؟',
+  'rehire_action': 'إعادة التعيين',
+  'rehire_success': 'تمت إعادة تعيين الموظف بنجاح',
+  'rehire_failed': 'تعذّر إعادة تعيين الموظف',
+  'rehire_login_hint': 'بيانات تسجيل الدخول لـ @name — سلّمها له ليدخل التطبيق من جديد:',
 
   // ── Activity log ──
   'activity_log': 'سجل النشاط',

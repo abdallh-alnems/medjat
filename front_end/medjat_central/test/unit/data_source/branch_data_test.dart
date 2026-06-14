@@ -50,17 +50,17 @@ void main() {
       verify(() => mockCrud.postData(any(), {'name': 'فرع جديد'})).called(1);
     });
 
-    test('updateBranch ينادي putData مع branch_id', () async {
-      when(() => mockCrud.putData(any(), any()))
+    test('updateBranch ينادي postData مع branch_id', () async {
+      when(() => mockCrud.postData(any(), any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
 
       await branchData.updateBranch(3, {'name': 'محدث'});
 
-      verify(() => mockCrud.putData(any(), any())).called(1);
+      verify(() => mockCrud.postData(any(), any())).called(1);
     });
 
-    test('updateBranchAttendanceMethods ينادي putData', () async {
-      when(() => mockCrud.putData(any(), any()))
+    test('updateBranchAttendanceMethods ينادي postData', () async {
+      when(() => mockCrud.postData(any(), any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
 
       await branchData.updateBranchAttendanceMethods(
@@ -69,7 +69,7 @@ void main() {
         gpsRadiusMeters: 200,
       );
 
-      verify(() => mockCrud.putData(any(), any())).called(1);
+      verify(() => mockCrud.postData(any(), any())).called(1);
     });
   });
 }

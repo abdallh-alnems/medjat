@@ -49,7 +49,7 @@ class StatusEmployeesScreen extends StatelessWidget {
                             top: -6,
                             child: Container(
                               padding: const EdgeInsets.all(3),
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 color: Colors.white,
                                 shape: BoxShape.circle,
                               ),
@@ -123,7 +123,7 @@ class StatusEmployeesScreen extends StatelessWidget {
                               AppSpacing.s7,
                             ),
                             itemCount: ctrl.filteredEntries.length,
-                            separatorBuilder: (_, __) =>
+                            separatorBuilder: (_, _) =>
                                 const SizedBox(height: AppSpacing.s2),
                             itemBuilder: (_, i) =>
                                 _StatusEmployeeTile(entry: ctrl.filteredEntries[i]),
@@ -215,7 +215,7 @@ class _StatusEmployeeTile extends StatelessWidget {
         ],
       ),
       trailing: _StatusBadge(entry: entry),
-      onTap: () => Get.toNamed(
+      onTap: () => Get.toNamed<void>(
         AppRoutes.employeeDetail.replaceAll(':id', '${entry.employeeId}'),
         arguments: {'id': entry.employeeId},
       ),

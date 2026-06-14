@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constant/theme/theme.dart';
@@ -23,7 +24,9 @@ class _SupportChatScreenState extends State<SupportChatScreen>
     final args = Get.arguments as Map<String, dynamic>?;
     final ticketId = args?['ticket_id'] as int? ?? 0;
     if (ticketId > 0) {
-      Get.find<SupportController>().openTicket(ticketId);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.find<SupportController>().openTicket(ticketId);
+      });
     }
   }
 
@@ -109,7 +112,7 @@ class _SupportChatScreenState extends State<SupportChatScreen>
               tooltip: 'reopen_ticket'.tr,
               onPressed: () async {
                 await controller.reopenTicket(ticket.id);
-                controller.openTicket(ticket.id);
+                unawaited(controller.openTicket(ticket.id));
               },
             );
           }),

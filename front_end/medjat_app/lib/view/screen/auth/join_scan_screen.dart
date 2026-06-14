@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -35,7 +36,7 @@ class _JoinScanScreenState extends State<JoinScanScreen> {
     if (token == null) return;
 
     _handled = true;
-    HapticFeedback.mediumImpact();
+    unawaited(HapticFeedback.mediumImpact());
     await _scannerController.stop();
 
     final ok = await Get.find<AuthController>().activateWithToken(token);

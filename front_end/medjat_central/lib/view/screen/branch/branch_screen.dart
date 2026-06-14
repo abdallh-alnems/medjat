@@ -6,7 +6,6 @@ import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
 import '../../../core/shared/buttons/primary_button.dart';
-import '../../../core/shared/input_fields/primary_input.dart';
 import '../../../data/data_source/remote/branch_data/branch_data.dart';
 import '../../../data/model/branch_model.dart';
 import '../../../logic/controller/branch/branch_controller.dart';
@@ -25,7 +24,7 @@ class BranchScreen extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddBranchSheet(context, ctrl),
         backgroundColor: colors.brand,
-        child: Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
       body: RefreshIndicator(
         onRefresh: ctrl.loadBranches,
@@ -50,7 +49,7 @@ class BranchScreen extends StatelessWidget {
                   : ListView.separated(
                       padding: const EdgeInsets.all(AppSpacing.s4),
                       itemCount: ctrl.branches.length,
-                      separatorBuilder: (_, __) =>
+                      separatorBuilder: (_, _) =>
                           const SizedBox(height: AppSpacing.s3),
                       itemBuilder: (_, i) => _BranchTile(
                         branchId: ctrl.branches[i].id,
@@ -120,7 +119,7 @@ class BranchScreen extends StatelessWidget {
                       });
                       isLoading.value = false;
                       if (resp['status'] == StatusRequest.success) {
-                        Get.back();
+                        Get.back<void>();
                         Get.snackbar('done'.tr, 'branch_created_success'.tr,
                             snackPosition: SnackPosition.BOTTOM);
                         await ctrl.loadBranches();
@@ -215,7 +214,7 @@ void _showEditBranchSheet(
                     });
                     isLoading.value = false;
                     if (resp['status'] == StatusRequest.success) {
-                      Get.back();
+                      Get.back<void>();
                       Get.snackbar('done'.tr, 'saved_successfully'.tr,
                           snackPosition: SnackPosition.BOTTOM);
                       await ctrl.loadBranches();

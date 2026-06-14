@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:get/get.dart';
 import '../../../core/class/status_request.dart';
@@ -46,7 +47,7 @@ class AuthController extends GetxController {
       isLoggedIn.value = true;
       status.value = StatusRequest.success;
       _initPushNotifications();
-      Get.offAllNamed(AppRoutes.home);
+      unawaited(Get.offAllNamed<void>(AppRoutes.home));
     } else {
       status.value = response['status'] as StatusRequest? ?? StatusRequest.failure;
       final statusCode = response['statusCode'];
@@ -67,7 +68,7 @@ class AuthController extends GetxController {
     await _authData.logout();
     admin = null;
     isLoggedIn.value = false;
-    Get.offAllNamed(AppRoutes.login);
+    unawaited(Get.offAllNamed<void>(AppRoutes.login));
   }
 
   Future<void> loadProfile() async {

@@ -81,8 +81,8 @@ class _UserCard extends StatelessWidget {
                 ),
                 if (user.email != null)
                   Text(user.email!, style: TextStyle(fontFamily: 'Geist', fontSize: 12, color: colors.textTertiary)),
-                if (user.role != null)
-                  Text(user.role!, style: TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 12, color: colors.textSecondary)),
+                if (user.roleLabelAr != null)
+                  Text(user.roleLabelAr!, style: TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 12, color: colors.textSecondary)),
               ],
             ),
           ),

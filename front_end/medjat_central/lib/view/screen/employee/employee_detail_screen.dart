@@ -695,7 +695,6 @@ class _ActivationCodeBody extends StatelessWidget {
                 ),
                 child: QrImageView(
                   data: ctrl.activationJoinLink!,
-                  version: QrVersions.auto,
                   size: 160,
                   backgroundColor: Colors.white,
                 ),
@@ -943,7 +942,7 @@ void _showCodeShareSheet(EmployeeDetailController ctrl) {
   final joinLink = ctrl.activationJoinLink;
   final phone = ctrl.employee?.phone;
 
-  Get.bottomSheet(
+  Get.bottomSheet<void>(
     Builder(
       builder: (context) {
         final colors = AppColors.of(context);
@@ -1069,7 +1068,6 @@ void _showCodeShareSheet(EmployeeDetailController ctrl) {
                       ),
                       child: QrImageView(
                         data: joinLink,
-                        version: QrVersions.auto,
                         size: 180,
                         backgroundColor: Colors.white,
                       ),
@@ -1111,7 +1109,7 @@ void _showCodeShareSheet(EmployeeDetailController ctrl) {
                   ),
                   const SizedBox(height: AppSpacing.s2),
                   TextButton(
-                    onPressed: () => Get.back(),
+                    onPressed: () => Get.back<void>(),
                     child: Text('done'.tr),
                   ),
                 ],
@@ -7652,7 +7650,7 @@ void _showRequestDocumentSheet(
   String mode = 'catalog';
   String? nameError;
 
-  Get.bottomSheet(
+  Get.bottomSheet<void>(
     GetBuilder<EmployeeDetailController>(
       builder: (_) {
         final colors = AppColors.of(context);
@@ -8277,7 +8275,7 @@ class _WarningsTabState extends State<_WarningsTab> {
   }
 }
 
-void _confirmDeleteWarning(
+Future<void> _confirmDeleteWarning(
     BuildContext context, EmployeeDetailController ctrl, int warningId) async {
   final confirmed = await Get.dialog<bool>(
     AlertDialog(
@@ -8353,7 +8351,7 @@ void _showAddWarningSheet(BuildContext context, EmployeeDetailController ctrl) {
   final reasonCtrl = TextEditingController();
   final formKey = GlobalKey<FormState>();
 
-  Get.bottomSheet(
+  Get.bottomSheet<void>(
     StatefulBuilder(
       builder: (sheetCtx, setSheetState) {
         final colors = AppColors.of(context);
@@ -8479,7 +8477,7 @@ void _showAddWarningSheet(BuildContext context, EmployeeDetailController ctrl) {
                           : () async {
                               if (!formKey.currentState!.validate()) return;
                               final reason = reasonCtrl.text.trim();
-                              Get.back();
+                              Get.back<void>();
                               await ctrl.addWarning(
                                   type: selectedType, reason: reason);
                             },
@@ -8554,7 +8552,7 @@ void _showSuspendSheet(BuildContext context, EmployeeDetailController ctrl) {
   DateTime? endDate;
   bool openEnded = true;
 
-  Get.bottomSheet(
+  Get.bottomSheet<void>(
     StatefulBuilder(
       builder: (sheetCtx, setSheetState) {
         final colors = AppColors.of(context);
@@ -8789,7 +8787,7 @@ void _showSuspendSheet(BuildContext context, EmployeeDetailController ctrl) {
                                 startDate: startDate,
                                 endDate: openEnded ? null : endDate,
                               );
-                              if (ok) Get.back();
+                              if (ok) Get.back<void>();
                             },
                       icon: isLoading
                           ? const SizedBox(
@@ -8823,7 +8821,7 @@ void _showSuspendSheet(BuildContext context, EmployeeDetailController ctrl) {
 void _confirmEndSuspension(BuildContext context, EmployeeDetailController ctrl) {
   final noteCtrl = TextEditingController();
   final colors = AppColors.of(context);
-  Get.bottomSheet(
+  Get.bottomSheet<void>(
     Container(
       padding: EdgeInsets.only(
         left: AppSpacing.s4,
@@ -8874,7 +8872,7 @@ void _confirmEndSuspension(BuildContext context, EmployeeDetailController ctrl) 
                 final note = noteCtrl.text.trim();
                 final ok = await ctrl.endSuspension(
                     endNote: note.isEmpty ? null : note);
-                if (ok) Get.back();
+                if (ok) Get.back<void>();
               },
               icon: const Icon(Icons.play_circle_outline),
               label: Padding(
@@ -9482,7 +9480,7 @@ class _ReviewsTab extends StatelessWidget {
   }
 }
 
-void _confirmDeleteReview(
+Future<void> _confirmDeleteReview(
     BuildContext context, EmployeeDetailController ctrl, int reviewId) async {
   final confirmed = await Get.dialog<bool>(
     AlertDialog(
@@ -9515,7 +9513,7 @@ void _showAddReviewSheet(BuildContext context, EmployeeDetailController ctrl) {
   final notesCtrl = TextEditingController();
   final formKey = GlobalKey<FormState>();
 
-  Get.bottomSheet(
+  Get.bottomSheet<void>(
     StatefulBuilder(
       builder: (sheetCtx, setSheetState) {
         final colors = AppColors.of(context);
@@ -9616,7 +9614,7 @@ void _showAddReviewSheet(BuildContext context, EmployeeDetailController ctrl) {
                           ? null
                           : () async {
                               if (!formKey.currentState!.validate()) return;
-                              Get.back();
+                              Get.back<void>();
                               await ctrl.addReview(
                                 rating: selectedRating,
                                 period: periodCtrl.text.trim(),

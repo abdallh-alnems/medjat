@@ -43,6 +43,7 @@ void main() {
             search: any(named: 'search'),
             status: any(named: 'status'),
             sort: any(named: 'sort'),
+            dir: any(named: 'dir'),
             expiringWithin: any(named: 'expiringWithin'),
           )).thenAnswer((_) async => <String, dynamic>{
                 'status': StatusRequest.success,
@@ -72,6 +73,7 @@ void main() {
             search: any(named: 'search'),
             status: any(named: 'status'),
             sort: any(named: 'sort'),
+            dir: any(named: 'dir'),
             expiringWithin: any(named: 'expiringWithin'),
           )).thenAnswer((_) async => <String, dynamic>{
                 'status': StatusRequest.failure,
@@ -93,6 +95,7 @@ void main() {
             search: any(named: 'search'),
             status: any(named: 'status'),
             sort: any(named: 'sort'),
+            dir: any(named: 'dir'),
             expiringWithin: any(named: 'expiringWithin'),
           )).thenAnswer((_) async => <String, dynamic>{
                 'status': StatusRequest.offline,
@@ -113,6 +116,7 @@ void main() {
             search: any(named: 'search'),
             status: any(named: 'status'),
             sort: any(named: 'sort'),
+            dir: any(named: 'dir'),
             expiringWithin: any(named: 'expiringWithin'),
           )).thenAnswer((_) async => <String, dynamic>{
                 'status': StatusRequest.success,
@@ -135,6 +139,7 @@ void main() {
             search: any(named: 'search'),
             status: any(named: 'status'),
             sort: any(named: 'sort'),
+            dir: any(named: 'dir'),
             expiringWithin: any(named: 'expiringWithin'),
           )).thenAnswer((_) async => <String, dynamic>{
                 'status': StatusRequest.success,
@@ -156,10 +161,11 @@ void main() {
             search: any(named: 'search'),
             status: any(named: 'status'),
             sort: any(named: 'sort'),
+            dir: any(named: 'dir'),
             expiringWithin: any(named: 'expiringWithin'),
           )).thenAnswer((_) async => <String, dynamic>{
                 'status': StatusRequest.success,
-                'data': <String, dynamic>{'items': []},
+                'data': <String, dynamic>{'items': <Map<String, dynamic>>[]},
               });
 
       controller = EmployeeController();
@@ -178,10 +184,11 @@ void main() {
             search: any(named: 'search'),
             status: any(named: 'status'),
             sort: any(named: 'sort'),
+            dir: any(named: 'dir'),
             expiringWithin: any(named: 'expiringWithin'),
           )).thenAnswer((_) async => <String, dynamic>{
                 'status': StatusRequest.success,
-                'data': <String, dynamic>{'items': []},
+                'data': <String, dynamic>{'items': <Map<String, dynamic>>[]},
               });
 
       controller = EmployeeController();

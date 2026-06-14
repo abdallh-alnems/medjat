@@ -7,8 +7,8 @@ final class ApprovalChainModel {
 
     public static function create(int $tenantId, array $data, int $adminId): int {
         Database::execute(
-            "INSERT INTO approval_chains (tenant_id, name, name_ar, request_type, is_active, min_amount, max_amount, branch_id, priority, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO approval_chains (tenant_id, name, name_ar, request_type, is_active, min_amount, branch_id, priority, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 $tenantId,
                 $data['name'],
@@ -16,7 +16,6 @@ final class ApprovalChainModel {
                 $data['request_type'],
                 isset($data['is_active']) ? (int) $data['is_active'] : 1,
                 $data['min_amount'] ?? null,
-                $data['max_amount'] ?? null,
                 $data['branch_id'] ?? null,
                 (int) ($data['priority'] ?? 0),
                 $adminId,
@@ -52,7 +51,7 @@ final class ApprovalChainModel {
     }
 
     public static function update(int $id, int $tenantId, array $data): void {
-        $allowed = ['name', 'name_ar', 'is_active', 'min_amount', 'max_amount', 'branch_id', 'priority'];
+        $allowed = ['name', 'name_ar', 'is_active', 'min_amount', 'branch_id', 'priority'];
         $fields = [];
         $values = [];
         foreach ($allowed as $key) {
@@ -168,10 +167,8 @@ final class ApprovalChainModel {
         if ($amount !== null) {
             $sql .= " AND (c.min_amount IS NULL OR c.min_amount <= ?)";
             $params[] = $amount;
-            $sql .= " AND (c.max_amount IS NULL OR c.max_amount >= ?)";
-            $params[] = $amount;
         } else {
-            $sql .= " AND c.min_amount IS NULL AND c.max_amount IS NULL";
+            $sql .= " AND c.min_amount IS NULL";
         }
 
         if ($branchId !== null) {

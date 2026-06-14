@@ -65,7 +65,7 @@ class ShiftsScreen extends StatelessWidget {
                         AppSpacing.s7,
                       ),
                       itemCount: ctrl.shifts.length,
-                      separatorBuilder: (_, __) =>
+                      separatorBuilder: (_, _) =>
                           const SizedBox(height: AppSpacing.s3),
                       itemBuilder: (_, i) => _ShiftTile(
                         shift: ctrl.shifts[i],
@@ -89,23 +89,36 @@ class ShiftsScreen extends StatelessWidget {
   }
 
   void _confirmDelete(BuildContext context, ShiftController ctrl, ShiftModel shift) {
-    // Shifts the members can be moved to (any other shift).
-    final otherShifts =
-        ctrl.shifts.where((s) => s.id != shift.id).toList(growable: false);
+    // Members can only move to shifts reachable from their branch: same branch,
+    // or a global (all-branches) shift. A global shift can move to any shift.
+    final otherShifts = ctrl.shifts
+        .where((s) =>
+            s.id != shift.id &&
+            (shift.branchId == null ||
+                s.branchId == null ||
+                s.branchId == shift.branchId))
+        .toList(growable: false);
     final hasMembers = shift.employeeCount > 0;
 
     // null target = keep each member's attendance times equal to this shift.
     final selectedTarget = Rxn<int>();
 
     Future<void> doDelete() async {
-      Get.back();
-      final ok = await ctrl.deleteShift(
+      Get.back<void>();
+      final result = await ctrl.deleteShift(
         shift.id,
         transferToShiftId: selectedTarget.value,
       );
-      if (ok) {
-        Get.snackbar('done'.tr, 'shift_deleted'.tr,
-            snackPosition: SnackPosition.BOTTOM);
+      if (result != null) {
+        final affected = (result['affected'] as num?)?.toInt() ?? 0;
+        final transferred = result['action'] == 'transferred';
+        final message = affected == 0
+            ? 'shift_deleted'.tr
+            : (transferred
+                    ? 'shift_delete_transferred_msg'
+                    : 'shift_delete_kept_times_msg')
+                .trParams({'count': '$affected'});
+        Get.snackbar('done'.tr, message, snackPosition: SnackPosition.BOTTOM);
       }
     }
 
@@ -134,7 +147,6 @@ class ShiftsScreen extends StatelessWidget {
                   ),
                   items: [
                     DropdownMenuItem<int?>(
-                      value: null,
                       child: Text(
                         'shift_delete_keep_times'.tr,
                         overflow: TextOverflow.ellipsis,
@@ -155,7 +167,7 @@ class ShiftsScreen extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Get.back(),
+            onPressed: () => Get.back<void>(),
             child: Text('cancel'.tr),
           ),
           TextButton(
@@ -290,7 +302,7 @@ class ShiftsScreen extends StatelessWidget {
                                   }
                                   isLoading.value = false;
                                   if (ok) {
-                                    Get.back();
+                                    Get.back<void>();
                                     Get.snackbar(
                                       'done'.tr,
                                       existing != null
@@ -370,7 +382,12 @@ class _ShiftTile extends StatelessWidget {
     return Dismissible(
       key: ValueKey(shift.id),
       direction: DismissDirection.endToStart,
-      onDismissed: (_) => onDelete(),
+      // Open the delete dialog instead of removing the tile outright — the actual
+      // removal happens via the controller reload once the user confirms.
+      confirmDismiss: (_) async {
+        onDelete();
+        return false;
+      },
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: AppSpacing.s4),

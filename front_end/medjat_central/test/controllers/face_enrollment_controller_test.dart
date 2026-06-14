@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:medjat_central/core/class/status_request.dart';
 import 'package:medjat_central/data/data_source/remote/biometric_data/biometric_data.dart';
-import 'package:medjat_central/data/model/biometric_enrollment_model.dart';
 import 'package:medjat_central/logic/controller/biometric/face_enrollment_controller.dart';
 import '../helpers/test_helpers.dart';
 

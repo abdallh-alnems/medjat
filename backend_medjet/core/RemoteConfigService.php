@@ -20,12 +20,6 @@ final class RemoteConfigService {
             'maintenance_key' => 'medjat_central_maintenance_enabled',
             'supports_maintenance' => true,
         ],
-        'medjat_admin' => [
-            'name' => 'Admin App',
-            'min_version_key' => 'medjat_admin_min_version',
-            'maintenance_key' => null,
-            'supports_maintenance' => false,
-        ],
     ];
 
     private static ?RcContract $rc = null;

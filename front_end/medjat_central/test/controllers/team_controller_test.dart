@@ -3,11 +3,13 @@ import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:medjat_central/core/class/status_request.dart';
 import 'package:medjat_central/data/data_source/remote/manager_data/manager_data.dart';
-import 'package:medjat_central/data/model/manager_invitation_model.dart';
+import 'package:medjat_central/data/data_source/remote/branch_data/branch_data.dart';
 import 'package:medjat_central/logic/controller/team/team_controller.dart';
 import '../helpers/test_helpers.dart';
 
 class MockManagerData extends Mock implements ManagerData {}
+
+class MockBranchData extends Mock implements BranchData {}
 
 void main() {
   late MockManagerData mockData;
@@ -17,6 +19,10 @@ void main() {
     setupGetX();
     mockData = MockManagerData();
     Get.put<ManagerData>(mockData);
+    final mockBranch = MockBranchData();
+    when(() => mockBranch.getBranches()).thenAnswer(
+        (_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
+    Get.put<BranchData>(mockBranch);
   });
 
   tearDown(() => teardownGetX());
@@ -54,9 +60,9 @@ void main() {
 
     test('createInvitation — نجاح يعيد كود', () async {
       when(() => mockData.getAdmins()).thenAnswer(
-          (_) async => {'status': StatusRequest.success, 'data': []});
+          (_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
       when(() => mockData.getInvitations(status: any(named: 'status')))
-          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': []});
+          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
       when(() => mockData.createInvitation(any())).thenAnswer((_) async => {
             'status': StatusRequest.success,
             'data': {'invitation_code': 'ABC123'},
@@ -76,9 +82,9 @@ void main() {
     testWidgets('createInvitation — فشل يعيد null', (tester) async {
       await pumpSnackbarHost(tester);
       when(() => mockData.getAdmins()).thenAnswer(
-          (_) async => {'status': StatusRequest.success, 'data': []});
+          (_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
       when(() => mockData.getInvitations(status: any(named: 'status')))
-          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': []});
+          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
       when(() => mockData.createInvitation(any()))
           .thenAnswer((_) async => {'status': StatusRequest.failure});
 
@@ -97,9 +103,9 @@ void main() {
     testWidgets('cancelInvitation — نجاح يعيد true', (tester) async {
       await pumpSnackbarHost(tester);
       when(() => mockData.getAdmins()).thenAnswer(
-          (_) async => {'status': StatusRequest.success, 'data': []});
+          (_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
       when(() => mockData.getInvitations(status: any(named: 'status')))
-          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': []});
+          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
       when(() => mockData.cancelInvitation(any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
 
@@ -114,9 +120,9 @@ void main() {
 
     test('togglePermission يضيف ويزيل صلاحية', () async {
       when(() => mockData.getAdmins()).thenAnswer(
-          (_) async => {'status': StatusRequest.success, 'data': []});
+          (_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
       when(() => mockData.getInvitations(status: any(named: 'status')))
-          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': []});
+          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
 
       final controller = TeamController();
       await controller.loadAll();

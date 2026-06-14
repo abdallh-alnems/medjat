@@ -14,7 +14,7 @@
  * de-duplicated list of valid methods, defaulting to ['qr_gps'].
  */
 final class AttendanceMethodResolver {
-    private const ALLOWED = ['qr_gps', 'gps_only', 'manual', 'station'];
+    private const ALLOWED = ['qr_gps', 'gps_only', 'manual'];
 
     public static function resolveForEmployee(array $employee, int $tenantId): array {
         // 1) employee override

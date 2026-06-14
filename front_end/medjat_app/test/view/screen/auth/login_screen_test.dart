@@ -100,13 +100,6 @@ void main() {
       );
     });
 
-    testWidgets('shows kiosk mode button', (WidgetTester tester) async {
-      await tester.pumpWidget(_createTestApp());
-      await tester.pumpAndSettle();
-
-      expect(find.text('وضع الكيوسك'), findsOneWidget);
-    });
-
     testWidgets('no email or password or Google controls',
         (WidgetTester tester) async {
       await tester.pumpWidget(_createTestApp());

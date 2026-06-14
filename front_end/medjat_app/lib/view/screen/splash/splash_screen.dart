@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -25,15 +26,9 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future<void>.delayed(const Duration(milliseconds: 1500));
     if (!mounted) return;
 
-    final stationToken = await TokenStorageService.getStationToken();
-    if (stationToken != null && stationToken.isNotEmpty) {
-      Get.offAllNamed<void>(AppRoutes.kioskHome);
-      return;
-    }
-
     final hasToken = await TokenStorageService.hasToken();
     if (!hasToken) {
-      Get.offAllNamed<void>(AppRoutes.login);
+      unawaited(Get.offAllNamed<void>(AppRoutes.login));
       return;
     }
 
@@ -45,14 +40,14 @@ class _SplashScreenState extends State<SplashScreen> {
         if (tenantId != null && tenantId != 0) {
           final authController = Get.find<AuthController>();
           await authController.checkAuth();
-          PushNotificationService.enableForUser();
-          Get.offAllNamed<void>(AppRoutes.home);
+          unawaited(PushNotificationService.enableForUser());
+          unawaited(Get.offAllNamed<void>(AppRoutes.home));
           return;
         }
       } catch (_) {}
     }
 
-    Get.offAllNamed<void>(AppRoutes.login);
+    unawaited(Get.offAllNamed<void>(AppRoutes.login));
   }
 
   @override

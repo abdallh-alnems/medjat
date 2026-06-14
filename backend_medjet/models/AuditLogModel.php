@@ -147,7 +147,6 @@ final class AuditLogModel {
             'candidate' => "SELECT id, name AS label FROM candidates WHERE tenant_id = ? AND id IN (%s)",
             'shift'     => "SELECT id, name AS label FROM shifts WHERE tenant_id = ? AND id IN (%s)",
             'branch'    => "SELECT id, name AS label FROM branches WHERE tenant_id = ? AND id IN (%s)",
-            'station'   => "SELECT id, device_name AS label FROM attendance_stations WHERE tenant_id = ? AND id IN (%s)",
         ];
 
         // Collect the numeric ids we need per resolvable target type.

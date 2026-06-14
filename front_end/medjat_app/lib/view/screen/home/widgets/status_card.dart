@@ -10,12 +10,16 @@ class StatusCard extends StatelessWidget {
   final AppColorScheme colors;
   final TodayStatusModel? todayStatus;
   final AttendanceStatus status;
+  final String? scheduledTimeText;
+  final bool isRestDay;
 
   const StatusCard({
     super.key,
     required this.colors,
     required this.todayStatus,
     required this.status,
+    this.scheduledTimeText,
+    this.isRestDay = false,
   });
 
   @override
@@ -89,6 +93,34 @@ class StatusCard extends StatelessWidget {
                 color: statusColor,
                 fontWeight: FontWeight.w500,
               ),
+            ),
+          ],
+          if (scheduledTimeText != null || isRestDay) ...[
+            const SizedBox(height: AppSpacing.s3),
+            Divider(color: colors.borderHairline, height: 1),
+            const SizedBox(height: AppSpacing.s3),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  isRestDay ? Icons.weekend_outlined : Icons.schedule_outlined,
+                  size: 16,
+                  color: colors.textTertiary,
+                ),
+                const SizedBox(width: AppSpacing.s2),
+                Text(
+                  isRestDay ? 'rest_day'.tr : 'work_schedule'.tr,
+                  style: AppTextStyles.xs(context),
+                ),
+                if (!isRestDay && scheduledTimeText != null) ...[
+                  const SizedBox(width: AppSpacing.s2),
+                  Text(
+                    scheduledTimeText!,
+                    style: AppTextStyles.tabular(context),
+                    textDirection: TextDirection.ltr,
+                  ),
+                ],
+              ],
             ),
           ],
         ],

@@ -7,8 +7,15 @@ class AppTextStyles {
   static const String arabicFamily = 'IBM Plex Sans Arabic';
   static const String latinFamily = 'Geist';
 
+  // Per-glyph fallback so mixed Arabic/English text always renders well:
+  //  • Arabic-first styles fall back to Geist for Latin glyphs.
+  //  • Latin-first styles fall back to IBM Plex Sans Arabic (no missing boxes).
+  static const List<String> arabicFallback = [latinFamily];
+  static const List<String> latinFallback = [arabicFamily];
+
   static TextStyle display(BuildContext context) => TextStyle(
         fontFamily: latinFamily,
+        fontFamilyFallback: latinFallback,
         fontSize: 36,
         fontWeight: FontWeight.w700,
         height: 1.2,
@@ -18,6 +25,7 @@ class AppTextStyles {
 
   static TextStyle h1(BuildContext context) => TextStyle(
         fontFamily: arabicFamily,
+        fontFamilyFallback: arabicFallback,
         fontSize: 28,
         fontWeight: FontWeight.w700,
         height: 1.2,
@@ -26,6 +34,7 @@ class AppTextStyles {
 
   static TextStyle h2(BuildContext context) => TextStyle(
         fontFamily: arabicFamily,
+        fontFamilyFallback: arabicFallback,
         fontSize: 22,
         fontWeight: FontWeight.w600,
         height: 1.35,
@@ -34,6 +43,7 @@ class AppTextStyles {
 
   static TextStyle h3(BuildContext context) => TextStyle(
         fontFamily: arabicFamily,
+        fontFamilyFallback: arabicFallback,
         fontSize: 18,
         fontWeight: FontWeight.w600,
         height: 1.35,
@@ -42,6 +52,7 @@ class AppTextStyles {
 
   static TextStyle body(BuildContext context) => TextStyle(
         fontFamily: arabicFamily,
+        fontFamilyFallback: arabicFallback,
         fontSize: 16,
         fontWeight: FontWeight.w400,
         height: 1.55,
@@ -52,6 +63,7 @@ class AppTextStyles {
     final isLight = Theme.of(context).brightness == Brightness.light;
     return TextStyle(
       fontFamily: arabicFamily,
+      fontFamilyFallback: arabicFallback,
       fontSize: 16,
       fontWeight: FontWeight.w400,
       height: 1.55,
@@ -63,6 +75,7 @@ class AppTextStyles {
     final isLight = Theme.of(context).brightness == Brightness.light;
     return TextStyle(
       fontFamily: arabicFamily,
+      fontFamilyFallback: arabicFallback,
       fontSize: 14,
       fontWeight: FontWeight.w400,
       height: 1.5,
@@ -74,6 +87,7 @@ class AppTextStyles {
     final isLight = Theme.of(context).brightness == Brightness.light;
     return TextStyle(
       fontFamily: arabicFamily,
+      fontFamilyFallback: arabicFallback,
       fontSize: 12,
       fontWeight: FontWeight.w500,
       height: 1.5,
@@ -84,6 +98,7 @@ class AppTextStyles {
 
   static TextStyle tabular(BuildContext context) => TextStyle(
         fontFamily: latinFamily,
+        fontFamilyFallback: latinFallback,
         fontSize: 36,
         fontWeight: FontWeight.w700,
         height: 1.2,

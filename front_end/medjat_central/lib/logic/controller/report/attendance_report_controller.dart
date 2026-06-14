@@ -9,7 +9,7 @@ class AttendanceReportController extends GetxController {
   StatusRequest status = StatusRequest.none;
   List<AttendanceReportRow> rows = [];
   AttendanceReportSummary summary = AttendanceReportSummary();
-  DateTime startDate = DateTime(DateTime.now().year, DateTime.now().month, 1);
+  DateTime startDate = DateTime(DateTime.now().year, DateTime.now().month);
   DateTime endDate = DateTime.now();
   int? branchFilter;
 

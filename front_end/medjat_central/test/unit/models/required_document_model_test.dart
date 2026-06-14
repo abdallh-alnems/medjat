@@ -47,8 +47,8 @@ void main() {
       expect(doc.isRequired, isFalse);
       expect(doc.isActive, isFalse);
       expect(doc.scopeType, 'all');
-      expect(doc.scopeEmployeeIds, []);
-      expect(doc.scopeCategoryIds, []);
+      expect(doc.scopeEmployeeIds, <int>[]);
+      expect(doc.scopeCategoryIds, <int>[]);
     });
 
     test('scope_employee_ids كنصوص تتحول لأرقام', () {

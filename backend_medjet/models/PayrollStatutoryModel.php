@@ -14,7 +14,6 @@ final class PayrollStatutoryModel {
         $fields = [
             'social_insurance_enabled' => isset($data['social_insurance_enabled']) ? (int) $data['social_insurance_enabled'] : 0,
             'si_employee_rate' => $data['si_employee_rate'] ?? null,
-            'si_employer_rate' => $data['si_employer_rate'] ?? null,
             'si_min_wage' => $data['si_min_wage'] ?? null,
             'si_max_wage' => $data['si_max_wage'] ?? null,
             'income_tax_enabled' => isset($data['income_tax_enabled']) ? (int) $data['income_tax_enabled'] : 0,
@@ -54,7 +53,6 @@ final class PayrollStatutoryModel {
         return [
             'social_insurance_enabled' => 0,
             'si_employee_rate' => null,
-            'si_employer_rate' => null,
             'si_min_wage' => null,
             'si_max_wage' => null,
             'income_tax_enabled' => 0,

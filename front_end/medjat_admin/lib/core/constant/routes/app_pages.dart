@@ -7,8 +7,7 @@ import '../../services/dark_light_service.dart';
 import '../../../data/data_source/remote/admin_auth_data/admin_auth_data.dart';
 import '../../../data/data_source/remote/dashboard_data/dashboard_data.dart';
 import '../../../data/data_source/remote/tenant_data/tenant_data.dart';
-import '../../../data/data_source/remote/subscription_data/subscription_data.dart';
-import '../../../data/data_source/remote/plan_data/plan_data.dart';
+import '../../../data/data_source/remote/admin_account_data/admin_account_data.dart';
 import '../../../data/data_source/remote/notification_data/notification_data.dart';
 import '../../../data/data_source/remote/user_data/user_data.dart';
 import '../../../data/data_source/remote/audit_data/audit_data.dart';
@@ -18,8 +17,7 @@ import '../../../data/data_source/remote/device_data/device_data.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
 import '../../../logic/controller/dashboard/dashboard_controller.dart';
 import '../../../logic/controller/tenant/tenant_controller.dart';
-import '../../../logic/controller/subscription/subscription_controller.dart';
-import '../../../logic/controller/plan/plan_controller.dart';
+import '../../../logic/controller/admin_account/admin_account_controller.dart';
 import '../../../logic/controller/notification/notification_controller.dart';
 import '../../../logic/controller/user/user_controller.dart';
 import '../../../logic/controller/audit/audit_controller.dart';
@@ -30,9 +28,8 @@ import '../../../view/screen/splash/splash_screen.dart';
 import '../../../view/screen/auth/login_screen.dart';
 import '../../../view/screen/dashboard/dashboard_screen.dart';
 import '../../../view/screen/tenants/tenants_screen.dart';
-import '../../../view/screen/subscriptions/subscriptions_screen.dart';
-import '../../../view/screen/plans/plans_screen.dart';
 import '../../../view/screen/users/users_screen.dart';
+import '../../../view/screen/admin_account/add_admin_screen.dart';
 import '../../../view/screen/audit/audit_screen.dart';
 import '../../../view/screen/notifications/notifications_screen.dart';
 import '../../../view/screen/support/support_inbox_screen.dart';
@@ -68,27 +65,19 @@ class TenantsBinding extends Bindings {
   }
 }
 
-class SubscriptionsBinding extends Bindings {
-  @override
-  void dependencies() {
-    Get.lazyPut<SubscriptionData>(() => SubscriptionData());
-    Get.lazyPut<SubscriptionController>(() => SubscriptionController());
-  }
-}
-
-class PlansBinding extends Bindings {
-  @override
-  void dependencies() {
-    Get.lazyPut<PlanData>(() => PlanData());
-    Get.lazyPut<PlanController>(() => PlanController());
-  }
-}
-
 class UsersBinding extends Bindings {
   @override
   void dependencies() {
     Get.lazyPut<UserData>(() => UserData());
     Get.lazyPut<UserController>(() => UserController());
+  }
+}
+
+class AddAdminBinding extends Bindings {
+  @override
+  void dependencies() {
+    Get.lazyPut<AdminAccountData>(() => AdminAccountData());
+    Get.lazyPut<AdminAccountController>(() => AdminAccountController());
   }
 }
 
@@ -152,23 +141,16 @@ List<GetPage<dynamic>> getPages = [
     transitionDuration: AppMotion.transition,
   ),
   GetPage(
-    name: AppRoutes.subscriptions,
-    page: () => const SubscriptionsScreen(),
-    binding: SubscriptionsBinding(),
-    transition: Transition.fadeIn,
-    transitionDuration: AppMotion.transition,
-  ),
-  GetPage(
-    name: AppRoutes.plans,
-    page: () => const PlansScreen(),
-    binding: PlansBinding(),
-    transition: Transition.fadeIn,
-    transitionDuration: AppMotion.transition,
-  ),
-  GetPage(
     name: AppRoutes.users,
     page: () => const UsersScreen(),
     binding: UsersBinding(),
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.addAdmin,
+    page: () => const AddAdminScreen(),
+    binding: AddAdminBinding(),
     transition: Transition.fadeIn,
     transitionDuration: AppMotion.transition,
   ),

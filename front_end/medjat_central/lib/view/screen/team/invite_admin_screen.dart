@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/class/status_request.dart';
@@ -172,7 +173,7 @@ class _InviteAdminScreenState extends State<InviteAdminScreen> {
     status.value = StatusRequest.none;
 
     if (code != null) {
-      Get.offNamed<dynamic>(AppRoutes.invitationCode, arguments: code);
+      unawaited(Get.offNamed<dynamic>(AppRoutes.invitationCode, arguments: code));
     }
   }
 }
@@ -311,7 +312,6 @@ class _BranchSelector extends StatelessWidget {
           icon: Icon(Icons.expand_more, color: colors.textTertiary),
           items: [
             DropdownMenuItem<int?>(
-              value: null,
               child: Text(
                 'scope_all_branches'.tr,
                 style: TextStyle(

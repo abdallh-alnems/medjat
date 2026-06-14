@@ -40,7 +40,7 @@ class DocxExportService {
         AppLinks.reportExportWord,
         {
           'title': title,
-          if (subtitle != null) 'subtitle': subtitle,
+          'subtitle': ?subtitle,
           'company': pdfCompanyTitle(companyName),
           'dir': pdfIsArabic() ? 'rtl' : 'ltr',
           'headers': headers,

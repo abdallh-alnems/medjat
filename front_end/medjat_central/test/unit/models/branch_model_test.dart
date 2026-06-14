@@ -14,12 +14,6 @@ void main() {
         'employee_count': 50,
         'attendance_methods': ['gps', 'qr'],
         'gps_radius_meters': 200,
-        'station_enabled': 1,
-        'station_methods': 'face_only',
-        'station_gps_radius_meters': 50,
-        'station_confidence_threshold': 0.9,
-        'station_anti_spoofing_enabled': 1,
-        'station_admin_pin_hash': 'hash123',
         'allow_offline_attendance': true,
       };
 
@@ -34,12 +28,6 @@ void main() {
       expect(branch.employeeCount, 50);
       expect(branch.attendanceMethods, ['gps', 'qr']);
       expect(branch.gpsRadiusMeters, 200);
-      expect(branch.stationEnabled, isTrue);
-      expect(branch.stationMethods, 'face_only');
-      expect(branch.stationGpsRadiusMeters, 50);
-      expect(branch.stationConfidenceThreshold, 0.9);
-      expect(branch.stationAntiSpoofing, isTrue);
-      expect(branch.hasStationPin, isTrue);
       expect(branch.allowOfflineAttendance, isTrue);
     });
 
@@ -54,12 +42,6 @@ void main() {
       expect(branch.employeeCount, 0);
       expect(branch.attendanceMethods, isNull);
       expect(branch.gpsRadiusMeters, 100);
-      expect(branch.stationEnabled, isFalse);
-      expect(branch.stationMethods, 'face_only');
-      expect(branch.stationGpsRadiusMeters, 30);
-      expect(branch.stationConfidenceThreshold, 0.85);
-      expect(branch.stationAntiSpoofing, isFalse);
-      expect(branch.hasStationPin, isFalse);
       expect(branch.allowOfflineAttendance, isNull);
     });
 
@@ -75,13 +57,6 @@ void main() {
         'allow_offline_attendance': 0,
       });
       expect(branch.allowOfflineAttendance, isFalse);
-    });
-
-    test('station_enabled = 0 يعطي false', () {
-      final branch = BranchModel.fromJson({
-        'station_enabled': 0,
-      });
-      expect(branch.stationEnabled, isFalse);
     });
 
     test('copyWith يحافظ على القيم', () {

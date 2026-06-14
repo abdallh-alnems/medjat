@@ -276,7 +276,7 @@ final class EmployeeModel {
 
     public static function delete(int $id, int $tenantId): bool {
         return Database::execute(
-            "UPDATE employees SET status = 'terminated', terminated_at = CURDATE(), deleted_at = NOW() WHERE id = ? AND tenant_id = ?",
+            "UPDATE employees SET status = 'terminated', terminated_at = CURDATE() WHERE id = ? AND tenant_id = ?",
             [$id, $tenantId]
         ) > 0;
     }
@@ -289,10 +289,79 @@ final class EmployeeModel {
      */
     public static function terminate(int $id, int $tenantId, string $terminationDate): bool {
         return Database::execute(
-            "UPDATE employees SET status = 'terminated', terminated_at = ?, deleted_at = NOW()
+            "UPDATE employees SET status = 'terminated', terminated_at = ?
              WHERE id = ? AND tenant_id = ?",
             [$terminationDate, $id, $tenantId]
         ) > 0;
+    }
+
+    /**
+     * Re-hire a terminated employee: restore them to `pending_activation` and
+     * clear the termination markers (terminated_at / the fixed-term
+     * auto-terminate date) so they re-enter the normal employment lifecycle and
+     * can be activated again via an activation code. Returns true if a terminated
+     * row was actually flipped.
+     */
+    public static function reactivate(int $id, int $tenantId): bool {
+        return Database::execute(
+            "UPDATE employees
+             SET status = 'pending_activation', terminated_at = NULL,
+                 auto_terminate_at = NULL, updated_at = NOW()
+             WHERE id = ? AND tenant_id = ? AND status = 'terminated'",
+            [$id, $tenantId]
+        ) > 0;
+    }
+
+    /**
+     * Terminated (ended-service) employees for the "re-hire" screen, joined with
+     * their branch and last end-of-service settlement summary. Paginated and
+     * searchable by name / phone / national id / job title.
+     */
+    public static function getTerminatedByTenant(
+        int $tenantId,
+        int $page = 1,
+        int $limit = 20,
+        ?string $search = null
+    ): array {
+        $sql = "SELECT e.id, e.name, e.phone, e.job_title, e.profile_image,
+                       e.base_salary, e.hire_date, e.terminated_at, e.status,
+                       e.national_id, e.branch_id, b.name AS branch_name,
+                       st.reason AS settlement_reason,
+                       st.net_amount AS settlement_net_amount,
+                       st.status AS settlement_status,
+                       st.last_working_day AS settlement_last_working_day
+                FROM employees e
+                LEFT JOIN branches b ON b.id = e.branch_id
+                LEFT JOIN employee_settlements st
+                       ON st.employee_id = e.id AND st.tenant_id = e.tenant_id
+                WHERE e.tenant_id = ? AND e.status = 'terminated'";
+        $params = [$tenantId];
+
+        if ($search !== null && $search !== '') {
+            $sql .= " AND (e.name LIKE ? OR e.phone LIKE ? OR e.national_id LIKE ? OR e.job_title LIKE ?)";
+            $like = "%{$search}%";
+            array_push($params, $like, $like, $like, $like);
+        }
+
+        $sql .= " ORDER BY e.terminated_at DESC, e.name ASC LIMIT ? OFFSET ?";
+        $offset = ($page - 1) * $limit;
+        $params[] = $limit;
+        $params[] = $offset;
+
+        return ['items' => Database::fetchAll($sql, $params), 'page' => $page];
+    }
+
+    /** Total number of terminated employees (honours the same optional search). */
+    public static function terminatedCount(int $tenantId, ?string $search = null): int {
+        $sql = "SELECT COUNT(*) AS c FROM employees WHERE tenant_id = ? AND status = 'terminated'";
+        $params = [$tenantId];
+        if ($search !== null && $search !== '') {
+            $sql .= " AND (name LIKE ? OR phone LIKE ? OR national_id LIKE ? OR job_title LIKE ?)";
+            $like = "%{$search}%";
+            array_push($params, $like, $like, $like, $like);
+        }
+        $row = Database::fetchOne($sql, $params);
+        return (int) ($row['c'] ?? 0);
     }
 
     /**
@@ -306,8 +375,7 @@ final class EmployeeModel {
              WHERE tenant_id = ?
                AND auto_terminate_at IS NOT NULL
                AND auto_terminate_at < ?
-               AND status NOT IN ('terminated')
-               AND deleted_at IS NULL",
+               AND status NOT IN ('terminated')",
             [$tenantId, $today]
         );
     }
@@ -325,8 +393,7 @@ final class EmployeeModel {
                AND auto_terminate_at IS NOT NULL
                AND auto_terminate_at >= ?
                AND auto_terminate_at <= DATE_ADD(?, INTERVAL ? DAY)
-               AND status NOT IN ('terminated')
-               AND deleted_at IS NULL",
+               AND status NOT IN ('terminated')",
             [$today, $tenantId, $today, $today, $daysAhead]
         );
     }

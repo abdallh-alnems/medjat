@@ -102,7 +102,7 @@ class EmployeeDocumentsScreen extends StatelessWidget {
       EmployeeDocumentsController ctrl, DocumentModel doc) {
     final colors = AppColors.of(context);
 
-    Get.bottomSheet(
+    Get.bottomSheet<void>(
       Container(
         padding: const EdgeInsets.all(AppSpacing.s4),
         decoration: BoxDecoration(
@@ -142,7 +142,7 @@ class EmployeeDocumentsScreen extends StatelessWidget {
                 leading: Icon(Icons.visibility_outlined, color: colors.brand),
                 title: Text('view_document'.tr),
                 onTap: () {
-                  Get.back();
+                  Get.back<void>();
                   ctrl.openDocument(doc.id,
                       mimeType: doc.mimeType, originalName: doc.originalName);
                 },
@@ -150,9 +150,9 @@ class EmployeeDocumentsScreen extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.edit_outlined),
               title: Text('edit_notes'.tr),
-              onTap: () {
-                Get.back();
-                _showEditNotesDialog(context, ctrl, doc);
+                onTap: () {
+                  Get.back<void>();
+                  _showEditNotesDialog(context, ctrl, doc);
               },
             ),
             // Employee self-submissions arrive as 'pending'; admin uploads as
@@ -162,7 +162,7 @@ class EmployeeDocumentsScreen extends StatelessWidget {
                 leading: Icon(Icons.check_circle_outline, color: colors.success),
                 title: Text('document_verify'.tr),
                 onTap: () {
-                  Get.back();
+                  Get.back<void>();
                   ctrl.verifyDocument(doc.id);
                 },
               ),
@@ -171,16 +171,16 @@ class EmployeeDocumentsScreen extends StatelessWidget {
                 leading: Icon(Icons.cancel_outlined, color: colors.error),
                 title: Text('document_reject'.tr),
                 onTap: () {
-                  Get.back();
+                  Get.back<void>();
                   _showRejectDialog(context, ctrl, doc);
                 },
               ),
             ListTile(
               leading: Icon(Icons.delete_outline, color: colors.error),
               title: Text('delete'.tr),
-              onTap: () {
-                Get.back();
-                ctrl.deleteDocument(doc.id);
+                onTap: () {
+                  Get.back<void>();
+                  ctrl.deleteDocument(doc.id);
               },
             ),
           ],
@@ -197,7 +197,7 @@ class EmployeeDocumentsScreen extends StatelessWidget {
         ? '${doc.expiryDate!.year}-${doc.expiryDate!.month.toString().padLeft(2, '0')}-${doc.expiryDate!.day.toString().padLeft(2, '0')}'
         : null;
 
-    Get.defaultDialog(
+    Get.defaultDialog<void>(
       title: 'edit_document'.tr,
       titleStyle: AppTextStyles.h3(context),
       content: StatefulBuilder(
@@ -250,7 +250,7 @@ class EmployeeDocumentsScreen extends StatelessWidget {
           notes: notesCtl.text.trim(),
           expiresAt: expiresAt,
         );
-        Get.back();
+        Get.back<void>();
       },
     );
   }
@@ -259,7 +259,7 @@ class EmployeeDocumentsScreen extends StatelessWidget {
       EmployeeDocumentsController ctrl, DocumentModel doc) {
     final reasonCtl = TextEditingController();
 
-    Get.defaultDialog(
+    Get.defaultDialog<void>(
       title: 'document_reject'.tr,
       titleStyle: AppTextStyles.h3(context),
       content: TextField(
@@ -278,7 +278,7 @@ class EmployeeDocumentsScreen extends StatelessWidget {
         if (reasonCtl.text.trim().isNotEmpty) {
           ctrl.rejectDocument(doc.id, reasonCtl.text.trim());
         }
-        Get.back();
+        Get.back<void>();
       },
     );
   }

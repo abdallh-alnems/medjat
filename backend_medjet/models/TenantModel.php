@@ -8,21 +8,12 @@ final class TenantModel {
         );
     }
 
-    public static function findByDomain(string $domain): ?array {
-        return Database::fetchOne(
-            "SELECT * FROM tenants WHERE domain = ? AND is_active = 1 LIMIT 1",
-            [$domain]
-        );
-    }
-
     public static function create(array $data): int {
         Database::execute(
-            "INSERT INTO tenants (name, domain, plan, is_active)
-             VALUES (?, ?, ?, 1)",
+            "INSERT INTO tenants (name, is_active)
+             VALUES (?, 1)",
             [
                 $data['name'],
-                $data['domain'] ?? null,
-                $data['plan'] ?? 'starter',
             ]
         );
         return (int) Database::lastInsertId();

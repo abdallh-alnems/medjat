@@ -19,9 +19,6 @@ final class PayrollExporterRegistry {
                 $out[] = ['key' => $key, 'label' => $e->label(), 'extension' => $e->fileExtension()];
             }
         }
-        foreach (PayrollExportTemplateModel::listActive((int)$tenant['id']) as $tpl) {
-            $out[] = ['key' => 'custom_' . $tpl['id'], 'label' => $tpl['name'], 'extension' => 'csv'];
-        }
         return $out;
     }
 
@@ -30,14 +27,6 @@ final class PayrollExporterRegistry {
      * (مفتاح صريح غير موجود، أو دولة بلا مُصدِّر) — على المستدعي أن يرجع خطأً.
      */
     public static function resolve(?string $key, array $tenant): ?PayrollExporter {
-        if ($key !== null && str_starts_with($key, 'custom_')) {
-            $id = (int) substr($key, 7);
-            $tpl = PayrollExportTemplateModel::findById($id, (int)$tenant['id']);
-            if ($tpl === null) { return null; }
-            $tpl['columns'] = json_decode($tpl['columns'], true) ?: [];
-            return new CustomTemplateExporter($tpl);
-        }
-
         $all = self::all();
 
         // مفتاح صريح: يجب أن يطابق تمامًا، وإلا فشل (لا سقوط صامت)

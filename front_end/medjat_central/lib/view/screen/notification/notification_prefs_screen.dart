@@ -196,7 +196,7 @@ class _PrefSwitch extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: colors.brand,
+            activeThumbColor: colors.brand,
           ),
         ],
       ),

@@ -461,12 +461,11 @@ final class PayrollCalculator {
             $minWage = $settings['si_min_wage'] !== null ? (float) $settings['si_min_wage'] : 0;
             $maxWage = $settings['si_max_wage'] !== null ? (float) $settings['si_max_wage'] : PHP_FLOAT_MAX;
             $employeeRate = (float) ($settings['si_employee_rate'] ?? 0);
-            $employerRate = (float) ($settings['si_employer_rate'] ?? 0);
 
             $insurableWage = max($minWage, min($baseSalary, $maxWage));
 
             $insuranceEmployee = round($insurableWage * ($employeeRate / 100), 2);
-            $insuranceEmployer = round($insurableWage * ($employerRate / 100), 2);
+            $insuranceEmployer = 0.0;
 
             $deductions[] = [
                 'type' => 'social_insurance',

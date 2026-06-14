@@ -33,6 +33,8 @@ import '../../../view/screen/employee/add_employee_screen.dart';
 import '../../../view/screen/employee/employee_detail_screen.dart';
 import '../../../view/screen/employee/employee_settlement_screen.dart';
 import '../../../data/data_source/remote/settlement_data/settlement_data.dart';
+import '../../../view/screen/employee/terminated_employees_screen.dart';
+import '../../../data/data_source/remote/employee_data/terminated_employee_data.dart';
 import '../../../view/screen/attendance/attendance_screen.dart';
 import '../../../view/screen/payroll/payroll_screen.dart';
 import '../../../view/screen/leave/leave_screen.dart';
@@ -75,8 +77,6 @@ import '../../../logic/controller/schedule/schedule_controller.dart';
 import '../../../view/screen/team/team_screen.dart';
 import '../../../view/screen/team/invite_admin_screen.dart';
 import '../../../view/screen/team/invitation_code_screen.dart';
-import '../../../view/screen/station/stations_management_screen.dart';
-import '../../../view/screen/station/recognition_logs_screen.dart';
 import '../../../view/screen/employee/biometric_enrollment_screen.dart';
 import '../../../view/screen/employee/employee_documents_screen.dart';
 import '../../../view/screen/settings/required_documents_screen.dart';
@@ -96,21 +96,15 @@ import '../../../data/data_source/remote/compliance_data/compliance_data.dart';
 import '../../../data/data_source/remote/live_attendance_data/live_attendance_data.dart';
 import '../../../data/data_source/remote/support_data/support_data.dart';
 import '../../../logic/controller/support/support_controller.dart';
-import '../../../logic/controller/export_template/export_template_controller.dart';
-import '../../../view/screen/payroll/export_templates_screen.dart';
 import '../../../view/screen/support/support_tickets_screen.dart';
 import '../../../view/screen/support/support_chat_screen.dart';
 import '../../../view/screen/support/new_ticket_screen.dart';
 import '../../../logic/controller/notification/notification_controller.dart';
 import '../../../logic/controller/settings/statutory_payroll_settings_controller.dart';
-import '../../../data/data_source/remote/station_data/station_data.dart';
 import '../../../data/data_source/remote/biometric_data/biometric_data.dart';
 import '../../../data/data_source/remote/required_documents_data/required_documents_data.dart';
 import '../../../data/data_source/remote/document_reports_data/document_reports_data.dart';
 import '../../../data/data_source/remote/category_data/category_data.dart';
-import '../../../logic/controller/station/stations_controller.dart';
-import '../../../logic/controller/station/station_settings_controller.dart';
-import '../../../logic/controller/station/recognition_logs_controller.dart';
 import '../../../logic/controller/biometric/face_enrollment_controller.dart';
 import '../../../logic/controller/shift/shift_controller.dart';
 import '../../../logic/controller/category/category_controller.dart';
@@ -551,46 +545,11 @@ List<GetPage<dynamic>> getPages = [
     transitionDuration: AppMotion.transition,
   ),
   GetPage(
-    name: AppRoutes.stationsManagement,
-    page: () => const StationsManagementScreen(),
-    binding: BindingsBuilder<void>(() {
-      Get.lazyPut<StationData>(() => StationData());
-      Get.lazyPut<BranchData>(() => BranchData());
-      Get.lazyPut<StationsController>(() => StationsController());
-    }),
-    middlewares: [AuthMiddleware()],
-    transition: Transition.fadeIn,
-    transitionDuration: AppMotion.transition,
-  ),
-  GetPage(
-    name: AppRoutes.stationSettings,
-    page: () => const _StationSettingsWrapper(),
-    binding: BindingsBuilder<void>(() {
-      Get.lazyPut<StationData>(() => StationData());
-      Get.lazyPut<BranchData>(() => BranchData());
-      Get.lazyPut<StationSettingsController>(() => StationSettingsController());
-    }),
-    middlewares: [AuthMiddleware()],
-    transition: Transition.fadeIn,
-    transitionDuration: AppMotion.transition,
-  ),
-  GetPage(
     name: AppRoutes.biometricEnrollment,
     page: () => const BiometricEnrollmentScreen(),
     binding: BindingsBuilder<void>(() {
       Get.lazyPut<BiometricData>(() => BiometricData());
       Get.lazyPut<FaceEnrollmentController>(() => FaceEnrollmentController());
-    }),
-    middlewares: [AuthMiddleware()],
-    transition: Transition.fadeIn,
-    transitionDuration: AppMotion.transition,
-  ),
-  GetPage(
-    name: AppRoutes.recognitionLogs,
-    page: () => const RecognitionLogsScreen(),
-    binding: BindingsBuilder<void>(() {
-      Get.lazyPut<StationData>(() => StationData());
-      Get.lazyPut<RecognitionLogsController>(() => RecognitionLogsController());
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
@@ -756,20 +715,20 @@ List<GetPage<dynamic>> getPages = [
     transitionDuration: AppMotion.transition,
   ),
   GetPage(
-    name: AppRoutes.exportTemplates,
-    page: () => const ExportTemplatesScreen(),
+    name: AppRoutes.employeeSettlement,
+    page: () => const EmployeeSettlementScreen(),
     binding: BindingsBuilder<void>(() {
-      Get.lazyPut<ExportTemplateController>(() => ExportTemplateController());
+      Get.lazyPut<SettlementData>(() => SettlementData());
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
     transitionDuration: AppMotion.transition,
   ),
   GetPage(
-    name: AppRoutes.employeeSettlement,
-    page: () => const EmployeeSettlementScreen(),
+    name: AppRoutes.terminatedEmployees,
+    page: () => const TerminatedEmployeesScreen(),
     binding: BindingsBuilder<void>(() {
-      Get.lazyPut<SettlementData>(() => SettlementData());
+      Get.lazyPut<TerminatedEmployeeData>(() => TerminatedEmployeeData());
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
@@ -789,63 +748,83 @@ class MoreScreen extends StatelessWidget {
     final canManageDeductionRules =
         auth.user?.canManageDeductionRules ?? false;
 
+    final canManageEmployees = auth.user?.canManageEmployees ?? false;
+    final canManageLeaves = auth.user?.canManageLeaves ?? false;
+    final canManagePayroll = auth.user?.canManagePayroll ?? false;
+    final canManageAssets = auth.user?.canManageAssets ?? false;
+    final canViewReports = auth.user?.canViewReports ?? false;
+    // A section header must never render without at least one visible item.
+    final showEmployees = canManageEmployees || canManageLeaves;
+    final showFinance = canManagePayroll || canManageAssets;
+
     return Scaffold(
       appBar: AppBar(title: Text('more'.tr)),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
         children: [
-          _MoreSectionHeader(title: 'employees_and_time'.tr),
-          if (auth.user?.canManageEmployees == true)
-            _MenuTile(
-              icon: Icons.calendar_view_week_outlined,
-              title: 'weekly_schedule'.tr,
-              onTap: () => Get.toNamed<void>(AppRoutes.weeklySchedule),
-            ),
-          if (auth.user?.canManageEmployees == true)
-            _MenuTile(
-              icon: Icons.event_note_outlined,
-              title: 'leaves'.tr,
-              onTap: () => Get.toNamed<void>(AppRoutes.leaveManage),
-            ),
-          if (auth.user?.canManageLeaves == true)
-            _MenuTile(
-              icon: Icons.coffee_outlined,
-              title: 'break_requests'.tr,
-              onTap: () => Get.toNamed<void>(AppRoutes.breakManage),
-            ),
-          const SizedBox(height: AppSpacing.s4),
-          _MoreSectionHeader(title: 'finance_section'.tr),
-          if (auth.user?.canManagePayroll == true)
-            _MenuTile(
-              icon: Icons.account_balance_wallet_outlined,
-              title: 'loans'.tr,
-              subtitle: 'loans_hint'.tr,
-              onTap: () => Get.toNamed<void>(AppRoutes.loans),
-            ),
-          if (auth.user?.canManagePayroll == true)
-            _MenuTile(
-              icon: Icons.tune_outlined,
-              title: 'bulk_adjustments'.tr,
-              subtitle: 'bulk_adjustments_hint'.tr,
-              onTap: () => Get.toNamed<void>(AppRoutes.bulkAdjustments),
-            ),
-          if (auth.user?.canManageAssets == true)
-            _MenuTile(
-              icon: Icons.inventory_2_outlined,
-              title: 'assets'.tr,
-              subtitle: 'assets_hint'.tr,
-              onTap: () => Get.toNamed<void>(AppRoutes.assets),
-            ),
-          if (auth.user?.canViewReports == true) ...[
+          if (showEmployees) ...[
+            _MoreSectionHeader(title: 'employees_and_time'.tr),
+            if (canManageEmployees)
+              _MenuTile(
+                icon: Icons.calendar_view_week_outlined,
+                title: 'weekly_schedule'.tr,
+                onTap: () => Get.toNamed<void>(AppRoutes.weeklySchedule),
+              ),
+            if (canManageEmployees)
+              _MenuTile(
+                icon: Icons.event_note_outlined,
+                title: 'leaves'.tr,
+                onTap: () => Get.toNamed<void>(AppRoutes.leaveManage),
+              ),
+            if (canManageLeaves)
+              _MenuTile(
+                icon: Icons.coffee_outlined,
+                title: 'break_requests'.tr,
+                onTap: () => Get.toNamed<void>(AppRoutes.breakManage),
+              ),
+            if (canManageEmployees)
+              _MenuTile(
+                icon: Icons.person_off_outlined,
+                title: 'terminated_employees'.tr,
+                subtitle: 'terminated_employees_hint'.tr,
+                onTap: () => Get.toNamed<void>(AppRoutes.terminatedEmployees),
+              ),
             const SizedBox(height: AppSpacing.s4),
+          ],
+          if (showFinance) ...[
+            _MoreSectionHeader(title: 'finance_section'.tr),
+            if (canManagePayroll)
+              _MenuTile(
+                icon: Icons.account_balance_wallet_outlined,
+                title: 'loans'.tr,
+                subtitle: 'loans_hint'.tr,
+                onTap: () => Get.toNamed<void>(AppRoutes.loans),
+              ),
+            if (canManagePayroll)
+              _MenuTile(
+                icon: Icons.tune_outlined,
+                title: 'bulk_adjustments'.tr,
+                subtitle: 'bulk_adjustments_hint'.tr,
+                onTap: () => Get.toNamed<void>(AppRoutes.bulkAdjustments),
+              ),
+            if (canManageAssets)
+              _MenuTile(
+                icon: Icons.inventory_2_outlined,
+                title: 'assets'.tr,
+                subtitle: 'assets_hint'.tr,
+                onTap: () => Get.toNamed<void>(AppRoutes.assets),
+              ),
+            const SizedBox(height: AppSpacing.s4),
+          ],
+          if (canViewReports) ...[
             _MoreSectionHeader(title: 'reports'.tr),
             _MenuTile(
               icon: Icons.assessment_outlined,
               title: 'reports'.tr,
               onTap: () => Get.toNamed<void>(AppRoutes.reports),
             ),
+            const SizedBox(height: AppSpacing.s4),
           ],
-          const SizedBox(height: AppSpacing.s4),
           _MoreSectionHeader(title: 'settings'.tr),
           if (canManageCompany)
             _MenuTile(
@@ -958,177 +937,6 @@ class _MenuTile extends StatelessWidget {
           : null,
       trailing: Icon(Icons.chevron_left, color: colors.textTertiary),
       onTap: onTap,
-    );
-  }
-}
-
-class _StationSettingsWrapper extends StatelessWidget {
-  const _StationSettingsWrapper();
-
-  @override
-  Widget build(BuildContext context) {
-    final branchId = (Get.arguments as Map<String, dynamic>?)?['branch_id'] as int? ?? 0;
-    final ctrl = Get.put(StationSettingsController());
-    ctrl.init(branchId);
-    return _StationSettingsScreen(ctrl: ctrl);
-  }
-}
-
-class _StationSettingsScreen extends StatelessWidget {
-  final StationSettingsController ctrl;
-  const _StationSettingsScreen({required this.ctrl});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return Scaffold(
-      appBar: AppBar(title: Text('station_section_title'.tr)),
-      body: GetBuilder<StationSettingsController>(
-        builder: (_) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.s4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SwitchListTile(
-                  title: Text('station_enabled'.tr,
-                      style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 14, fontWeight: FontWeight.w500)),
-                  value: ctrl.settings.enabled,
-                  onChanged: (v) => ctrl.saveSettings(enabled: v),
-                  activeColor: colors.brand,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                const SizedBox(height: AppSpacing.s4),
-                Text('station_methods_label'.tr, style: AppTextStyles.h3(context)),
-                const SizedBox(height: AppSpacing.s2),
-                ...['face_only', 'fingerprint_only', 'both_available'].map((m) {
-                  final label = m == 'face_only'
-                      ? 'station_face_only'.tr
-                      : m == 'fingerprint_only'
-                          ? 'station_fingerprint_only'.tr
-                          : 'station_both'.tr;
-                  return RadioListTile<String>(
-                    title: Text(label, style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 13)),
-                    value: m,
-                    groupValue: ctrl.settings.methods,
-                    onChanged: (v) => ctrl.saveSettings(methods: v),
-                    activeColor: colors.brand,
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                  );
-                }),
-                const SizedBox(height: AppSpacing.s4),
-                Text('station_gps_radius'.tr, style: AppTextStyles.h3(context)),
-                const SizedBox(height: AppSpacing.s2),
-                Slider(
-                  value: ctrl.settings.gpsRadiusMeters.toDouble(),
-                  min: 10,
-                  max: 200,
-                  divisions: 19,
-                  label: '${ctrl.settings.gpsRadiusMeters}m',
-                  onChanged: (v) => ctrl.saveSettings(gpsRadius: v.toInt()),
-                  activeColor: colors.brand,
-                ),
-                const SizedBox(height: AppSpacing.s3),
-                Text('station_confidence'.tr, style: AppTextStyles.h3(context)),
-                const SizedBox(height: AppSpacing.s2),
-                Slider(
-                  value: ctrl.settings.confidenceThreshold,
-                  min: 0.5,
-                  max: 1.0,
-                  divisions: 10,
-                  label: ctrl.settings.confidenceThreshold.toStringAsFixed(2),
-                  onChanged: (v) => ctrl.saveSettings(confidence: v),
-                  activeColor: colors.brand,
-                ),
-                const SizedBox(height: AppSpacing.s3),
-                SwitchListTile(
-                  title: Text('station_anti_spoofing'.tr,
-                      style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 14)),
-                  value: ctrl.settings.antiSpoofing,
-                  onChanged: (v) => ctrl.saveSettings(antiSpoofing: v),
-                  activeColor: colors.brand,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                const SizedBox(height: AppSpacing.s4),
-                if (!ctrl.settings.hasAdminPin) ...[
-                  Text('admin_pin'.tr, style: AppTextStyles.h3(context)),
-                  const SizedBox(height: AppSpacing.s2),
-                  ElevatedButton.icon(
-                    onPressed: () => _showPinDialog(context),
-                    icon: const Icon(Icons.pin_outlined),
-                    label: Text('set_admin_pin'.tr, style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic')),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colors.brand,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: AppSpacing.s5),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => Get.toNamed<void>(AppRoutes.stationsManagement),
-                        icon: const Icon(Icons.devices_outlined, size: 18),
-                        label: Text('manage_devices'.tr, style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontWeight: FontWeight.w500)),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: colors.brand,
-                          side: BorderSide(color: colors.brand),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.s3),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => Get.toNamed<void>(AppRoutes.recognitionLogs),
-                        icon: const Icon(Icons.history_outlined, size: 18),
-                        label: Text('view_recognition_logs'.tr, style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontWeight: FontWeight.w500)),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: colors.brand,
-                          side: BorderSide(color: colors.brand),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  void _showPinDialog(BuildContext context) {
-    final pinCtrl = TextEditingController();
-    Get.dialog<void>(
-      AlertDialog(
-        title: Text('admin_pin'.tr),
-        content: TextField(
-          controller: pinCtrl,
-          obscureText: true,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(hintText: '******'),
-        ),
-        actions: [
-          TextButton(onPressed: () => Get.back<void>(), child: Text('cancel'.tr)),
-          ElevatedButton(
-            onPressed: () {
-              if (pinCtrl.text.isNotEmpty) {
-                Get.back<void>();
-                ctrl.saveSettings(adminPin: pinCtrl.text);
-              }
-            },
-            child: Text('save'.tr),
-          ),
-        ],
-      ),
     );
   }
 }

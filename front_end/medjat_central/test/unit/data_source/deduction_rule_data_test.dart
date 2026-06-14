@@ -15,6 +15,7 @@ void main() {
   setUp(() {
     setupTestBinding();
     setupGetX();
+    registerFallbackValue(<String, dynamic>{});
     mockCrud = MockCRUD();
     Get.put<CRUD>(mockCrud);
     data = DeductionRuleData();
@@ -23,40 +24,28 @@ void main() {
   tearDown(() => teardownGetX());
 
   group('DeductionRuleData', () {
-    test('getDeductionRules ينادي getData', () async {
+    test('getDeductionConfig ينادي getData', () async {
       when(() => mockCrud.getData(any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
 
-      await data.getDeductionRules();
+      await data.getDeductionConfig();
 
       verify(() => mockCrud.getData(any())).called(1);
     });
 
-    test('createDeductionRule ينادي postData', () async {
+    test('saveDeductionConfig ينادي postData', () async {
       when(() => mockCrud.postData(any(), any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
 
-      await data.createDeductionRule({'name': 'خصم تأخير'});
+      final payload = {
+        'absence_days': 1.5,
+        'tiers': [
+          {'threshold_minutes': 15, 'deduction_days': 0.25},
+        ],
+      };
+      await data.saveDeductionConfig(payload);
 
-      verify(() => mockCrud.postData(any(), {'name': 'خصم تأخير'})).called(1);
-    });
-
-    test('updateDeductionRule ينادي putData', () async {
-      when(() => mockCrud.putData(any(), any()))
-          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
-
-      await data.updateDeductionRule(3, {'name': 'محدث'});
-
-      verify(() => mockCrud.putData(any(), {'name': 'محدث'})).called(1);
-    });
-
-    test('deleteDeductionRule ينادي deleteData', () async {
-      when(() => mockCrud.deleteData(any()))
-          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
-
-      await data.deleteDeductionRule(5);
-
-      verify(() => mockCrud.deleteData(any())).called(1);
+      verify(() => mockCrud.postData(any(), payload)).called(1);
     });
   });
 }

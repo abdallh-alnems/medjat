@@ -74,7 +74,7 @@ void main() {
       expect(emp.iqamaNumber, 'IQ123');
       expect(emp.iqamaExpiry, DateTime(2025, 6, 15));
       expect(emp.passportNumber, 'PP123');
-      expect(emp.passportExpiry, DateTime(2026, 1, 1));
+      expect(emp.passportExpiry, DateTime(2026));
       expect(emp.workPermitNumber, 'WP123');
       expect(emp.contractType, 'full_time');
       expect(emp.contractStart, DateTime(2024, 1, 15));

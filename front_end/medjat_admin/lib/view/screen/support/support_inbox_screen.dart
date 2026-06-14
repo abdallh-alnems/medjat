@@ -60,7 +60,7 @@ class SupportInboxScreen extends StatelessWidget {
                   : ListView.separated(
                       padding: const EdgeInsets.all(AppSpacing.s4),
                       itemCount: controller.filteredTickets.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s2),
+                      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.s2),
                       itemBuilder: (context, index) =>
                           _TicketCard(ticket: controller.filteredTickets[index]),
                     ),
@@ -94,7 +94,7 @@ class _TicketCard extends StatelessWidget {
         onTap: () {
           final controller = Get.find<SupportController>();
           controller.openThread(ticket.id);
-          Get.toNamed(
+          Get.toNamed<void>(
             AppRoutes.supportThread,
             arguments: {'ticket_id': ticket.id},
           );

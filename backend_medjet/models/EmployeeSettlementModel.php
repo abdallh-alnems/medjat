@@ -35,6 +35,18 @@ final class EmployeeSettlementModel {
         return self::decode($row);
     }
 
+    /**
+     * Remove an employee's settlement entirely. Used when re-hiring a
+     * terminated employee so a future end-of-service starts from a clean draft
+     * instead of being blocked by the previous (approved/paid) record.
+     */
+    public static function deleteForEmployee(int $employeeId, int $tenantId): bool {
+        return Database::execute(
+            "DELETE FROM employee_settlements WHERE employee_id = ? AND tenant_id = ?",
+            [$employeeId, $tenantId]
+        ) >= 0;
+    }
+
     public static function findById(int $id, int $tenantId): ?array {
         $row = Database::fetchOne(
             "SELECT * FROM employee_settlements WHERE id = ? AND tenant_id = ? LIMIT 1",

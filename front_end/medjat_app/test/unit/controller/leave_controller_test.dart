@@ -11,7 +11,7 @@ import '../../helpers/test_helpers.dart';
 
 class MockLeaveData extends Mock implements LeaveData {}
 
-Widget _testApp() => GetMaterialApp(home: const SizedBox());
+Widget _testApp() => const GetMaterialApp(home: SizedBox());
 
 void main() {
   late MockLeaveData mockLeaveData;
@@ -21,6 +21,11 @@ void main() {
     registerFallbacks();
     mockLeaveData = MockLeaveData();
     Get.put<LeaveData>(mockLeaveData);
+    when(() => mockLeaveData.myLeaves()).thenAnswer((_) async =>
+        <String, dynamic>{
+          'status': StatusRequest.success,
+          'data': <String, dynamic>{'items': <Map<String, dynamic>>[]},
+        });
   });
 
   tearDown(() {

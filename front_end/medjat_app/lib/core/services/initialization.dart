@@ -11,18 +11,31 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../class/crud.dart';
 import '../constant/firebase_options.dart';
 import '../constant/routes/app_routes.dart';
+import '../widget/maintenance_gate.dart';
 import 'locale_service.dart';
 import 'dark_light_service.dart';
 import 'token_storage_service.dart';
 
+/// هل تحمل الرسالة إشارة تفعيل الصيانة؟ (enabled=='1'/'true')
+bool _isMaintenanceEnabled(RemoteMessage message) {
+  final e = message.data['enabled'];
+  return e == '1' || e == 'true';
+}
+
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
+  // إشارة الصيانة والتطبيق في الخلفية/مغلق: خزّن العلم لتقرأه البوابة عند الفتح.
+  if (message.data['type'] == 'maintenance_mode') {
+    await GetStorage.init();
+    await GetStorage().write(kPendingMaintenanceKey, _isMaintenanceEnabled(message));
+  }
 }
 
 class MyServices extends GetxService {
@@ -51,8 +64,12 @@ class MyServices extends GetxService {
     await _initRemoteConfig();
 
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    await _initMaintenanceSignals();
 
     _initSessionExpiredHandler();
+
+    // Initialize the Google Mobile Ads SDK (banner + native ads shown app-wide).
+    unawaited(MobileAds.instance.initialize());
 
     return this;
   }
@@ -82,6 +99,27 @@ class MyServices extends GetxService {
     await remoteConfig.setDefaults(const {
       'medjat_app_min_version': '0.0.0',
       'medjat_app_maintenance_enabled': false,
+    });
+  }
+
+  /// اشترك في موضوع الصيانة واستقبل إشارات FCM الفورية. في المقدمة نطبّق الحالة
+  /// مباشرةً عبر [MaintenanceGate.trigger]؛ وعند الفتح من إشعار نخزّن العلم لتقرأه
+  /// البوابة. (حالة الخلفية/المغلق يعالجها معالج الخلفية.)
+  Future<void> _initMaintenanceSignals() async {
+    try {
+      await FirebaseMessaging.instance.subscribeToTopic(kMaintenanceTopic);
+    } catch (_) {}
+
+    FirebaseMessaging.onMessage.listen((message) {
+      if (message.data['type'] == 'maintenance_mode') {
+        MaintenanceGate.trigger(_isMaintenanceEnabled(message));
+      }
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      if (message.data['type'] == 'maintenance_mode') {
+        MaintenanceGate.trigger(_isMaintenanceEnabled(message));
+      }
     });
   }
 

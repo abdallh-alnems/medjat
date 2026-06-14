@@ -57,7 +57,7 @@ class ManagerData {
   }) async {
     return await _crud.postData(AppLinks.adminUpdate, {
       'admin_id': adminId,
-      if (role != null) 'role': role,
+      'role': ?role,
       if (branchProvided) 'branch_id': branchId,
     });
   }

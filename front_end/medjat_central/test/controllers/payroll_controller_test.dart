@@ -59,7 +59,7 @@ void main() {
               branchId: any(named: 'branchId')))
           .thenAnswer((_) async => <String, dynamic>{
                 'status': StatusRequest.success,
-                'data': <String, dynamic>{'items': []},
+                'data': <String, dynamic>{'items': <Map<String, dynamic>>[]},
               });
 
       controller = PayrollController();

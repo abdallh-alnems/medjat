@@ -27,6 +27,11 @@ class AttendanceData {
     return await _crud.postData(AppLinks.checkOut, {});
   }
 
+  /// Fetches the employee's own attendance records for a given `YYYY-MM` month.
+  Future<Map<String, dynamic>> getMyAttendance(String month) async {
+    return await _crud.getData(AppLinks.attendanceMonth(month));
+  }
+
   Future<Map<String, dynamic>> syncOffline(List<Map<String, dynamic>> records) async {
     return await _crud.postData(AppLinks.attendanceSync, {
       'records': records,

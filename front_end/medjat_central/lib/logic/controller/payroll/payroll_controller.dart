@@ -119,6 +119,57 @@ class PayrollController extends GetxController {
     return false;
   }
 
+  /// Selected label month as "YYYY-MM" — the address the live/disburse
+  /// endpoints expect.
+  String get _selectedMonthStr =>
+      '$selectedYear-${selectedMonth.toString().padLeft(2, '0')}';
+
+  /// True when the selected cycle hasn't ended yet (today falls before its
+  /// last day). Disbursing now pays the full month in advance and freezes the
+  /// figures, so the UI surfaces a warning before confirming.
+  bool get isSelectedCycleOpen {
+    final end = cycleWindowTo(selectedDate);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final endDay = DateTime(end.year, end.month, end.day);
+    return today.isBefore(endDay);
+  }
+
+  /// Disburse one employee's salary for the selected month: walks the
+  /// generate → approve → pay state machine in a single call, then refreshes
+  /// so the tile flips to "paid". Returns true on success.
+  Future<bool> disburseOne(int employeeId) async {
+    if (employeeId <= 0) return false;
+    final response =
+        await _payrollData.disburseEmployee(employeeId, _selectedMonthStr);
+    if (response['status'] == StatusRequest.success) {
+      Get.snackbar('done'.tr, 'disburse_done'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      await loadPayrolls();
+      return true;
+    }
+    Get.snackbar('error'.tr, 'disburse_failed'.tr,
+        snackPosition: SnackPosition.BOTTOM);
+    return false;
+  }
+
+  /// Disburse every in-scope employee's salary for the selected month. Honors
+  /// the active branch filter so "pay this branch" pays exactly the rows the
+  /// user is viewing. Already-paid slips are skipped server-side.
+  Future<bool> disburseMonth() async {
+    final response = await _payrollData.disburseAll(_selectedMonthStr,
+        branchId: branchFilter);
+    if (response['status'] == StatusRequest.success) {
+      Get.snackbar('done'.tr, 'disburse_all_done'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      await loadPayrolls();
+      return true;
+    }
+    Get.snackbar('error'.tr, 'disburse_failed'.tr,
+        snackPosition: SnackPosition.BOTTOM);
+    return false;
+  }
+
   /// True when the cycle is named after its end month (most days fall there).
   /// With a 30/31-day month this is the case once `cycleStartDay >= 17`.
   bool get cycleLabeledByEndMonth => cycleStartDay >= 17;
@@ -129,7 +180,7 @@ class PayrollController extends GetxController {
   /// Start date (inclusive) of the cycle whose label month is the picked one.
   DateTime cycleWindowFrom(DateTime labelMonth) {
     if (cycleStartDay <= 1) {
-      return DateTime(labelMonth.year, labelMonth.month, 1);
+      return DateTime(labelMonth.year, labelMonth.month);
     }
     // End-labeled cycles start in the prior month; start-labeled cycles
     // start in the label month itself.

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import '../../../core/class/status_request.dart';
 import '../../../data/data_source/remote/leave_data/leave_data.dart';
@@ -205,7 +206,7 @@ class LeaveController extends GetxController {
     final response = await _leaveData.approveLeave(id);
     if (response['status'] == StatusRequest.success) {
       Get.snackbar('done'.tr, 'leave_approved'.tr, snackPosition: SnackPosition.BOTTOM);
-      loadLeaves();
+      unawaited(loadLeaves());
     } else {
       final msg = response['message'];
       Get.snackbar('error'.tr, msg is String ? msg : 'error_try_again'.tr,
@@ -217,7 +218,7 @@ class LeaveController extends GetxController {
     final response = await _leaveData.rejectLeave(id, reason: reason);
     if (response['status'] == StatusRequest.success) {
       Get.snackbar('done'.tr, 'leave_rejected_msg'.tr, snackPosition: SnackPosition.BOTTOM);
-      loadLeaves();
+      unawaited(loadLeaves());
     } else {
       final msg = response['message'];
       Get.snackbar('error'.tr, msg is String ? msg : 'error_try_again'.tr,
@@ -230,7 +231,7 @@ class LeaveController extends GetxController {
     if (response['status'] == StatusRequest.success) {
       Get.snackbar('done'.tr, 'leave_converted_to_absence'.tr,
           snackPosition: SnackPosition.BOTTOM);
-      loadLeaves();
+      unawaited(loadLeaves());
     } else {
       final msg = response['message'];
       Get.snackbar('error'.tr,
@@ -285,7 +286,7 @@ class LeaveController extends GetxController {
         Get.snackbar('done'.tr, 'leave_created_success'.tr,
             snackPosition: SnackPosition.BOTTOM);
       }
-      loadLeaves();
+      unawaited(loadLeaves());
       return true;
     }
 
@@ -327,7 +328,7 @@ class LeaveController extends GetxController {
     if (response['status'] == StatusRequest.success) {
       Get.snackbar('done'.tr, 'recurring_leave_created'.tr,
           snackPosition: SnackPosition.BOTTOM);
-      loadLeaves();
+      unawaited(loadLeaves());
       return true;
     }
 

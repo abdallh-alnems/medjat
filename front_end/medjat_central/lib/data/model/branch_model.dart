@@ -8,12 +8,6 @@ class BranchModel {
   final int employeeCount;
   final List<String>? attendanceMethods;
   final int gpsRadiusMeters;
-  final bool stationEnabled;
-  final String stationMethods;
-  final int stationGpsRadiusMeters;
-  final double stationConfidenceThreshold;
-  final bool stationAntiSpoofing;
-  final bool hasStationPin;
   final bool? allowOfflineAttendance;
   // Per-branch attendance cycle start day; null = inherit company default.
   final int? cycleStartDay;
@@ -28,12 +22,6 @@ class BranchModel {
     this.employeeCount = 0,
     this.attendanceMethods,
     this.gpsRadiusMeters = 100,
-    this.stationEnabled = false,
-    this.stationMethods = 'face_only',
-    this.stationGpsRadiusMeters = 30,
-    this.stationConfidenceThreshold = 0.85,
-    this.stationAntiSpoofing = true,
-    this.hasStationPin = false,
     this.allowOfflineAttendance,
     this.cycleStartDay,
   });
@@ -71,12 +59,6 @@ class BranchModel {
       employeeCount: (json['employee_count'] as int?) ?? 0,
       attendanceMethods: methods,
       gpsRadiusMeters: (json['gps_radius_meters'] as int?) ?? 100,
-      stationEnabled: (json['station_enabled'] as int?) == 1,
-      stationMethods: (json['station_methods'] as String?) ?? 'face_only',
-      stationGpsRadiusMeters: (json['station_gps_radius_meters'] as int?) ?? 30,
-      stationConfidenceThreshold: _parseDouble(json['station_confidence_threshold']) ?? 0.85,
-      stationAntiSpoofing: (json['station_anti_spoofing_enabled'] as int?) == 1,
-      hasStationPin: (json['station_admin_pin_hash'] as String?) != null,
       allowOfflineAttendance: allowOffline,
       cycleStartDay: (json['cycle_start_day'] as num?)?.toInt(),
     );
@@ -94,12 +76,6 @@ class BranchModel {
     // inheriting company methods) instead of keeping the previous value.
     Object? attendanceMethods = _unset,
     int? gpsRadiusMeters,
-    bool? stationEnabled,
-    String? stationMethods,
-    int? stationGpsRadiusMeters,
-    double? stationConfidenceThreshold,
-    bool? stationAntiSpoofing,
-    bool? hasStationPin,
     Object? allowOfflineAttendance = _unset,
     int? cycleStartDay,
   }) {
@@ -115,12 +91,6 @@ class BranchModel {
           ? this.attendanceMethods
           : attendanceMethods as List<String>?,
       gpsRadiusMeters: gpsRadiusMeters ?? this.gpsRadiusMeters,
-      stationEnabled: stationEnabled ?? this.stationEnabled,
-      stationMethods: stationMethods ?? this.stationMethods,
-      stationGpsRadiusMeters: stationGpsRadiusMeters ?? this.stationGpsRadiusMeters,
-      stationConfidenceThreshold: stationConfidenceThreshold ?? this.stationConfidenceThreshold,
-      stationAntiSpoofing: stationAntiSpoofing ?? this.stationAntiSpoofing,
-      hasStationPin: hasStationPin ?? this.hasStationPin,
       allowOfflineAttendance: identical(allowOfflineAttendance, _unset)
           ? this.allowOfflineAttendance
           : allowOfflineAttendance as bool?,

@@ -38,7 +38,7 @@ class ShiftController extends GetxController {
       'name': name,
       'start_time': startTime,
       'end_time': endTime,
-      if (branchId != null) 'branch_id': branchId,
+      'branch_id': ?branchId,
     });
     if (response['status'] == StatusRequest.success) {
       await loadShifts();
@@ -56,14 +56,21 @@ class ShiftController extends GetxController {
     return false;
   }
 
-  Future<bool> deleteShift(int id, {int? transferToShiftId}) async {
+  /// Deletes a shift. Returns the server result (`action`, `affected`,
+  /// `schedule_moved`) on success, or null on failure.
+  Future<Map<String, dynamic>?> deleteShift(int id,
+      {int? transferToShiftId}) async {
     final response =
         await _data.deleteShift(id, transferToShiftId: transferToShiftId);
     if (response['status'] == StatusRequest.success) {
       await loadShifts();
-      return true;
+      final body = response['data'];
+      final result = (body is Map && body['data'] is Map)
+          ? Map<String, dynamic>.from(body['data'] as Map)
+          : <String, dynamic>{};
+      return result;
     }
-    return false;
+    return null;
   }
 
   Future<int> assignEmployees(int shiftId, List<int> employeeIds) async {

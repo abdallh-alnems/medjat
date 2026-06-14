@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import '../../../core/class/status_request.dart';
 import '../../../data/data_source/remote/asset_data/asset_data.dart';
@@ -64,7 +65,7 @@ class AssetController extends GetxController {
     if (response['status'] == StatusRequest.success) {
       Get.snackbar('done'.tr, 'asset_return_confirmed'.tr,
           snackPosition: SnackPosition.BOTTOM);
-      loadAssets();
+      unawaited(loadAssets());
     } else {
       _failSnack(response);
     }
@@ -75,7 +76,7 @@ class AssetController extends GetxController {
     if (response['status'] == StatusRequest.success) {
       Get.snackbar('done'.tr, 'asset_return_rejected'.tr,
           snackPosition: SnackPosition.BOTTOM);
-      loadAssets();
+      unawaited(loadAssets());
     } else {
       _failSnack(response);
     }
@@ -110,7 +111,7 @@ class AssetController extends GetxController {
     if (response['status'] == StatusRequest.success) {
       // Snackbar is shown by the caller *after* closing the sheet — showing it
       // here would make Get.back() pop the snackbar instead of the sheet.
-      loadAssets();
+      unawaited(loadAssets());
       return true;
     }
     _failSnack(response, fallback: 'asset_create_failed'.tr);
@@ -139,7 +140,7 @@ class AssetController extends GetxController {
 
     final response = await _data.updateAsset(id, data);
     if (response['status'] == StatusRequest.success) {
-      loadAssets();
+      unawaited(loadAssets());
       return true;
     }
     _failSnack(response, fallback: 'asset_update_failed'.tr);
@@ -151,7 +152,7 @@ class AssetController extends GetxController {
     if (response['status'] == StatusRequest.success) {
       Get.snackbar('done'.tr, 'asset_deleted'.tr,
           snackPosition: SnackPosition.BOTTOM);
-      loadAssets();
+      unawaited(loadAssets());
     } else {
       _failSnack(response);
     }

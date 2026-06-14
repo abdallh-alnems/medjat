@@ -79,8 +79,6 @@ class NotificationsScreen extends StatelessWidget {
         return Icons.event_note_outlined;
       case 'warning':
         return Icons.warning_amber_outlined;
-      case 'subscription':
-        return Icons.workspace_premium_outlined;
       case 'invite':
         return Icons.group_add_outlined;
       default:

@@ -20,7 +20,7 @@ class ShiftData {
 
   Future<Map<String, dynamic>> deleteShift(int id, {int? transferToShiftId}) async {
     return await _crud.postData(AppLinks.shiftDelete(id), {
-      if (transferToShiftId != null) 'transfer_to_shift_id': transferToShiftId,
+      'transfer_to_shift_id': ?transferToShiftId,
     });
   }
 

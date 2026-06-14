@@ -26,47 +26,13 @@ class DashboardScreen extends StatelessWidget {
           PopupMenuButton<String>(
             onSelected: (value) {
               switch (value) {
-                case 'tenants':
-                  Get.toNamed(AppRoutes.tenants);
-                  break;
-                case 'subscriptions':
-                  Get.toNamed(AppRoutes.subscriptions);
-                  break;
-                case 'plans':
-                  Get.toNamed(AppRoutes.plans);
-                  break;
-                case 'users':
-                  Get.toNamed(AppRoutes.users);
-                  break;
-                case 'audit':
-                  Get.toNamed(AppRoutes.audit);
-                  break;
-                case 'notifications':
-                  Get.toNamed(AppRoutes.notifications);
-                  break;
-                case 'support':
-                  Get.toNamed(AppRoutes.supportInbox);
-                  break;
-                case 'app_control':
-                  Get.toNamed(AppRoutes.appControl);
-                  break;
                 case 'logout':
                   Get.find<AuthController>().logout();
                   break;
               }
             },
             itemBuilder: (context) {
-              final isAdmin = Get.find<AuthController>().admin?.role == 'superadmin';
               return [
-                const PopupMenuItem(value: 'tenants', child: Text('الشركات')),
-                const PopupMenuItem(value: 'subscriptions', child: Text('الاشتراكات')),
-                const PopupMenuItem(value: 'plans', child: Text('الباقات')),
-                const PopupMenuItem(value: 'users', child: Text('المستخدمين')),
-                const PopupMenuItem(value: 'audit', child: Text('سجل العمليات')),
-                const PopupMenuItem(value: 'notifications', child: Text('الإشعارات')),
-                const PopupMenuItem(value: 'support', child: Text('الدعم الفني')),
-                if (isAdmin)
-                  const PopupMenuItem(value: 'app_control', child: Text('التحكم بالتطبيقات')),
                 const PopupMenuItem(value: 'logout', child: Text('تسجيل الخروج')),
               ];
             },
@@ -104,12 +70,12 @@ class DashboardScreen extends StatelessWidget {
     final isSuperAdmin = Get.find<AuthController>().admin?.role == 'superadmin';
     final actions = [
       _QuickAction(icon: Icons.business, label: 'الشركات', route: AppRoutes.tenants),
-      _QuickAction(icon: Icons.card_membership, label: 'الاشتراكات', route: AppRoutes.subscriptions),
-      _QuickAction(icon: Icons.layers, label: 'الباقات', route: AppRoutes.plans),
       _QuickAction(icon: Icons.people, label: 'المستخدمين', route: AppRoutes.users),
       _QuickAction(icon: Icons.history, label: 'سجل العمليات', route: AppRoutes.audit),
       _QuickAction(icon: Icons.notifications, label: 'الإشعارات', route: AppRoutes.notifications),
       _QuickAction(icon: Icons.headset_mic, label: 'الدعم الفني', route: AppRoutes.supportInbox),
+      if (isSuperAdmin)
+        _QuickAction(icon: Icons.person_add_alt_1, label: 'إضافة مشرف', route: AppRoutes.addAdmin),
       if (isSuperAdmin)
         _QuickAction(icon: Icons.settings_applications, label: 'التحكم بالتطبيقات', route: AppRoutes.appControl),
     ];
@@ -127,7 +93,7 @@ class DashboardScreen extends StatelessWidget {
                 style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 16),
               ),
               trailing: Icon(Icons.chevron_left, color: colors.textTertiary),
-              onTap: () => Get.toNamed(action.route),
+              onTap: () => Get.toNamed<void>(action.route),
             )),
       ],
     );
@@ -149,7 +115,6 @@ class _StatGrid extends StatelessWidget {
       _StatItem(label: 'شركات نشطة', value: '${dashboard?.activeTenants ?? 0}', color: colors.success),
       _StatItem(label: 'إجمالي المستخدمين', value: '${dashboard?.totalUsers ?? 0}'),
       _StatItem(label: 'إجمالي الموظفين', value: '${dashboard?.totalEmployees ?? 0}'),
-      _StatItem(label: 'اشتراكات نشطة', value: '${dashboard?.activeSubscriptions ?? 0}', color: colors.brand),
     ];
 
     return Column(

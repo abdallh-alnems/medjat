@@ -26,6 +26,12 @@ class SupportController extends GetxController {
   Timer? _pollTimer;
 
   @override
+  void onInit() {
+    super.onInit();
+    loadInbox();
+  }
+
+  @override
   void onClose() {
     _pollTimer?.cancel();
     super.onClose();
@@ -185,7 +191,7 @@ class SupportController extends GetxController {
       if (currentTicket.value != null && currentTicket.value!.id == ticketId) {
         await openThread(ticketId);
       }
-      loadInbox();
+      unawaited(loadInbox());
       Get.snackbar('تم', 'تم تحديث حالة التذكرة', snackPosition: SnackPosition.BOTTOM);
     } else {
       final message = response['message'] as String? ?? 'حدث خطأ';

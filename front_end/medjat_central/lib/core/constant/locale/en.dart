@@ -508,7 +508,6 @@ const Map<String, String> en = {
   'change_personal_info': 'Edit Personal Info',
   'company_info': 'Company Info',
   'deduction_bonus_rules': 'Deduction & Bonus Rules',
-  'subscription': 'Subscription',
   'coming_soon': 'Coming Soon',
   'profile_updated': 'Your info has been updated',
   'profile_update_error': 'Couldn\'t update your info',
@@ -552,7 +551,21 @@ const Map<String, String> en = {
   'status_draft': 'Draft',
   'status_approved': 'Approved',
   'status_paid': 'Paid',
+  'status_not_paid': 'Not paid',
   'status_live': 'Month-to-date',
+  // ── Salary disbursement ──
+  'disburse_salary': 'Disburse salary',
+  'disburse_month': 'Disburse this month',
+  'disburse_confirm_one':
+      'This will approve and pay @name\'s salary. Continue?',
+  'disburse_confirm_all':
+      'This will approve and pay salaries for @count employee(s) this month. Continue?',
+  'disburse_confirm_cta': 'Disburse',
+  'disburse_mid_cycle_warning':
+      'This cycle hasn\'t ended yet. The full month will be paid in advance and the figures frozen — any absences, lateness, or changes during the rest of the month won\'t be counted.',
+  'disburse_done': 'Salary disbursed',
+  'disburse_all_done': 'Salaries disbursed',
+  'disburse_failed': 'Could not disburse salary',
   'status_pending': 'Under Review',
   'status_rejected': 'Rejected',
   'status_uploaded': 'Uploaded',
@@ -611,6 +624,8 @@ const Map<String, String> en = {
       'This shift has @count employee(s). Pick a shift to move them to, or delete the shift and each employee will keep attendance times matching this shift.',
   'shift_delete_transfer_to': 'Transfer employees to',
   'shift_delete_keep_times': 'No transfer (keep same times)',
+  'shift_delete_transferred_msg': 'Shift deleted and @count employee(s) transferred',
+  'shift_delete_kept_times_msg': 'Shift deleted; kept times for @count employee(s)',
   'shift_members': 'Shift Members',
   'shift_add_member': 'Add Employee',
   'shift_no_members': 'No employees in this shift',
@@ -801,9 +816,6 @@ const Map<String, String> en = {
   'method_manual_admin': 'Manual by Admins',
   'method_manual_admin_desc':
       'An admin manually records employee attendance and departure.',
-  'method_station': 'Attendance Station',
-  'method_station_desc':
-      'A shared device at the branch (tablet/kiosk) checks employees in via face or fingerprint.',
   'inherit_tenant_default': 'Follow company methods',
   'gps_radius_meters': 'GPS Radius (meters)',
   'attendance_method_saved': 'Setting saved',
@@ -836,37 +848,7 @@ const Map<String, String> en = {
   'offline_disabled': 'Disabled',
   'allow_offline_branch_label': 'Offline Attendance',
 
-  // ── Station ──
-  'stations_management': 'Attendance Stations',
-  'stations_management_subtitle': 'Manage devices and logs',
-  'add_station': 'Add Station',
-  'device_name': 'Device Name',
-  'admin_pin': 'Admin PIN',
   'select_branch': 'Select Branch',
-  'fill_all_fields': 'Please fill all fields',
-  'no_stations': 'No stations',
-  'station_qr_title': 'Station Activation QR',
-  'qr_expires': 'Expires at',
-  'show_qr': 'Show QR',
-  'unlock': 'Unlock',
-  'confirm_delete_station': 'Delete this station?',
-  'station_status_active': 'Active',
-  'station_status_locked': 'Locked',
-  'station_status_deactivated': 'Deactivated',
-  'station_status_pending': 'Pending',
-  'last_activity': 'Last activity',
-  'station_section_title': 'Attendance Station',
-  'station_enabled': 'Enable Attendance Station',
-  'station_methods_label': 'Available Methods',
-  'station_face_only': 'Face Only',
-  'station_fingerprint_only': 'Fingerprint Only',
-  'station_both': 'Face & Fingerprint',
-  'station_gps_radius': 'GPS Radius (meters)',
-  'station_confidence': 'Confidence Threshold',
-  'station_anti_spoofing': 'Anti-Spoofing',
-  'set_admin_pin': 'Set Admin PIN',
-  'manage_devices': 'Manage Devices',
-  'view_recognition_logs': 'Recognition Logs',
 
   // ── Biometric ──
   'biometric_enrollment': 'Biometric Enrollment',
@@ -889,24 +871,11 @@ const Map<String, String> en = {
   'enroll_biometric_suggestion':
       'Would you like to enroll biometric data for this employee?',
 
-  // ── Recognition Logs ──
-  'recognition_logs': 'Recognition Logs',
-  'no_logs': 'No logs',
-  'filter_result': 'Filter by result',
-  'filter_date': 'Filter by date',
-  'recognition_success': 'Success',
-  'recognition_low_confidence': 'Low Confidence',
-  'recognition_no_match': 'No Match',
-  'recognition_spoofing': 'Spoofing',
-  'recognition_manual': 'Manual',
-  'recognition_too_soon': 'Too Soon',
   'unknown': 'Unknown',
 
   // ── New Permissions ──
   'perm_biometric_enroll': 'Enroll Biometrics',
   'perm_biometric_delete': 'Delete Biometrics',
-  'perm_station_manage': 'Manage Stations',
-  'perm_station_view_logs': 'View Recognition Logs',
   'perm_documents_manage_types': 'Manage Document Types',
   'perm_documents_verify': 'Verify Documents',
   'perm_documents_view_reports': 'View Document Reports',
@@ -1155,28 +1124,6 @@ const Map<String, String> en = {
   'missing_bank_info': 'Employees Missing Bank Info',
   'file_saved_to': 'File saved to',
   'failed_load_preview': 'Failed to load preview',
-
-  // ── Export Templates ──
-  'export_templates': 'Export Templates',
-  'export_templates_subtitle': 'Payroll export format',
-  'export_template_new': 'New Template',
-  'export_template_edit': 'Edit Template',
-  'export_template_delete_confirm':
-      'Are you sure you want to delete this template?',
-  'export_template_name': 'Template Name',
-  'export_template_delimiter': 'Delimiter',
-  'export_template_bom': 'Include UTF-8 BOM',
-  'export_template_header_row': 'Include Header Row',
-  'export_template_decimal_places': 'Decimal Places',
-  'export_template_columns': 'Columns',
-  'export_template_add_column': 'Add Column',
-  'export_template_column_label': 'Column Label',
-  'export_template_column_field': 'Field',
-  'export_template_created': 'Template created',
-  'export_template_updated': 'Template updated',
-  'export_template_deleted': 'Template deleted',
-  'export_template_not_found': 'Template not found',
-  'export_template_no_templates': 'No templates',
 
   // ── Employee Bank Fields ──
   'bank_name': 'Bank Name',
@@ -2163,6 +2110,19 @@ const Map<String, String> en = {
   'settlement_mark_paid': 'Mark as paid',
   'settlement_marked_paid': 'Settlement marked as paid',
   'settlement_paid_done': 'Paid',
+
+  // ── Terminated employees / re-hire ──
+  'terminated_employees': 'Terminated Employees',
+  'terminated_employees_hint': 'View ended-service staff and re-hire them',
+  'terminated_on': 'Ended on',
+  'no_terminated_employees': 'No terminated employees',
+  'rehire_title': 'Re-hire Employee',
+  'rehire_confirm':
+      '@name will be re-hired as "Pending Activation" and return to the employee list. Continue?',
+  'rehire_action': 'Re-hire',
+  'rehire_success': 'Employee re-hired successfully',
+  'rehire_failed': 'Could not re-hire the employee',
+  'rehire_login_hint': 'Login details for @name — share them so they can sign in again:',
 
   // ── Activity log ──
   'activity_log': 'Activity Log',

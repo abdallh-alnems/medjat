@@ -47,7 +47,7 @@ class BreakData {
   }) async {
     return await _crud.postData(AppLinks.breakApprove, {
       'break_id': breakId,
-      if (note != null) 'note': note,
+      'note': ?note,
       if (deductFromSalary != null) 'deduct_from_salary': deductFromSalary ? 1 : 0,
     });
   }
@@ -55,7 +55,7 @@ class BreakData {
   Future<Map<String, dynamic>> rejectBreak(int breakId, {String? reason}) async {
     return await _crud.postData(AppLinks.breakReject, {
       'break_id': breakId,
-      if (reason != null) 'rejection_reason': reason,
+      'rejection_reason': ?reason,
     });
   }
 
@@ -68,10 +68,10 @@ class BreakData {
   }) async {
     return await _crud.postData(AppLinks.breakPostpone, {
       'break_id': breakId,
-      if (note != null) 'note': note,
-      if (suggestedDate != null) 'suggested_date': suggestedDate,
-      if (suggestedStartTime != null) 'suggested_start_time': suggestedStartTime,
-      if (suggestedEndTime != null) 'suggested_end_time': suggestedEndTime,
+      'note': ?note,
+      'suggested_date': ?suggestedDate,
+      'suggested_start_time': ?suggestedStartTime,
+      'suggested_end_time': ?suggestedEndTime,
     });
   }
 }

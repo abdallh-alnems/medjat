@@ -46,6 +46,7 @@ void main() {
             'latitude': 24.7136,
             'longitude': 46.6753,
             'qr_code': 'QR123',
+            'is_vpn': 0,
           })).called(1);
     });
 
@@ -69,7 +70,7 @@ void main() {
 
       when(() => mockCrud.postData(any(), any())).thenAnswer((_) async => {
             'status': StatusRequest.success,
-            'data': {'results': []},
+            'data': {'results': <Map<String, dynamic>>[]},
           });
 
       final result = await attendanceData.syncOffline(records);

@@ -76,7 +76,7 @@ final class PayslipPdfService {
         $cycleFrom = self::clean($b['cycle_start'] ?? '');
         $cycleTo = self::clean($b['cycle_end'] ?? '');
 
-        $logo = self::imageTag($tenant['logo_url'] ?? null, 70);
+        $logo = '';
         $today = date('Y-m-d');
 
         // Rows for bonuses and deductions

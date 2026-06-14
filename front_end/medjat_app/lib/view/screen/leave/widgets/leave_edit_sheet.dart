@@ -88,7 +88,7 @@ class _LeaveEditSheetState extends State<_LeaveEditSheet> {
                     Text('edit_leave'.tr, style: AppTextStyles.h3(context)),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: _type,
+                      initialValue: _type,
                       decoration: InputDecoration(
                         labelText: 'leave_type'.tr,
                         border: const OutlineInputBorder(),

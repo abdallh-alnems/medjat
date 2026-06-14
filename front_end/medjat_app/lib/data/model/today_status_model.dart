@@ -33,6 +33,20 @@ class TodayStatusModel {
     this.checkInLng,
   });
 
+  /// MySQL DECIMAL/INT columns come back from the backend as strings via PDO
+  /// (e.g. "30.123456"), so a raw `as num` cast throws. Parse defensively.
+  static double? _toDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
+  }
+
+  static int? _toInt(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString());
+  }
+
   static DateTime? _parseTime(dynamic value, String? dateStr) {
     if (value == null) return null;
     final s = value.toString();
@@ -67,15 +81,15 @@ class TodayStatusModel {
       status: status,
       checkInAt: checkIn,
       checkOutAt: checkOut,
-      isLate: json['is_late'] == true || json['is_late'] == 1,
-      lateMinutes: (json['late_minutes'] as int?) ?? 0,
-      branchId: (json['branch_id'] as int?) ?? (branch?['id'] as int?),
+      isLate: json['is_late'] == true || json['is_late'] == 1 || json['is_late'] == '1',
+      lateMinutes: _toInt(json['late_minutes']) ?? 0,
+      branchId: _toInt(json['branch_id']) ?? _toInt(branch?['id']),
       branchName: (branch?['name'] as String?) ?? json['branch_name'] as String?,
-      branchLat: (branch?['latitude'] as num? ?? json['branch_lat'] as num?)?.toDouble(),
-      branchLng: (branch?['longitude'] as num? ?? json['branch_lng'] as num?)?.toDouble(),
-      branchRadiusMeters: branch?['gps_radius_meters'] as int? ?? json['branch_radius_meters'] as int?,
-      checkInLat: (json['check_in_latitude'] as num? ?? json['check_in_lat'] as num?)?.toDouble(),
-      checkInLng: (json['check_in_longitude'] as num? ?? json['check_in_lng'] as num?)?.toDouble(),
+      branchLat: _toDouble(branch?['latitude']) ?? _toDouble(json['branch_lat']),
+      branchLng: _toDouble(branch?['longitude']) ?? _toDouble(json['branch_lng']),
+      branchRadiusMeters: _toInt(branch?['gps_radius_meters']) ?? _toInt(json['branch_radius_meters']),
+      checkInLat: _toDouble(json['check_in_latitude']) ?? _toDouble(json['check_in_lat']),
+      checkInLng: _toDouble(json['check_in_longitude']) ?? _toDouble(json['check_in_lng']),
     );
   }
 

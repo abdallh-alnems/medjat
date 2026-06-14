@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -123,7 +124,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         _auth.isLoggedIn.value = true;
         Get.snackbar('done'.tr, 'company_created_success'.tr,
             snackPosition: SnackPosition.BOTTOM);
-        Get.offAllNamed(AppRoutes.home);
+        unawaited(Get.offAllNamed<void>(AppRoutes.home));
         return;
       }
     }
@@ -205,7 +206,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         _auth.hasTenant.value = true;
         Get.snackbar('done'.tr, 'company_joined_success'.tr,
             snackPosition: SnackPosition.BOTTOM);
-        Get.offAllNamed(AppRoutes.home);
+        unawaited(Get.offAllNamed<void>(AppRoutes.home));
         return;
       }
     }
@@ -225,17 +226,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           IconButton(
             icon: Icon(Icons.logout, color: colors.error),
             onPressed: () {
-              Get.dialog(AlertDialog(
+              Get.dialog<void>(AlertDialog(
                 title: Text('logout'.tr),
-                content: Text('هل أنت متأكد من تسجيل الخروج؟'),
+                content: const Text('هل أنت متأكد من تسجيل الخروج؟'),
                 actions: [
                   TextButton(
-                    onPressed: () => Get.back(),
-                    child: Text('إلغاء'),
+                    onPressed: () => Get.back<void>(),
+                    child: const Text('إلغاء'),
                   ),
                   TextButton(
                     onPressed: () {
-                      Get.back();
+                      Get.back<void>();
                       _auth.logout();
                     },
                     style: TextButton.styleFrom(foregroundColor: colors.error),

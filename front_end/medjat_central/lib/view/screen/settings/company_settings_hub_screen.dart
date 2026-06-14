@@ -77,7 +77,6 @@ class CompanySettingsHubScreen extends StatelessWidget {
             onTap: () => Get.toNamed<void>(AppRoutes.team),
           ),
           if (auth.user?.canManageEmployees == true ||
-              auth.user?.canManagePayroll == true ||
               auth.user?.canManageBranches == true) ...[
             const SizedBox(height: AppSpacing.s5),
             _HubSectionHeader(title: 'company_operations_structure'.tr),
@@ -87,15 +86,6 @@ class CompanySettingsHubScreen extends StatelessWidget {
                 title: 'shifts'.tr,
                 subtitle: 'shifts_subtitle'.tr,
                 onTap: () => Get.toNamed<void>(AppRoutes.shifts),
-              ),
-              const SizedBox(height: AppSpacing.s2),
-            ],
-            if (auth.user?.canManagePayroll == true) ...[
-              _HubTile(
-                icon: Icons.upload_file_outlined,
-                title: 'export_templates'.tr,
-                subtitle: 'export_templates_subtitle'.tr,
-                onTap: () => Get.toNamed<void>(AppRoutes.exportTemplates),
               ),
               const SizedBox(height: AppSpacing.s2),
             ],

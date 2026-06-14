@@ -170,7 +170,7 @@ class AssignShiftScreen extends StatelessWidget {
     );
   }
 
-  void _loadEmployees(
+  Future<void> _loadEmployees(
       RxList<EmployeeModel> employees, Rx<StatusRequest> empStatus) async {
     empStatus.value = StatusRequest.loading;
     final empData = Get.find<EmployeeData>();

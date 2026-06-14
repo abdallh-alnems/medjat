@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import '../../../core/class/status_request.dart';
 import '../../../data/data_source/remote/tenant_data/tenant_data.dart';
@@ -45,7 +46,7 @@ class TenantController extends GetxController {
     final response = await _tenantData.activate(id);
     if (response['status'] == StatusRequest.success) {
       Get.snackbar('تم', 'تم تفعيل الشركة', snackPosition: SnackPosition.BOTTOM);
-      loadTenants();
+      unawaited(loadTenants());
     } else {
       _showError(response);
     }
@@ -55,7 +56,7 @@ class TenantController extends GetxController {
     final response = await _tenantData.deactivate(id);
     if (response['status'] == StatusRequest.success) {
       Get.snackbar('تم', 'تم إيقاف الشركة', snackPosition: SnackPosition.BOTTOM);
-      loadTenants();
+      unawaited(loadTenants());
     } else {
       _showError(response);
     }
@@ -65,7 +66,7 @@ class TenantController extends GetxController {
     final response = await _tenantData.create(tenant);
     if (response['status'] == StatusRequest.success) {
       Get.snackbar('تم', 'تم إنشاء الشركة بنجاح', snackPosition: SnackPosition.BOTTOM);
-      loadTenants();
+      unawaited(loadTenants());
     } else {
       _showError(response);
     }

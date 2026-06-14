@@ -56,7 +56,6 @@ class AppLinks {
   static String get registerFcm => '$base/app/auth/update_fcm_token.php';
   static String get notificationPrefs =>
       '$base/app/auth/notification_prefs.php';
-  static String get myStationQr => '$base/app/employees/my_station_qr.php';
   static String get attendanceSecurityLog =>
       '$base/app/attendance/security_log.php';
 }

@@ -83,7 +83,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                 return ChoiceChip(
                   label: Text(
                     'ticket_category_$cat'.tr,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: 'IBM Plex Sans Arabic',
                       fontSize: 13,
                     ),
@@ -118,7 +118,7 @@ class _NewTicketScreenState extends State<NewTicketScreen> {
                 return ChoiceChip(
                   label: Text(
                     'ticket_priority_$p'.tr,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontFamily: 'IBM Plex Sans Arabic',
                       fontSize: 13,
                     ),

@@ -29,7 +29,7 @@ class PushNotificationService {
         debugPrint('LocalNotifications init error: $e');
       }
 
-      await messaging.requestPermission(alert: true, badge: true, sound: true);
+      await messaging.requestPermission();
 
       await _registerToken();
 
@@ -85,14 +85,91 @@ class PushNotificationService {
   }
 
   static void _handleData(Map<String, dynamic> data) {
-    final type = data['type'] as String? ?? '';
+    final type = data['type']?.toString() ?? '';
+
+    // Support replies carry a ticket id and open the chat directly.
     if (type == 'support') {
       final ticketId = int.tryParse(data['ticket_id']?.toString() ?? '');
       if (ticketId != null) {
         _navigateToSupportChat(ticketId);
+        return;
       }
-    } else if (type == 'asset') {
+      Get.toNamed<void>(AppRoutes.support);
+      return;
+    }
+
+    // Prefer routing by the id-bearing key in the payload: it is the most
+    // reliable signal of which screen the notification is "about", regardless
+    // of the exact `type` string the backend used.
+    if (data.containsKey('ticket_id')) {
+      final ticketId = int.tryParse(data['ticket_id']?.toString() ?? '');
+      if (ticketId != null) {
+        _navigateToSupportChat(ticketId);
+        return;
+      }
+    }
+    if (data.containsKey('leave_id')) {
+      Get.toNamed<void>(AppRoutes.leaveManage);
+      return;
+    }
+    if (data.containsKey('break_id')) {
+      Get.toNamed<void>(AppRoutes.breakManage);
+      return;
+    }
+    if (data.containsKey('loan_id')) {
+      Get.toNamed<void>(AppRoutes.loans);
+      return;
+    }
+    if (data.containsKey('asset_id')) {
       Get.toNamed<void>(AppRoutes.assets);
+      return;
+    }
+    if (data.containsKey('employee_document_id')) {
+      Get.toNamed<void>(AppRoutes.requiredDocumentSubmissions);
+      return;
+    }
+    if (data.containsKey('payroll_id')) {
+      Get.toNamed<void>(AppRoutes.reportPayroll);
+      return;
+    }
+
+    switch (type) {
+      case 'leave':
+      case 'annual':
+      case 'sick':
+      case 'personal':
+      case 'unpaid':
+        Get.toNamed<void>(AppRoutes.leaveManage);
+        break;
+      case 'break':
+      case 'break_approved':
+      case 'break_rejected':
+        Get.toNamed<void>(AppRoutes.breakManage);
+        break;
+      case 'loan':
+      case 'advance':
+        Get.toNamed<void>(AppRoutes.loans);
+        break;
+      case 'asset':
+        Get.toNamed<void>(AppRoutes.assets);
+        break;
+      case 'approval':
+      case 'document':
+      case 'document_approved':
+      case 'document_rejected':
+      case 'document_removed':
+        Get.toNamed<void>(AppRoutes.requiredDocumentSubmissions);
+        break;
+      case 'payroll':
+      case 'payroll_approved':
+      case 'payroll_paid':
+      case 'bonus_added':
+      case 'deduction_added':
+        Get.toNamed<void>(AppRoutes.reportPayroll);
+        break;
+      default:
+        Get.toNamed<void>(AppRoutes.notifications);
+        break;
     }
   }
 

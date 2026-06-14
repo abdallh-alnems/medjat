@@ -85,7 +85,8 @@ final class ShiftModel {
 
     public static function transferEmployees(int $fromShiftId, int $toShiftId, int $tenantId): int {
         return Database::execute(
-            "UPDATE employees SET shift_id = ? WHERE shift_id = ? AND tenant_id = ?",
+            "UPDATE employees SET shift_id = ?
+             WHERE shift_id = ? AND tenant_id = ? AND status != 'terminated'",
             [$toShiftId, $fromShiftId, $tenantId]
         );
     }
@@ -97,7 +98,7 @@ final class ShiftModel {
     public static function applyTimesToEmployees(int $shiftId, string $startTime, string $endTime, int $tenantId): int {
         return Database::execute(
             "UPDATE employees SET work_start_time = ?, work_end_time = ?
-             WHERE shift_id = ? AND tenant_id = ?",
+             WHERE shift_id = ? AND tenant_id = ? AND status != 'terminated'",
             [$startTime, $endTime, $shiftId, $tenantId]
         );
     }

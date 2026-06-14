@@ -120,7 +120,7 @@ void main() {
     test('loadPrefs updates preferences map', () async {
       when(() => mockNotificationData.list()).thenAnswer((_) async => {
             'status': StatusRequest.success,
-            'data': {'notifications': [], 'unread_count': 0},
+            'data': {'notifications': <Map<String, dynamic>>[], 'unread_count': 0},
           });
       when(() => mockNotificationData.getPrefs()).thenAnswer((_) async => {
             'status': StatusRequest.success,
@@ -144,7 +144,7 @@ void main() {
     test('updatePref calls API with updated prefs', () async {
       when(() => mockNotificationData.list()).thenAnswer((_) async => {
             'status': StatusRequest.success,
-            'data': {'notifications': [], 'unread_count': 0},
+            'data': {'notifications': <Map<String, dynamic>>[], 'unread_count': 0},
           });
       when(() => mockNotificationData.getPrefs()).thenAnswer((_) async => {
             'status': StatusRequest.success,

@@ -43,24 +43,13 @@ try {
     $pdo->beginTransaction();
 
     $stmt = $pdo->prepare(
-        "INSERT INTO tenants (name, plan, is_active, email_verified_at)
-         VALUES (?, 'starter', 1, NOW())"
+        "INSERT INTO tenants (name, is_active, email_verified_at)
+         VALUES (?, 1, NOW())"
     );
     $stmt->execute([
         $companyName,
     ]);
     $tenantId = (int) $pdo->lastInsertId();
-
-    $starterPlan = Database::fetchOne(
-        "SELECT id FROM plans WHERE name = 'starter' LIMIT 1"
-    );
-    if ($starterPlan) {
-        $stmt = $pdo->prepare(
-            "INSERT INTO subscriptions (tenant_id, plan_id, start_date, end_date, status)
-             VALUES (?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 30 DAY), 'trial')"
-        );
-        $stmt->execute([$tenantId, $starterPlan['id']]);
-    }
 
     $stmt = $pdo->prepare(
         "UPDATE admins
@@ -85,7 +74,7 @@ try {
 }
 
 $tenant = Database::fetchOne(
-    "SELECT id, name, plan, currency, timezone FROM tenants WHERE id = ? LIMIT 1",
+    "SELECT id, name, currency, timezone FROM tenants WHERE id = ? LIMIT 1",
     [$tenantId]
 );
 
@@ -94,7 +83,6 @@ Response::success([
     'tenant' => [
         'id' => (int) $tenant['id'],
         'name' => $tenant['name'],
-        'plan' => $tenant['plan'],
         'currency' => $tenant['currency'],
         'timezone' => $tenant['timezone'],
     ],

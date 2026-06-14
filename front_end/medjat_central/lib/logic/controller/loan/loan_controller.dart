@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:get/get.dart';
 import '../../../core/class/status_request.dart';
 import '../../../data/data_source/remote/loan_data/loan_data.dart';
@@ -64,7 +65,7 @@ class LoanController extends GetxController {
     if (response['status'] == StatusRequest.success) {
       Get.snackbar('done'.tr, 'loan_approved'.tr,
           snackPosition: SnackPosition.BOTTOM);
-      loadLoans();
+      unawaited(loadLoans());
     } else {
       _failSnack(response);
     }
@@ -75,7 +76,7 @@ class LoanController extends GetxController {
     if (response['status'] == StatusRequest.success) {
       Get.snackbar('done'.tr, 'loan_cancelled_done'.tr,
           snackPosition: SnackPosition.BOTTOM);
-      loadLoans();
+      unawaited(loadLoans());
     } else {
       _failSnack(response);
     }
@@ -102,7 +103,7 @@ class LoanController extends GetxController {
     if (response['status'] == StatusRequest.success) {
       Get.snackbar('done'.tr, 'loan_created'.tr,
           snackPosition: SnackPosition.BOTTOM);
-      loadLoans();
+      unawaited(loadLoans());
       return true;
     }
     _failSnack(response, fallback: 'loan_create_failed'.tr);

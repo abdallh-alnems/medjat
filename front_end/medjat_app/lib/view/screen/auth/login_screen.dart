@@ -131,7 +131,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   PrimaryInput(
                     label: 'activation_code'.tr,
                     controller: _codeController,
-                    keyboardType: TextInputType.text,
                     validator: (v) {
                       if (v == null || v.trim().isEmpty) return 'required'.tr;
                       if (v.trim().length < 4) return 'code_too_short'.tr;
@@ -157,14 +156,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () => Get.toNamed<void>(AppRoutes.joinScan),
                     icon: const Icon(Icons.qr_code_scanner, size: 20),
                     label: Text('scan_join_qr'.tr),
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: () => Get.toNamed<void>(AppRoutes.kioskPair),
-                    child: Text(
-                      'kiosk_mode'.tr,
-                      style: TextStyle(color: AppColors.brand(context)),
-                    ),
                   ),
                 ],
               ),

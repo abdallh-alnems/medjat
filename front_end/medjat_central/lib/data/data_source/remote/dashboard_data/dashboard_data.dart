@@ -5,7 +5,6 @@ import '../../../../core/constant/id/app_links.dart';
 class DashboardData {
   final CRUD _crud = Get.find<CRUD>();
 
-  // TODO: Ensure /dashboard endpoint returns branch_stats with:
   //   total_payroll (double), late (int), late_rate (double)
   //   If backend doesn't return them yet, default 0 will be used in the model.
   Future<Map<String, dynamic>> getDashboard() async {
@@ -19,7 +18,6 @@ class DashboardData {
     );
   }
 
-  // TODO: Backend must support category_id param on overview.php.
   // If not yet supported, the default behaviour returns all employees.
   Future<Map<String, dynamic>> getDashboardFiltered({
     int? branchId,

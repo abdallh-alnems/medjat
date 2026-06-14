@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
@@ -24,6 +23,11 @@ class HomeController extends GetxController {
   double? distanceFromBranch;
   bool isOffline = false;
   List<Map<String, dynamic>> monthRecords = [];
+
+  // Today's expected attendance window, as configured by management.
+  String? shiftStart;
+  String? shiftEnd;
+  bool isRestDay = false;
 
   StreamSubscription<bool>? _connectivitySub;
 
@@ -92,7 +96,11 @@ class HomeController extends GetxController {
     update();
 
     final now = DateTime.now();
-    final month = DateFormat('yyyy-MM').format(now);
+    // Build date strings with ASCII digits explicitly. The app locale is Arabic,
+    // so DateFormat().format() emits Arabic-Indic digits (٢٠٢٦-٠٦) which the
+    // backend can't match — returning zero records and a wrong "not checked in".
+    String two(int n) => n.toString().padLeft(2, '0');
+    final month = '${now.year}-${two(now.month)}';
 
     final response = await _homeData.getAttendanceMonth(month);
     final responseStatus = response['status'] as StatusRequest?;
@@ -104,13 +112,21 @@ class HomeController extends GetxController {
         if (configJson != null) {
           attendanceConfig = AttendanceConfigModel.fromJson(configJson);
         }
+        final shiftJson = data['today_shift'] as Map<String, dynamic>?;
+        if (shiftJson != null) {
+          shiftStart = shiftJson['start_time'] as String?;
+          shiftEnd = shiftJson['end_time'] as String?;
+          isRestDay = shiftJson['is_rest_day'] == true ||
+              shiftJson['is_rest_day'] == 1 ||
+              shiftJson['is_rest_day'] == '1';
+        }
         final records = (data['records'] as List<dynamic>?)
                 ?.map((e) => e as Map<String, dynamic>)
                 .toList() ??
             [];
         monthRecords = records;
 
-        final todayStr = DateFormat('yyyy-MM-dd').format(now);
+        final todayStr = '${now.year}-${two(now.month)}-${two(now.day)}';
         final todayRecord = records.where((r) {
           final recordDate = r['date']?.toString();
           return recordDate == todayStr;
@@ -124,7 +140,7 @@ class HomeController extends GetxController {
             status: AttendanceStatus.notCheckedIn,
           );
         }
-        _calculateDistance();
+        unawaited(_calculateDistance());
       }
       status = StatusRequest.success;
     } else if (responseStatus == StatusRequest.offline) {
@@ -153,6 +169,16 @@ class HomeController extends GetxController {
     } catch (_) {}
   }
 
+  /// Management-configured attendance window for today, e.g. "09:00 - 17:00".
+  /// Null when there's no schedule or today is a rest day.
+  String? get scheduledTimeText {
+    if (isRestDay || shiftStart == null) return null;
+    String hm(String t) => t.length >= 5 ? t.substring(0, 5) : t;
+    final start = hm(shiftStart!);
+    if (shiftEnd == null) return start;
+    return '$start - ${hm(shiftEnd!)}';
+  }
+
   AttendanceStatus get attendanceStatus =>
       todayStatus?.status ?? AttendanceStatus.notCheckedIn;
 
@@ -163,9 +189,7 @@ class HomeController extends GetxController {
   String get attendanceButtonText {
     if (isDayDone) return 'day_done'.tr;
     if (attendanceConfig.isSelfCheckDisabled) {
-      return attendanceConfig.hasStation
-          ? 'attendance_via_station'.tr
-          : 'attendance_via_admin'.tr;
+      return 'attendance_via_admin'.tr;
     }
     if (isOffline && canCheckIn) return 'check_in_offline'.tr;
     if (isOffline && canCheckOut) return 'check_out_offline'.tr;
@@ -178,9 +202,7 @@ class HomeController extends GetxController {
     if (isDayDone) return Icons.check_rounded;
     final config = attendanceConfig;
     if (config.isSelfCheckDisabled) {
-      return config.hasStation
-          ? Icons.monitor_outlined
-          : Icons.manage_accounts_outlined;
+      return Icons.manage_accounts_outlined;
     }
     if (config.selfMethods.length > 1) return Icons.touch_app_outlined;
     return config.hasGpsOnly && !config.hasQrGps
@@ -204,9 +226,9 @@ class HomeController extends GetxController {
 
     final config = attendanceConfig;
 
-    // Branch only allows manual/station — the employee can't self check-in.
+    // Branch only allows manual check-in — the employee can't self check-in.
     if (config.isSelfCheckDisabled) {
-      _showMethodUnavailableDialog(config);
+      _showMethodUnavailableDialog();
       return;
     }
 
@@ -227,11 +249,11 @@ class HomeController extends GetxController {
   Future<void> _startMethod(String method) async {
     if (method == 'gps_only') {
       if (!await _ensureLocationPermission()) return;
-      Get.toNamed<void>(AppRoutes.gpsCheckIn);
+      unawaited(Get.toNamed<void>(AppRoutes.gpsCheckIn));
     } else {
       if (!await _ensureCameraPermission()) return;
       if (!await _ensureLocationPermission()) return;
-      Get.toNamed<void>(AppRoutes.scanQr);
+      unawaited(Get.toNamed<void>(AppRoutes.scanQr));
     }
   }
 
@@ -262,16 +284,11 @@ class HomeController extends GetxController {
     return true;
   }
 
-  void _showMethodUnavailableDialog(AttendanceConfigModel config) {
-    final useStation = config.hasStation;
+  void _showMethodUnavailableDialog() {
     Get.dialog<void>(
       AlertDialog(
-        title: Text(useStation
-            ? 'attendance_station_title'.tr
-            : 'attendance_manual_title'.tr),
-        content: Text(useStation
-            ? 'attendance_station_desc'.tr
-            : 'attendance_manual_desc'.tr),
+        title: Text('attendance_manual_title'.tr),
+        content: Text('attendance_manual_desc'.tr),
         actions: [
           TextButton(
             onPressed: () => Get.back<void>(),

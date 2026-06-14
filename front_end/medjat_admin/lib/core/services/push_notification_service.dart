@@ -13,9 +13,7 @@ class PushNotificationService extends GetxService {
     final messaging = FirebaseMessaging.instance;
 
     final settings = await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
+      
     );
 
     if (settings.authorizationStatus == AuthorizationStatus.denied) {
@@ -45,7 +43,7 @@ class PushNotificationService extends GetxService {
     if (data['type'] == 'support' && data['ticket_id'] != null) {
       final ticketId = int.tryParse(data['ticket_id'].toString());
       if (ticketId != null) {
-        Get.toNamed(
+        Get.toNamed<void>(
           AppRoutes.supportThread,
           arguments: {'ticket_id': ticketId},
         );

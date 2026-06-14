@@ -34,7 +34,7 @@ class PushNotificationService {
         debugPrint('LocalNotifications init error: $e');
       }
 
-      await messaging.requestPermission(alert: true, badge: true, sound: true);
+      await messaging.requestPermission();
 
       await registerTokenNow();
     } catch (e) {
@@ -122,10 +122,42 @@ class PushNotificationService {
   static void _routeByType(Map<String, dynamic> data) {
     final type = data['type']?.toString() ?? '';
 
+    // Prefer routing by the id-bearing key in the payload: it is the most
+    // reliable signal of which screen the notification is "about", regardless
+    // of the exact `type` string the backend used.
+    if (data.containsKey('leave_id')) {
+      Get.toNamed<void>(AppRoutes.leaves);
+      return;
+    }
+    if (data.containsKey('break_id')) {
+      Get.toNamed<void>(AppRoutes.breaks);
+      return;
+    }
+    if (data.containsKey('loan_id')) {
+      Get.toNamed<void>(AppRoutes.advances);
+      return;
+    }
+    if (data.containsKey('asset_id')) {
+      Get.toNamed<void>(AppRoutes.myAssets);
+      return;
+    }
+    if (data.containsKey('payroll_id')) {
+      Get.toNamed<void>(AppRoutes.payroll);
+      return;
+    }
+    if (data.containsKey('employee_document_id')) {
+      Get.toNamed<void>(AppRoutes.myDocuments);
+      return;
+    }
+
     switch (type) {
       case 'leave':
       case 'leave_approved':
       case 'leave_rejected':
+      case 'annual':
+      case 'sick':
+      case 'personal':
+      case 'unpaid':
         Get.toNamed<void>(AppRoutes.leaves);
         break;
       case 'break':
@@ -133,12 +165,22 @@ class PushNotificationService {
       case 'break_rejected':
         Get.toNamed<void>(AppRoutes.breaks);
         break;
+      case 'loan':
+      case 'advance':
+        Get.toNamed<void>(AppRoutes.advances);
+        break;
       case 'payroll':
       case 'payroll_approved':
+      case 'payroll_paid':
+      case 'bonus_added':
+      case 'deduction_added':
         Get.toNamed<void>(AppRoutes.payroll);
         break;
       case 'document':
       case 'document_expiry':
+      case 'document_approved':
+      case 'document_rejected':
+      case 'document_removed':
         Get.toNamed<void>(AppRoutes.myDocuments);
         break;
       case 'asset':

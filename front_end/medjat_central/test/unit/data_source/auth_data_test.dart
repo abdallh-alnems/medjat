@@ -53,41 +53,27 @@ void main() {
       verify(() => mockCrud.postData(any(that: contains('logout.php')), {})).called(1);
     });
 
-    test('forgotPasswordSend ينادي postData مع auth: false', () async {
-      when(() => mockCrud.postData(any(), any(), auth: any(named: 'auth')))
+    test('sendVerification ينادي postData مع endpoint الصحيح', () async {
+      when(() => mockCrud.postData(any(), any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
 
-      await authData.forgotPasswordSend('test@example.com');
+      await authData.sendVerification('ar');
 
       verify(() => mockCrud.postData(
-            any(that: contains('forgot_password.php')),
-            {'email': 'test@example.com'},
-            auth: false,
+            any(that: contains('send_verification.php')),
+            {'lang': 'ar'},
           )).called(1);
     });
 
-    test('forgotPasswordVerify ينادي postData مع auth: false', () async {
+    test('sendPasswordReset ينادي postData مع auth: false', () async {
       when(() => mockCrud.postData(any(), any(), auth: any(named: 'auth')))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
 
-      await authData.forgotPasswordVerify('test@example.com', '123456');
+      await authData.sendPasswordReset('test@example.com', 'ar');
 
       verify(() => mockCrud.postData(
-            any(that: contains('verify_reset_code.php')),
-            {'email': 'test@example.com', 'code': '123456'},
-            auth: false,
-          )).called(1);
-    });
-
-    test('forgotPasswordReset ينادي postData مع auth: false', () async {
-      when(() => mockCrud.postData(any(), any(), auth: any(named: 'auth')))
-          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
-
-      await authData.forgotPasswordReset('test@example.com', '123456', 'newPass123');
-
-      verify(() => mockCrud.postData(
-            any(that: contains('reset_password.php')),
-            {'email': 'test@example.com', 'code': '123456', 'new_password': 'newPass123'},
+            any(that: contains('send_password_reset.php')),
+            {'email': 'test@example.com', 'lang': 'ar'},
             auth: false,
           )).called(1);
     });

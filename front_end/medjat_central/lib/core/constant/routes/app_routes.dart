@@ -40,10 +40,7 @@ abstract class AppRoutes {
   static const String team = '/team';
   static const String inviteAdmin = '/team/invite';
   static const String invitationCode = '/team/invite/code';
-  static const String stationsManagement = '/stations';
-  static const String stationSettings = '/stations/settings';
   static const String biometricEnrollment = '/employee/biometric';
-  static const String recognitionLogs = '/stations/logs';
   static const String requiredDocuments = '/settings/required-documents';
   static const String requiredDocumentSubmissions =
       '/settings/required-documents/submissions';
@@ -60,7 +57,12 @@ abstract class AppRoutes {
   static const String support = '/support';
   static const String supportChat = '/support/chat';
   static const String supportNew = '/support/new';
-  static const String exportTemplates = '/payroll/export-templates';
   static const String breakManage = '/break/manage';
-  static const String employeeSettlement = '/employee/settlement';
+  // Single top-level segment (NOT '/employee/settlement') so it is not captured
+  // by the parametric route '/employee/:id' (employeeDetail), which is
+  // registered first and would otherwise match it (id = "settlement"), leaving
+  // the "End of Service" button doing nothing.
+  static const String employeeSettlement = '/employee-settlement';
+  // Same reasoning: a single top-level segment, safe from '/employee/:id'.
+  static const String terminatedEmployees = '/terminated-employees';
 }

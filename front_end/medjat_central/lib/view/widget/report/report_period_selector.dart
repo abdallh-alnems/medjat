@@ -71,12 +71,12 @@ class _ReportPeriodSelectorState extends State<ReportPeriodSelector> {
         final start = today.subtract(Duration(days: daysFromSaturday));
         return (start, today);
       case ReportPeriod.thisMonth:
-        return (DateTime(now.year, now.month, 1), today);
+        return (DateTime(now.year, now.month), today);
       case ReportPeriod.lastMonth:
-        final firstOfThis = DateTime(now.year, now.month, 1);
+        final firstOfThis = DateTime(now.year, now.month);
         final lastMonthEnd = firstOfThis.subtract(const Duration(days: 1));
         final lastMonthStart =
-            DateTime(lastMonthEnd.year, lastMonthEnd.month, 1);
+            DateTime(lastMonthEnd.year, lastMonthEnd.month);
         return (lastMonthStart, lastMonthEnd);
       case ReportPeriod.custom:
         return null;
@@ -269,7 +269,7 @@ class _MonthYearRangeSheetState extends State<_MonthYearRangeSheet> {
   }
 
   void _apply() {
-    final start = DateTime(_fromYear, _fromMonth, 1);
+    final start = DateTime(_fromYear, _fromMonth);
     // Last day of the "to" month.
     var end = DateTime(_toYear, _toMonth + 1, 0);
     // Never query past today.

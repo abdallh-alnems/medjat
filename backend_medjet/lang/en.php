@@ -12,7 +12,6 @@ return [
     'branch_not_found' => 'Branch not found',
     'tenant_not_found' => 'Company not found',
     'tenant_suspended' => 'Company account is suspended',
-    'subscription_expired' => 'Subscription has expired',
     'permission_denied' => 'Permission denied for this action',
     'payroll_generated' => 'Payroll generated successfully',
     'leave_applied' => 'Leave request submitted',

@@ -48,38 +48,23 @@ if ($daySpan > 366) {
     Response::fail('Date range cannot exceed 366 days', 422);
 }
 
-$rows = Database::fetchAll(
-    "SELECT
-        a.id,
-        a.employee_id,
-        DATE_FORMAT(a.date, '%Y-%m-%d') AS date,
-        CASE WHEN a.check_in_time IS NOT NULL
-             THEN CONCAT(DATE_FORMAT(a.date, '%Y-%m-%d'), 'T', a.check_in_time)
-        END AS check_in,
-        CASE WHEN a.check_out_time IS NOT NULL
-             THEN CONCAT(DATE_FORMAT(a.date, '%Y-%m-%d'), 'T', a.check_out_time)
-        END AS check_out,
-        a.status,
-        a.late_minutes,
-        a.overtime_minutes,
-        a.worked_minutes,
-        a.notes AS note,
-        a.deduction_mode,
-        a.deduction_value,
-        l.type AS leave_type
-     FROM attendance a
-     LEFT JOIN leaves l
-            ON l.employee_id = a.employee_id
-           AND l.tenant_id = a.tenant_id
-           AND l.date = a.date
-           AND l.start_date = l.end_date
-           AND l.status = 'approved'
-     WHERE a.employee_id = ?
-       AND a.tenant_id = ?
-       AND a.date BETWEEN ? AND ?
-     ORDER BY a.date DESC",
-    [$employeeId, $tenantId, $from, $to]
-);
+// Tenant timezone drives "today" and the shift-end cutoff used to decide
+// between 'absent' and 'not_arrived' for the in-progress day.
+$tenant = TenantModel::findById($tenantId);
+$tz = $tenant['timezone'] ?? null;
+
+// Persist any pending no-show absences so payroll/reports stay in sync. The
+// calendar below would render correct statuses regardless, but materializing
+// keeps the rest of the system consistent. Best-effort; never block the view.
+try {
+    AttendanceModel::catchUpAbsences($tenantId, $tz);
+} catch (Throwable $e) {
+    error_log('get_attendance_history catchUpAbsences failed: ' . $e->getMessage());
+}
+
+// Gap-free calendar: materialized rows + synthesized statuses for missing days
+// ('absent' / 'not_arrived' / 'leave' / 'holiday' / 'weekly_off').
+$rows = AttendanceModel::getEmployeeAttendanceCalendar($employeeId, $tenantId, $from, $to, $tz);
 
 $summary = [
     'present' => 0,
@@ -88,6 +73,7 @@ $summary = [
     'leave'   => 0,
     'holiday' => 0,
     'weekly_off' => 0,
+    'not_arrived' => 0,
     'worked_minutes' => 0,
     'overtime_minutes' => 0,
     'late_minutes' => 0,
@@ -108,6 +94,8 @@ foreach ($rows as $r) {
         $summary['holiday']++;
     } elseif ($r['status'] === 'weekly_off') {
         $summary['weekly_off']++;
+    } elseif ($r['status'] === 'not_arrived') {
+        $summary['not_arrived']++;
     }
     $summary['worked_minutes']  += (int) ($r['worked_minutes'] ?? 0);
     $summary['overtime_minutes'] += (int) ($r['overtime_minutes'] ?? 0);

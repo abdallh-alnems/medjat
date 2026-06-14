@@ -136,7 +136,7 @@ class _AddLeaveSheetState extends State<AddLeaveSheet> {
     final picked = await showDateRangePicker(
       context: context,
       initialDateRange: _range,
-      firstDate: DateTime(now.year - 1, 1, 1),
+      firstDate: DateTime(now.year - 1),
       lastDate: DateTime(now.year + 2, 12, 31),
       helpText: 'leave_period'.tr,
       saveText: 'save'.tr,
@@ -854,7 +854,7 @@ class _EmployeePickerState extends State<_EmployeePicker> {
                       padding: const EdgeInsets.fromLTRB(
                           AppSpacing.s4, 0, AppSpacing.s4, AppSpacing.s4),
                       itemCount: filtered.length,
-                      separatorBuilder: (_, __) =>
+                      separatorBuilder: (_, _) =>
                           const SizedBox(height: AppSpacing.s1),
                       itemBuilder: (_, i) {
                         final e = filtered[i];

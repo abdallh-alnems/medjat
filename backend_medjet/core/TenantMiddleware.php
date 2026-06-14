@@ -25,8 +25,6 @@ final class TenantMiddleware {
             Response::fail('Company account is suspended', 403);
         }
 
-        SubscriptionModel::checkLimits($tenantId);
-
         return $tenantId;
     }
 

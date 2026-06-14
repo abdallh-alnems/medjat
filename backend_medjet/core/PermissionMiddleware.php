@@ -26,9 +26,9 @@ final class PermissionMiddleware {
 
     private const ROLE_DEFAULTS = [
         'general_manager' => '*',
-        'hr' => ['manage_employees', 'manage_deduction_rules', 'manage_attendance', 'view_reports', 'view_analytics', 'manage_documents', 'manage_payroll', 'manage_leaves', 'manage_assets', 'manage_recruitment', 'manage_performance', 'manage_engagement', 'manage_schedule', 'manage_approvals', 'biometric_enroll', 'biometric_delete', 'station_manage', 'station_view_logs'],
-        'branch_manager' => ['manage_employees', 'manage_attendance', 'manage_documents', 'view_reports', 'view_analytics', 'manage_assets', 'manage_recruitment', 'manage_performance', 'manage_engagement', 'manage_schedule', 'biometric_enroll', 'station_view_logs'],
-        'attendance' => ['manage_attendance', 'biometric_enroll', 'station_view_logs'],
+        'hr' => ['manage_employees', 'manage_deduction_rules', 'manage_attendance', 'view_reports', 'view_analytics', 'manage_documents', 'manage_payroll', 'manage_leaves', 'manage_assets', 'manage_recruitment', 'manage_performance', 'manage_engagement', 'manage_schedule', 'manage_approvals', 'biometric_enroll', 'biometric_delete'],
+        'branch_manager' => ['manage_employees', 'manage_attendance', 'manage_documents', 'view_reports', 'view_analytics', 'manage_assets', 'manage_recruitment', 'manage_performance', 'manage_engagement', 'manage_schedule', 'biometric_enroll'],
+        'attendance' => ['manage_attendance', 'biometric_enroll'],
         'viewer' => ['view_reports', 'view_analytics'],
         'employee' => [],
     ];

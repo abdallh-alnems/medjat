@@ -8,7 +8,6 @@ class TokenStorageService {
   static const _tokenKey = 'auth_token';
   static const _userKey = 'user_data';
   static const _deviceIdKey = 'device_id';
-  static const _stationTokenKey = 'station_token';
 
   static Future<void> saveToken(String token) async {
     await _storage.write(key: _tokenKey, value: token);
@@ -54,18 +53,6 @@ class TokenStorageService {
     if (deviceId != null) {
       await _storage.write(key: _deviceIdKey, value: deviceId);
     }
-  }
-
-  static Future<void> saveStationToken(String token) async {
-    await _storage.write(key: _stationTokenKey, value: token);
-  }
-
-  static Future<String?> getStationToken() async {
-    return await _storage.read(key: _stationTokenKey);
-  }
-
-  static Future<void> clearStationToken() async {
-    await _storage.delete(key: _stationTokenKey);
   }
 
   static String _generateUuid() {

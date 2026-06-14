@@ -24,7 +24,7 @@ class AttendanceController extends GetxController {
 
   /// GPS-only check-in / check-out: no QR scan. The backend resolves the
   /// method from the (absent) QR code and validates the branch configuration.
-  Future<void> processGpsCheck() => _process(qrCode: null);
+  Future<void> processGpsCheck() => _process();
 
   Future<void> _process({String? qrCode}) async {
     if (isProcessing) return;
@@ -98,15 +98,13 @@ class AttendanceController extends GetxController {
 
     if (responseStatus == StatusRequest.success) {
       status = StatusRequest.success;
-      await homeController.loadTodayStatus();
-      Get.offNamed<void>(
-        AppRoutes.attendanceSuccess,
-        arguments: {
-          'is_check_out': isCheckOut,
-          'offline': false,
-          'data': response['data'],
-        },
-      );
+      // Refresh today's status before leaving the screen, but never let a
+      // failure here turn an already-successful check-in into an error.
+      try {
+        await homeController.loadTodayStatus();
+      } catch (_) {}
+      _goHomeWithSuccess(isCheckOut: isCheckOut);
+      return;
     } else if (responseStatus == StatusRequest.offline) {
       await _processOffline(qrCode, position, isCheckOut, isVpn: isVpn);
     } else {
@@ -114,7 +112,11 @@ class AttendanceController extends GetxController {
       if (statusCode == 422 || statusCode == 400) {
         final msg = (response['message'] as String?) ?? '';
         final errorCode = response['error_code'];
-        if (msg.contains('range') ||
+        if (errorCode == 'LOCATION_REQUIRED') {
+          errorMessage = 'location_required'.tr;
+        } else if (errorCode == 'GEOFENCE_NOT_CONFIGURED') {
+          errorMessage = 'geofence_not_configured'.tr;
+        } else if (msg.contains('range') ||
             msg.contains('بعيد') ||
             msg.contains('نطاق') ||
             errorCode == 'GPS_OUT_OF_RANGE') {
@@ -169,15 +171,27 @@ class AttendanceController extends GetxController {
       isVpn: isVpn,
     );
 
-      Get.offNamed<void>(
-      AppRoutes.attendanceSuccess,
-      arguments: {
-        'is_check_out': isCheckOut,
-        'offline': true,
-      },
-    );
     status = StatusRequest.success;
+    _goHomeWithSuccess(isCheckOut: isCheckOut, offline: true);
+  }
+
+  /// On a successful check-in / check-out, return to the home screen and
+  /// surface a success message there — rather than a separate success screen.
+  void _goHomeWithSuccess({required bool isCheckOut, bool offline = false}) {
     update();
+    // Pop back to the home route that's already in the stack (check-in was
+    // opened from home). Do NOT use offAllNamed — that disposes shared
+    // data-source bindings (PayrollData, NotificationData, …) registered by
+    // earlier routes and breaks other screens.
+    Get.until((route) => route.settings.name == AppRoutes.home);
+    final message = offline
+        ? 'will_sync_online'.tr
+        : (isCheckOut ? 'check_out_success'.tr : 'check_in_success'.tr);
+    Get.snackbar(
+      'success'.tr,
+      message,
+      snackPosition: SnackPosition.BOTTOM,
+    );
   }
 
   Future<void> _saveOfflineRecord({

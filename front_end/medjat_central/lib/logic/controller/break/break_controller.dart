@@ -151,7 +151,7 @@ class BreakController extends GetxController {
         await _breakData.approveBreak(id, deductFromSalary: deductFromSalary);
     if (response['status'] == StatusRequest.success) {
       Get.snackbar('done'.tr, 'break_approved'.tr, snackPosition: SnackPosition.BOTTOM);
-      loadBreaks();
+      unawaited(loadBreaks());
     }
   }
 
@@ -159,7 +159,7 @@ class BreakController extends GetxController {
     final response = await _breakData.rejectBreak(id, reason: reason);
     if (response['status'] == StatusRequest.success) {
       Get.snackbar('done'.tr, 'break_rejected'.tr, snackPosition: SnackPosition.BOTTOM);
-      loadBreaks();
+      unawaited(loadBreaks());
     }
   }
 
@@ -179,7 +179,7 @@ class BreakController extends GetxController {
     );
     if (response['status'] == StatusRequest.success) {
       Get.snackbar('done'.tr, 'break_postponed'.tr, snackPosition: SnackPosition.BOTTOM);
-      loadBreaks();
+      unawaited(loadBreaks());
     }
   }
 
@@ -208,7 +208,7 @@ class BreakController extends GetxController {
 
     if (response['status'] == StatusRequest.success) {
       Get.snackbar('done'.tr, 'break_created_success'.tr, snackPosition: SnackPosition.BOTTOM);
-      loadBreaks();
+      unawaited(loadBreaks());
       return true;
     }
 
@@ -227,7 +227,7 @@ class BreakController extends GetxController {
     final response = await _breakData.cancelBreak(id);
     if (response['status'] == StatusRequest.success) {
       Get.snackbar('done'.tr, 'break_cancelled'.tr, snackPosition: SnackPosition.BOTTOM);
-      loadBreaks();
+      unawaited(loadBreaks());
     }
   }
 }

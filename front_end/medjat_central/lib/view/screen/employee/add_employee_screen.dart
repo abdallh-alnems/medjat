@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,7 +11,6 @@ import '../../../core/shared/buttons/primary_button.dart';
 import '../../../core/shared/input_fields/primary_input.dart';
 import '../../../logic/controller/employee/add_employee_controller.dart';
 import '../../../data/model/branch_model.dart';
-import '../../../data/model/employee_category_model.dart';
 
 /// Strips non-digits and the national trunk prefix (leading zeros) from a
 /// locally-typed number so it can be joined to a country code as E.164.
@@ -324,7 +324,6 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
                             ],
                             items: [
                               DropdownMenuItem<int?>(
-                                value: null,
                                 child: Text(
                                   'select_category'.tr,
                                   style: TextStyle(
@@ -488,19 +487,16 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
               PrimaryInput(
                 label: 'bank_account_number'.tr,
                 controller: bankAccountCtrl,
-                keyboardType: TextInputType.text,
               ),
               const SizedBox(height: AppSpacing.s3),
               PrimaryInput(
                 label: 'bank_iban'.tr,
                 controller: bankIbanCtrl,
-                keyboardType: TextInputType.text,
               ),
               const SizedBox(height: AppSpacing.s3),
               PrimaryInput(
                 label: 'bank_swift'.tr,
                 controller: bankSwiftCtrl,
-                keyboardType: TextInputType.text,
               ),
             ],
             const SizedBox(height: AppSpacing.s4),
@@ -713,7 +709,6 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
             GetBuilder<AddEmployeeController>(
               builder: (_) {
                 final hasShifts = ctrl.shifts.isNotEmpty;
-                final usingShift = hasShifts && ctrl.selectedShiftId != null;
                 return Text(
                   hasShifts ? 'shift'.tr : 'employee_schedule'.tr,
                   style: AppTextStyles.h3(context),
@@ -942,7 +937,7 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
 
     ctrl.createEmployee({
       'name': nameCtrl.text.trim(),
-      if (phoneE164 != null) 'phone': phoneE164,
+      'phone': ?phoneE164,
       'job_title': jobTitleCtrl.text.trim(),
       'base_salary': double.tryParse(salaryCtrl.text.trim()) ?? 0,
       if (hireDate != null) 'hire_date': _fmtDate(hireDate!),
@@ -1057,7 +1052,6 @@ class _ActivationCodeView extends StatelessWidget {
               ),
               child: QrImageView(
                 data: joinLink,
-                version: QrVersions.auto,
                 size: 200,
                 backgroundColor: Colors.white,
               ),
@@ -1671,7 +1665,7 @@ class _NoBranchesView extends StatelessWidget {
                     AppRoutes.branchManage,
                   );
                   if (result == true) {
-                    Get.find<AddEmployeeController>().loadBranches();
+                    unawaited(Get.find<AddEmployeeController>().loadBranches());
                   }
                 },
                 icon: const Icon(Icons.add_business),

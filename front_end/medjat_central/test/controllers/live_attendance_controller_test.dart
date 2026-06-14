@@ -30,7 +30,7 @@ void main() {
   group('LiveAttendanceController', () {
     test('loadBoard — نجاح', () async {
       when(() => mockBranchData.getBranches()).thenAnswer(
-          (_) async => {'status': StatusRequest.success, 'data': []});
+          (_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
       when(() => mockLiveData.getLiveBoard(branchId: any(named: 'branchId')))
           .thenAnswer((_) async => {
                 'status': StatusRequest.success,
@@ -67,7 +67,7 @@ void main() {
 
     test('loadBoard — فشل', () async {
       when(() => mockBranchData.getBranches()).thenAnswer(
-          (_) async => {'status': StatusRequest.success, 'data': []});
+          (_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
       when(() => mockLiveData.getLiveBoard(branchId: any(named: 'branchId')))
           .thenAnswer((_) async => {'status': StatusRequest.serverFailure});
 
@@ -79,7 +79,7 @@ void main() {
 
     test('filteredEntries يفلتر بالاسم', () async {
       when(() => mockBranchData.getBranches()).thenAnswer(
-          (_) async => {'status': StatusRequest.success, 'data': []});
+          (_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
       when(() => mockLiveData.getLiveBoard(branchId: any(named: 'branchId')))
           .thenAnswer((_) async => {
                 'status': StatusRequest.success,
@@ -102,7 +102,7 @@ void main() {
 
     test('filteredEntries يفلتر بالحالة', () async {
       when(() => mockBranchData.getBranches()).thenAnswer(
-          (_) async => {'status': StatusRequest.success, 'data': []});
+          (_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
       when(() => mockLiveData.getLiveBoard(branchId: any(named: 'branchId')))
           .thenAnswer((_) async => {
                 'status': StatusRequest.success,
@@ -125,11 +125,11 @@ void main() {
 
     test('selectBranch يحدث selectedBranchId', () async {
       when(() => mockBranchData.getBranches()).thenAnswer(
-          (_) async => {'status': StatusRequest.success, 'data': []});
+          (_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
       when(() => mockLiveData.getLiveBoard(branchId: any(named: 'branchId')))
           .thenAnswer((_) async => {
                 'status': StatusRequest.success,
-                'data': {'employees': [], 'summary': {}},
+                'data': {'employees': <Map<String, dynamic>>[], 'summary': <String, dynamic>{}},
               });
 
       final controller = LiveAttendanceController();

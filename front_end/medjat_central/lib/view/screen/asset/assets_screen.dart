@@ -109,7 +109,7 @@ class AssetsScreen extends StatelessWidget {
                               AppSpacing.s7,
                             ),
                             itemCount: ctrl.assets.length,
-                            separatorBuilder: (_, __) =>
+                            separatorBuilder: (_, _) =>
                                 const SizedBox(height: AppSpacing.s2),
                             itemBuilder: (_, i) => _AssetTile(
                               asset: ctrl.assets[i],
@@ -291,7 +291,7 @@ class AssetsScreen extends StatelessWidget {
                       final picked = await showDatePicker(
                         context: context,
                         initialDate: assignedDate,
-                        firstDate: DateTime(2023, 1, 1),
+                        firstDate: DateTime(2023),
                         lastDate: DateTime.now(),
                       );
                       if (picked != null) {
@@ -674,7 +674,7 @@ class _EmployeePickerSheetState extends State<_EmployeePickerSheet> {
                         padding: const EdgeInsets.symmetric(
                             vertical: AppSpacing.s2),
                         itemCount: filtered.length,
-                        separatorBuilder: (_, __) =>
+                        separatorBuilder: (_, _) =>
                             Divider(height: 1, color: colors.borderHairline),
                         itemBuilder: (_, i) {
                           final e = filtered[i];

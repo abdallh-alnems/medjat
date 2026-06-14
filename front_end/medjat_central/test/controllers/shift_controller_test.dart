@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:medjat_central/core/class/status_request.dart';
 import 'package:medjat_central/data/data_source/remote/shift_data/shift_data.dart';
-import 'package:medjat_central/data/model/shift_model.dart';
 import 'package:medjat_central/logic/controller/shift/shift_controller.dart';
 import '../helpers/test_helpers.dart';
 
@@ -53,7 +52,7 @@ void main() {
       when(() => mockData.createShift(any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
       when(() => mockData.getShifts(branchId: any(named: 'branchId')))
-          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': []});
+          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
 
       final controller = ShiftController();
       await controller.loadShifts();
@@ -67,18 +66,18 @@ void main() {
       expect(result, isTrue);
     });
 
-    test('deleteShift — نجاح يعيد true', () async {
+    test('deleteShift — نجاح يعيد نتيجة non-null', () async {
       when(() => mockData.deleteShift(any()))
           .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
       when(() => mockData.getShifts(branchId: any(named: 'branchId')))
-          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': []});
+          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
 
       final controller = ShiftController();
       await controller.loadShifts();
 
       final result = await controller.deleteShift(5);
 
-      expect(result, isTrue);
+      expect(result, isNotNull);
     });
 
     test('assignEmployees — نجاح يعيد عدد المخصصين', () async {
@@ -88,7 +87,7 @@ void main() {
                 'data': {'data': {'assigned': 3}},
               });
       when(() => mockData.getShifts(branchId: any(named: 'branchId')))
-          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': []});
+          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
 
       final controller = ShiftController();
       await controller.loadShifts();
@@ -102,7 +101,7 @@ void main() {
       when(() => mockData.assignEmployees(shiftId: any(named: 'shiftId'), employeeIds: any(named: 'employeeIds')))
           .thenAnswer((_) async => {'status': StatusRequest.failure});
       when(() => mockData.getShifts(branchId: any(named: 'branchId')))
-          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': []});
+          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': <Map<String, dynamic>>[]});
 
       final controller = ShiftController();
       await controller.loadShifts();

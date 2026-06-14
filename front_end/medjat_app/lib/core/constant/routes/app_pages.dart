@@ -10,6 +10,7 @@ import '../../widget/update_gate.dart';
 import '../../../data/data_source/remote/auth_data/auth_data.dart';
 import '../../../data/data_source/remote/profile_data/profile_data.dart';
 import '../../../data/data_source/remote/payroll_data/payroll_data.dart';
+import '../../../data/data_source/remote/attendance_data/attendance_data.dart';
 import '../../../data/data_source/remote/leave_data/leave_data.dart';
 import '../../../data/data_source/remote/break_data/break_data.dart';
 import '../../../data/data_source/remote/advance_data/advance_data.dart';
@@ -29,19 +30,13 @@ import '../../../view/screen/attendance/attendance_success_screen.dart';
 import '../../../view/screen/profile/my_profile_screen.dart';
 import '../../../view/screen/documents/my_documents_screen.dart';
 import '../../../view/screen/payroll/payroll_screen.dart';
+import '../../../view/screen/attendance/attendance_history_screen.dart';
 import '../../../view/screen/leave/leave_screen.dart';
 import '../../../view/screen/break/break_screen.dart';
 import '../../../view/screen/advance/advance_screen.dart';
 import '../../../view/screen/asset/my_assets_screen.dart';
 import '../../../view/screen/notifications/notifications_screen.dart';
 import '../../../view/screen/settings/settings_screen.dart';
-import '../../../view/screen/kiosk/kiosk_pair_screen.dart';
-import '../../../view/screen/kiosk/kiosk_home_screen.dart';
-import '../../../view/screen/kiosk/kiosk_face_checkin_screen.dart';
-import '../../../view/screen/kiosk/kiosk_qr_checkin_screen.dart';
-import '../../../view/screen/kiosk/kiosk_settings_screen.dart';
-import '../../../view/screen/station/my_station_qr_screen.dart';
-import '../../../logic/bindings/station_binding.dart';
 import '../../../core/shared/layout/tab_shell.dart';
 import '../../services/connectivity_service.dart';
 import '../../services/location_service.dart';
@@ -53,6 +48,9 @@ class AppBindings extends Bindings {
     Get.lazyPut<AuthData>(() => AuthData());
     Get.lazyPut<ProfileData>(() => ProfileData());
     Get.lazyPut<PayrollData>(() => PayrollData());
+    // fenix: AttendanceHistoryController is route-scoped; keep the data source
+    // alive so a second visit to /attendance-history can re-resolve it.
+    Get.lazyPut<AttendanceData>(() => AttendanceData(), fenix: true);
     // fenix: recreate on demand — LeaveController is route-scoped and disposing
     // it would otherwise drop LeaveData, breaking a second visit to /leaves.
     Get.lazyPut<LeaveData>(() => LeaveData(), fenix: true);
@@ -141,6 +139,10 @@ List<GetPage<dynamic>> getPages = [
     page: () => const PayrollScreen(),
   ),
   GetPage(
+    name: AppRoutes.attendanceHistory,
+    page: () => const AttendanceHistoryScreen(),
+  ),
+  GetPage(
     name: AppRoutes.leaves,
     page: () => const LeaveScreen(),
   ),
@@ -163,37 +165,5 @@ List<GetPage<dynamic>> getPages = [
   GetPage(
     name: AppRoutes.settings,
     page: () => const SettingsScreen(),
-  ),
-  GetPage(
-    name: AppRoutes.kioskPair,
-    page: () => const KioskPairScreen(),
-    binding: StationBinding(),
-    transition: Transition.fadeIn,
-    transitionDuration: AppMotion.transition,
-  ),
-  GetPage(
-    name: AppRoutes.kioskHome,
-    page: () => const KioskHomeScreen(),
-    binding: StationBinding(),
-  ),
-  GetPage(
-    name: AppRoutes.kioskFaceCheckIn,
-    page: () => const KioskFaceCheckInScreen(),
-    binding: StationBinding(),
-  ),
-  GetPage(
-    name: AppRoutes.kioskQrCheckIn,
-    page: () => const KioskQrCheckInScreen(),
-    binding: StationBinding(),
-  ),
-  GetPage(
-    name: AppRoutes.kioskSettings,
-    page: () => const KioskSettingsScreen(),
-    binding: StationBinding(),
-  ),
-  GetPage(
-    name: AppRoutes.myStationQr,
-    page: () => const MyStationQrScreen(),
-    binding: StationBinding(),
   ),
 ];

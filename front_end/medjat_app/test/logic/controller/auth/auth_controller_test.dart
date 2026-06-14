@@ -199,10 +199,6 @@ class TestableAuthController extends GetxController {
   final isLoggedInObs = false.obs;
   UserModel? user;
 
-  @override
-  void onInit() {
-    super.onInit();
-  }
 
   Future<bool> checkAuth() async {
     final cached = await _authData.getCachedUser();

@@ -1,14 +1,11 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:medjat_app/core/class/crud.dart';
 import 'package:medjat_app/core/class/status_request.dart';
 import 'package:medjat_app/data/data_source/remote/auth_data/auth_data.dart';
 import 'package:medjat_app/data/model/user_model.dart';
 
-import '../../../../helpers/test_helpers.dart';
 
 class MockAuthDataInner extends Mock implements AuthData {}
 

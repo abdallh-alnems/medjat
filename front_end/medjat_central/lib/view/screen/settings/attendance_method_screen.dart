@@ -48,11 +48,6 @@ class AttendanceMethodScreen extends StatelessWidget {
                         _TenantMethodCards(ctrl: ctrl),
                         const SizedBox(height: AppSpacing.s3),
                         _OfflineModeCard(ctrl: ctrl),
-                        if (ctrl.tenantMethods.contains('gps_only') ||
-                            ctrl.tenantMethods.contains('qr_gps')) ...[
-                          const SizedBox(height: AppSpacing.s3),
-                          _CompanyLocationCard(ctrl: ctrl),
-                        ],
                       ],
                     ),
                   ),
@@ -107,8 +102,6 @@ String methodLabel(String m) {
       return 'method_gps_only'.tr;
     case 'manual':
       return 'method_manual_admin'.tr;
-    case 'station':
-      return 'method_station'.tr;
     default:
       return m;
   }
@@ -174,17 +167,9 @@ class _TenantMethodCards extends StatelessWidget {
               _QrPosterAccessButton(ctrl: ctrl),
             ],
             const SizedBox(height: AppSpacing.s2),
-            _MethodSwitchCard(
-              icon: Icons.location_on_outlined,
-              title: 'method_gps_only'.tr,
-              description: 'method_gps_only_desc'.tr,
-              enabled: ctrl.tenantMethods.contains('gps_only'),
-              onChanged: (v) => _toggle(context, 'gps_only', v),
-            ),
+            _GpsOnlyMethodCard(ctrl: ctrl),
             const SizedBox(height: AppSpacing.s2),
             _ManualMethodCard(ctrl: ctrl),
-            const SizedBox(height: AppSpacing.s2),
-            _StationMethodCard(ctrl: ctrl),
           ],
         );
       },
@@ -291,7 +276,7 @@ class _QrPosterAccessButton extends StatelessWidget {
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: branches.length,
-                separatorBuilder: (_, __) =>
+                separatorBuilder: (_, _) =>
                     const SizedBox(height: AppSpacing.s2),
                 itemBuilder: (_, i) {
                   final b = branches[i];
@@ -609,7 +594,7 @@ class _ManualAdminsSubSectionState extends State<_ManualAdminsSubSection> {
                   setState(() => _allowAll = false);
                 }
               },
-              activeColor: colors.brand,
+              activeThumbColor: colors.brand,
               contentPadding: EdgeInsets.zero,
               dense: true,
             ),
@@ -983,9 +968,7 @@ class _BranchTile extends StatelessWidget {
                           ? 'QR'
                           : m == 'gps_only'
                               ? 'GPS'
-                              : m == 'station'
-                                  ? 'method_station'.tr
-                                  : 'manual'.tr.substring(0, 5);
+                              : 'manual'.tr.substring(0, 5);
                       return Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.s2,
@@ -1124,7 +1107,7 @@ class _BranchTile extends StatelessWidget {
                           }
                         });
                       },
-                      activeColor: AppColors.of(context).brand,
+                      activeThumbColor: AppColors.of(context).brand,
                       contentPadding: EdgeInsets.zero,
                       dense: true,
                     ),
@@ -1184,26 +1167,6 @@ class _BranchTile extends StatelessWidget {
                               } else {
                                 if (selectedMethods!.length > 1) {
                                   selectedMethods!.remove('manual');
-                                }
-                              }
-                            });
-                          },
-                  ),
-                  const SizedBox(height: AppSpacing.s2),
-                  _BranchMethodSwitch(
-                    label: 'method_station'.tr,
-                    enabled: !inheritCompany &&
-                        (selectedMethods?.contains('station') ?? false),
-                    onChanged: inheritCompany
-                        ? null
-                        : (v) {
-                            setState(() {
-                              selectedMethods ??= [];
-                              if (v) {
-                                selectedMethods!.add('station');
-                              } else {
-                                if (selectedMethods!.length > 1) {
-                                  selectedMethods!.remove('station');
                                 }
                               }
                             });
@@ -1317,7 +1280,7 @@ class _BranchTile extends StatelessWidget {
                   StatefulBuilder(
                     builder: (context, sbSetState) {
                       return DropdownButtonFormField<int?>(
-                        value: offlineOverride,
+                        initialValue: offlineOverride,
                         decoration: InputDecoration(
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(AppRadius.md),
@@ -1329,7 +1292,6 @@ class _BranchTile extends StatelessWidget {
                         ),
                         items: [
                           DropdownMenuItem<int?>(
-                            value: null,
                             child: Text(
                               'inherit_company_default'.tr,
                               style: const TextStyle(
@@ -1388,8 +1350,6 @@ class _BranchTile extends StatelessWidget {
                         final ok = await ctrl.saveBranchMethods(
                           branchId: branch.id,
                           methods: inheritCompany ? null : selectedMethods,
-                          // radius/location are managed by the GPS sheet above.
-                          radius: null,
                           allowOfflineAttendance: branchAllowOffline,
                         );
                         Get.back<void>();
@@ -1547,9 +1507,96 @@ class _OfflineModeCard extends StatelessWidget {
   }
 }
 
+class _GpsOnlyMethodCard extends StatelessWidget {
+  final AttendanceMethodController ctrl;
+  const _GpsOnlyMethodCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<AttendanceMethodController>(
+      builder: (_) {
+        final enabled = ctrl.tenantMethods.contains('gps_only');
+        final colors = AppColors.of(context);
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.s3),
+          decoration: BoxDecoration(
+            color: enabled ? colors.brandSubtle : colors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: enabled ? colors.brand : colors.borderHairline,
+              width: enabled ? 1.5 : 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.location_on_outlined,
+                      size: 22,
+                      color: enabled ? colors.brand : colors.textSecondary),
+                  const SizedBox(width: AppSpacing.s3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'method_gps_only'.tr,
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color:
+                                enabled ? colors.brand : colors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'method_gps_only_desc'.tr,
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 11,
+                            color: colors.textTertiary,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: enabled,
+                    onChanged: (v) async {
+                      if (!v && ctrl.tenantMethods.length <= 1) {
+                        Get.snackbar(
+                          'error'.tr,
+                          'at_least_one_method_required'.tr,
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
+                        return;
+                      }
+                      final ok = await ctrl.toggleTenantMethod('gps_only', v);
+                      _showResultSnackbar(ok);
+                    },
+                    activeThumbColor: colors.brand,
+                  ),
+                ],
+              ),
+              if (enabled) ...[
+                const SizedBox(height: AppSpacing.s3),
+                _CompanyLocationCard(ctrl: ctrl, embedded: true),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _CompanyLocationCard extends StatelessWidget {
   final AttendanceMethodController ctrl;
-  const _CompanyLocationCard({required this.ctrl});
+  final bool embedded;
+  const _CompanyLocationCard({required this.ctrl, this.embedded = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1574,12 +1621,16 @@ class _CompanyLocationCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(AppSpacing.s3),
             decoration: BoxDecoration(
-              color: has ? colors.brandSubtle : colors.surface,
+              color: embedded
+                  ? colors.sunken
+                  : (has ? colors.brandSubtle : colors.surface),
               borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(
-                color: has ? colors.brand : colors.borderHairline,
-                width: has ? 1.5 : 1,
-              ),
+              border: embedded
+                  ? null
+                  : Border.all(
+                      color: has ? colors.brand : colors.borderHairline,
+                      width: has ? 1.5 : 1,
+                    ),
             ),
             child: Row(
               children: [
@@ -1624,192 +1675,6 @@ class _CompanyLocationCard extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _StationMethodCard extends StatelessWidget {
-  final AttendanceMethodController ctrl;
-  const _StationMethodCard({required this.ctrl});
-
-  @override
-  Widget build(BuildContext context) {
-    return GetBuilder<AttendanceMethodController>(
-      builder: (_) {
-        final stationEnabled = ctrl.tenantMethods.contains('station');
-        final colors = AppColors.of(context);
-
-        return Container(
-          padding: const EdgeInsets.all(AppSpacing.s3),
-          decoration: BoxDecoration(
-            color: stationEnabled ? colors.brandSubtle : colors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(
-              color: stationEnabled ? colors.brand : colors.borderHairline,
-              width: stationEnabled ? 1.5 : 1,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.monitor_outlined,
-                      size: 22,
-                      color: stationEnabled
-                          ? colors.brand
-                          : colors.textSecondary),
-                  const SizedBox(width: AppSpacing.s3),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'method_station'.tr,
-                          style: TextStyle(
-                            fontFamily: 'IBM Plex Sans Arabic',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: stationEnabled
-                                ? colors.brand
-                                : colors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'method_station_desc'.tr,
-                          style: TextStyle(
-                            fontFamily: 'IBM Plex Sans Arabic',
-                            fontSize: 11,
-                            color: colors.textTertiary,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Switch(
-                    value: stationEnabled,
-                    onChanged: (v) async {
-                      if (!v && ctrl.tenantMethods.length <= 1) {
-                        Get.snackbar(
-                          'error'.tr,
-                          'at_least_one_method_required'.tr,
-                          snackPosition: SnackPosition.BOTTOM,
-                        );
-                        return;
-                      }
-                      final ok =
-                          await ctrl.toggleTenantMethod('station', v);
-                      _showResultSnackbar(ok);
-                    },
-                    activeThumbColor: colors.brand,
-                  ),
-                ],
-              ),
-              if (stationEnabled) ...[
-                const SizedBox(height: AppSpacing.s3),
-                _StationBranchesSubSection(ctrl: ctrl),
-              ],
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _StationBranchesSubSection extends StatelessWidget {
-  final AttendanceMethodController ctrl;
-  const _StationBranchesSubSection({required this.ctrl});
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.s3),
-      decoration: BoxDecoration(
-        color: colors.sunken,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'station_section_title'.tr,
-            style: TextStyle(
-              fontFamily: 'IBM Plex Sans Arabic',
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: colors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.s2),
-          ...ctrl.branches.map((branch) => Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.s2),
-              child: InkWell(
-                onTap: () => Get.toNamed<void>(
-                  AppRoutes.stationSettings,
-                  arguments: {'branch_id': branch.id},
-                ),
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                child: Container(
-                  padding: const EdgeInsets.all(AppSpacing.s3),
-                  decoration: BoxDecoration(
-                    color: colors.surface,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(
-                      color: branch.stationEnabled ? colors.brand : colors.borderHairline,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.monitor_outlined,
-                        size: 22,
-                        color: branch.stationEnabled ? colors.brand : colors.textSecondary,
-                      ),
-                      const SizedBox(width: AppSpacing.s3),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(branch.name, style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontSize: 14, fontWeight: FontWeight.w500)),
-                            const SizedBox(height: 2),
-                            Text(
-                              branch.stationEnabled ? 'station_enabled'.tr : 'station_status_pending'.tr,
-                              style: TextStyle(
-                                fontFamily: 'IBM Plex Sans Arabic',
-                                fontSize: 11,
-                                color: branch.stationEnabled ? colors.brand : colors.textTertiary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(Icons.chevron_left, size: 20, color: colors.textTertiary),
-                    ],
-                  ),
-                ),
-              ),
-            )),
-        const SizedBox(height: AppSpacing.s3),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () => Get.toNamed<void>(AppRoutes.stationsManagement),
-            icon: const Icon(Icons.devices_outlined, size: 18),
-            label: Text('manage_devices'.tr, style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic', fontWeight: FontWeight.w500)),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: colors.brand,
-              side: BorderSide(color: colors.brand),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
-            ),
-          ),
-        ),
-        ],
-      ),
     );
   }
 }
@@ -2321,7 +2186,7 @@ class _MethodsOverrideSheet extends StatefulWidget {
 }
 
 class _MethodsOverrideSheetState extends State<_MethodsOverrideSheet> {
-  static const _all = ['qr_gps', 'gps_only', 'manual', 'station'];
+  static const _all = ['qr_gps', 'gps_only', 'manual'];
   late bool _inherit =
       widget.startCustom ? false : widget.initialMethods == null;
   late final Set<String> _selected = {
@@ -2599,7 +2464,7 @@ class _EmployeePickerSheetState extends State<_EmployeePickerSheet> {
                     : ListView.separated(
                         shrinkWrap: true,
                         itemCount: _results.length,
-                        separatorBuilder: (_, __) =>
+                        separatorBuilder: (_, _) =>
                             const SizedBox(height: AppSpacing.s2),
                         itemBuilder: (_, i) {
                           final e = _results[i];

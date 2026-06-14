@@ -52,7 +52,7 @@ class SupportTicketsScreen extends StatelessWidget {
           child: ListView.separated(
             padding: const EdgeInsets.all(AppSpacing.s4),
             itemCount: controller.tickets.length,
-            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.s2),
+            separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.s2),
             itemBuilder: (context, index) {
               final ticket = controller.tickets[index];
               return _TicketTile(

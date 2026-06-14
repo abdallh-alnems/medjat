@@ -392,7 +392,7 @@ class _BulkAdjustmentCreateScreenState
               final picked = await showDatePicker(
                 context: context,
                 initialDate: _month,
-                firstDate: DateTime(now.year - 1, 1),
+                firstDate: DateTime(now.year - 1),
                 lastDate: DateTime(now.year + 1, 12),
                 helpText: 'bulk_month_label'.tr,
               );

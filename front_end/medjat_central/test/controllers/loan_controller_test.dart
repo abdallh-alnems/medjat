@@ -82,7 +82,7 @@ void main() {
       when(() => mockData.getLoans(status: any(named: 'status'))).thenAnswer(
           (_) async => <String, dynamic>{
                 'status': StatusRequest.success,
-                'data': <String, dynamic>{'items': []},
+                'data': <String, dynamic>{'items': <Map<String, dynamic>>[]},
               });
 
       controller = LoanController();

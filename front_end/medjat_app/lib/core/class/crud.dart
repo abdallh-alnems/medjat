@@ -28,24 +28,13 @@ class CRUD {
     };
   }
 
-  Future<Map<String, String>> _headers({bool useStationToken = false}) async {
+  Future<Map<String, String>> _headers() async {
     final headers = _baseHeaders();
-    if (useStationToken) {
-      final stationToken = await TokenStorageService.getStationToken();
-      if (stationToken != null && stationToken.isNotEmpty) {
-        headers['X-Station-Token'] = stationToken;
-      }
-    } else {
-      final token = await TokenStorageService.getToken();
-      if (token != null && token.isNotEmpty) {
-        headers['X-Employee-Token'] = token;
-      }
+    final token = await TokenStorageService.getToken();
+    if (token != null && token.isNotEmpty) {
+      headers['X-Employee-Token'] = token;
     }
     return headers;
-  }
-
-  bool _isStationTokenRequest({bool useStationToken = false}) {
-    return useStationToken;
   }
 
   Future<StatusRequest> _checkConnectivity() async {
@@ -55,7 +44,7 @@ class CRUD {
   }
 
   Future<Map<String, dynamic>> getData(String url,
-      {Map<String, dynamic>? queryParameters, bool useStationToken = false}) async {
+      {Map<String, dynamic>? queryParameters}) async {
     final connectivity = await _checkConnectivity();
     if (connectivity == StatusRequest.offline) {
       return {'status': StatusRequest.offline};
@@ -63,7 +52,7 @@ class CRUD {
 
     try {
       final uri = Uri.parse(url);
-      final headers = await _headers(useStationToken: useStationToken);
+      final headers = await _headers();
       final params = <String, String>{};
       if (queryParameters != null) {
         queryParameters.forEach((k, v) => params[k] = v.toString());
@@ -72,7 +61,7 @@ class CRUD {
           .get(uri.replace(queryParameters: params), headers: headers)
           .timeout(const Duration(seconds: 15));
 
-      return handleResponse(response, useStationToken: useStationToken);
+      return handleResponse(response);
     } catch (e) {
       debugPrint('GET Error: $e');
       return {'status': StatusRequest.failure};
@@ -80,7 +69,7 @@ class CRUD {
   }
 
   Future<Map<String, dynamic>> getBytes(String url,
-      {Map<String, dynamic>? queryParameters, bool useStationToken = false}) async {
+      {Map<String, dynamic>? queryParameters}) async {
     final connectivity = await _checkConnectivity();
     if (connectivity == StatusRequest.offline) {
       return {'status': StatusRequest.offline};
@@ -88,7 +77,7 @@ class CRUD {
 
     try {
       final uri = Uri.parse(url);
-      final headers = await _headers(useStationToken: useStationToken);
+      final headers = await _headers();
       final params = <String, String>{};
       if (queryParameters != null) {
         queryParameters.forEach((k, v) => params[k] = v.toString());
@@ -108,15 +97,14 @@ class CRUD {
   }
 
   Future<Map<String, dynamic>> postData(String url, Map<String, dynamic> data,
-      {bool auth = true, bool useStationToken = false}) async {
+      {bool auth = true}) async {
     final connectivity = await _checkConnectivity();
     if (connectivity == StatusRequest.offline) {
       return {'status': StatusRequest.offline};
     }
 
     try {
-      final headers =
-          auth ? await _headers(useStationToken: useStationToken) : _baseHeaders();
+      final headers = auth ? await _headers() : _baseHeaders();
       final response = await _client
           .post(
             Uri.parse(url),
@@ -125,7 +113,7 @@ class CRUD {
           )
           .timeout(const Duration(seconds: 15));
 
-      return handleResponse(response, useStationToken: useStationToken);
+      return handleResponse(response);
     } catch (e) {
       debugPrint('POST Error: $e');
       return {'status': StatusRequest.failure};
@@ -218,7 +206,7 @@ class CRUD {
   }
 
   @visibleForTesting
-  Map<String, dynamic> handleResponse(http.Response response, {bool useStationToken = false}) {
+  Map<String, dynamic> handleResponse(http.Response response) {
     final statusCode = response.statusCode;
 
     if (statusCode >= 200 && statusCode < 300) {
@@ -247,9 +235,7 @@ class CRUD {
     }
 
     if (statusCode == 401) {
-      if (!useStationToken) {
-        onSessionExpired?.call();
-      }
+      onSessionExpired?.call();
       return {
         'status': StatusRequest.failure,
         'statusCode': 401,

@@ -222,7 +222,7 @@ class RequiredDocumentSubmissionsScreen extends StatelessWidget {
   void _showRejectDialog(BuildContext context,
       RequiredDocumentSubmissionsController ctrl, DocumentModel doc) {
     final reasonCtl = TextEditingController();
-    Get.defaultDialog(
+    Get.defaultDialog<void>(
       title: 'document_reject'.tr,
       titleStyle: AppTextStyles.h3(context),
       content: TextField(
@@ -247,14 +247,14 @@ class RequiredDocumentSubmissionsScreen extends StatelessWidget {
           return;
         }
         ctrl.rejectDocument(doc.id, reason);
-        Get.back();
+        Get.back<void>();
       },
     );
   }
 
   void _showRemoveDialog(BuildContext context,
       RequiredDocumentSubmissionsController ctrl, DocumentSubmissionModel s) {
-    Get.defaultDialog(
+    Get.defaultDialog<void>(
       title: 'remove'.tr,
       titleStyle: AppTextStyles.h3(context),
       middleText: '${'confirm_delete'.tr} ${s.employeeName}',
@@ -263,7 +263,7 @@ class RequiredDocumentSubmissionsScreen extends StatelessWidget {
       buttonColor: AppColors.of(context).error,
       confirmTextColor: Colors.white,
       onConfirm: () {
-        Get.back();
+        Get.back<void>();
         ctrl.removeDocument(s.employeeId, s.document!.id);
       },
     );

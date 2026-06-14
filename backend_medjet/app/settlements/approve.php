@@ -46,6 +46,10 @@ if (!$ok) {
 // End the employee's service as of the last working day.
 EmployeeModel::terminate($employeeId, $tenantId, $settlement['last_working_day']);
 
+// Force the employee out of the employee app: revoking their device token makes
+// the next request fail authentication, signing them out automatically.
+EmployeeAuthTokenModel::revokeForEmployee($employeeId, 'service_terminated');
+
 AuditLogModel::log($tenantId, $auth['admin_id'], 'settlement.approve', 'employee', $employeeId, [
     'settlement_id'    => (int) $settlement['id'],
     'net_amount'       => (float) $settlement['net_amount'],

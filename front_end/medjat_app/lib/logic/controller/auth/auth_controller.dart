@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:get/get.dart';
 import '../../../core/class/status_request.dart';
@@ -51,7 +52,7 @@ class AuthController extends GetxController {
           status.value = StatusRequest.success;
           // Notification permission is requested later, once the home screen
           // has settled (see HomeController), not the instant we navigate.
-          Get.offAllNamed<void>(AppRoutes.home);
+          unawaited(Get.offAllNamed<void>(AppRoutes.home));
         } else {
           // Login succeeded server-side but the cached user couldn't be read
           // back (storage/parse failure). Never leave the button spinning.
@@ -97,7 +98,7 @@ class AuthController extends GetxController {
           status.value = StatusRequest.success;
           // Notification permission is requested later, once the home screen
           // has settled (see HomeController), not the instant we navigate.
-          Get.offAllNamed<void>(AppRoutes.home);
+          unawaited(Get.offAllNamed<void>(AppRoutes.home));
           update();
           return true;
         }
@@ -154,7 +155,7 @@ class AuthController extends GetxController {
     await _authData.logout();
     user = null;
     isLoggedInObs.value = false;
-    Get.offAllNamed<void>(AppRoutes.login);
+    unawaited(Get.offAllNamed<void>(AppRoutes.login));
   }
 
   Future<bool> checkAuth() async {

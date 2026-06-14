@@ -245,6 +245,47 @@ final class NotificationService {
         self::sendToTenantManagers($tenantId, $titleAr, $bodyAr, $data);
     }
 
+    /**
+     * Send a silent (data-only) high-priority message to an FCM topic.
+     * Used for instant control signals (e.g. maintenance mode) that every
+     * device subscribed to the app's topic should react to immediately,
+     * even while backgrounded. No visible notification is shown.
+     */
+    public static function sendToTopic(string $topic, array $data): bool {
+        try {
+            $messaging = FirebaseInit::getMessaging();
+            if (!$messaging) {
+                return false;
+            }
+
+            $stringData = [];
+            foreach ($data as $key => $value) {
+                $stringData[(string) $key] = is_scalar($value)
+                    ? (string) $value
+                    : json_encode($value, JSON_UNESCAPED_UNICODE);
+            }
+
+            $message = [
+                'topic' => $topic,
+                'data' => $stringData,
+                'android' => ['priority' => 'high'],
+                'apns' => [
+                    'headers' => [
+                        'apns-priority' => '5',
+                        'apns-push-type' => 'background',
+                    ],
+                    'payload' => ['aps' => ['content-available' => 1]],
+                ],
+            ];
+
+            $messaging->send($message);
+            return true;
+        } catch (Exception $e) {
+            error_log('FCM topic send error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     private static function sendMulticast(array $tokens, string $title, string $body, ?array $data = null): bool {
         try {
             $messaging = FirebaseInit::getMessaging();

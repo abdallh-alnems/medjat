@@ -52,8 +52,8 @@ class AuthData {
     String? phone,
   }) async {
     return await _crud.postData(AppLinks.updateProfile, {
-      if (name != null) 'name': name,
-      if (phone != null) 'phone': phone,
+      'name': ?name,
+      'phone': ?phone,
     });
   }
 
@@ -61,32 +61,6 @@ class AuthData {
   /// last general_manager) from the backend DB and Firebase.
   Future<Map<String, dynamic>> deleteAccount() async {
     return await _crud.postData(AppLinks.deleteAccount, {});
-  }
-
-  Future<Map<String, dynamic>> forgotPasswordSend(String email) async {
-    return await _crud.postData(
-      AppLinks.forgotPasswordSend,
-      {'email': email},
-      auth: false,
-    );
-  }
-
-  Future<Map<String, dynamic>> forgotPasswordVerify(
-      String email, String code) async {
-    return await _crud.postData(
-      AppLinks.forgotPasswordVerify,
-      {'email': email, 'code': code},
-      auth: false,
-    );
-  }
-
-  Future<Map<String, dynamic>> forgotPasswordReset(
-      String email, String code, String newPassword) async {
-    return await _crud.postData(
-      AppLinks.forgotPasswordReset,
-      {'email': email, 'code': code, 'new_password': newPassword},
-      auth: false,
-    );
   }
 
   Future<UserModel?> getCachedUser() async {

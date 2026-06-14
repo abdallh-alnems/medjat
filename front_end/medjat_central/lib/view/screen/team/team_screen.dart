@@ -907,7 +907,6 @@ class _BranchDropdown extends StatelessWidget {
           icon: Icon(Icons.expand_more, color: colors.textTertiary),
           items: [
             DropdownMenuItem<int?>(
-              value: null,
               child: Text('scope_all_branches'.tr,
                   style: const TextStyle(
                       fontFamily: 'IBM Plex Sans Arabic', fontSize: 14)),

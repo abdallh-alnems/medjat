@@ -320,7 +320,7 @@ class _BulkAdjustmentDetailScreenState
                               padding: const EdgeInsets.fromLTRB(AppSpacing.s4,
                                   AppSpacing.s2, AppSpacing.s4, AppSpacing.s7),
                               itemCount: _members.length,
-                              separatorBuilder: (_, __) =>
+                              separatorBuilder: (_, _) =>
                                   const SizedBox(height: AppSpacing.s2),
                               itemBuilder: (_, i) =>
                                   _memberTile(colors, _members[i]),

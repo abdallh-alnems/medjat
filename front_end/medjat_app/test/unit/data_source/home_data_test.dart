@@ -30,7 +30,7 @@ void main() {
     test('getAttendanceMonth sends correct month parameter', () async {
       when(() => mockCrud.getData(any())).thenAnswer((_) async => {
             'status': StatusRequest.success,
-            'data': {'records': []},
+            'data': {'records': <Map<String, dynamic>>[]},
           });
 
       final result = await homeData.getAttendanceMonth('2026-05');

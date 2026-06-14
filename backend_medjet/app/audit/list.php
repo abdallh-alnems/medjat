@@ -25,14 +25,14 @@ $categoryPrefixes = [
         'documents.', 'biometric.', 'warning.', 'profile.',
         'onboarding.', 'onboarding_task.', 'onboarding_template.',
     ],
-    'attendance' => ['attendance.', 'break.', 'station.'],
+    'attendance' => ['attendance.', 'break.'],
     'schedule'   => ['schedule.', 'shift.'],
     'leaves'     => ['leave.'],
     'finance'    => ['loan.', 'deduction.', 'bonus.', 'payroll.', 'settlement.', 'asset.'],
     'recruitment' => ['candidate.', 'job_opening.'],
     'performance' => ['performance_cycle.', 'performance_goal.', 'performance_review.', 'kudos.', 'survey.'],
     'engagement' => ['announcement.', 'analytics.'],
-    'settings'   => ['tenant.', 'branch.', 'approval_chain.', 'export_template.', 'manager.', 'admin.'],
+    'settings'   => ['tenant.', 'branch.', 'approval_chain.', 'manager.', 'admin.'],
 ];
 $prefixes = ($category !== null && isset($categoryPrefixes[$category]))
     ? $categoryPrefixes[$category]

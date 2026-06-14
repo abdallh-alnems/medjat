@@ -31,7 +31,7 @@ class AssetData {
   Future<Map<String, dynamic>> rejectReturn(int id, {String? reason}) async {
     return await _crud.postData(AppLinks.assetRejectReturn, {
       'id': id,
-      if (reason != null) 'rejection_reason': reason,
+      'rejection_reason': ?reason,
     });
   }
 }

@@ -11,7 +11,6 @@ class TenantDeactivateApi extends AdminBaseApi {
             Validator::required($id, 'id');
 
             TenantModel::deactivate($id);
-            SubscriptionModel::updateStatus($id, 'suspended');
 
             AdminAuth::logAction('tenant.deactivate', 'tenant', $id);
             $this->success(['message' => 'Tenant deactivated']);
