@@ -31,12 +31,12 @@ Validator::required($employeeId, 'employee_id');
 Validator::date($date, 'date');
 
 if (!$checkInTime && !$checkOutTime) {
-    Response::fail('Either check_in_time or check_out_time is required', 400);
+    Response::fail('Either check_in_time or check_out_time is required', 400, 'either_check_time_check_out');
 }
 
 $employee = EmployeeModel::findById($employeeId, $tenantId);
 if (!$employee) {
-    Response::fail('Employee not found', 404);
+    Response::fail('Employee not found', 404, 'employee_not_found');
 }
 
 if ($branchId > 0) {

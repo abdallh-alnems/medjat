@@ -47,6 +47,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   @override
   Widget build(BuildContext context) {
+    if (const bool.fromEnvironment('SCREENSHOT_MODE')) return const SizedBox.shrink();
     if (!_isMobile) return const SizedBox.shrink();
     if (!_isAdLoaded || _bannerAd == null) return const SizedBox.shrink();
 

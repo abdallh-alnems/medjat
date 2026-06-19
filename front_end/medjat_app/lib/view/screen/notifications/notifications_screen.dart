@@ -6,6 +6,7 @@ import '../../../../core/constant/theme/app_colors.dart';
 import '../../../../core/constant/theme/app_text_styles.dart';
 import '../../../../core/constant/theme/app_spacing.dart';
 import '../../../../logic/controller/notification/notification_controller.dart';
+import '../../widget/ad/top_native_ad.dart';
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
@@ -17,10 +18,17 @@ class NotificationsScreen extends StatelessWidget {
       appBar: AppBar(title: Text('notifications'.tr)),
       body: GetBuilder<NotificationController>(
         builder: (controller) {
-          return HandlingDataRequest(
-            statusRequest: controller.status,
-            widget: _buildList(context, controller),
-            onRetry: () => controller.loadNotifications(),
+          return Column(
+            children: [
+              const TopNativeAd(),
+              Expanded(
+                child: HandlingDataRequest(
+                  statusRequest: controller.status,
+                  widget: _buildList(context, controller),
+                  onRetry: () => controller.loadNotifications(),
+                ),
+              ),
+            ],
           );
         },
       ),

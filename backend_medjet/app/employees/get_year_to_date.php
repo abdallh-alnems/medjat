@@ -11,10 +11,10 @@ $employeeId = (int) ($_GET['employee_id'] ?? 0);
 $year = (int) ($_GET['year'] ?? date('Y'));
 
 if ($employeeId <= 0) {
-    Response::fail('Employee ID required', 422);
+    Response::fail('Employee ID required', 422, 'employee_id_required');
 }
 if ($year < 2000 || $year > 2100) {
-    Response::fail('Invalid year', 422);
+    Response::fail('Invalid year', 422, 'invalid_year');
 }
 
 $employee = EmployeeModel::findById($employeeId, $tenantId);

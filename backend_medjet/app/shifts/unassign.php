@@ -12,7 +12,7 @@ $shiftId = (int) ($input['shift_id'] ?? 0);
 $employeeIds = $input['employee_ids'] ?? [];
 
 if (!$shiftId || !is_array($employeeIds) || empty($employeeIds)) {
-    Response::fail('shift_id and employee_ids array required', 422);
+    Response::fail('shift_id and employee_ids array required', 422, 'shift_id_employee_ids_array');
 }
 
 $shift = ShiftModel::findById($shiftId, $tenantId);

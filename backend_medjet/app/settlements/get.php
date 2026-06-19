@@ -17,7 +17,7 @@ PermissionMiddleware::check($auth, 'manage_payroll');
 
 $employeeId = (int) ($_GET['employee_id'] ?? 0);
 if ($employeeId <= 0) {
-    Response::fail('Employee ID required', 422);
+    Response::fail('Employee ID required', 422, 'employee_id_required');
 }
 
 $employee = EmployeeModel::findById($employeeId, $tenantId);

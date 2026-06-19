@@ -22,7 +22,7 @@ if (array_key_exists('name', $input)) {
     Validator::required($input['name'], 'name');
     $duplicate = EmployeeCategoryModel::findByName(trim($input['name']), $tenantId, $id);
     if ($duplicate) {
-        Response::fail('category_name_exists', 409);
+        Response::fail('category_name_exists', 409, 'category_name_exists');
     }
     $fields['name'] = trim($input['name']);
 }

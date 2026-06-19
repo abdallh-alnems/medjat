@@ -15,7 +15,7 @@ Validator::required($employeeId, 'employee_id');
 
 $paidAt = $input['paid_at'] ?? null;
 if ($paidAt !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $paidAt)) {
-    Response::fail('paid_at must be YYYY-MM-DD', 422);
+    Response::fail('paid_at must be YYYY-MM-DD', 422, 'paid_at_yyyy_mm_dd');
 }
 
 // Walks generate → approve → pay for this one employee in a single call.

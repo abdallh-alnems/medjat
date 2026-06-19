@@ -99,28 +99,32 @@ class StatusCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.s3),
             Divider(color: colors.borderHairline, height: 1),
             const SizedBox(height: AppSpacing.s3),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  isRestDay ? Icons.weekend_outlined : Icons.schedule_outlined,
-                  size: 16,
-                  color: colors.textTertiary,
-                ),
-                const SizedBox(width: AppSpacing.s2),
-                Text(
-                  isRestDay ? 'rest_day'.tr : 'work_schedule'.tr,
-                  style: AppTextStyles.xs(context),
-                ),
-                if (!isRestDay && scheduledTimeText != null) ...[
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    isRestDay ? Icons.weekend_outlined : Icons.schedule_outlined,
+                    size: 16,
+                    color: colors.textTertiary,
+                  ),
                   const SizedBox(width: AppSpacing.s2),
                   Text(
-                    scheduledTimeText!,
-                    style: AppTextStyles.tabular(context),
-                    textDirection: TextDirection.ltr,
+                    isRestDay ? 'rest_day'.tr : 'work_schedule'.tr,
+                    style: AppTextStyles.xs(context),
                   ),
+                  if (!isRestDay && scheduledTimeText != null) ...[
+                    const SizedBox(width: AppSpacing.s2),
+                    Text(
+                      scheduledTimeText!,
+                      style: AppTextStyles.tabular(context),
+                      textDirection: TextDirection.ltr,
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ],
         ],

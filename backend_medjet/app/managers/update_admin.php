@@ -33,7 +33,7 @@ if ($hasBranch) {
 }
 
 if ($newRole === null && !$hasBranch) {
-    Response::fail('لا يوجد تغييرات', 422);
+    Response::fail('لا يوجد تغييرات', 422, 'no_changes');
 }
 
 $inviterPerms = PermissionMiddleware::effectivePermissions(
@@ -49,7 +49,7 @@ $roleChanged = false;
 if ($newRole !== null && $newRole !== $admin['role']) {
     $validRoles = ['general_manager', 'hr', 'branch_manager', 'attendance', 'viewer'];
     if (!in_array($newRole, $validRoles, true)) {
-        Response::fail('الدور غير صالح', 422);
+        Response::fail('الدور غير صالح', 422, 'invalid_role');
     }
 
     // Enforce equal-or-lower: cannot grant a role above your own access.
@@ -70,7 +70,7 @@ if ($hasBranch && $newBranchId !== null) {
         "SELECT id FROM branches WHERE id = ? AND tenant_id = ? LIMIT 1",
         [$newBranchId, $tenantId]
     );
-    if (!$branch) Response::fail('الفرع غير موجود', 404);
+    if (!$branch) Response::fail('الفرع غير موجود', 404, 'branch_not_found');
 }
 
 $sets = [];

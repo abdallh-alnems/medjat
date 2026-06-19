@@ -9,7 +9,7 @@ if ($method === 'DELETE') {
 } elseif ($method === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true) ?: [];
 } else {
-    Response::fail('Method not allowed', 405);
+    Response::fail('Method not allowed', 405, 'method_not_allowed');
 }
 
 $auth = Auth::authenticateUser(db());
@@ -22,7 +22,7 @@ Validator::required($employeeId, 'employee_id');
 Validator::enum($type, ['face', 'fingerprint', 'both'], 'type');
 
 $emp = EmployeeModel::findById($employeeId, $tenantId);
-if (!$emp) Response::fail('Employee not found', 404);
+if (!$emp) Response::fail('Employee not found', 404, 'employee_not_found');
 
 if ($type === 'face' || $type === 'both') {
     BiometricModel::deleteFace($employeeId, $tenantId);

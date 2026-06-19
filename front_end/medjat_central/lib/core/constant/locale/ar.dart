@@ -2107,4 +2107,6 @@ const Map<String, String> ar = {
   'no_activity': 'لا توجد إجراءات مسجّلة',
   'filter_by_admin': 'تصفية حسب المدير',
   'all_admins': 'كل المدراء',
+  'meters_unit': 'م',
+  'manager_fallback': 'مدير',
 };

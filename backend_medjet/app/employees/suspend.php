@@ -25,14 +25,14 @@ $payPercentage = null;
 if ($payMode === 'partial') {
     $payPercentage = (float) ($input['pay_percentage'] ?? -1);
     if ($payPercentage <= 0 || $payPercentage >= 100) {
-        Response::fail('pay_percentage must be between 0 and 100 for partial pay', 422);
+        Response::fail('pay_percentage must be between 0 and 100 for partial pay', 422, 'pay_percentage_between_0_100');
     }
 }
 
 if ($endDate !== null) {
     Validator::date($endDate, 'end_date');
     if ($endDate < $startDate) {
-        Response::fail('end_date must be on or after start_date', 422);
+        Response::fail('end_date must be on or after start_date', 422, 'end_date_after_start_date');
     }
 }
 
@@ -41,12 +41,12 @@ if (!$employee) {
     Response::notFound('Employee');
 }
 if ($employee['status'] === 'terminated') {
-    Response::fail('Cannot suspend a terminated employee', 422);
+    Response::fail('Cannot suspend a terminated employee', 422, 'cannot_suspend_terminated_employee');
 }
 
 // One active suspension at a time.
 if (EmployeeSuspensionModel::getActiveForEmployee($employeeId, $tenantId)) {
-    Response::fail('Employee already has an active suspension', 409);
+    Response::fail('Employee already has an active suspension', 409, 'employee_already_active_suspension');
 }
 
 $id = EmployeeSuspensionModel::create($tenantId, $employeeId, [

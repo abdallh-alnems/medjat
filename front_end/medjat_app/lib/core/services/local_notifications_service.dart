@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:get/get.dart';
 
 /// Shows real system notifications (tray + sound) when an FCM message arrives
 /// while the app is in the foreground. In the background/terminated state the
@@ -12,12 +13,15 @@ class LocalNotificationsService {
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
-  static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
-    'high_importance_channel',
-    'إشعارات مهمة',
-    description: 'إشعارات التطبيق',
-    importance: Importance.max,
-  );
+  static const String _channelId = 'high_importance_channel';
+
+  /// تُبنى عند الطلب لتأخذ اسماً ووصفاً مترجمَين حسب لغة التطبيق الحالية.
+  static AndroidNotificationChannel get _channel => AndroidNotificationChannel(
+        _channelId,
+        'notif_channel_name'.tr,
+        description: 'notif_channel_desc'.tr,
+        importance: Importance.max,
+      );
 
   /// Called when the user taps a notification, with its data payload.
   static void Function(Map<String, dynamic> data)? onTap;
@@ -59,15 +63,16 @@ class LocalNotificationsService {
 
   static Future<void> _showInternal(
       String? title, String? body, Map<String, dynamic> data) async {
+    final channel = _channel;
     await _plugin.show(
       id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
       title: title,
       body: body,
       notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
-          _channel.id,
-          _channel.name,
-          channelDescription: _channel.description,
+          channel.id,
+          channel.name,
+          channelDescription: channel.description,
           importance: Importance.max,
           priority: Priority.high,
           icon: '@mipmap/ic_launcher',

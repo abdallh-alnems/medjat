@@ -40,7 +40,7 @@ foreach ($updatableFields as $field) {
 if (isset($updateData['phone']) && $updateData['phone'] !== '') {
     $normalizedPhone = Validator::phone($updateData['phone']);
     if ($normalizedPhone === null) {
-        Response::fail('Invalid phone number', 422);
+        Response::fail('Invalid phone number', 422, 'invalid_phone_number');
     }
     $updateData['phone'] = $normalizedPhone;
 }
@@ -53,7 +53,7 @@ if (array_key_exists('annual_leave_days', $input)) {
     } else {
         $days = (int) $val;
         if ($days < 0 || $days > 366) {
-            Response::fail('annual_leave_days must be between 0 and 366, or empty to inherit', 422);
+            Response::fail('annual_leave_days must be between 0 and 366, or empty to inherit', 422, 'annual_leave_days_between_0');
         }
         $updateData['annual_leave_days'] = $days;
     }

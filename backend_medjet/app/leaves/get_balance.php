@@ -13,7 +13,7 @@ if ($employeeIdParam > 0) {
     $employee = EmployeeModel::findByAdminId($auth['admin_id'], $tenantId);
 }
 if (!$employee) {
-    Response::fail('Employee profile not found', 404);
+    Response::fail('Employee profile not found', 404, 'employee_profile_not_found');
 }
 
 $year = (int) ($_GET['year'] ?? date('Y'));

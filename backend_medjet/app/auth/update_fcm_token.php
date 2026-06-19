@@ -23,7 +23,7 @@ $adminId = $auth['admin_id'];
 $input = $auth['input'];
 
 if (empty($adminId)) {
-    Response::fail('No account linked to receive notifications', 422);
+    Response::fail('No account linked to receive notifications', 422, 'account_linked_receive_notifications');
 }
 
 $fcmToken = $input['fcm_token'] ?? null;
@@ -31,7 +31,7 @@ $platform = $input['platform'] ?? 'android';
 $deviceId = $input['device_id'] ?? null;
 
 if (empty($fcmToken)) {
-    Response::fail('fcm_token is required', 400);
+    Response::fail('fcm_token is required', 400, 'fcm_token_required');
 }
 
 $existing = Database::fetchOne(

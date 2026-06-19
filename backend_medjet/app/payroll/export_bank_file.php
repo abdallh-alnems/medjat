@@ -11,7 +11,7 @@ $month = $_GET['month'] ?? null;
 Validator::required($month, 'month');
 
 if (!preg_match('/^\d{4}-\d{2}$/', $month)) {
-    Response::fail('Invalid month format. Use YYYY-MM', 400);
+    Response::fail('Invalid month format. Use YYYY-MM', 400, 'invalid_month_format_yyyy_mm');
 }
 
 $branchId = ($_GET['branch_id'] ?? null) ? (int) $_GET['branch_id'] : null;
@@ -37,7 +37,7 @@ $currency = $tenant['currency'] ?? 'EGP';
 
 $exporter = PayrollExporterRegistry::resolve($exporterKey, $tenant);
 if ($exporter === null) {
-    Response::fail('No payroll exporter available for this country/format', 422);
+    Response::fail('No payroll exporter available for this country/format', 422, 'payroll_exporter_available_country_format');
 }
 
 $ext = $exporter->fileExtension();

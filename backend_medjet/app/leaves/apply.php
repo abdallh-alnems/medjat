@@ -46,7 +46,8 @@ if ($type === 'annual') {
         Response::fail(
             "رصيد إجازتك السنوية لا يكفي (المتبقي {$remaining} يوم، والطلب {$requestedDays} يوم)",
             422,
-            'leave_balance_insufficient'
+            'leave_balance_insufficient',
+            ['remaining' => $remaining, 'days' => $requestedDays]
         );
     }
 }

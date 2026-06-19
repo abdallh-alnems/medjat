@@ -895,8 +895,18 @@ class _DatePickerRow extends StatelessWidget {
   }
 
   String _dayName(DateTime date) {
-    const names = ['الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
-    return names[date.weekday - 1];
+    const ar = ['الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'];
+    const en = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    final isAr = Get.locale?.languageCode == 'ar';
+    return (isAr ? ar : en)[date.weekday - 1];
   }
 }
 

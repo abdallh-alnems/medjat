@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../../core/class/api_messages.dart';
 import '../../../core/class/status_request.dart';
 import '../../../data/data_source/remote/leave_data/leave_data.dart';
 
@@ -89,8 +90,8 @@ class LeaveController extends GetxController {
       await loadMyLeaves();
       return true;
     }
-    final msg = (response['message'] as String?) ?? 'error'.tr;
-    Get.snackbar('error'.tr, msg, snackPosition: SnackPosition.BOTTOM);
+    Get.snackbar('error'.tr, ApiMessages.of(response),
+        snackPosition: SnackPosition.BOTTOM);
     return false;
   }
 
@@ -121,13 +122,9 @@ class LeaveController extends GetxController {
       await loadMyLeaves();
       return true;
     }
-    if (response['statusCode'] == 409) {
-      final msg = (response['message'] as String?) ?? 'leave_overlap'.tr;
-      Get.snackbar('error'.tr, msg, snackPosition: SnackPosition.BOTTOM);
-      return false;
-    }
-    final msg = (response['message'] as String?) ?? 'leave_apply_failed'.tr;
-    Get.snackbar('error'.tr, msg, snackPosition: SnackPosition.BOTTOM);
+    Get.snackbar('error'.tr,
+        ApiMessages.of(response, fallbackKey: 'leave_apply_failed'),
+        snackPosition: SnackPosition.BOTTOM);
     return false;
   }
 
@@ -160,14 +157,9 @@ class LeaveController extends GetxController {
       update();
       return true;
     } else {
-      final statusCode = response['statusCode'];
-      if (statusCode == 409) {
-        Get.snackbar('error'.tr, 'leave_overlap'.tr,
-            snackPosition: SnackPosition.BOTTOM);
-      } else {
-        final msg = (response['message'] as String?) ?? 'leave_apply_failed'.tr;
-        Get.snackbar('error'.tr, msg, snackPosition: SnackPosition.BOTTOM);
-      }
+      Get.snackbar('error'.tr,
+          ApiMessages.of(response, fallbackKey: 'leave_apply_failed'),
+          snackPosition: SnackPosition.BOTTOM);
       update();
       return false;
     }

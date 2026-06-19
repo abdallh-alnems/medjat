@@ -10,7 +10,7 @@ $input = $auth['input'];
 $records = $input['records'] ?? [];
 
 if (empty($records) || !is_array($records)) {
-    Response::fail('Records array is required', 400);
+    Response::fail('Records array is required', 400, 'records_required');
 }
 
 $employee = $auth['employee'];

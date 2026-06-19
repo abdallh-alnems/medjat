@@ -66,11 +66,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyArLeUHXjJ2FDNVtG2guBJhaKxpyz2J7S0',
-    appId: '1:510933674549:ios:fd425205860b4ad8c35f7c',
+    appId: '1:510933674549:ios:304cd51b105eea8ec35f7c',
     messagingSenderId: '510933674549',
     projectId: 'medjat',
     storageBucket: 'medjat.firebasestorage.app',
-    iosClientId: '510933674549-pf3nhmhclogmna7jcrepc5dpfrqarscp.apps.googleusercontent.com',
-    iosBundleId: 'com.khawarizmie.medjatCentral',
+    iosClientId: '510933674549-8jfnid3bf46ci4vm15nuveu9c4jl1qub.apps.googleusercontent.com',
+    iosBundleId: 'com.khawarizmie.medjat-central',
   );
 }

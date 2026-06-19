@@ -178,7 +178,9 @@ class _ActivityTile extends StatelessWidget {
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
-                        entry.adminName.isNotEmpty ? entry.adminName : 'مدير',
+                        entry.adminName.isNotEmpty
+                            ? entry.adminName
+                            : 'manager_fallback'.tr,
                         style: AppTextStyles.xs(context),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -331,9 +333,9 @@ class _EmptyState extends StatelessWidget {
 String _relativeTime(DateTime? dt) {
   if (dt == null) return '';
   final diff = DateTime.now().difference(dt);
-  if (diff.inSeconds < 60) return 'الآن';
-  if (diff.inMinutes < 60) return 'منذ ${diff.inMinutes} دقيقة';
-  if (diff.inHours < 24) return 'منذ ${diff.inHours} ساعة';
-  if (diff.inDays < 7) return 'منذ ${diff.inDays} يوم';
+  if (diff.inSeconds < 60) return 'just_now'.tr;
+  if (diff.inMinutes < 60) return '${diff.inMinutes} ${'minutes_ago'.tr}';
+  if (diff.inHours < 24) return '${diff.inHours} ${'hours_ago'.tr}';
+  if (diff.inDays < 7) return '${diff.inDays} ${'days_ago'.tr}';
   return DateFormat('yyyy/MM/dd').format(dt);
 }

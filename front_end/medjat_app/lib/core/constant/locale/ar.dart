@@ -4,6 +4,9 @@ const Map<String, String> ar = {
   // General
   'loading': 'جاري التحميل...',
   'retry': 'إعادة المحاولة',
+  'vpn_blocked_title': 'الاتصال عبر VPN غير مسموح',
+  'vpn_blocked_message':
+      'يبدو أنك تستخدم VPN أو بروكسي. يرجى إيقافه ثم إعادة المحاولة لفتح التطبيق وتسجيل الحضور.',
   'back': 'رجوع',
   'cancel': 'إلغاء',
   'done': 'تمام',
@@ -306,6 +309,36 @@ const Map<String, String> ar = {
   'install_now': 'تركيب الآن',
   'maintenance': 'تحت الصيانة',
   'maintenance_message': 'التطبيق تحت الصيانة حالياً، سنعود قريباً',
+  'upgrade_body': '\n\nنسخة جديدة من تطبيق مدجات متوفرة الآن 📱\n\n مميزات جديدة وتحسينات ✨\n إصلاح الأخطاء وتحسين الأداء 🔧\n أمان محسن وحماية أفضل 🛡️\n\nننصح بتحديث التطبيق للحصول على أفضل تجربة! 💪',
+
+  // قناة الإشعارات
+  'notif_channel_name': 'إشعارات مهمة',
+  'notif_channel_desc': 'إشعارات التطبيق',
+
+  // رسائل أخطاء الـ API (مترجمة من error_code القادم من الخادم)
+  'fill_required_fields': 'يرجى تعبئة الحقول المطلوبة',
+  'account_suspended': 'الحساب موقوف',
+  'qr_required': 'هذا الفرع يتطلب مسح رمز QR',
+  'attendance_method_not_allowed': 'طريقة التحضير هذه غير مفعّلة لهذا الفرع',
+  'leave_past_date': 'لا يمكن طلب إجازة بتاريخ ماضٍ',
+  'leave_not_cancellable': 'لا يمكن إلغاء هذا الطلب',
+  'leave_not_editable': 'لا يمكن تعديل هذا الطلب',
+  'invalid_date_range': 'تاريخ النهاية قبل تاريخ البداية',
+  'break_type_too_long': 'نوع الطلب طويل جدًا',
+  'invalid_time_range': 'وقت النهاية يجب أن يكون بعد وقت البداية',
+  'break_duration_too_long': 'مدة الإذن كبيرة جدًا',
+  'break_window_passed': 'انتهى وقت الإذن، لا يمكن طلبه',
+  'break_not_postponed': 'لا يوجد اقتراح وقت بديل لهذا الطلب',
+  'break_no_suggestion': 'لا يوجد وقت بديل مكتمل للموافقة عليه',
+  'break_accept_failed': 'تعذّر قبول الوقت البديل',
+  'break_reject_failed': 'تعذّر رفض الوقت البديل',
+  'advance_invalid_start_month': 'صيغة شهر البداية غير صحيحة',
+  'advance_start_month_past': 'شهر بداية الخصم لا يمكن أن يكون في الماضي',
+  'document_not_required': 'هذا المستند غير مطلوب منك',
+  'file_type_not_allowed': 'نوع الملف غير مسموح',
+  'file_too_large': 'حجم الملف يتجاوز الحد المسموح',
+  'no_file_selected': 'لم يتم اختيار ملف',
+  'request_not_pending': 'لا يمكن تنفيذ هذا الإجراء على طلب تمّت معالجته',
 
   // Rating
   'rate_us': 'قيّمنا',

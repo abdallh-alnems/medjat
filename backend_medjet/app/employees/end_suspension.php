@@ -21,7 +21,7 @@ if (!$employee) {
 
 $active = EmployeeSuspensionModel::getActiveForEmployee($employeeId, $tenantId);
 if (!$active) {
-    Response::fail('Employee has no active suspension', 422);
+    Response::fail('Employee has no active suspension', 422, 'employee_active_suspension');
 }
 
 EmployeeSuspensionModel::end((int) $active['id'], $tenantId, $auth['admin_id'], $endNote);

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
 import '../../../logic/controller/home/home_controller.dart';
-import '../../widget/ad/native_ad_widget.dart';
+import '../../widget/ad/top_native_ad.dart';
 import '../../widget/date_formatter.dart';
 import 'widgets/attendance_button.dart';
 import 'widgets/status_card.dart';
@@ -31,6 +32,11 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   const SizedBox(height: AppSpacing.s4),
                   _buildAppBar(context, colors, controller),
+                  const TopNativeAd(
+                    tabIndex: 0,
+                    horizontalMargin: 0,
+                    templateType: TemplateType.small,
+                  ),
                   const SizedBox(height: AppSpacing.s7),
                   _buildDate(context),
                   const SizedBox(height: AppSpacing.s6),
@@ -56,8 +62,6 @@ class HomeScreen extends StatelessWidget {
                     const SizedBox(height: AppSpacing.s3),
                     _buildOfflineBanner(colors),
                   ],
-                  const SizedBox(height: AppSpacing.s7),
-                  const NativeAdWidget(),
                   const SizedBox(height: AppSpacing.s9),
                 ],
               ),

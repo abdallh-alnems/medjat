@@ -17,7 +17,7 @@ $platform = $input['platform'] ?? 'android';
 $appVersion = $input['app_version'] ?? null;
 
 if ($token === '' || $deviceId === '') {
-    Response::fail('حقل مطلوب', 422);
+    Response::fail('حقل مطلوب', 422, 'missing_fields');
 }
 
 if (!in_array($platform, ['android', 'ios'], true)) {
@@ -26,7 +26,7 @@ if (!in_array($platform, ['android', 'ios'], true)) {
 
 $codeRow = ActivationCodeModel::findByToken($token);
 if (!$codeRow) {
-    Response::fail('رابط التفعيل غير صالح أو منتهي', 404);
+    Response::fail('رابط التفعيل غير صالح أو منتهي', 404, 'join_link_invalid');
 }
 
 $employee = Database::fetchOne(
@@ -39,11 +39,11 @@ $employee = Database::fetchOne(
 );
 
 if (!$employee) {
-    Response::fail('Employee not found', 404);
+    Response::fail('Employee not found', 404, 'join_link_invalid');
 }
 
 if (($employee['status'] ?? '') === 'terminated') {
-    Response::fail('الحساب موقوف', 403);
+    Response::fail('الحساب موقوف', 403, 'account_suspended');
 }
 
 // Alert managers only on the first activation, not on later token logins.
@@ -98,7 +98,7 @@ try {
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     error_log('Employee token activation failed: ' . $e->getMessage());
-    Response::fail('تعذّر تسجيل الدخول', 500);
+    Response::fail('تعذّر تسجيل الدخول', 500, 'login_failed');
 }
 
 // Notify the tenant's managers on every login (best-effort). The message

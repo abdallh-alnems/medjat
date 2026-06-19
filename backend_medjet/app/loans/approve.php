@@ -17,7 +17,7 @@ if (!$loan) {
     Response::notFound('Loan');
 }
 if ($loan['status'] !== 'pending') {
-    Response::fail('Only pending loans can be approved', 409);
+    Response::fail('Only pending loans can be approved', 409, 'only_pending_loans_can_approved');
 }
 
 LoanModel::approve($id, $tenantId, $auth['admin_id']);

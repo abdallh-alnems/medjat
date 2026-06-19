@@ -17,7 +17,7 @@ $reasonMap = [
 ];
 $reason = $reasonMap[$reasonRaw] ?? null;
 if ($reason === null) {
-    Response::fail('Invalid reason', 400);
+    Response::fail('Invalid reason', 400, 'invalid_reason');
 }
 
 $branchId = (int) ($input['branch_id'] ?? 0) ?: null;

@@ -52,7 +52,7 @@ if ($scopeType === 'employees') {
         ? $input['scope_employee_ids']
         : [];
     if (empty($employeeIds)) {
-        Response::fail('scope_employee_ids is required when scope_type=employees', 400);
+        Response::fail('scope_employee_ids is required when scope_type=employees', 400, 'scope_employee_ids_required_scope');
     }
 }
 
@@ -62,7 +62,7 @@ if ($scopeType === 'category') {
         ? $input['scope_category_ids']
         : [];
     if (empty($categoryIds)) {
-        Response::fail('scope_category_ids is required when scope_type=category', 400);
+        Response::fail('scope_category_ids is required when scope_type=category', 400, 'scope_category_ids_required_scope');
     }
 }
 

@@ -21,7 +21,7 @@ $scopeType = $input['scope_type'] ?? '';
 $scopeId = (int) ($input['scope_id'] ?? 0);
 
 if (!in_array($scopeType, ['category', 'employee'], true)) {
-    Response::fail('scope_type must be category or employee', 422);
+    Response::fail('scope_type must be category or employee', 422, 'scope_type_category_employee');
 }
 Validator::required($scopeId, 'scope_id');
 
@@ -30,11 +30,11 @@ $methods = $input['attendance_methods'] ?? null;
 
 if ($methods !== null) {
     if (!is_array($methods) || empty($methods)) {
-        Response::fail('attendance_methods must be a non-empty array, or null to inherit', 422);
+        Response::fail('attendance_methods must be a non-empty array, or null to inherit', 422, 'attendance_methods_non_empty_array');
     }
     foreach ($methods as $m) {
         if (!in_array($m, $allowedMethods, true)) {
-            Response::fail('Invalid attendance method: ' . $m, 422);
+            Response::fail('Invalid attendance method: ' . $m, 422, 'invalid_attendance_method');
         }
     }
     $methods = array_values(array_unique($methods));

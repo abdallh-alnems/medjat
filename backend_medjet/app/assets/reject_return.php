@@ -18,7 +18,7 @@ if (!$asset) {
     Response::notFound('Custody');
 }
 if ($asset['status'] !== 'return_requested') {
-    Response::fail('Only a pending return request can be rejected', 409);
+    Response::fail('Only a pending return request can be rejected', 409, 'only_pending_return_request_can');
 }
 
 AssetModel::rejectReturn($id, $tenantId, $auth['admin_id'], $reason);

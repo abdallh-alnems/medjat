@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:safe_device/safe_device.dart';
 
@@ -48,13 +49,28 @@ class DeviceIntegrityService {
     );
   }
 
+  /// Public, lightweight VPN-only probe used by the app-open gate (splash)
+  /// so the app refuses to open while a VPN/proxy interface is active.
+  static Future<bool> isVpnActive() => _isVpnActive();
+
+  static const _iosVpnChannel = MethodChannel('app/vpn');
+
   static Future<bool> _isVpnActive() async {
-    // iOS exposes `utun` interfaces by default (Handoff/AirDrop/Personal Hotspot)
-    // even without a user VPN, so matching `utun` there flags every iPhone.
-    // On iOS we look only for the interfaces a real VPN actually adds.
-    final vpnPrefixes = Platform.isIOS
-        ? const ['ipsec', 'ppp', 'tap']
-        : const ['tun', 'tap', 'ppp', 'pptp', 'wg'];
+    // iOS: interface-name matching is unreliable. `utun` interfaces exist on
+    // every iPhone (Handoff/Hotspot) and a configured-but-disconnected IKEv2
+    // VPN leaves an idle `ipsec0` interface — both produce false positives.
+    // The native side reads the system proxy scoped settings instead, which
+    // only list VPN keys while a tunnel is actively routing traffic.
+    if (Platform.isIOS) {
+      try {
+        final active = await _iosVpnChannel.invokeMethod<bool>('isVpnActive');
+        return active ?? false;
+      } catch (_) {
+        return false;
+      }
+    }
+    // Android: interface-name detection is reliable.
+    const vpnPrefixes = ['tun', 'tap', 'ppp', 'pptp', 'wg'];
     try {
       final interfaces = await NetworkInterface.list();
       for (final iface in interfaces) {

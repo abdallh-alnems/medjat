@@ -17,7 +17,7 @@ Validator::required($payrollId, 'payroll_id');
 
 $prev = PayrollModel::revert($payrollId, $tenantId);
 if ($prev === null) {
-    Response::fail('Slip not found or already in draft', 422);
+    Response::fail('Slip not found or already in draft', 422, 'slip_not_found_already_draft');
 }
 
 AuditLogModel::log(

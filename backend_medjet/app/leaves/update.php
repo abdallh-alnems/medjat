@@ -21,7 +21,7 @@ Validator::date($startDate, 'start_date');
 Validator::date($endDate, 'end_date');
 
 if (strtotime($endDate) < strtotime($startDate)) {
-    Response::fail('تاريخ النهاية قبل تاريخ البداية', 422);
+    Response::fail('تاريخ النهاية قبل تاريخ البداية', 422, 'invalid_date_range');
 }
 
 if ($startDate < date('Y-m-d')) {
@@ -50,7 +50,8 @@ if ($type === 'annual') {
         Response::fail(
             "رصيد إجازتك السنوية لا يكفي (المتبقي {$remaining} يوم، والطلب {$requestedDays} يوم)",
             422,
-            'leave_balance_insufficient'
+            'leave_balance_insufficient',
+            ['remaining' => $remaining, 'days' => $requestedDays]
         );
     }
 }

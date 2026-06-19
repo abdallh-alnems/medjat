@@ -20,7 +20,7 @@ Validator::required($id, 'id');
 Validator::required($amount, 'amount');
 
 if ($amount <= 0) {
-    Response::fail('amount must be positive', 422);
+    Response::fail('amount must be positive', 422, 'amount_positive');
 }
 
 $existing = DeductionRuleModel::findManualById($id, $tenantId);

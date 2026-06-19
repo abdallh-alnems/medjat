@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../constant/theme/app_colors.dart';
 import 'primary_input.dart';
 
 class PasswordInput extends StatefulWidget {
-  final String label;
+  /// عند تركه فارغاً يُستخدم 'password'.tr ليتبع لغة التطبيق الحالية.
+  final String? label;
   final String? hint;
   final TextEditingController controller;
   final String? Function(String?)? validator;
@@ -11,7 +13,7 @@ class PasswordInput extends StatefulWidget {
 
   const PasswordInput({
     super.key,
-    this.label = 'كلمة السر',
+    this.label,
     this.hint,
     required this.controller,
     this.validator,
@@ -28,7 +30,7 @@ class _PasswordInputState extends State<PasswordInput> {
   @override
   Widget build(BuildContext context) {
     return PrimaryInput(
-      label: widget.label,
+      label: widget.label ?? 'password'.tr,
       hint: widget.hint,
       controller: widget.controller,
       obscureText: _obscure,

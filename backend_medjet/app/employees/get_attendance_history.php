@@ -9,7 +9,7 @@ PermissionMiddleware::check($auth, 'manage_attendance');
 
 $employeeId = (int) ($_GET['employee_id'] ?? 0);
 if ($employeeId <= 0) {
-    Response::fail('Employee ID required', 422);
+    Response::fail('Employee ID required', 422, 'employee_id_required');
 }
 
 $employee = EmployeeModel::findById($employeeId, $tenantId);
@@ -27,7 +27,7 @@ $month = $_GET['month'] ?? null;
 if ($from === null || $to === null) {
     $month = $month ?: date('Y-m');
     if (!preg_match('/^\d{4}-\d{2}$/', $month)) {
-        Response::fail('Invalid month format (expected YYYY-MM)', 422);
+        Response::fail('Invalid month format (expected YYYY-MM)', 422, 'invalid_month_format_expected_yyyy');
     }
     $from = $month . '-01';
     $to   = date('Y-m-t', strtotime($from));
@@ -35,17 +35,17 @@ if ($from === null || $to === null) {
 
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $from) ||
     !preg_match('/^\d{4}-\d{2}-\d{2}$/', $to)) {
-    Response::fail('Invalid date format (expected YYYY-MM-DD)', 422);
+    Response::fail('Invalid date format (expected YYYY-MM-DD)', 422, 'invalid_date_format_expected_yyyy');
 }
 
 if (strtotime($from) > strtotime($to)) {
-    Response::fail('Start date must be on or before end date', 422);
+    Response::fail('Start date must be on or before end date', 422, 'start_date_before_end_date');
 }
 
 // Safety cap so a careless range can't fetch years of rows.
 $daySpan = (strtotime($to) - strtotime($from)) / 86400;
 if ($daySpan > 366) {
-    Response::fail('Date range cannot exceed 366 days', 422);
+    Response::fail('Date range cannot exceed 366 days', 422, 'date_range_cannot_exceed_366');
 }
 
 // Tenant timezone drives "today" and the shift-end cutoff used to decide

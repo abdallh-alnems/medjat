@@ -148,7 +148,10 @@ class AuthController extends GetxController {
       }
 
       if (firebaseUser.emailVerified && isLoggedIn.value) {
-        final token = await firebaseUser.getIdToken();
+        // Force-refresh so the freshly minted token carries the `name` claim
+        // set via updateDisplayName at signup; otherwise the backend falls
+        // back to the email's local-part as the name.
+        final token = await firebaseUser.getIdToken(true);
         if (token != null) {
           final success = await _sendTokenToBackend(token);
           if (success) _onSuccess();
@@ -266,7 +269,10 @@ class AuthController extends GetxController {
         return;
       }
 
-      final firebaseToken = await _auth.currentUser?.getIdToken();
+      // Force-refresh so the token carries the `name` claim just set via
+      // updateDisplayName; otherwise the backend names the admin after the
+      // email's local-part on this first (creating) call.
+      final firebaseToken = await _auth.currentUser?.getIdToken(true);
       if (firebaseToken == null) {
         isEmailLoading.value = false;
         _onError('token_failed'.tr);
@@ -618,7 +624,10 @@ class AuthController extends GetxController {
     isEmailVerified.value = firebaseUser.emailVerified;
 
     if (firebaseUser.emailVerified) {
-      final token = await firebaseUser.getIdToken();
+      // Force-refresh so the token carries the `name` claim from
+      // updateDisplayName; the backend creates the admin row on this first
+      // call and would otherwise name it after the email's local-part.
+      final token = await firebaseUser.getIdToken(true);
       if (token != null) {
         final success = await _sendTokenToBackend(token);
         if (success) {

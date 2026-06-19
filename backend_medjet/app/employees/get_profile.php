@@ -7,12 +7,12 @@ $tenantId = TenantMiddleware::requireTenant();
 
 $id = (int) ($_GET['id'] ?? 0);
 if ($id <= 0) {
-    Response::fail('Employee ID is required', 422);
+    Response::fail('Employee ID is required', 422, 'employee_id_required');
 }
 
 $employee = EmployeeModel::findById($id, $tenantId);
 if (!$employee) {
-    Response::fail('Employee profile not found', 404);
+    Response::fail('Employee profile not found', 404, 'employee_profile_not_found');
 }
 
 // Lazily auto-reactivate if a definite suspension elapsed, then re-read so the

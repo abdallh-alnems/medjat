@@ -8,7 +8,7 @@ PermissionMiddleware::check($auth, 'manage_employees');
 
 $employeeId = (int) ($_GET['id'] ?? 0);
 if (!$employeeId) {
-    Response::fail('Employee ID required', 422);
+    Response::fail('Employee ID required', 422, 'employee_id_required');
 }
 
 $employee = Database::fetchOne(
@@ -48,7 +48,7 @@ if ($method === 'GET') {
 
 // POST: regenerate. Allowed for any non-terminated employee — covers device change (PRD §3.6).
 if (in_array($employee['status'], ['terminated'], true)) {
-    Response::fail('Cannot generate code for terminated employee', 409);
+    Response::fail('Cannot generate code for terminated employee', 409, 'cannot_generate_code_terminated_employee');
 }
 
 $wasActive = $employee['status'] === 'active';

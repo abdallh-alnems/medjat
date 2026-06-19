@@ -1,20 +1,27 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/foundation.dart';
 
-/// Centralised AdMob unit IDs for the Medjat employee app.
+/// Centralised AdMob unit IDs for the Medjat employee app (per-platform).
 ///
-/// Production banner unit: `ca-app-pub-8595701567488603/6426077622`.
-/// Production native (advanced) unit: `ca-app-pub-8595701567488603/9244941954`.
+/// Android app id: `ca-app-pub-8595701567488603~8653915019`
+/// iOS app id:     `ca-app-pub-8595701567488603~2330701747` (set in Info.plist)
 /// In debug builds Google's official test unit is used to avoid serving
 /// (and accidentally clicking) live ads during development.
 class AdManager {
   AdManager._();
 
-  // ============================== Production =================================
+  // ============================ Production — Android =========================
 
-  static const String _productionBanner =
+  static const String _bannerAndroid =
       'ca-app-pub-8595701567488603/6426077622';
-  static const String _productionNative =
+  static const String _nativeAndroid =
       'ca-app-pub-8595701567488603/9244941954';
+
+  // ============================== Production — iOS ===========================
+
+  static const String _bannerIos = 'ca-app-pub-8595701567488603/3448342290';
+  static const String _nativeIos = 'ca-app-pub-8595701567488603/3105827447';
 
   // ================================ Test IDs =================================
 
@@ -23,9 +30,15 @@ class AdManager {
 
   // ================================== banner =================================
 
-  static String get idBanner => kDebugMode ? _testBanner : _productionBanner;
+  static String get idBanner {
+    if (kDebugMode) return _testBanner;
+    return Platform.isIOS ? _bannerIos : _bannerAndroid;
+  }
 
   // ================================== native =================================
 
-  static String get idNative => kDebugMode ? _testNative : _productionNative;
+  static String get idNative {
+    if (kDebugMode) return _testNative;
+    return Platform.isIOS ? _nativeIos : _nativeAndroid;
+  }
 }

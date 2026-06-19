@@ -294,7 +294,7 @@ class _BranchLocationSheetState extends State<_BranchLocationSheet> {
               children: _presets.map((r) {
                 final on = _radius == r;
                 return ChoiceChip(
-                  label: Text('$r م'),
+                  label: Text('$r ${'meters_unit'.tr}'),
                   selected: on,
                   onSelected: (_) => setState(() => _radius = r),
                   labelStyle: TextStyle(
@@ -323,14 +323,14 @@ class _BranchLocationSheetState extends State<_BranchLocationSheet> {
                     max: 500,
                     divisions: 99,
                     activeColor: colors.brand,
-                    label: '$_radius م',
+                    label: '$_radius ${'meters_unit'.tr}',
                     onChanged: (v) => setState(() => _radius = v.round()),
                   ),
                 ),
                 SizedBox(
                   width: 56,
                   child: Text(
-                    '$_radius م',
+                    '$_radius ${'meters_unit'.tr}',
                     textAlign: TextAlign.end,
                     style: TextStyle(
                       fontFamily: 'IBM Plex Sans Arabic',

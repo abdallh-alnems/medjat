@@ -9,7 +9,7 @@ PermissionMiddleware::check($auth, 'manage_employees');
 
 $employeeId = (int) ($_GET['employee_id'] ?? 0);
 if ($employeeId <= 0) {
-    Response::fail('employee_id is required', 422);
+    Response::fail('employee_id is required', 422, 'employee_id_required');
 }
 
 $employee = EmployeeModel::findById($employeeId, $tenantId);

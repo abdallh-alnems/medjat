@@ -40,7 +40,7 @@ if ($method === 'GET') {
     $prefs = $input['prefs'] ?? null;
 
     if (!is_array($prefs)) {
-        Response::fail('prefs must be an object', 400);
+        Response::fail('prefs must be an object', 400, 'prefs_object');
     }
 
     $validKeys = ['late_absence', 'missing_checkout', 'document_expiry', 'leave_events', 'payroll_events'];
@@ -60,5 +60,5 @@ if ($method === 'GET') {
 
     Response::success(['prefs' => $clean]);
 } else {
-    Response::fail('Method not allowed', 405);
+    Response::fail('Method not allowed', 405, 'method_not_allowed');
 }

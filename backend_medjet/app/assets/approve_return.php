@@ -17,7 +17,7 @@ if (!$asset) {
     Response::notFound('Custody');
 }
 if (!in_array($asset['status'], ['assigned', 'return_requested'], true)) {
-    Response::fail('This custody item is already returned', 409);
+    Response::fail('This custody item is already returned', 409, 'custody_item_already_returned');
 }
 
 AssetModel::approveReturn($id, $tenantId, $auth['admin_id']);

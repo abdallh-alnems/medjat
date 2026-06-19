@@ -26,7 +26,7 @@ Validator::required($status, 'status');
 
 $allowedStatuses = ['present', 'absent', 'leave', 'holiday', 'weekly_off'];
 if (!in_array($status, $allowedStatuses, true)) {
-    Response::fail('Invalid status', 422);
+    Response::fail('Invalid status', 422, 'invalid_status');
 }
 
 $employee = EmployeeModel::findById($employeeId, $tenantId);
@@ -48,11 +48,11 @@ if ($involvesLeave) {
 if ($status === 'present') {
     foreach (['check_in_time' => $checkIn, 'check_out_time' => $checkOut] as $field => $val) {
         if ($val !== null && !preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $val)) {
-            Response::fail("Invalid time format for {$field} (expected HH:MM[:SS])", 422);
+            Response::fail("Invalid time format for {$field} (expected HH:MM[:SS])", 422, 'invalid_time_format_expected_hh');
         }
     }
     if ($checkIn !== null && $checkOut !== null && strtotime($checkIn) >= strtotime($checkOut)) {
-        Response::fail('Check-out time must be after check-in time', 422);
+        Response::fail('Check-out time must be after check-in time', 422, 'check_out_time_after_check');
     }
 } else {
     // Times only make sense for a present day.
@@ -64,7 +64,7 @@ if ($status === 'leave') {
     $leaveType = $leaveType ?? 'annual';
     $allowedTypes = ['annual', 'sick', 'personal', 'unpaid'];
     if (!in_array($leaveType, $allowedTypes, true)) {
-        Response::fail('Invalid leave_type', 422);
+        Response::fail('Invalid leave_type', 422, 'invalid_leave_type');
     }
 } else {
     $leaveType = null;
@@ -73,11 +73,11 @@ if ($status === 'leave') {
 // Deduction override is meaningful only for absent days.
 if ($status === 'absent') {
     if (!in_array($deductionMode, ['auto', 'days', 'amount'], true)) {
-        Response::fail('Invalid deduction_mode', 422);
+        Response::fail('Invalid deduction_mode', 422, 'invalid_deduction_mode');
     }
     if ($deductionMode !== 'auto') {
         if ($deductionValue === null || $deductionValue < 0) {
-            Response::fail('deduction_value must be a non-negative number', 422);
+            Response::fail('deduction_value must be a non-negative number', 422, 'deduction_value_non_negative_number');
         }
     } else {
         $deductionValue = null;

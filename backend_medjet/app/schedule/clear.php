@@ -12,7 +12,7 @@ $employeeId = (int) ($input['employee_id'] ?? 0);
 $workDate = $input['work_date'] ?? '';
 
 if (!$employeeId || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $workDate)) {
-    Response::fail('employee_id and work_date (YYYY-MM-DD) required', 422);
+    Response::fail('employee_id and work_date (YYYY-MM-DD) required', 422, 'employee_id_work_date_yyyy');
 }
 
 EmployeeShiftScheduleModel::clearCell($tenantId, $employeeId, $workDate);

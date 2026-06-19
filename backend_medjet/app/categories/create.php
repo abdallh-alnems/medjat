@@ -14,7 +14,7 @@ Validator::required($name, 'name');
 
 $existing = EmployeeCategoryModel::findByName(trim($name), $tenantId);
 if ($existing) {
-    Response::fail('category_name_exists', 409);
+    Response::fail('category_name_exists', 409, 'category_name_exists');
 }
 
 $description = $input['description'] ?? null;

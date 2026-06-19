@@ -7,6 +7,7 @@ import '../../../../core/class/handling_data_request.dart';
 import '../../../../core/constant/theme/app_colors.dart';
 import '../../../../core/constant/theme/app_text_styles.dart';
 import '../../../../logic/controller/profile/profile_controller.dart';
+import '../../widget/ad/top_native_ad.dart';
 import 'widgets/document_card.dart';
 
 class MyDocumentsScreen extends StatelessWidget {
@@ -19,10 +20,17 @@ class MyDocumentsScreen extends StatelessWidget {
       appBar: AppBar(title: Text('my_documents'.tr)),
       body: GetBuilder<ProfileController>(
         builder: (controller) {
-          return HandlingDataRequest(
-            statusRequest: controller.status,
-            widget: _buildContent(context, controller),
-            onRetry: () => controller.loadProfile(),
+          return Column(
+            children: [
+              const TopNativeAd(),
+              Expanded(
+                child: HandlingDataRequest(
+                  statusRequest: controller.status,
+                  widget: _buildContent(context, controller),
+                  onRetry: () => controller.loadProfile(),
+                ),
+              ),
+            ],
           );
         },
       ),

@@ -17,19 +17,19 @@ Validator::enum($app, $validApps, 'app');
 
 if ($minVersion !== null && $minVersion !== '') {
     if (!preg_match('/^\d+(\.\d+){0,3}$/', $minVersion)) {
-        Response::fail('Invalid version format. Use dotted numeric (e.g. 1.2.0)', 422);
+        Response::fail('Invalid version format. Use dotted numeric (e.g. 1.2.0)', 422, 'invalid_version_format_dotted_numeric');
     }
 }
 
 if ($maintenance !== null) {
     if (!is_bool($maintenance)) {
-        Response::fail('Maintenance must be a boolean', 422);
+        Response::fail('Maintenance must be a boolean', 422, 'maintenance_boolean');
     }
 }
 
 $hasChange = ($minVersion !== null && $minVersion !== '') || $maintenance !== null;
 if (!$hasChange) {
-    Response::fail('No changes provided. Send min_version and/or maintenance.', 422);
+    Response::fail('No changes provided. Send min_version and/or maintenance.', 422, 'changes_provided_send_min_version');
 }
 
 $result = [];

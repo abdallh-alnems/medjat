@@ -22,7 +22,7 @@ foreach ($applicable as $rd) {
     }
 }
 if (!$isApplicable) {
-    Response::fail('This document is not required for you', 403);
+    Response::fail('This document is not required for you', 403, 'document_not_required');
 }
 
 $uploadDir = __DIR__ . '/../../uploads/documents/' . $tenantId . '/';
@@ -36,12 +36,12 @@ if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
     $allowed = explode(',', getenv('UPLOAD_ALLOWED_TYPES') ?: 'jpg,jpeg,png,pdf');
 
     if (!in_array(strtolower($ext), $allowed)) {
-        Response::fail('File type not allowed', 400);
+        Response::fail('File type not allowed', 400, 'file_type_not_allowed');
     }
 
     $maxSize = (int) (getenv('UPLOAD_MAX_SIZE') ?: 5242880);
     if ($file['size'] > $maxSize) {
-        Response::fail('File size exceeds limit', 400);
+        Response::fail('File size exceeds limit', 400, 'file_too_large');
     }
 
     $fileName = uniqid() . '_' . time() . '.' . $ext;
@@ -89,5 +89,5 @@ if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
 
     Response::success(['document_id' => $docId, 'status' => 'uploaded']);
 } else {
-    Response::fail('No file uploaded', 400);
+    Response::fail('No file uploaded', 400, 'no_file');
 }

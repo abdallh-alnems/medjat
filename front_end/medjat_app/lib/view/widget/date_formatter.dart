@@ -1,43 +1,24 @@
-import '../../core/services/locale_service.dart';
 import 'package:get/get.dart';
 
 class DateFormatter {
   DateFormatter._();
 
+  // مفاتيح الترجمة لأيام الأسبوع (1 = الإثنين … 7 = الأحد) والأشهر (1 … 12).
+  // النصوص نفسها تأتي من ملفات الترجمة فتتبع لغة التطبيق تلقائياً.
+  static const _weekdayKeys = [
+    '', 'monday', 'tuesday', 'wednesday', 'thursday',
+    'friday', 'saturday', 'sunday',
+  ];
+  static const _monthKeys = [
+    '', 'january', 'february', 'march', 'april', 'may', 'june',
+    'july', 'august', 'september', 'october', 'november', 'december',
+  ];
+
   static ({String dayName, String monthName}) format(DateTime date) {
-    final localeSvc = Get.find<LocaleService>();
-    final isAr = localeSvc.isArabic;
-
-    String dayName;
-    String monthName;
-
-    if (isAr) {
-      final weekdays = [
-        '', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس',
-        'الجمعة', 'السبت', 'الأحد'
-      ];
-      final months = [
-        '', 'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو',
-        'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر',
-        'نوفمبر', 'ديسمبر'
-      ];
-      dayName = weekdays[date.weekday];
-      monthName = months[date.month];
-    } else {
-      final weekdays = [
-        '', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
-        'Friday', 'Saturday', 'Sunday'
-      ];
-      final months = [
-        '', 'January', 'February', 'March', 'April', 'May',
-        'June', 'July', 'August', 'September', 'October',
-        'November', 'December'
-      ];
-      dayName = weekdays[date.weekday];
-      monthName = months[date.month];
-    }
-
-    return (dayName: dayName, monthName: monthName);
+    return (
+      dayName: _weekdayKeys[date.weekday].tr,
+      monthName: _monthKeys[date.month].tr,
+    );
   }
 
   static String formatTime(DateTime dt) {

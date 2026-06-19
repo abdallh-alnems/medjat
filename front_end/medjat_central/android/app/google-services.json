@@ -43,18 +43,26 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:510933674549:android:62522f3b288f87d3c35f7c",
+        "mobilesdk_app_id": "1:510933674549:android:2e6ef02768eb405dc35f7c",
         "android_client_info": {
-          "package_name": "com.khawarizmie.medjatCentral"
+          "package_name": "com.khawarizmie.medjat_central"
         }
       },
       "oauth_client": [
         {
-          "client_id": "510933674549-qevq705rjpn27qf6a6d4tepd7b9pcra4.apps.googleusercontent.com",
+          "client_id": "510933674549-ckg5c7otitn3vemvo15vhbjtni4bdqkg.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.khawarizmie.medjatCentral",
+            "package_name": "com.khawarizmie.medjat_central",
             "certificate_hash": "a20bb9fc67248328fba0ece6f050aa7c8465019a"
+          }
+        },
+        {
+          "client_id": "510933674549-muji1lv48q85m4k5ine7pmpimi25nsp5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.khawarizmie.medjat_central",
+            "certificate_hash": "d27637b4446ceedfc1beed0079e43eb86a2658d4"
           }
         },
         {

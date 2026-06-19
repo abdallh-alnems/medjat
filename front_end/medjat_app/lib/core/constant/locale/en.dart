@@ -4,6 +4,9 @@ const Map<String, String> en = {
   // General
   'loading': 'Loading...',
   'retry': 'Retry',
+  'vpn_blocked_title': 'VPN connection not allowed',
+  'vpn_blocked_message':
+      'It looks like you are using a VPN or proxy. Please turn it off and retry to open the app and record attendance.',
   'back': 'Back',
   'cancel': 'Cancel',
   'done': 'Done',
@@ -303,6 +306,36 @@ const Map<String, String> en = {
   'install_now': 'Install Now',
   'maintenance': 'Under Maintenance',
   'maintenance_message': 'The app is currently under maintenance, we\'ll be back soon',
+  'upgrade_body': '\n\nA new version of Medjat is available now 📱\n\n New features and improvements ✨\n Bug fixes and better performance 🔧\n Enhanced security and protection 🛡️\n\nWe recommend updating for the best experience! 💪',
+
+  // Notification channel
+  'notif_channel_name': 'Important notifications',
+  'notif_channel_desc': 'App notifications',
+
+  // API error messages (mapped from backend error_code)
+  'fill_required_fields': 'Please fill in the required fields',
+  'account_suspended': 'Your account is suspended',
+  'qr_required': 'This branch requires scanning a QR code',
+  'attendance_method_not_allowed': 'This check-in method is not enabled for this branch',
+  'leave_past_date': 'You cannot request leave for a past date',
+  'leave_not_cancellable': 'This request cannot be cancelled',
+  'leave_not_editable': 'This request cannot be edited',
+  'invalid_date_range': 'End date is before the start date',
+  'break_type_too_long': 'The request type is too long',
+  'invalid_time_range': 'End time must be after the start time',
+  'break_duration_too_long': 'The permission duration is too long',
+  'break_window_passed': 'The permission time has passed and cannot be requested',
+  'break_not_postponed': 'There is no suggested alternative time for this request',
+  'break_no_suggestion': 'No complete alternative time to approve',
+  'break_accept_failed': 'Could not accept the alternative time',
+  'break_reject_failed': 'Could not decline the alternative time',
+  'advance_invalid_start_month': 'Invalid start month format',
+  'advance_start_month_past': 'The first deduction month cannot be in the past',
+  'document_not_required': 'This document is not required for you',
+  'file_type_not_allowed': 'File type not allowed',
+  'file_too_large': 'File size exceeds the limit',
+  'no_file_selected': 'No file selected',
+  'request_not_pending': 'This action cannot be performed on a processed request',
 
   // Rating
   'rate_us': 'Rate Us',

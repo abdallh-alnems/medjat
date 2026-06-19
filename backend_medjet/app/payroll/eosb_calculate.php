@@ -26,12 +26,12 @@ if (!$settings || !$settings['eosb_enabled']) {
 
 $eosbDaysPerYear = (float) $settings['eosb_days_per_year'];
 if ($eosbDaysPerYear <= 0) {
-    Response::fail('Invalid eosb_days_per_year setting', 422);
+    Response::fail('Invalid eosb_days_per_year setting', 422, 'invalid_eosb_days_per_year');
 }
 
 $hireDate = $employee['hire_date'] ?? null;
 if (!$hireDate) {
-    Response::fail('Employee has no hire_date', 422);
+    Response::fail('Employee has no hire_date', 422, 'employee_hire_date');
 }
 
 $hire = new DateTime($hireDate);

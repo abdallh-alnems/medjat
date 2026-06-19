@@ -40,7 +40,7 @@ if ($admin['role'] === 'general_manager') {
         [$tenantId]
     );
     if ((int) ($gmCount['c'] ?? 0) <= 1) {
-        Response::fail('لا يمكن إزالة آخر مدير عام للشركة', 409);
+        Response::fail('لا يمكن إزالة آخر مدير عام للشركة', 409, 'cannot_remove_last_owner');
     }
 }
 
@@ -63,7 +63,7 @@ try {
 } catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
     error_log('Remove admin failed: ' . $e->getMessage());
-    Response::fail('تعذّر إزالة المدير', 500);
+    Response::fail('تعذّر إزالة المدير', 500, 'remove_admin_failed');
 }
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'admin.removed', 'admin', $adminId);

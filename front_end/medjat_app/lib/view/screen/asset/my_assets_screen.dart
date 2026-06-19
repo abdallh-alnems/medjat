@@ -5,6 +5,7 @@ import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
 import '../../../logic/controller/asset/asset_controller.dart';
+import '../../widget/ad/top_native_ad.dart';
 
 class MyAssetsScreen extends StatelessWidget {
   const MyAssetsScreen({super.key});
@@ -16,9 +17,16 @@ class MyAssetsScreen extends StatelessWidget {
       appBar: AppBar(title: Text('my_assets'.tr)),
       body: GetBuilder<AssetController>(
         builder: (controller) {
-          return RefreshIndicator(
-            onRefresh: controller.loadMyAssets,
-            child: _body(context, controller),
+          return Column(
+            children: [
+              const TopNativeAd(),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: controller.loadMyAssets,
+                  child: _body(context, controller),
+                ),
+              ),
+            ],
           );
         },
       ),

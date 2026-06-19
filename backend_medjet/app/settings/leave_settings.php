@@ -53,7 +53,7 @@ if ($method === 'POST' || $method === 'PUT') {
     if (isset($input['default_annual_leave_days'])) {
         $days = (int) $input['default_annual_leave_days'];
         if ($days < 0 || $days > 366) {
-            Response::fail('default_annual_leave_days must be between 0 and 366', 422);
+            Response::fail('default_annual_leave_days must be between 0 and 366', 422, 'default_annual_leave_days_between');
         }
         $updateData['default_annual_leave_days'] = $days;
     }
@@ -81,7 +81,7 @@ if ($method === 'POST' || $method === 'PUT') {
 
         $maxDays = ($rawMax === null || $rawMax === '') ? null : (int) $rawMax;
         if ($maxDays !== null && ($maxDays < 0 || $maxDays > 366)) {
-            Response::fail('leave_carryover_max_days must be between 0 and 366, or null', 422);
+            Response::fail('leave_carryover_max_days must be between 0 and 366, or null', 422, 'leave_carryover_max_days_between');
         }
 
         $expiryMonths = nullableInt($input['carryover_expiry_months'] ?? null, 'carryover_expiry_months', 0, 60);
@@ -104,7 +104,7 @@ if ($method === 'POST' || $method === 'PUT') {
     }
 
     if (empty($updateData) && !$touchPolicy) {
-        Response::fail('No leave settings provided', 422);
+        Response::fail('No leave settings provided', 422, 'leave_settings_provided');
     }
 
     if (!empty($updateData)) {
@@ -116,7 +116,7 @@ if ($method === 'POST' || $method === 'PUT') {
     Response::success(['message' => 'Leave settings updated']);
 }
 
-Response::fail('Method not allowed', 405);
+Response::fail('Method not allowed', 405, 'method_not_allowed');
 
 /** Parse an optional int that may be null/empty; validates the range when present. */
 function nullableInt($value, string $field, int $min, int $max): ?int {
@@ -125,7 +125,7 @@ function nullableInt($value, string $field, int $min, int $max): ?int {
     }
     $n = (int) $value;
     if ($n < $min || $n > $max) {
-        Response::fail("$field must be between $min and $max, or null", 422);
+        Response::fail("$field must be between $min and $max, or null", 422, 'between_null');
     }
     return $n;
 }

@@ -1,0 +1,36 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3CA088"/>
+      <stop offset="0.55" stop-color="#2E7D6B"/>
+      <stop offset="1" stop-color="#1E5A4D"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.3" cy="0.25" r="0.9">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.18"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="pin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#EAF4F1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- background fills full square so Play's rounded mask looks clean -->
+  <rect x="0" y="0" width="512" height="512" fill="url(#bg)"/>
+  <rect x="0" y="0" width="512" height="512" fill="url(#glow)"/>
+
+  <!-- soft shadow under the pin -->
+  <ellipse cx="256" cy="406" rx="70" ry="20" fill="#0c2e27" opacity="0.28"/>
+
+  <!-- location pin (GPS attendance) -->
+  <path d="M256,406
+           C 208,332 159,296 159,212
+           A 97,97 0 1 1 353,212
+           C 353,296 304,332 256,406 Z"
+        fill="url(#pin)"/>
+
+  <!-- check mark = verified attendance -->
+  <path d="M210,214 L244,250 L308,160"
+        fill="none" stroke="#2E7D6B" stroke-width="30"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

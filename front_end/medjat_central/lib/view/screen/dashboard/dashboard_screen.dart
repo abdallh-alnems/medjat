@@ -453,7 +453,10 @@ class _DashboardContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final d = ctrl.dashboard;
     final locale = Get.find<LocaleService>().currentLocale.languageCode;
-    final now = DateFormat('EEEE، d MMMM yyyy', locale).format(DateTime.now());
+    final now = DateFormat(
+      locale == 'ar' ? 'EEEE، d MMMM yyyy' : 'EEEE, d MMMM yyyy',
+      locale,
+    ).format(DateTime.now());
     final auth = Get.find<AuthController>();
     final canCompare =
         (auth.user?.isGeneralManager == true ||

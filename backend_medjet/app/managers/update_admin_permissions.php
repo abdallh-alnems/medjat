@@ -26,13 +26,13 @@ if ($admin['role'] === 'general_manager') {
 
 $permissions = $input['permissions'] ?? [];
 if (!is_array($permissions)) {
-    Response::fail('permissions must be an array', 400);
+    Response::fail('permissions must be an array', 400, 'permissions_array');
 }
 
 $validPerms = RoleModel::getAvailablePermissions();
 foreach ($permissions as $perm) {
     if (!in_array($perm, $validPerms, true)) {
-        Response::fail("Unknown permission: {$perm}", 400);
+        Response::fail("Unknown permission: {$perm}", 400, 'unknown_permission');
     }
 }
 

@@ -5,6 +5,7 @@ import '../../../../core/constant/theme/app_colors.dart';
 import '../../../../core/constant/theme/app_text_styles.dart';
 import '../../../../core/constant/theme/app_spacing.dart';
 import '../../../../logic/controller/payroll/payroll_controller.dart';
+import '../../widget/ad/top_native_ad.dart';
 
 class PayrollScreen extends StatelessWidget {
   const PayrollScreen({super.key});
@@ -20,6 +21,7 @@ class PayrollScreen extends StatelessWidget {
         builder: (controller) {
           return Column(
             children: [
+              const TopNativeAd(tabIndex: 2),
               _monthSelector(context, controller),
               Expanded(
                 child: HandlingDataRequest(

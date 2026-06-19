@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:get/get.dart';
+import '../../../core/class/api_messages.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/services/token_storage_service.dart';
@@ -62,17 +63,8 @@ class AuthController extends GetxController {
         }
       } else {
         status.value = StatusRequest.failure;
-        final statusCode = response['statusCode'];
-        String message =
-            (response['message'] as String?) ?? 'error_try_again'.tr;
-
-        if (statusCode == 403) {
-          message = 'phone_code_mismatch'.tr;
-        } else if (statusCode == 404) {
-          message = 'activation_code_invalid'.tr;
-        }
-
-        Get.snackbar('error'.tr, message, snackPosition: SnackPosition.BOTTOM);
+        Get.snackbar('error'.tr, ApiMessages.of(response),
+            snackPosition: SnackPosition.BOTTOM);
       }
     } catch (e) {
       status.value = StatusRequest.failure;
@@ -105,13 +97,8 @@ class AuthController extends GetxController {
       }
 
       status.value = StatusRequest.failure;
-      final statusCode = response['statusCode'];
-      String message =
-          (response['message'] as String?) ?? 'error_try_again'.tr;
-      if (statusCode == 404) {
-        message = 'join_link_invalid'.tr;
-      }
-      Get.snackbar('error'.tr, message, snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('error'.tr, ApiMessages.of(response),
+          snackPosition: SnackPosition.BOTTOM);
     } catch (e) {
       status.value = StatusRequest.failure;
       Get.snackbar('error'.tr, 'error_try_again'.tr,

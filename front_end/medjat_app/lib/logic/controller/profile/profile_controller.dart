@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/class/api_messages.dart';
 import '../../../core/class/status_request.dart';
 import '../../../data/data_source/remote/profile_data/profile_data.dart';
 import '../../../view/widget/pdf_preview_screen.dart';
@@ -84,7 +85,8 @@ class ProfileController extends GetxController {
       Get.snackbar('error'.tr, 'no_internet'.tr,
           snackPosition: SnackPosition.BOTTOM);
     } else {
-      Get.snackbar('error'.tr, 'upload_failed'.tr,
+      Get.snackbar('error'.tr,
+          ApiMessages.of(response, fallbackKey: 'upload_failed'),
           snackPosition: SnackPosition.BOTTOM);
     }
     return ok;

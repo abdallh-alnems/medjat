@@ -84,4 +84,49 @@ require_once __DIR__ . '/../core/AttendanceMethodResolver.php';
 
 setCorsHeaders();
 
+// API access gate: every request from the mobile apps carries an HTTP Basic
+// credential (SECURITY_USER:SECURITY_KEY). When both are configured we require
+// a match, so the API can't be called directly without the shared app secret.
+// Disabled automatically when unset (local dev), and never applies to CLI cron
+// scripts or a caller presenting the valid CRON_SECRET.
+(static function (): void {
+    $user = (string) getenv('SECURITY_USER');
+    $key  = (string) getenv('SECURITY_KEY');
+    if ($user === '' || $key === '' || PHP_SAPI === 'cli') {
+        return;
+    }
+
+    $cronSecret = (string) getenv('CRON_SECRET');
+    $providedCron = (string) ($_SERVER['HTTP_X_CRON_SECRET'] ?? $_GET['cron_secret'] ?? '');
+    if ($cronSecret !== '' && hash_equals($cronSecret, $providedCron)) {
+        return;
+    }
+
+    // Apache/LiteSpeed populates PHP_AUTH_* for Basic auth; fall back to the raw
+    // Authorization header (needs CGIPassAuth/rewrite to be forwarded to PHP).
+    $u = $_SERVER['PHP_AUTH_USER'] ?? null;
+    $k = $_SERVER['PHP_AUTH_PW'] ?? null;
+    if ($u === null) {
+        $header = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+        if (stripos($header, 'Basic ') === 0) {
+            $decoded = base64_decode(substr($header, 6), true);
+            if ($decoded !== false && strpos($decoded, ':') !== false) {
+                [$u, $k] = explode(':', $decoded, 2);
+            }
+        }
+    }
+
+    $ok = $u !== null && hash_equals($user, (string) $u) && hash_equals($key, (string) $k);
+    if (!$ok) {
+        http_response_code(401);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'status' => 'error',
+            'code' => 401,
+            'message' => 'Unauthorized',
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+})();
+
 define('MEDJAT_BOOTSTRAPPED', true);

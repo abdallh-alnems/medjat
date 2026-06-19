@@ -2743,7 +2743,10 @@ class _AttendanceCalendarCard extends StatelessWidget {
     final satFirstOffset = (from.weekday + 1) % 7;
 
     final cells = <Widget>[];
-    final dayLabels = ['س', 'ح', 'ن', 'ث', 'ر', 'خ', 'ج'];
+    // Saturday-first single-letter day labels (Sat, Sun, Mon, Tue, Wed, Thu, Fri).
+    final dayLabels = Get.locale?.languageCode == 'ar'
+        ? ['س', 'ح', 'ن', 'ث', 'ر', 'خ', 'ج']
+        : ['S', 'S', 'M', 'T', 'W', 'T', 'F'];
     for (final l in dayLabels) {
       cells.add(Center(
         child: Text(

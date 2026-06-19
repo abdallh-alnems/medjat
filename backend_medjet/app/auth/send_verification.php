@@ -14,7 +14,7 @@ $token = $input['token']
     ?? $_SERVER['HTTP_X_FIREBASE_TOKEN']
     ?? null;
 if (!$token) {
-    Response::fail('Token is required', 400);
+    Response::fail('Token is required', 400, 'token_required');
 }
 
 $lang = $input['lang'] ?? 'ar';
@@ -29,7 +29,7 @@ $nameClaim = $verifiedToken->claims()->get('name');
 $name = is_string($nameClaim) ? trim($nameClaim) : '';
 
 if (!$email) {
-    Response::fail('Account has no email address', 400);
+    Response::fail('Account has no email address', 400, 'account_email_address');
 }
 
 // Already verified — nothing to send.
@@ -43,7 +43,15 @@ try {
     $link = FirebaseInit::getAuth()->getEmailVerificationLink($email);
 } catch (Exception $e) {
     error_log('send_verification: failed to generate link: ' . $e->getMessage());
-    Response::fail('Failed to generate verification link', 500);
+    Response::fail('Failed to generate verification link', 500, 'failed_generate_verification_link');
+}
+
+// Route the verification action through our own branded page instead of
+// Firebase's default handler (keeps mode/oobCode/apiKey/lang, swaps base URL).
+$actionBase = getenv('APP_ACTION_URL') ?: 'https://medjatapp.com/auth-action.html';
+$q = parse_url($link, PHP_URL_QUERY);
+if ($actionBase !== '' && $q) {
+    $link = $actionBase . (strpos($actionBase, '?') !== false ? '&' : '?') . $q;
 }
 
 $subject = AuthEmail::verifySubject($lang);
@@ -51,7 +59,7 @@ $html = AuthEmail::verifyHtml($lang, $name, $link);
 
 $sent = EmailService::send($email, $subject, $html);
 if (!$sent) {
-    Response::fail('Failed to send verification email', 502);
+    Response::fail('Failed to send verification email', 502, 'failed_send_verification_email');
 }
 
 Response::success(['success' => true]);

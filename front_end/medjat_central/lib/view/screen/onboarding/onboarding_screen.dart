@@ -203,7 +203,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (resp['status'] == StatusRequest.success) {
       final data = (resp['data'] as Map?)?['data'] as Map?;
       if (data != null && data['success'] == true) {
+        // Persist the tenant/role returned by the backend onto the cached
+        // user. Without this the local user still has tenant_id = 0 and an
+        // empty role, so the home page errors out ("حدث خطأ") and only works
+        // after a full app restart re-fetches the user. Mirrors create flow.
+        final userJson = _auth.user?.toJson() ?? <String, dynamic>{};
+        final userResp = data['user'] as Map?;
+        final tenantResp = data['tenant'] as Map?;
+        if (userResp != null) {
+          userJson['tenant_id'] = userResp['tenant_id'];
+          userJson['role_key'] = userResp['role_key'] ?? userResp['role'];
+          if (userResp['branch_id'] != null) {
+            userJson['branch_id'] = userResp['branch_id'];
+          }
+        } else if (tenantResp != null) {
+          userJson['tenant_id'] = tenantResp['id'];
+        }
+        _auth.user = UserModel.fromJson(userJson);
+        await TokenStorageService.saveUserData(jsonEncode(_auth.user!.toJson()));
         _auth.hasTenant.value = true;
+        _auth.isLoggedIn.value = true;
         Get.snackbar('done'.tr, 'company_joined_success'.tr,
             snackPosition: SnackPosition.BOTTOM);
         unawaited(Get.offAllNamed<void>(AppRoutes.home));

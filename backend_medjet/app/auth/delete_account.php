@@ -48,7 +48,7 @@ try {
         $pdo->rollBack();
     }
     error_log('Delete account failed: ' . $e->getMessage());
-    Response::fail('Failed to delete account', 500);
+    Response::fail('Failed to delete account', 500, 'failed_delete_account');
 }
 
 // Remove the Firebase user (best-effort — DB record is already gone).

@@ -244,58 +244,50 @@ class CRUD {
     }
 
     if (statusCode == 403) {
+      final body = _tryDecode(response.body);
       return {
         'status': StatusRequest.failure,
         'statusCode': 403,
         'message': 'no_permission'.tr,
+        'error_code': ?_errorCodeOf(body),
+        'meta': ?_metaOf(body),
       };
     }
 
     if (statusCode == 404) {
+      final body = _tryDecode(response.body);
       String message = 'data_not_found'.tr;
-      try {
-        final body = jsonDecode(response.body);
-        if (body is Map &&
-            body['message'] is String &&
-            (body['message'] as String).isNotEmpty) {
-          message = body['message'] as String;
-        }
-      } catch (_) {}
+      if (body != null &&
+          body['message'] is String &&
+          (body['message'] as String).isNotEmpty) {
+        message = body['message'] as String;
+      }
       return {
         'status': StatusRequest.failure,
         'statusCode': 404,
         'message': message,
+        'error_code': ?_errorCodeOf(body),
+        'meta': ?_metaOf(body),
       };
     }
 
     if (statusCode == 422) {
-      try {
-        final body = jsonDecode(response.body);
-        return {
-          'status': StatusRequest.failure,
-          'statusCode': 422,
-          'message': body['message'] ?? 'invalid_data'.tr,
-          'errors': body['errors'],
-        };
-      } catch (_) {
-        return {
-          'status': StatusRequest.failure,
-          'statusCode': 422,
-          'message': 'invalid_data'.tr,
-        };
-      }
+      final body = _tryDecode(response.body);
+      return {
+        'status': StatusRequest.failure,
+        'statusCode': 422,
+        'message': (body?['message'] as String?) ?? 'invalid_data'.tr,
+        'errors': ?body?['errors'],
+        'error_code': ?_errorCodeOf(body),
+        'meta': ?_metaOf(body),
+      };
     }
 
+    final body = _tryDecode(response.body);
     String message = 'error_try_again'.tr;
-    try {
-      final body = jsonDecode(response.body);
-      if (body is Map) {
-        final msg = body['message'];
-        if (msg is String && msg.isNotEmpty) {
-          message = msg;
-        }
-      }
-    } catch (_) {}
+    if (body != null && body['message'] is String && (body['message'] as String).isNotEmpty) {
+      message = body['message'] as String;
+    }
 
     debugPrint('HTTP $statusCode: $message');
 
@@ -303,6 +295,30 @@ class CRUD {
       'status': StatusRequest.serverFailure,
       'statusCode': statusCode,
       'message': message,
+      'error_code': ?_errorCodeOf(body),
+      'meta': ?_metaOf(body),
     };
+  }
+
+  /// Decodes a JSON body to a map, or null if it isn't a JSON object.
+  static Map<String, dynamic>? _tryDecode(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// The backend's machine-readable `error_code`, if present and non-empty.
+  static String? _errorCodeOf(Map<String, dynamic>? body) {
+    final code = body?['error_code'];
+    return code is String && code.isNotEmpty ? code : null;
+  }
+
+  /// Optional structured values the client uses to fill a translated template.
+  static Map<String, dynamic>? _metaOf(Map<String, dynamic>? body) {
+    final meta = body?['meta'];
+    return meta is Map<String, dynamic> && meta.isNotEmpty ? meta : null;
   }
 }

@@ -25,7 +25,7 @@ if ($attendanceId > 0) {
         [$attendanceId, $tenantId]
     );
     if (!$exists) {
-        Response::fail('Attendance record not found', 404);
+        Response::fail('Attendance record not found', 404, 'attendance_record_not_found');
     }
     AttendanceModel::updateNoteById($tenantId, $attendanceId, $note);
 } else {
@@ -36,7 +36,7 @@ if ($attendanceId > 0) {
         [$employeeId, $date, $tenantId]
     );
     if (!$exists) {
-        Response::fail('Attendance record not found', 404);
+        Response::fail('Attendance record not found', 404, 'attendance_record_not_found');
     }
     AttendanceModel::updateNote($tenantId, $employeeId, $date, $note);
 }

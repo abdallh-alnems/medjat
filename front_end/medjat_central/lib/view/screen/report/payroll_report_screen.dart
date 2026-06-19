@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/utils/currency.dart';
 import '../../../core/class/handling_data_request.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
@@ -173,7 +174,8 @@ class _SummaryCards extends StatelessWidget {
             Expanded(
                 child: _StatCard(
                     label: 'total_payroll'.tr,
-                    value: '${summary.totalNet.toStringAsFixed(0)} ج.م',
+                    value:
+                        '${summary.totalNet.toStringAsFixed(0)} ${currencyLabel(null)}',
                     color: colors.brand,
                     colors: colors)),
             const SizedBox(width: AppSpacing.s2),

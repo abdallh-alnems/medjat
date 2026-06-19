@@ -23,17 +23,17 @@ Validator::required($type, 'type');
 Validator::required($startMonth, 'start_month');
 
 if ($amount <= 0) {
-    Response::fail('amount must be positive', 422);
+    Response::fail('amount must be positive', 422, 'amount_positive');
 }
 if (!preg_match('/^\d{4}-\d{2}$/', $startMonth)) {
-    Response::fail('start_month must be YYYY-MM', 422);
+    Response::fail('start_month must be YYYY-MM', 422, 'start_month_yyyy_mm');
 }
 if ($endMonth !== null) {
     if (!preg_match('/^\d{4}-\d{2}$/', $endMonth)) {
-        Response::fail('end_month must be YYYY-MM', 422);
+        Response::fail('end_month must be YYYY-MM', 422, 'end_month_yyyy_mm');
     }
     if ($endMonth < $startMonth) {
-        Response::fail('end_month cannot be before start_month', 422);
+        Response::fail('end_month cannot be before start_month', 422, 'end_month_cannot_before_start');
     }
 }
 

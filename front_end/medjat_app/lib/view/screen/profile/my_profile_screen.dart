@@ -6,6 +6,7 @@ import '../../../../core/constant/theme/app_colors.dart';
 import '../../../../core/constant/theme/app_text_styles.dart';
 import '../../../../core/constant/theme/app_spacing.dart';
 import '../../../../logic/controller/profile/profile_controller.dart';
+import '../../widget/ad/top_native_ad.dart';
 import '../../widget/stat_item.dart';
 import 'widgets/profile_header.dart';
 import 'widgets/quick_access_card.dart';
@@ -22,10 +23,17 @@ class MyProfileScreen extends StatelessWidget {
       ),
       body: GetBuilder<ProfileController>(
         builder: (controller) {
-          return HandlingDataRequest(
-            statusRequest: controller.status,
-            widget: _buildContent(context, controller),
-            onRetry: () => controller.loadProfile(),
+          return Column(
+            children: [
+              const TopNativeAd(tabIndex: 1),
+              Expanded(
+                child: HandlingDataRequest(
+                  statusRequest: controller.status,
+                  widget: _buildContent(context, controller),
+                  onRetry: () => controller.loadProfile(),
+                ),
+              ),
+            ],
           );
         },
       ),

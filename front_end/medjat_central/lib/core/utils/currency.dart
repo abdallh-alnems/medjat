@@ -1,8 +1,21 @@
+import 'package:get/get.dart';
+
 /// Maps an ISO-4217 currency code to a short label suitable for display
-/// next to an amount. Falls back to the code itself when unknown so the
-/// user still sees something sensible (e.g. "AUD").
+/// next to an amount, localized to the active app language. In English we
+/// show the ISO code (e.g. "EGP"); in Arabic the short Arabic label ("ج.م").
+/// Falls back to the code itself when unknown so the user still sees
+/// something sensible (e.g. "AUD").
 String currencyLabel(String? iso) {
-  switch ((iso ?? '').toUpperCase()) {
+  final code = (iso ?? '').toUpperCase();
+  if (Get.locale?.languageCode != 'ar') {
+    // English (and any non-Arabic): use the ISO code; '' defaults to EGP.
+    if (code.isEmpty) return 'EGP';
+    if (code == 'USD') return '\$';
+    if (code == 'EUR') return '€';
+    if (code == 'GBP') return '£';
+    return code;
+  }
+  switch (code) {
     case 'EGP':
       return 'ج.م';
     case 'SAR':

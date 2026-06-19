@@ -15,7 +15,7 @@ if (!$input) {
 
 $token = $input['token'] ?? null;
 if (!$token) {
-    Response::fail('Token is required', 400);
+    Response::fail('Token is required', 400, 'token_required');
 }
 
 $verifiedToken = Auth::verifyFirebaseToken($token);
@@ -26,16 +26,16 @@ $admin = Database::fetchOne(
     [$uid]
 );
 if (!$admin) {
-    Response::fail('Sign in first', 401);
+    Response::fail('Sign in first', 401, 'sign_first');
 }
 if ($admin['tenant_id']) {
-    Response::fail('You already belong to a company', 409);
+    Response::fail('You already belong to a company', 409, 'you_already_belong_company');
 }
 
 $companyName = trim($input['company_name'] ?? '');
 
 if ($companyName === '') {
-    Response::fail('Company name is required', 422);
+    Response::fail('Company name is required', 422, 'company_name_required');
 }
 
 $pdo = db();
@@ -70,7 +70,7 @@ try {
         $pdo->rollBack();
     }
     error_log('Tenant create failed: ' . $e->getMessage());
-    Response::fail('Failed to create company: ' . $e->getMessage(), 500);
+    Response::fail('Failed to create company: ' . $e->getMessage(), 500, 'create_company_failed');
 }
 
 $tenant = Database::fetchOne(

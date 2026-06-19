@@ -2130,4 +2130,6 @@ const Map<String, String> en = {
   'no_activity': 'No recorded activity',
   'filter_by_admin': 'Filter by admin',
   'all_admins': 'All admins',
+  'meters_unit': 'm',
+  'manager_fallback': 'Manager',
 };

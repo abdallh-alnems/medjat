@@ -16,7 +16,7 @@ if (!in_array($lang, ['ar', 'en'], true)) {
 }
 
 if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    Response::fail('Invalid email', 400);
+    Response::fail('Invalid email', 400, 'invalid_email');
 }
 
 // Email enumeration protection: never reveal whether the account exists.
@@ -24,6 +24,15 @@ if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
 // The link opens Firebase's own default password-reset page.
 try {
     $link = FirebaseInit::getAuth()->getPasswordResetLink($email);
+    // Route the action through our own branded page (which enforces the app's
+    // password rules) instead of Firebase's default handler. We keep Firebase's
+    // query string (mode, oobCode, apiKey, lang) and only swap the base URL — no
+    // Firebase Console action-URL change needed.
+    $actionBase = getenv('APP_ACTION_URL') ?: 'https://medjatapp.com/auth-action.html';
+    $q = parse_url($link, PHP_URL_QUERY);
+    if ($actionBase !== '' && $q) {
+        $link = $actionBase . (strpos($actionBase, '?') !== false ? '&' : '?') . $q;
+    }
     $subject = AuthEmail::resetSubject($lang);
     $html = AuthEmail::resetHtml($lang, '', $link);
     EmailService::send($email, $subject, $html);

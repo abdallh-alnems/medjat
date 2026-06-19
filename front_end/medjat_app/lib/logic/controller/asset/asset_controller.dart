@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../../core/class/api_messages.dart';
 import '../../../core/class/status_request.dart';
 import '../../../data/data_source/remote/asset_data/asset_data.dart';
 
@@ -7,12 +8,6 @@ class AssetController extends GetxController {
 
   StatusRequest myAssetsStatus = StatusRequest.none;
   List<Map<String, dynamic>> myAssets = [];
-
-  // Backend error_code → translation key. Keeps Arabic users from seeing the
-  // server's raw English messages.
-  static const Map<String, String> _errorMessages = {
-    'asset_not_returnable': 'asset_not_returnable',
-  };
 
   @override
   void onInit() {
@@ -67,12 +62,10 @@ class AssetController extends GetxController {
     }
 
     // Map the backend's machine-readable code to a localized message; never
-    // surface the raw English `message` to an Arabic user.
-    final errorCode = response['error_code'] as String?;
-    final msg = errorCode != null && _errorMessages.containsKey(errorCode)
-        ? _errorMessages[errorCode]!.tr
-        : 'asset_return_failed'.tr;
-    Get.snackbar('error'.tr, msg, snackPosition: SnackPosition.BOTTOM);
+    // surface the raw server `message` to the user.
+    Get.snackbar('error'.tr,
+        ApiMessages.of(response, fallbackKey: 'asset_return_failed'),
+        snackPosition: SnackPosition.BOTTOM);
     return false;
   }
 }

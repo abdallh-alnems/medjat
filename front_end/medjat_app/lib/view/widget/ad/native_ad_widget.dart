@@ -14,10 +14,25 @@ import '../../../core/constant/theme/app_colors.dart';
 /// hides itself on non-mobile platforms, adapts its colours to light/dark
 /// mode, and retries with back-off when a load fails.
 class NativeAdWidget extends StatefulWidget {
-  const NativeAdWidget({super.key, this.templateType = TemplateType.medium});
+  const NativeAdWidget({
+    super.key,
+    this.templateType = TemplateType.medium,
+    this.reloadTrigger,
+    this.margin = EdgeInsets.zero,
+  });
 
   /// Native template size — `medium` (richer, ~320dp) or `small` (~90dp).
   final TemplateType templateType;
+
+  /// Optional stream that, on each event, requests a fresh ad. Used when the
+  /// widget stays alive across navigation (e.g. an `IndexedStack` tab) so a new
+  /// ad is fetched every time the page becomes visible again. Reloads are
+  /// throttled so a fresh ad is never requested more often than AdMob advises.
+  final Stream<void>? reloadTrigger;
+
+  /// Spacing applied around the ad — only while an ad is actually shown, so no
+  /// empty gap is reserved before the first ad loads.
+  final EdgeInsetsGeometry margin;
 
   @override
   State<NativeAdWidget> createState() => _NativeAdWidgetState();
@@ -29,6 +44,13 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
   int _retryCount = 0;
   static const int _maxRetries = 3;
 
+  StreamSubscription<void>? _reloadSub;
+  DateTime? _lastLoadStart;
+
+  /// Minimum gap between automatic reloads, to respect AdMob's guidance and
+  /// avoid burning impressions on rapid navigation.
+  static const Duration _minReloadInterval = Duration(seconds: 30);
+
   bool get _isMobile =>
       defaultTargetPlatform == TargetPlatform.android ||
       defaultTargetPlatform == TargetPlatform.iOS;
@@ -38,31 +60,59 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
     super.initState();
     if (_isMobile) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _loadAd());
+      _reloadSub = widget.reloadTrigger?.listen((_) => _reload());
     }
   }
 
   @override
   void dispose() {
+    _reloadSub?.cancel();
     _nativeAd?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (const bool.fromEnvironment('SCREENSHOT_MODE')) return const SizedBox.shrink();
     if (!_isMobile) return const SizedBox.shrink();
     if (!_isAdLoaded || _nativeAd == null) return const SizedBox.shrink();
 
     final double height =
         widget.templateType == TemplateType.medium ? 330 : 90;
 
-    return ConstrainedBox(
-      constraints: BoxConstraints(minHeight: height, maxHeight: height),
-      child: AdWidget(ad: _nativeAd!),
+    return Padding(
+      padding: widget.margin,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: height, maxHeight: height),
+        child: AdWidget(ad: _nativeAd!),
+      ),
     );
+  }
+
+  /// Disposes the current ad and fetches a fresh one (used by [reloadTrigger]).
+  void _reload() {
+    if (!mounted || !_isMobile) return;
+    if (_lastLoadStart != null &&
+        DateTime.now().difference(_lastLoadStart!) < _minReloadInterval) {
+      return;
+    }
+
+    final NativeAd? old = _nativeAd;
+    setState(() {
+      _isAdLoaded = false;
+      _nativeAd = null;
+      _retryCount = 0;
+    });
+    // Defer disposal until after the frame that removed the old AdWidget.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      old?.dispose();
+      if (mounted) _loadAd();
+    });
   }
 
   void _loadAd() {
     if (!mounted || !_isMobile) return;
+    _lastLoadStart = DateTime.now();
 
     final isLight = Theme.of(context).brightness == Brightness.light;
     final colors = isLight ? AppColors.light : AppColors.dark;

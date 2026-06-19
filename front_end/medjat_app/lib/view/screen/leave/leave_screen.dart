@@ -5,6 +5,7 @@ import '../../../../core/constant/theme/app_colors.dart';
 import '../../../../core/constant/theme/app_text_styles.dart';
 import '../../../../core/constant/theme/app_spacing.dart';
 import '../../../../logic/controller/leave/leave_controller.dart';
+import '../../widget/ad/top_native_ad.dart';
 import '../../widget/stat_item.dart';
 import 'widgets/leave_apply_form.dart';
 import 'widgets/leave_request_card.dart';
@@ -24,6 +25,7 @@ class LeaveScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const TopNativeAd(horizontalMargin: 0),
                 _balanceSection(context, controller),
                 const SizedBox(height: 24),
                 LeaveApplyForm(controller: controller),

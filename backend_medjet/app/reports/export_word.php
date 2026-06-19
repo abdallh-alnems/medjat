@@ -33,11 +33,11 @@ $headers = $input['headers'] ?? [];
 $rows = $input['rows'] ?? [];
 
 if (!is_array($headers) || count($headers) === 0 || !is_array($rows)) {
-    Response::fail('headers and rows are required', 422);
+    Response::fail('headers and rows are required', 422, 'headers_rows_required');
 }
 // Guard against abusive payloads.
 if (count($headers) > 40 || count($rows) > 10000) {
-    Response::fail('Report too large to export', 413);
+    Response::fail('Report too large to export', 413, 'report_too_large_export');
 }
 
 $isRtl = $dir === 'rtl';

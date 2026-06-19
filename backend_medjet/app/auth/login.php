@@ -11,7 +11,7 @@ if (!$input) {
 
 $token = $input['token'] ?? null;
 if (!$token) {
-    Response::fail('Token is required', 400);
+    Response::fail('Token is required', 400, 'token_required');
 }
 
 $verifiedToken = Auth::verifyFirebaseToken($token);
@@ -59,7 +59,7 @@ if (!$admin) {
     }
 
     if (!$admin['is_active']) {
-        Response::fail('Account is deactivated', 403);
+        Response::fail('Account is deactivated', 403, 'account_deactivated');
     }
 
     Database::execute(

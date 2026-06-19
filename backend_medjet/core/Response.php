@@ -31,7 +31,7 @@ final class Response {
         exit;
     }
 
-    public static function fail(string $message, int $code = 400, ?string $errorCode = null): void {
+    public static function fail(string $message, int $code = 400, ?string $errorCode = null, ?array $meta = null): void {
         http_response_code($code);
         header('Content-Type: application/json; charset=utf-8');
         $response = [
@@ -41,6 +41,11 @@ final class Response {
         ];
         if ($errorCode !== null) {
             $response['error_code'] = $errorCode;
+        }
+        // Optional structured values (e.g. remaining/days) so the client can
+        // localize the message with its own translated template via trParams.
+        if ($meta !== null) {
+            $response['meta'] = $meta;
         }
         echo json_encode($response, JSON_UNESCAPED_UNICODE);
         exit;

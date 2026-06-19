@@ -13,7 +13,7 @@ $fromYear = (int) ($input['from_year'] ?? 0);
 Validator::required($fromYear, 'from_year');
 
 if ($fromYear < 2000 || $fromYear > 2100) {
-    Response::fail('from_year must be a valid year', 422);
+    Response::fail('from_year must be a valid year', 422, 'from_year_valid_year');
 }
 
 // Manual trigger from the dashboard. Scheduling (cron) can be added later if needed.

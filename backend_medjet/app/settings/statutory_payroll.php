@@ -64,7 +64,7 @@ if ($method === 'POST' || $method === 'PUT') {
 
         if ($data['si_min_wage'] !== null && $data['si_max_wage'] !== null
             && $data['si_max_wage'] < $data['si_min_wage']) {
-            Response::fail('si_max_wage must be greater than or equal to si_min_wage', 422);
+            Response::fail('si_max_wage must be greater than or equal to si_min_wage', 422, 'si_max_wage_greater_than');
         }
     } else {
         $data['si_employee_rate'] = null;
@@ -78,25 +78,25 @@ if ($method === 'POST' || $method === 'PUT') {
 
         $rawBrackets = $input['income_tax_brackets'] ?? [];
         if (!is_array($rawBrackets)) {
-            Response::fail('income_tax_brackets must be an array', 422);
+            Response::fail('income_tax_brackets must be an array', 422, 'income_tax_brackets_array');
         }
         if (count($rawBrackets) === 0) {
-            Response::fail('At least one income tax bracket is required when income tax is enabled', 422);
+            Response::fail('At least one income tax bracket is required when income tax is enabled', 422, 'at_least_one_income_tax');
         }
 
         $brackets = [];
         foreach ($rawBrackets as $i => $b) {
             if (!is_array($b)) {
-                Response::fail("income_tax_brackets[$i] is invalid", 422);
+                Response::fail("income_tax_brackets[$i] is invalid", 422, 'income_tax_brackets_invalid');
             }
             $upToRaw = $b['up_to'] ?? null;
             $upTo = ($upToRaw === null || $upToRaw === '') ? null : (float) $upToRaw;
             if ($upTo !== null && $upTo < 0) {
-                Response::fail("income_tax_brackets[$i].up_to must be >= 0 or null", 422);
+                Response::fail("income_tax_brackets[$i].up_to must be >= 0 or null", 422, 'income_tax_brackets_up_0');
             }
             $rate = (float) ($b['rate'] ?? 0);
             if ($rate < 0 || $rate > 100) {
-                Response::fail("income_tax_brackets[$i].rate must be between 0 and 100", 422);
+                Response::fail("income_tax_brackets[$i].rate must be between 0 and 100", 422, 'income_tax_brackets_rate_between');
             }
             $brackets[] = ['up_to' => $upTo, 'rate' => $rate];
         }
@@ -110,7 +110,7 @@ if ($method === 'POST' || $method === 'PUT') {
             }
         }
         if ($openCount > 1) {
-            Response::fail('Only one income tax bracket may have an empty ceiling', 422);
+            Response::fail('Only one income tax bracket may have an empty ceiling', 422, 'only_one_income_tax_bracket');
         }
 
         // The progressive-tax calculator assumes ascending ceilings with the
@@ -132,7 +132,7 @@ if ($method === 'POST' || $method === 'PUT') {
                 continue;
             }
             if ($prev !== null && $b['up_to'] <= $prev) {
-                Response::fail('Income tax bracket ceilings must be in ascending order with no duplicates', 422);
+                Response::fail('Income tax bracket ceilings must be in ascending order with no duplicates', 422, 'income_tax_bracket_ceilings_ascending');
             }
             $prev = $b['up_to'];
         }
@@ -147,11 +147,11 @@ if ($method === 'POST' || $method === 'PUT') {
     if ($eosbEnabled) {
         $days = $input['eosb_days_per_year'] ?? null;
         if ($days === null || $days === '') {
-            Response::fail('eosb_days_per_year is required when EOSB is enabled', 422);
+            Response::fail('eosb_days_per_year is required when EOSB is enabled', 422, 'eosb_days_per_year_required');
         }
         $days = (float) $days;
         if ($days < 0 || $days > 366) {
-            Response::fail('eosb_days_per_year must be between 0 and 366', 422);
+            Response::fail('eosb_days_per_year must be between 0 and 366', 422, 'eosb_days_per_year_between');
         }
         $data['eosb_days_per_year'] = $days;
     } else {
@@ -165,16 +165,16 @@ if ($method === 'POST' || $method === 'PUT') {
     Response::success(['message' => 'Statutory payroll settings updated']);
 }
 
-Response::fail('Method not allowed', 405);
+Response::fail('Method not allowed', 405, 'method_not_allowed');
 
 /** Parse a percentage rate (0–100); required (non-null) for the field. */
 function rateField($value, string $field): float {
     if ($value === null || $value === '') {
-        Response::fail("$field is required", 422);
+        Response::fail("$field is required", 422, 'required');
     }
     $n = (float) $value;
     if ($n < 0 || $n > 100) {
-        Response::fail("$field must be between 0 and 100", 422);
+        Response::fail("$field must be between 0 and 100", 422, 'between_0_100');
     }
     return $n;
 }
@@ -186,7 +186,7 @@ function moneyField($value, string $field): ?float {
     }
     $n = (float) $value;
     if ($n < 0) {
-        Response::fail("$field must be >= 0", 422);
+        Response::fail("$field must be >= 0", 422, 'field_min_zero');
     }
     return $n;
 }

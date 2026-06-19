@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/constant/theme/app_colors.dart';
+import '../../../core/services/device_integrity_service.dart';
 import '../../../core/services/push_notification_service.dart';
 import '../../../core/services/token_storage_service.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
@@ -25,6 +26,13 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _init() async {
     await Future<void>.delayed(const Duration(milliseconds: 1500));
     if (!mounted) return;
+
+    // App-open gate: refuse to proceed while a VPN/proxy interface is active.
+    if (await DeviceIntegrityService.isVpnActive()) {
+      if (!mounted) return;
+      unawaited(Get.offAllNamed<void>(AppRoutes.vpnBlocked));
+      return;
+    }
 
     final hasToken = await TokenStorageService.hasToken();
     if (!hasToken) {

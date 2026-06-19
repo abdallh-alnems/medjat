@@ -16,10 +16,10 @@ $token = $input['token'] ?? null;
 $inviteCode = trim($input['invite_code'] ?? '');
 
 if (!$token) {
-    Response::fail('Token is required', 400);
+    Response::fail('Token is required', 400, 'token_required');
 }
 if ($inviteCode === '') {
-    Response::fail('Invite code is required', 422);
+    Response::fail('Invite code is required', 422, 'invite_code_required');
 }
 
 $verifiedToken = Auth::verifyFirebaseToken($token);
@@ -30,10 +30,10 @@ $admin = Database::fetchOne(
     [$uid]
 );
 if (!$admin) {
-    Response::fail('Sign in first', 401);
+    Response::fail('Sign in first', 401, 'sign_first');
 }
 if ($admin['tenant_id']) {
-    Response::fail('You already belong to a company', 409);
+    Response::fail('You already belong to a company', 409, 'you_already_belong_company');
 }
 
 $tokenHash = hash('sha256', $inviteCode);
@@ -46,20 +46,20 @@ $invitation = Database::fetchOne(
 );
 
 if (!$invitation) {
-    Response::fail('Invite code is invalid', 404);
+    Response::fail('Invite code is invalid', 404, 'invite_code_invalid');
 }
 if ($invitation['cancelled_at']) {
-    Response::fail('This invitation was cancelled', 410);
+    Response::fail('This invitation was cancelled', 410, 'invitation_was_cancelled');
 }
 if ($invitation['accepted_at']) {
-    Response::fail('This invitation was already used', 410);
+    Response::fail('This invitation was already used', 410, 'invitation_was_already_used');
 }
 if (strtotime($invitation['expires_at']) < time()) {
-    Response::fail('This invitation has expired', 410);
+    Response::fail('This invitation has expired', 410, 'invitation_expired');
 }
 
 if ($invitation['email'] && $admin['email'] && strcasecmp($invitation['email'], $admin['email']) !== 0) {
-    Response::fail('This invitation is for a different email address', 403);
+    Response::fail('This invitation is for a different email address', 403, 'invitation_different_email_address');
 }
 
 $pdo = db();
@@ -118,7 +118,7 @@ try {
         $pdo->rollBack();
     }
     error_log('Join tenant failed: ' . $e->getMessage());
-    Response::fail('Failed to join company: ' . $e->getMessage(), 500);
+    Response::fail('Failed to join company: ' . $e->getMessage(), 500, 'join_company_failed');
 }
 
 $tenant = Database::fetchOne(

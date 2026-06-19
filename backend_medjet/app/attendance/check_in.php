@@ -19,7 +19,7 @@ $employee = $auth['employee'];
 
 $branch = BranchModel::findById($branchId, $tenantId);
 if (!$branch) {
-    Response::fail('Branch not found', 404);
+    Response::fail('Branch not found', 404, 'BRANCH_NOT_FOUND');
 }
 
 // Enforce the attendance method configured for this branch. Self check-in
@@ -39,7 +39,7 @@ if (!in_array($requestedMethod, $methods, true)) {
 }
 
 if ($qrCode && $branch['qr_code'] !== $qrCode) {
-    Response::fail('Invalid QR code for this branch', 400);
+    Response::fail('Invalid QR code for this branch', 400, 'INVALID_QR');
 }
 
 // Both qr_gps and gps_only require GPS, so the employee must send a real

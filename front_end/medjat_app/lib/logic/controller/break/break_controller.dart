@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../../core/class/api_messages.dart';
 import '../../../core/class/status_request.dart';
 import '../../../data/data_source/remote/break_data/break_data.dart';
 
@@ -94,14 +95,9 @@ class BreakController extends GetxController {
           snackPosition: SnackPosition.BOTTOM);
       return false;
     }
-    if (response['statusCode'] == 409) {
-      final msg = (response['message'] as String?) ?? 'break_overlap'.tr;
-      Get.snackbar('error'.tr, msg, snackPosition: SnackPosition.BOTTOM);
-      return false;
-    }
-    // Surface the server's own message (past window, validation, etc.).
-    final msg = (response['message'] as String?) ?? 'break_request_failed'.tr;
-    Get.snackbar('error'.tr, msg, snackPosition: SnackPosition.BOTTOM);
+    Get.snackbar('error'.tr,
+        ApiMessages.of(response, fallbackKey: 'break_request_failed'),
+        snackPosition: SnackPosition.BOTTOM);
     return false;
   }
 
@@ -114,8 +110,8 @@ class BreakController extends GetxController {
       await loadMyBreaks();
       return true;
     }
-    final msg = (response['message'] as String?) ?? 'error'.tr;
-    Get.snackbar('error'.tr, msg, snackPosition: SnackPosition.BOTTOM);
+    Get.snackbar('error'.tr, ApiMessages.of(response),
+        snackPosition: SnackPosition.BOTTOM);
     return false;
   }
 
@@ -134,8 +130,8 @@ class BreakController extends GetxController {
       await loadMyBreaks();
       return true;
     }
-    final msg = (response['message'] as String?) ?? 'error'.tr;
-    Get.snackbar('error'.tr, msg, snackPosition: SnackPosition.BOTTOM);
+    Get.snackbar('error'.tr, ApiMessages.of(response),
+        snackPosition: SnackPosition.BOTTOM);
     return false;
   }
 }

@@ -28,7 +28,7 @@ Validator::required($branchId, 'branch_id');
 if ($phone !== null && $phone !== '') {
     $normalizedPhone = Validator::phone($phone);
     if ($normalizedPhone === null) {
-        Response::fail('Invalid phone number', 422);
+        Response::fail('Invalid phone number', 422, 'invalid_phone_number');
     }
     $phone = $normalizedPhone;
 }
@@ -62,7 +62,7 @@ if (array_key_exists('weekly_off_days', $input)) {
 if (!empty($input['auto_terminate_at'])) {
     $endDate = Validator::date($input['auto_terminate_at'], 'auto_terminate_at');
     if ($endDate <= date('Y-m-d')) {
-        Response::fail('auto_terminate_at must be a future date', 422);
+        Response::fail('auto_terminate_at must be a future date', 422, 'auto_terminate_at_future_date');
     }
     $createData['auto_terminate_at'] = $endDate;
 }
@@ -77,7 +77,7 @@ foreach (EmployeeModel::COMPLIANCE_FIELDS as $field) {
 // Contract end, when supplied with a start, must be strictly after it.
 if (!empty($createData['contract_start']) && !empty($createData['contract_end'])
     && $createData['contract_end'] <= $createData['contract_start']) {
-    Response::fail('Contract end must be after the start date', 422);
+    Response::fail('Contract end must be after the start date', 422, 'contract_end_after_start_date');
 }
 
 $employeeId = EmployeeModel::create($tenantId, $createData);
@@ -114,10 +114,10 @@ if (is_array($input['allowances'] ?? null)) {
         $endMonth = isset($allowance['end_month']) && $allowance['end_month'] !== ''
             ? (string) $allowance['end_month'] : null;
         if ($endMonth !== null && !preg_match('/^\d{4}-\d{2}$/', $endMonth)) {
-            Response::fail('allowance end_month must be YYYY-MM', 422);
+            Response::fail('allowance end_month must be YYYY-MM', 422, 'allowance_end_month_yyyy_mm');
         }
         if ($endMonth !== null && $endMonth < $startMonth) {
-            Response::fail('allowance end_month cannot be before start_month', 422);
+            Response::fail('allowance end_month cannot be before start_month', 422, 'allowance_end_month_cannot_before');
         }
         $label = isset($allowance['label']) && trim((string) $allowance['label']) !== ''
             ? trim((string) $allowance['label']) : null;

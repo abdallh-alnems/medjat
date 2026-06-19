@@ -24,7 +24,7 @@ $ok = $wasPending
     ? LoanModel::reject($id, $tenantId)
     : LoanModel::cancel($id, $tenantId);
 if (!$ok) {
-    Response::fail('Loan cannot be cancelled in its current state', 409);
+    Response::fail('Loan cannot be cancelled in its current state', 409, 'loan_cannot_cancelled_its_current');
 }
 
 AuditLogModel::log(

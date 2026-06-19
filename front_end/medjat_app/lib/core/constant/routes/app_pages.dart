@@ -23,6 +23,7 @@ import '../../../view/screen/auth/login_screen.dart';
 import '../../../view/screen/auth/join_scan_screen.dart';
 import '../../services/deep_link_service.dart';
 import '../../../view/screen/splash/splash_screen.dart';
+import '../../../view/screen/security/vpn_blocked_screen.dart';
 import '../../../view/screen/home/home_screen.dart';
 import '../../../view/screen/attendance/scan_qr_screen.dart';
 import '../../../view/screen/attendance/gps_check_in_screen.dart';
@@ -83,6 +84,12 @@ List<GetPage<dynamic>> getPages = [
   GetPage(
     name: AppRoutes.forceUpdate,
     page: () => Scaffold(body: Center(child: Text('update_required'.tr))),
+  ),
+  GetPage(
+    name: AppRoutes.vpnBlocked,
+    page: () => const VpnBlockedScreen(),
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
   ),
   GetPage(
     name: AppRoutes.home,

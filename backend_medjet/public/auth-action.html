@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<title>Medjat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --brand:#2E7D6B; --brand-dark:#256355; --bg:#f4f6f8; --text:#1a1a1a; --muted:#6b7280; --err:#d92d20; --ok:#067647; --border:#e5e7eb; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); font-family:'IBM Plex Sans Arabic',-apple-system,Segoe UI,Tahoma,Arial,sans-serif; color:var(--text); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px 14px; }
+  .card { width:100%; max-width:430px; background:#fff; border-radius:18px; box-shadow:0 4px 24px rgba(0,0,0,.07); padding:32px 28px; }
+  .logo { display:block; height:56px; width:auto; margin:0 auto 18px; }
+  h1 { font-size:20px; margin:0 0 6px; text-align:center; }
+  .sub { font-size:14px; color:var(--muted); text-align:center; margin:0 0 22px; line-height:1.7; }
+  label { display:block; font-size:13px; font-weight:600; margin:0 0 6px; }
+  .field { position:relative; margin-bottom:14px; }
+  input[type=password], input[type=text] { width:100%; padding:13px 14px; font-size:15px; font-family:inherit; border:1.5px solid var(--border); border-radius:11px; outline:none; transition:border-color .15s; }
+  input:focus { border-color:var(--brand); }
+  .toggle { position:absolute; inset-inline-end:12px; top:38px; background:none; border:none; cursor:pointer; font-size:13px; color:var(--brand); font-family:inherit; padding:2px 4px; }
+  .rules { list-style:none; padding:0; margin:4px 0 18px; font-size:12.5px; }
+  .rules li { display:flex; align-items:center; gap:8px; color:var(--muted); margin:5px 0; }
+  .rules li.ok { color:var(--ok); }
+  .rules li .dot { width:16px; height:16px; border-radius:50%; border:1.5px solid currentColor; display:inline-flex; align-items:center; justify-content:center; font-size:10px; flex:none; }
+  .rules li.ok .dot { background:var(--ok); border-color:var(--ok); color:#fff; }
+  button.primary { width:100%; padding:14px; font-size:16px; font-weight:600; font-family:inherit; color:#fff; background:var(--brand); border:none; border-radius:11px; cursor:pointer; transition:background .15s; }
+  button.primary:hover:not(:disabled) { background:var(--brand-dark); }
+  button.primary:disabled { opacity:.5; cursor:not-allowed; }
+  .msg { font-size:13.5px; padding:11px 14px; border-radius:10px; margin-bottom:16px; line-height:1.6; display:none; }
+  .msg.err { display:block; background:#fef3f2; color:var(--err); }
+  .msg.ok  { display:block; background:#ecfdf3; color:var(--ok); }
+  .center { text-align:center; }
+  .state-icon { font-size:46px; text-align:center; margin:6px 0 10px; }
+  .spinner { width:34px; height:34px; border:3px solid var(--border); border-top-color:var(--brand); border-radius:50%; animation:spin .8s linear infinite; margin:30px auto; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .hidden { display:none !important; }
+  .foot { text-align:center; font-size:11.5px; color:#aaa; margin-top:22px; }
+  .langbtn { position:fixed; top:14px; inset-inline-end:14px; background:#fff; border:1px solid var(--border); border-radius:8px; padding:6px 12px; font-size:12px; font-family:inherit; cursor:pointer; color:var(--text); }
+</style>
+</head>
+<body>
+<button class="langbtn" id="langBtn" onclick="toggleLang()">English</button>
+<div class="card">
+  <img src="https://medjatapp.com/email-logo.png" alt="Medjat" class="logo" onerror="this.style.display='none'" />
+
+  <!-- Loading -->
+  <div id="loading"><div class="spinner"></div><p class="sub" id="loadingText">جارٍ التحقق…</p></div>
+
+  <!-- Reset password form -->
+  <div id="resetView" class="hidden">
+    <h1 id="resetTitle">تعيين كلمة سر جديدة</h1>
+    <p class="sub" id="resetSub">أدخل كلمة سر جديدة لحسابك</p>
+    <div class="msg" id="resetMsg"></div>
+    <form id="resetForm" autocomplete="off">
+      <div class="field">
+        <label id="lblPass" for="pass">كلمة السر الجديدة</label>
+        <input type="password" id="pass" autocomplete="new-password" />
+        <button type="button" class="toggle" id="t1" onclick="togVis('pass','t1')">إظهار</button>
+      </div>
+      <div class="field">
+        <label id="lblConfirm" for="confirm">تأكيد كلمة السر</label>
+        <input type="password" id="confirm" autocomplete="new-password" />
+        <button type="button" class="toggle" id="t2" onclick="togVis('confirm','t2')">إظهار</button>
+      </div>
+      <ul class="rules">
+        <li id="r-len"><span class="dot">✓</span><span id="r-len-t">٨ أحرف على الأقل</span></li>
+        <li id="r-match"><span class="dot">✓</span><span id="r-match-t">كلمتا السر متطابقتان</span></li>
+      </ul>
+      <button type="submit" class="primary" id="submitBtn" disabled>تعيين كلمة السر</button>
+    </form>
+  </div>
+
+  <!-- Generic success/error result -->
+  <div id="resultView" class="hidden center">
+    <div class="state-icon" id="resultIcon">✅</div>
+    <h1 id="resultTitle"></h1>
+    <p class="sub" id="resultSub"></p>
+  </div>
+
+  <div class="foot">© <span id="year"></span> Medjat</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+  // ---- Firebase ----
+  firebase.initializeApp({
+    apiKey: 'AIzaSyAmGiKDCtUEdAuYIZDV7zD5APWrp0wyfsc',
+    authDomain: 'medjat.firebaseapp.com',
+    projectId: 'medjat',
+  });
+  const auth = firebase.auth();
+
+  // ---- Min password length (matches the app's rule) ----
+  const MIN_LEN = 8;
+
+  // ---- URL params (Firebase appends mode, oobCode, lang) ----
+  const qs = new URLSearchParams(location.search);
+  const mode = qs.get('mode');
+  const oobCode = qs.get('oobCode');
+  let lang = (qs.get('lang') || 'ar').toLowerCase().startsWith('en') ? 'en' : 'ar';
+
+  // ---- i18n ----
+  const T = {
+    ar: {
+      loading:'جارٍ التحقق…', resetTitle:'تعيين كلمة سر جديدة', resetSub:'أدخل كلمة سر جديدة لحسابك',
+      lblPass:'كلمة السر الجديدة', lblConfirm:'تأكيد كلمة السر', show:'إظهار', hide:'إخفاء',
+      rLen:'٨ أحرف على الأقل', rMatch:'كلمتا السر متطابقتان', submit:'تعيين كلمة السر', submitting:'جارٍ الحفظ…',
+      doneTitle:'تم تغيير كلمة السر', doneSub:'يمكنك الآن العودة إلى التطبيق وتسجيل الدخول بكلمة السر الجديدة.',
+      verifiedTitle:'تم تأكيد بريدك الإلكتروني', verifiedSub:'تم تفعيل حسابك بنجاح. يمكنك الآن العودة إلى التطبيق.',
+      recoveredTitle:'تمت استعادة بريدك', recoveredSub:'تم التراجع عن تغيير البريد الإلكتروني بنجاح.',
+      errTitle:'حدث خطأ', errExpired:'هذا الرابط منتهي الصلاحية أو سبق استخدامه. اطلب رابطًا جديدًا من التطبيق.',
+      errInvalid:'رابط غير صالح.', errWeak:'كلمة السر ضعيفة جدًا.', langName:'English'
+    },
+    en: {
+      loading:'Verifying…', resetTitle:'Set a new password', resetSub:'Enter a new password for your account',
+      lblPass:'New password', lblConfirm:'Confirm password', show:'Show', hide:'Hide',
+      rLen:'At least 8 characters', rMatch:'Passwords match', submit:'Set password', submitting:'Saving…',
+      doneTitle:'Password changed', doneSub:'You can now return to the app and sign in with your new password.',
+      verifiedTitle:'Email verified', verifiedSub:'Your account has been activated. You can now return to the app.',
+      recoveredTitle:'Email recovered', recoveredSub:'The email change has been reverted successfully.',
+      errTitle:'Something went wrong', errExpired:'This link has expired or was already used. Request a new one from the app.',
+      errInvalid:'Invalid link.', errWeak:'Password is too weak.', langName:'العربية'
+    }
+  };
+
+  function applyLang() {
+    const t = T[lang];
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'en' ? 'ltr' : 'rtl';
+    document.getElementById('langBtn').textContent = t.langName;
+    document.getElementById('loadingText').textContent = t.loading;
+    document.getElementById('resetTitle').textContent = t.resetTitle;
+    document.getElementById('resetSub').textContent = t.resetSub;
+    document.getElementById('lblPass').textContent = t.lblPass;
+    document.getElementById('lblConfirm').textContent = t.lblConfirm;
+    document.getElementById('r-len-t').textContent = t.rLen;
+    document.getElementById('r-match-t').textContent = t.rMatch;
+    const btn = document.getElementById('submitBtn');
+    if (!btn.dataset.busy) btn.textContent = t.submit;
+  }
+  function toggleLang() { lang = lang === 'ar' ? 'en' : 'ar'; applyLang(); validate(); }
+
+  function togVis(id, btnId) {
+    const el = document.getElementById(id), b = document.getElementById(btnId);
+    if (el.type === 'password') { el.type = 'text'; b.textContent = T[lang].hide; }
+    else { el.type = 'password'; b.textContent = T[lang].show; }
+  }
+
+  function show(viewId) {
+    ['loading','resetView','resultView'].forEach(v =>
+      document.getElementById(v).classList.toggle('hidden', v !== viewId));
+  }
+  function showResult(icon, title, sub) {
+    document.getElementById('resultIcon').textContent = icon;
+    document.getElementById('resultTitle').textContent = title;
+    document.getElementById('resultSub').textContent = sub;
+    show('resultView');
+  }
+  function fail(msg) { showResult('⚠️', T[lang].errTitle, msg); }
+
+  // ---- Password validation ----
+  const passEl = document.getElementById('pass');
+  const confEl = document.getElementById('confirm');
+  function validate() {
+    const p = passEl.value, c = confEl.value;
+    const okLen = p.length >= MIN_LEN;
+    const okMatch = p.length > 0 && p === c;
+    document.getElementById('r-len').classList.toggle('ok', okLen);
+    document.getElementById('r-match').classList.toggle('ok', okMatch);
+    document.getElementById('submitBtn').disabled = !(okLen && okMatch);
+  }
+  passEl.addEventListener('input', validate);
+  confEl.addEventListener('input', validate);
+
+  document.getElementById('resetForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    const msg = document.getElementById('resetMsg');
+    msg.className = 'msg';
+    btn.disabled = true; btn.dataset.busy = '1'; btn.textContent = T[lang].submitting;
+    auth.confirmPasswordReset(oobCode, passEl.value)
+      .then(() => showResult('✅', T[lang].doneTitle, T[lang].doneSub))
+      .catch(err => {
+        delete btn.dataset.busy;
+        const code = (err && err.code) || '';
+        if (code === 'auth/weak-password') { msg.className = 'msg err'; msg.textContent = T[lang].errWeak; }
+        else if (code === 'auth/expired-action-code' || code === 'auth/invalid-action-code') { fail(T[lang].errExpired); return; }
+        else { msg.className = 'msg err'; msg.textContent = T[lang].errInvalid; }
+        validate(); btn.textContent = T[lang].submit;
+      });
+  });
+
+  // ---- Bootstrap by mode ----
+  function start() {
+    document.getElementById('year').textContent = new Date().getFullYear();
+    applyLang();
+    if (!oobCode || !mode) { fail(T[lang].errInvalid); return; }
+
+    if (mode === 'resetPassword') {
+      auth.verifyPasswordResetCode(oobCode)
+        .then(() => { show('resetView'); validate(); passEl.focus(); })
+        .catch(() => fail(T[lang].errExpired));
+    } else if (mode === 'verifyEmail') {
+      auth.applyActionCode(oobCode)
+        .then(() => showResult('✅', T[lang].verifiedTitle, T[lang].verifiedSub))
+        .catch(() => fail(T[lang].errExpired));
+    } else if (mode === 'recoverEmail') {
+      auth.applyActionCode(oobCode)
+        .then(() => showResult('✅', T[lang].recoveredTitle, T[lang].recoveredSub))
+        .catch(() => fail(T[lang].errExpired));
+    } else {
+      fail(T[lang].errInvalid);
+    }
+  }
+  start();
+</script>
+</body>
+</html>

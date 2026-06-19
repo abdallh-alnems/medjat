@@ -9,7 +9,7 @@ $input = $auth['input'];
 $id = (int) ($input['id'] ?? $_GET['id'] ?? 0);
 
 if ($id <= 0) {
-    Response::fail('Notification ID is required', 400);
+    Response::fail('Notification ID is required', 400, 'notification_id_required');
 }
 
 $notification = Database::fetchOne(

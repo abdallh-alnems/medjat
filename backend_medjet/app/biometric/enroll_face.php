@@ -12,7 +12,7 @@ $employeeId = (int) ($input['employee_id'] ?? 0);
 Validator::required($employeeId, 'employee_id');
 
 $emp = EmployeeModel::findById($employeeId, $tenantId);
-if (!$emp) Response::fail('Employee not found', 404);
+if (!$emp) Response::fail('Employee not found', 404, 'employee_not_found');
 PermissionMiddleware::checkBranchAccess($auth, (int) $emp['branch_id']);
 
 $embedding = $input['embedding'] ?? null;

@@ -22,7 +22,7 @@ $rating = $input['rating'] ?? null;
 if ($rating !== null) {
     $rating = Validator::numeric($rating, 'rating');
     if ($rating < 0 || $rating > 5) {
-        Response::fail('rating must be between 0 and 5', 422);
+        Response::fail('rating must be between 0 and 5', 422, 'rating_between_0_5');
     }
 }
 

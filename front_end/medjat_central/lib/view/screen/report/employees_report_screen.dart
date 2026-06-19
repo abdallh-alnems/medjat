@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/utils/currency.dart';
 import '../../../core/class/handling_data_request.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
@@ -127,7 +128,8 @@ class _SummaryCards extends StatelessWidget {
             Expanded(
                 child: _StatCard(
                     label: 'total_salaries'.tr,
-                    value: '${summary.totalSalaries.toStringAsFixed(0)} ج.م',
+                    value:
+                        '${summary.totalSalaries.toStringAsFixed(0)} ${currencyLabel(null)}',
                     color: colors.accentWarm,
                     colors: colors)),
             const SizedBox(width: AppSpacing.s2),
@@ -235,7 +237,7 @@ class _EmployeeRow extends StatelessWidget {
           Row(
             children: [
               Text(
-                '${row.baseSalary.toStringAsFixed(0)} ج.م',
+                '${row.baseSalary.toStringAsFixed(0)} ${currencyLabel(null)}',
                 style: TextStyle(
                   fontFamily: 'IBM Plex Sans Arabic',
                   fontSize: 13,

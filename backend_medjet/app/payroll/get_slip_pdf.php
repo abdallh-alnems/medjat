@@ -15,10 +15,10 @@ $employeeId = (int) ($_GET['employee_id'] ?? 0);
 $month = $_GET['month'] ?? date('Y-m');
 
 if ($employeeId <= 0) {
-    Response::fail('Employee ID required', 422);
+    Response::fail('Employee ID required', 422, 'employee_id_required');
 }
 if (!preg_match('/^\d{4}-\d{2}$/', $month)) {
-    Response::fail('Invalid month format (expected YYYY-MM)', 422);
+    Response::fail('Invalid month format (expected YYYY-MM)', 422, 'invalid_month_format_expected_yyyy');
 }
 
 $employee = Database::fetchOne(
@@ -45,7 +45,7 @@ try {
     $path = PayslipPdfService::generate($tenant, $employee, $breakdown, $month);
 } catch (Throwable $e) {
     error_log('Payslip PDF generation failed: ' . $e->getMessage());
-    Response::fail('Failed to generate payslip', 500);
+    Response::fail('Failed to generate payslip', 500, 'failed_generate_payslip');
 }
 
 $fileName = 'payslip_' . $employeeId . '_' . $month . '.pdf';

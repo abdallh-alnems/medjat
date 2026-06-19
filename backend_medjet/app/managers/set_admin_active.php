@@ -14,7 +14,7 @@ Validator::required($adminId, 'admin_id');
 
 $isActive = filter_var($input['is_active'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
 if ($isActive === null) {
-    Response::fail('is_active مطلوب', 422);
+    Response::fail('is_active مطلوب', 422, 'is_active_required');
 }
 
 if ($adminId === (int) $auth['admin_id']) {

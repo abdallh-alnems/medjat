@@ -22,10 +22,10 @@ $attendanceMethods = $input['attendance_methods'] ?? null;
 
 if ($attendanceMethods !== null) {
     if (!is_array($attendanceMethods)) {
-        Response::fail('attendance_methods must be an array or null', 422);
+        Response::fail('attendance_methods must be an array or null', 422, 'attendance_methods_array_null');
     }
     if (empty($attendanceMethods)) {
-        Response::fail('attendance_methods cannot be empty. Use null to inherit company settings.', 400);
+        Response::fail('attendance_methods cannot be empty. Use null to inherit company settings.', 400, 'attendance_methods_cannot_empty_null');
     }
     foreach ($attendanceMethods as $m) {
         if (!in_array($m, $allowedMethods, true)) {
@@ -37,7 +37,7 @@ if ($attendanceMethods !== null) {
 
 $gpsRadiusMeters = (int) ($input['gps_radius_meters'] ?? ($branch['gps_radius_meters'] ?? 100));
 if ($gpsRadiusMeters < 10 || $gpsRadiusMeters > 5000) {
-    Response::fail('gps_radius_meters must be between 10 and 5000', 422);
+    Response::fail('gps_radius_meters must be between 10 and 5000', 422, 'gps_radius_meters_between_10');
 }
 
 $allowOffline = null;
@@ -48,7 +48,7 @@ if (array_key_exists('allow_offline_attendance', $input)) {
     } else {
         $allowOffline = filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
         if ($allowOffline === null) {
-            Response::fail('allow_offline_attendance must be true, false, or null', 422);
+            Response::fail('allow_offline_attendance must be true, false, or null', 422, 'allow_offline_attendance_true_false');
         }
     }
 }

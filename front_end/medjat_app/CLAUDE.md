@@ -57,7 +57,7 @@ flutter run --dart-define-from-file=.env
 flutter build apk --release
 flutter build appbundle --release
 flutter test
-flutter analyze
+flutter analyze lib   # احصر التحليل في كودك؛ flutter analyze (كامل) يفحص ملفات أمثلة FlutterFire داخل build/ ويظهر أخطاء وهمية
 flutter clean && flutter pub get
 ```
 

@@ -112,14 +112,14 @@ if ($method === 'PUT' || $method === 'POST') {
     if (isset($input['currency'])) {
         $currency = strtoupper(trim((string) $input['currency']));
         if (!preg_match('/^[A-Z]{3}$/', $currency)) {
-            Response::fail('currency must be a 3-letter ISO code (e.g. EGP)', 422);
+            Response::fail('currency must be a 3-letter ISO code (e.g. EGP)', 422, 'currency_3_letter_iso_code');
         }
         $updateData['currency'] = $currency;
     }
     if (isset($input['timezone'])) {
         $timezone = trim((string) $input['timezone']);
         if (!in_array($timezone, timezone_identifiers_list(), true)) {
-            Response::fail('Invalid timezone identifier', 422);
+            Response::fail('Invalid timezone identifier', 422, 'invalid_timezone_identifier');
         }
         $updateData['timezone'] = $timezone;
     }
@@ -127,7 +127,7 @@ if ($method === 'PUT' || $method === 'POST') {
     if (isset($input['attendance_methods'])) {
         $methodsVal = $input['attendance_methods'];
         if (!is_array($methodsVal) || empty($methodsVal)) {
-            Response::fail('attendance_methods must be a non-empty array', 422);
+            Response::fail('attendance_methods must be a non-empty array', 422, 'attendance_methods_non_empty_array');
         }
         foreach ($methodsVal as $m) {
             if (!in_array($m, $allowedMethods, true)) {
@@ -144,12 +144,12 @@ if ($method === 'PUT' || $method === 'POST') {
 
         if ($manualAdminIdsVal !== null) {
             if (!is_array($manualAdminIdsVal)) {
-                Response::fail('manual_attendance_admin_ids must be an array or null', 422);
+                Response::fail('manual_attendance_admin_ids must be an array or null', 422, 'manual_attendance_admin_ids_array');
             }
             foreach ($manualAdminIdsVal as $aid) {
                 $admin = AdminModel::findById((int) $aid, $tenantId);
                 if (!$admin) {
-                    Response::fail('Admin ID ' . $aid . ' not found in this tenant', 422);
+                    Response::fail('Admin ID ' . $aid . ' not found in this tenant', 422, 'admin_not_found');
                 }
             }
         }
@@ -158,17 +158,17 @@ if ($method === 'PUT' || $method === 'POST') {
     } elseif (isset($input['manual_attendance_admin_ids'])) {
         $currentMethods = json_decode($tenant['attendance_methods'] ?? '[]', true) ?: [];
         if (!in_array('manual', $currentMethods, true)) {
-            Response::fail('Cannot set manual_attendance_admin_ids when manual method is not enabled', 422);
+            Response::fail('Cannot set manual_attendance_admin_ids when manual method is not enabled', 422, 'cannot_set_manual_attendance_admin');
         }
         $manualAdminIdsVal = $input['manual_attendance_admin_ids'];
         if ($manualAdminIdsVal !== null) {
             if (!is_array($manualAdminIdsVal)) {
-                Response::fail('manual_attendance_admin_ids must be an array or null', 422);
+                Response::fail('manual_attendance_admin_ids must be an array or null', 422, 'manual_attendance_admin_ids_array');
             }
             foreach ($manualAdminIdsVal as $aid) {
                 $admin = AdminModel::findById((int) $aid, $tenantId);
                 if (!$admin) {
-                    Response::fail('Admin ID ' . $aid . ' not found in this tenant', 422);
+                    Response::fail('Admin ID ' . $aid . ' not found in this tenant', 422, 'admin_not_found');
                 }
             }
         }
@@ -178,7 +178,7 @@ if ($method === 'PUT' || $method === 'POST') {
     if (isset($input['cycle_start_day'])) {
         $day = (int) $input['cycle_start_day'];
         if ($day < 1 || $day > 28) {
-            Response::fail('cycle_start_day must be between 1 and 28', 422);
+            Response::fail('cycle_start_day must be between 1 and 28', 422, 'cycle_start_day_between_1');
         }
         $updateData['cycle_start_day'] = $day;
     }
@@ -186,7 +186,7 @@ if ($method === 'PUT' || $method === 'POST') {
     if (isset($input['week_start_day'])) {
         $wday = (int) $input['week_start_day'];
         if ($wday < 1 || $wday > 7) {
-            Response::fail('week_start_day must be between 1 (Mon) and 7 (Sun)', 422);
+            Response::fail('week_start_day must be between 1 (Mon) and 7 (Sun)', 422, 'week_start_day_between_1');
         }
         $updateData['week_start_day'] = $wday;
     }
@@ -194,7 +194,7 @@ if ($method === 'PUT' || $method === 'POST') {
     if (isset($input['allow_offline_attendance'])) {
         $allowOffline = filter_var($input['allow_offline_attendance'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
         if ($allowOffline === null) {
-            Response::fail('allow_offline_attendance must be true or false', 422);
+            Response::fail('allow_offline_attendance must be true or false', 422, 'allow_offline_attendance_true_false');
         }
         TenantModel::updateAllowOffline($tenantId, $allowOffline);
     }
@@ -212,7 +212,7 @@ if ($method === 'PUT' || $method === 'POST') {
         } else {
             $radius = (int) $gRadius;
             if ($radius < 5 || $radius > 5000) {
-                Response::fail('gps_radius_meters must be between 5 and 5000', 422);
+                Response::fail('gps_radius_meters must be between 5 and 5000', 422, 'gps_radius_meters_between_5');
             }
             TenantModel::updateGeofence($tenantId, (float) $gLat, (float) $gLng, $radius);
         }
@@ -238,4 +238,4 @@ if ($method === 'PUT' || $method === 'POST') {
     Response::success(['message' => 'Settings updated']);
 }
 
-Response::fail('Method not allowed', 405);
+Response::fail('Method not allowed', 405, 'method_not_allowed');

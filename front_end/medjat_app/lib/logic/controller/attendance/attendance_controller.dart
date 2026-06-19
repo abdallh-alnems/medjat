@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
+import '../../../core/class/api_messages.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/services/connectivity_service.dart';
@@ -56,7 +57,17 @@ class AttendanceController extends GetxController {
       }
 
       if (integrity.isVpn) {
-        Get.snackbar('vpn_warning'.tr, '');
+        errorMessage = 'vpn_blocked_title'.tr;
+        status = StatusRequest.failure;
+        unawaited(_attendanceData.reportSecurityBlock(
+          branchId: homeController.todayStatus?.branchId ?? _getBranchId() ?? 0,
+          reason: 'vpn',
+          latitude: position.latitude,
+          longitude: position.longitude,
+        ));
+        isProcessing = false;
+        update();
+        return;
       }
 
       final isCheckOut =
@@ -109,32 +120,14 @@ class AttendanceController extends GetxController {
       await _processOffline(qrCode, position, isCheckOut, isVpn: isVpn);
     } else {
       final statusCode = response['statusCode'];
-      if (statusCode == 422 || statusCode == 400) {
-        final msg = (response['message'] as String?) ?? '';
-        final errorCode = response['error_code'];
-        if (errorCode == 'LOCATION_REQUIRED') {
-          errorMessage = 'location_required'.tr;
-        } else if (errorCode == 'GEOFENCE_NOT_CONFIGURED') {
-          errorMessage = 'geofence_not_configured'.tr;
-        } else if (msg.contains('range') ||
-            msg.contains('بعيد') ||
-            msg.contains('نطاق') ||
-            errorCode == 'GPS_OUT_OF_RANGE') {
-          errorMessage = 'out_of_range'.tr;
-        } else if (msg.contains('QR') ||
-            msg.contains('qr') ||
-            msg.contains('غير صالح')) {
-          errorMessage = 'invalid_qr'.tr;
-        } else if (msg.contains('Already') || msg.contains('مسبقاً')) {
-          errorMessage = 'already_checked_in'.tr;
-        } else {
-          errorMessage = msg;
-        }
-      } else if (statusCode == 409) {
+      if (statusCode == 409) {
+        // The backend signals an existing record via the 409 status alone.
         errorMessage = 'already_checked_in'.tr;
       } else {
-        errorMessage =
-            (response['message'] as String?) ?? 'error_try_again'.tr;
+        // Every other check-in failure carries a machine-readable error_code
+        // (LOCATION_REQUIRED, GPS_OUT_OF_RANGE, INVALID_QR, …) which we
+        // translate to the user's language instead of the raw server text.
+        errorMessage = ApiMessages.of(response);
       }
       status = StatusRequest.failure;
     }

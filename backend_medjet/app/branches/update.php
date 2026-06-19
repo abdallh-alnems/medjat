@@ -28,7 +28,7 @@ foreach (['name', 'address', 'latitude', 'longitude'] as $field) {
 if (array_key_exists('gps_radius_meters', $input)) {
     $radius = (int) $input['gps_radius_meters'];
     if ($radius < 5 || $radius > 5000) {
-        Response::fail('gps_radius_meters must be between 5 and 5000', 422);
+        Response::fail('gps_radius_meters must be between 5 and 5000', 422, 'gps_radius_meters_between_5');
     }
     $updateData['gps_radius_meters'] = $radius;
 }
@@ -41,7 +41,7 @@ if (array_key_exists('cycle_start_day', $input)) {
     } else {
         $day = (int) $val;
         if ($day < 1 || $day > 28) {
-            Response::fail('cycle_start_day must be between 1 and 28, or null', 422);
+            Response::fail('cycle_start_day must be between 1 and 28, or null', 422, 'cycle_start_day_between_1');
         }
         $updateData['cycle_start_day'] = $day;
     }

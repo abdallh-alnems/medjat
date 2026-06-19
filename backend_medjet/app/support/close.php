@@ -26,7 +26,7 @@ if ($action === 'close') {
     SupportModel::reopenTicket($ticketId, $tenantId);
     $newStatus = 'pending_support';
 } else {
-    Response::fail('Invalid action. Use "close" or "reopen".', 400);
+    Response::fail('Invalid action. Use "close" or "reopen".', 400, 'invalid_action_close_reopen');
 }
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'support.ticket.' . $action, 'support_ticket', $ticketId, [

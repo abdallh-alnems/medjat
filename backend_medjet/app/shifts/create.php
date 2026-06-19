@@ -14,7 +14,7 @@ $endTime = $input['end_time'] ?? '';
 $branchId = $input['branch_id'] ?? null;
 
 if ($name === '' || $startTime === '' || $endTime === '') {
-    Response::fail('Name, start time, and end time are required', 422);
+    Response::fail('Name, start time, and end time are required', 422, 'name_start_time_end_time');
 }
 
 $id = ShiftModel::create([

@@ -16,19 +16,19 @@ $branchId = isset($input['branch_id']) && $input['branch_id'] !== ''
 
 $validRoles = ['general_manager', 'hr', 'branch_manager', 'attendance', 'viewer'];
 if (!in_array($role, $validRoles, true)) {
-    Response::fail('الدور غير صالح', 422);
+    Response::fail('الدور غير صالح', 422, 'invalid_role');
 }
 
 // Optional custom permissions chosen by the inviter for this invitee.
 $permissions = $input['permissions'] ?? null;
 if ($permissions !== null) {
     if (!is_array($permissions)) {
-        Response::fail('permissions must be an array', 422);
+        Response::fail('permissions must be an array', 422, 'permissions_array');
     }
     $validPerms = RoleModel::getAvailablePermissions();
     foreach ($permissions as $perm) {
         if (!in_array($perm, $validPerms, true)) {
-            Response::fail("صلاحية غير معروفة: {$perm}", 422);
+            Response::fail("صلاحية غير معروفة: {$perm}", 422, 'unknown_permission');
         }
     }
     $permissions = array_values(array_unique($permissions));
@@ -51,7 +51,7 @@ if ($grantedPerms === '*') {
 
 Validator::required($email, 'البريد الإلكتروني');
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    Response::fail('صيغة البريد الإلكتروني غير صحيحة', 422);
+    Response::fail('صيغة البريد الإلكتروني غير صحيحة', 422, 'invalid_email');
 }
 
 $existingAdmin = Database::fetchOne(
@@ -59,10 +59,10 @@ $existingAdmin = Database::fetchOne(
     [$email]
 );
 if (!$existingAdmin) {
-    Response::fail('هذا البريد الإلكتروني غير مسجل في النظام. يجب التسجيل أولاً', 404);
+    Response::fail('هذا البريد الإلكتروني غير مسجل في النظام. يجب التسجيل أولاً', 404, 'email_not_registered');
 }
 if ($existingAdmin['tenant_id']) {
-    Response::fail('هذا المستخدم ينتمي لشركة بالفعل', 409);
+    Response::fail('هذا المستخدم ينتمي لشركة بالفعل', 409, 'user_already_in_company');
 }
 
 if ($branchId !== null) {
@@ -70,7 +70,7 @@ if ($branchId !== null) {
         "SELECT id FROM branches WHERE id = ? AND tenant_id = ? LIMIT 1",
         [$branchId, $tenantId]
     );
-    if (!$branch) Response::fail('الفرع غير موجود', 404);
+    if (!$branch) Response::fail('الفرع غير موجود', 404, 'branch_not_found');
 }
 
 $existing = Database::fetchOne(
@@ -81,7 +81,7 @@ $existing = Database::fetchOne(
     [$tenantId, $email]
 );
 if ($existing) {
-    Response::fail('يوجد دعوة معلقة بالفعل لهذا البريد الإلكتروني', 409);
+    Response::fail('يوجد دعوة معلقة بالفعل لهذا البريد الإلكتروني', 409, 'invitation_already_pending');
 }
 
 $result = ManagerInvitationModel::create($tenantId, $auth['admin_id'], [

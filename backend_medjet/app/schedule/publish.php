@@ -12,7 +12,7 @@ $weekStart = $input['week_start'] ?? '';
 $branchId = ($input['branch_id'] ?? null) ? (int) $input['branch_id'] : null;
 
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $weekStart)) {
-    Response::fail('week_start (YYYY-MM-DD) required', 422);
+    Response::fail('week_start (YYYY-MM-DD) required', 422, 'week_start_yyyy_mm_dd');
 }
 
 $weekEnd = date('Y-m-d', strtotime($weekStart . ' +6 days'));

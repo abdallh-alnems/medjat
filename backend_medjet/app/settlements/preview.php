@@ -19,7 +19,7 @@ $employeeId = (int) ($_GET['employee_id'] ?? 0);
 $lastWorkingDay = $_GET['last_working_day'] ?? date('Y-m-d');
 
 if ($employeeId <= 0) {
-    Response::fail('Employee ID required', 422);
+    Response::fail('Employee ID required', 422, 'employee_id_required');
 }
 Validator::date($lastWorkingDay, 'last_working_day');
 

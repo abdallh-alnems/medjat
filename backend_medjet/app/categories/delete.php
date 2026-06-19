@@ -18,7 +18,7 @@ if (!$category) {
 }
 
 if (EmployeeCategoryModel::isUsedByDocuments($id, $tenantId)) {
-    Response::fail('category_in_use_cannot_delete', 409);
+    Response::fail('category_in_use_cannot_delete', 409, 'category_cannot_delete');
 }
 
 EmployeeCategoryModel::delete($id, $tenantId);

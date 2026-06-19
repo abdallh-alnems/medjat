@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../../../core/class/api_messages.dart';
 import '../../../core/class/status_request.dart';
 import '../../../data/data_source/remote/advance_data/advance_data.dart';
 
@@ -90,9 +91,9 @@ class AdvanceController extends GetxController {
           snackPosition: SnackPosition.BOTTOM);
       return false;
     }
-    // Surface the server's own message (pending limit, validation, etc.).
-    final msg = (response['message'] as String?) ?? 'advance_request_failed'.tr;
-    Get.snackbar('error'.tr, msg, snackPosition: SnackPosition.BOTTOM);
+    Get.snackbar('error'.tr,
+        ApiMessages.of(response, fallbackKey: 'advance_request_failed'),
+        snackPosition: SnackPosition.BOTTOM);
     return false;
   }
 
@@ -105,8 +106,8 @@ class AdvanceController extends GetxController {
       await loadMyAdvances();
       return true;
     }
-    final msg = (response['message'] as String?) ?? 'error'.tr;
-    Get.snackbar('error'.tr, msg, snackPosition: SnackPosition.BOTTOM);
+    Get.snackbar('error'.tr, ApiMessages.of(response),
+        snackPosition: SnackPosition.BOTTOM);
     return false;
   }
 }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../../../core/class/handling_data_request.dart';
 import '../../../../core/constant/theme/app_colors.dart';
 import '../../../../core/constant/theme/app_text_styles.dart';
 import '../../../../core/constant/theme/app_spacing.dart';
 import '../../../../logic/controller/attendance/attendance_history_controller.dart';
+import '../../widget/ad/top_native_ad.dart';
 import '../../widget/date_formatter.dart';
 import '../../widget/stat_item.dart';
 
@@ -24,6 +26,7 @@ class AttendanceHistoryScreen extends StatelessWidget {
         builder: (controller) {
           return Column(
             children: [
+              const TopNativeAd(templateType: TemplateType.small),
               _monthSelector(context, controller),
               Expanded(
                 child: HandlingDataRequest(

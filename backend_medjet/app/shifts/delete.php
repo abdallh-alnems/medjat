@@ -8,7 +8,7 @@ $tenantId = TenantMiddleware::requireTenant();
 PermissionMiddleware::check($auth, 'manage_company_settings');
 
 $id = (int) ($_GET['id'] ?? $auth['input']['id'] ?? 0);
-if (!$id) Response::fail('Shift ID required', 422);
+if (!$id) Response::fail('Shift ID required', 422, 'shift_id_required');
 
 $shift = ShiftModel::findById($id, $tenantId);
 if (!$shift) Response::notFound('Shift');
@@ -20,10 +20,10 @@ $action = 'kept_times';
 
 if ($transferToShiftId > 0) {
     if ($transferToShiftId === $id) {
-        Response::fail('Cannot transfer employees to the shift being deleted', 422);
+        Response::fail('Cannot transfer employees to the shift being deleted', 422, 'cannot_transfer_employees_shift_being');
     }
     $target = ShiftModel::findById($transferToShiftId, $tenantId);
-    if (!$target) Response::fail('Target shift not found', 422);
+    if (!$target) Response::fail('Target shift not found', 422, 'target_shift_not_found');
 
     // Move members onto the chosen shift before deleting, and repoint their
     // upcoming weekly-roster cells so scheduled days keep a valid shift too.

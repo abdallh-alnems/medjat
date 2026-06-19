@@ -11,7 +11,7 @@ PermissionMiddleware::check($auth, 'manage_payroll');
 $input = $auth['input'];
 $ids = $input['ids'] ?? [];
 if (!is_array($ids) || empty($ids)) {
-    Response::fail('ids must be a non-empty array', 422);
+    Response::fail('ids must be a non-empty array', 422, 'ids_non_empty_array');
 }
 
 $touched = PayrollModel::approveMany($ids, $tenantId, $auth['admin_id']);

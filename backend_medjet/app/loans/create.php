@@ -23,10 +23,10 @@ Validator::required($installmentsCount, 'installments_count');
 $type = Validator::enum($type, LoanModel::TYPES, 'type');
 
 if ($installmentsCount < 1) {
-    Response::fail('installments_count must be at least 1', 422);
+    Response::fail('installments_count must be at least 1', 422, 'installments_count_at_least_1');
 }
 if (!preg_match('/^\d{4}-\d{2}$/', $startMonth)) {
-    Response::fail('start_month must be in YYYY-MM format', 422);
+    Response::fail('start_month must be in YYYY-MM format', 422, 'start_month_yyyy_mm_format');
 }
 
 $installmentAmount = round($totalAmount / $installmentsCount, 2);

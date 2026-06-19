@@ -7,6 +7,7 @@ import '../../../../core/services/dark_light_service.dart';
 import '../../../../core/services/locale_service.dart';
 import '../../../../logic/controller/auth/auth_controller.dart';
 import '../../../../logic/controller/notification/notification_controller.dart';
+import '../../widget/ad/top_native_ad.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -20,6 +21,7 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          const TopNativeAd(tabIndex: 3, horizontalMargin: 0),
           _sectionTitle(context, 'language'.tr),
           const SizedBox(height: 8),
           ListTile(

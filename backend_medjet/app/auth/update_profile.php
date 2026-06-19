@@ -11,7 +11,7 @@ $updateData = [];
 if (array_key_exists('name', $input)) {
     $name = trim((string) $input['name']);
     if ($name === '') {
-        Response::fail('Name cannot be empty', 422);
+        Response::fail('Name cannot be empty', 422, 'name_cannot_empty');
     }
     $updateData['name'] = $name;
 }
@@ -24,14 +24,14 @@ if (array_key_exists('phone', $input)) {
     } else {
         $normalized = Validator::phone($phone);
         if ($normalized === null) {
-            Response::fail('Invalid phone number', 422);
+            Response::fail('Invalid phone number', 422, 'invalid_phone_number');
         }
         $updateData['phone'] = $normalized;
     }
 }
 
 if (empty($updateData)) {
-    Response::fail('Nothing to update', 422);
+    Response::fail('Nothing to update', 422, 'nothing_update');
 }
 
 AdminModel::update($auth['admin_id'], $tenantId, $updateData);

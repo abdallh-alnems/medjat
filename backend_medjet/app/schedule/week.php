@@ -8,7 +8,7 @@ PermissionMiddleware::check($auth, 'manage_company_settings');
 
 $weekStart = $_GET['week_start'] ?? '';
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $weekStart)) {
-    Response::fail('week_start (YYYY-MM-DD) required', 422);
+    Response::fail('week_start (YYYY-MM-DD) required', 422, 'week_start_yyyy_mm_dd');
 }
 $branchId = ($_GET['branch_id'] ?? null) ? (int) $_GET['branch_id'] : null;
 
