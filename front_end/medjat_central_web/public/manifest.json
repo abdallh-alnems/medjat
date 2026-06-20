@@ -1,0 +1,34 @@
+{
+  "name": "Medjat Central",
+  "short_name": "Medjat",
+  "description": "لوحة إدارة الموارد البشرية والرواتب — Medjat Central",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F9FCFC",
+  "theme_color": "#2563EB",
+  "orientation": "any",
+  "categories": ["business", "productivity", "finance"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
