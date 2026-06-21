@@ -10,7 +10,7 @@ import {
   EmptyState,
 } from "@/components/ui/states";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 const STATUS_KEYS: Record<string, "present" | "absent" | "late" | "leave"> = {
   present: "present",
@@ -42,7 +42,7 @@ export default function StatusEmployeesPage() {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Link href="/dashboard" className="text-brand hover:underline">
-          <ArrowRight className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4" />
         </Link>
         <h1 className="text-headline-md font-bold">{t("status_employees")}</h1>
       </div>

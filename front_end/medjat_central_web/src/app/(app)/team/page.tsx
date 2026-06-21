@@ -199,7 +199,7 @@ export default function TeamPage() {
                         size="sm"
                         onClick={() => setActive.mutate({ id: a.id, active: !a.is_active })}
                       >
-                        {t("set_active")}
+                        {a.is_active ? t("suspend") : t("activate")}
                       </Button>
                       {a.role !== "general_manager" && (
                         <Button variant="ghost" size="sm" onClick={() => remove.mutate(a.id)}>

@@ -61,8 +61,27 @@ export function PermissionsEditor({ adminId, onClose }: Props) {
     ? null
     : perms.data ?? resolvePermissions(admin?.role ?? null, null);
 
+  if (adminId && !admin) {
+    return (
+      <Dialog open={adminId != null} onOpenChange={(o) => !o && onClose()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("error_generic")}</DialogTitle>
+          </DialogHeader>
+          <p className="text-body-md text-muted-foreground">{t("no_data")}</p>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>
+              {t("close")}
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   const toggle = (code: PermissionCode, value: boolean) => {
-    const next = { ...(perms.data ?? {}) };
+    if (perms.isLoading || !perms.data) return;
+    const next = { ...perms.data };
     next[code] = value;
     update.mutate({ adminId: adminId as number, permissions: next });
   };
@@ -96,6 +115,7 @@ export function PermissionsEditor({ adminId, onClose }: Props) {
                 <Checkbox
                   checked={effective?.[code] ?? false}
                   onCheckedChange={(v) => toggle(code, Boolean(v))}
+                  disabled={perms.isLoading || update.isPending}
                 />
               </label>
             ))}

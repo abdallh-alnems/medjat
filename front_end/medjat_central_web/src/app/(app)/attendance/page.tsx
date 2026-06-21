@@ -54,6 +54,8 @@ export default function AttendancePage() {
 
   const sorted = useMemo(() => {
     const cmp = (a: AttendanceRecord, b: AttendanceRecord) => {
+      if (sort === "name")
+        return (a.employee_name ?? "").localeCompare(b.employee_name ?? "");
       if (sort === "status") return a.status.localeCompare(b.status);
       if (sort === "check_in")
         return (a.check_in ?? "z").localeCompare(b.check_in ?? "z");
@@ -90,7 +92,7 @@ export default function AttendancePage() {
         r.late_minutes,
       ]),
     };
-    if (fmt === "pdf") exportReportToPDF(report, { locale });
+    if (fmt === "pdf") void exportReportToPDF(report, { locale });
     else exportReportToExcel(report);
   };
 

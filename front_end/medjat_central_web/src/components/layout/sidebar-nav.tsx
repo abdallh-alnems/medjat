@@ -134,8 +134,10 @@ export function SidebarNav() {
     <nav className="flex h-full flex-col gap-1 overflow-y-auto p-3">
       {NAV.map((item) => {
         const Icon = item.icon;
-        const active =
-          pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const exactMatch = NAV.some((n) => n.href === pathname);
+        const active = exactMatch
+          ? pathname === item.href
+          : pathname === item.href || pathname.startsWith(`${item.href}/`);
         const link = (
           <Link
             key={item.href}

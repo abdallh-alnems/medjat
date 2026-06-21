@@ -74,7 +74,7 @@ describe("managers contract", () => {
         HttpResponse.json({ status: "ok" }),
       ),
     );
-    const res = await updateAdminPermissions(1, { manage_employees: true } as never);
+    const res = await updateAdminPermissions(1, { manage_employees: true });
     expect(res.status).toBe("ok");
   });
 

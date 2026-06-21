@@ -73,7 +73,7 @@ export default function AddEmployeePage() {
   async function onSubmit(data: FormData) {
     setBusy(true);
     try {
-      await mutation.mutateAsync(data as never);
+      await mutation.mutateAsync(data);
     } catch {
       toast.error(t("error_generic"));
     } finally {

@@ -28,14 +28,14 @@ export default function DeductionsSettingsPage() {
   if (isLoading) return <LoadingState />;
   if (isError) return <ErrorState onRetry={() => refetch()} />;
 
-  const update = (id: number, patch: Partial<DeductionRule>) =>
+  const update = (id: number | string, patch: Partial<DeductionRule>) =>
     setRules((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
   const add = () =>
     setRules((rs) => [
       ...rs,
-      { id: Date.now(), name: "", amount: 0, active: true },
+      { id: crypto.randomUUID(), name: "", amount: 0, active: true },
     ]);
-  const remove = (id: number) =>
+  const remove = (id: number | string) =>
     setRules((rs) => rs.filter((r) => r.id !== id));
 
   return (

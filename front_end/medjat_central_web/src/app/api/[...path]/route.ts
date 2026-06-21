@@ -60,9 +60,10 @@ async function proxyRequest(request: NextRequest, pathSegments: string[]) {
   const searchParams = request.nextUrl.searchParams.toString();
   const fullUrl = searchParams ? `${url}?${searchParams}` : url;
 
+  const contentType = request.headers.get("content-type");
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     Authorization: `Basic ${btoa(`${SECURITY_USER}:${SECURITY_KEY}`)}`,
+    "Content-Type": contentType ?? "application/json",
   };
 
   // Forward Medjat-specific auth/tenant/device headers from the browser.
@@ -71,13 +72,16 @@ async function proxyRequest(request: NextRequest, pathSegments: string[]) {
     if (value) headers[name] = value;
   }
 
-  const body = request.method === "POST" ? await request.text() : undefined;
+  const body = ["POST", "PUT", "PATCH"].includes(request.method)
+    ? await request.text()
+    : undefined;
 
   try {
     const res = await fetch(fullUrl, {
       method: request.method,
       headers,
       body,
+      signal: AbortSignal.timeout(30000),
     });
 
     const data = await res.text();
@@ -89,8 +93,14 @@ async function proxyRequest(request: NextRequest, pathSegments: string[]) {
       },
     });
   } catch (error) {
+    console.error("[BFF proxy error]", error);
     return NextResponse.json(
-      { error: "Proxy error", details: String(error) },
+      {
+        error: "Service temporarily unavailable",
+        ...(process.env.NODE_ENV === "development" && {
+          details: String(error),
+        }),
+      },
       { status: 500 },
     );
   }

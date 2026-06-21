@@ -7,6 +7,7 @@ import {
 } from "@/lib/api/branches";
 import { listCategories } from "@/lib/api/categories";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n/use-t";
 
 export function useBranches() {
   return useQuery({ queryKey: ["org", "branches"], queryFn: listBranches });
@@ -27,10 +28,12 @@ export function useToastMutation<TArgs, TReturn>(
   mutationFn: (args: TArgs) => Promise<TReturn>,
   opts: {
     successMessage?: string;
+    errorMessage?: string;
     invalidate?: readonly (readonly unknown[])[];
     onSuccess?: (data: TReturn) => void;
   } = {},
 ) {
+  const { t } = useT();
   const qc = useQueryClient();
   return useMutation({
     mutationFn,
@@ -41,6 +44,6 @@ export function useToastMutation<TArgs, TReturn>(
       );
       opts.onSuccess?.(data);
     },
-    onError: () => toast.error("error"),
+    onError: () => toast.error(opts.errorMessage ?? t("error_generic")),
   });
 }

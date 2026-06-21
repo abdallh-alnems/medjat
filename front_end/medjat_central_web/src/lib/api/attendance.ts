@@ -9,7 +9,7 @@ export interface AttendanceParams {
 export function getBranchAttendance(params: AttendanceParams = {}) {
   return apiGet<AttendanceRecord[]>(
     "app/attendance/get_branch_attendance.php",
-    params as Record<string, unknown>,
+    params,
   );
 }
 
@@ -54,4 +54,16 @@ export function updateNote(
     date,
     note,
   });
+}
+
+export function setMethodOverride(data: {
+  branch_id?: number;
+  category_id?: number;
+  employee_id?: number;
+  method: string;
+}) {
+  return apiPost<{ status?: string }>(
+    "app/attendance/set_method_override.php",
+    data,
+  );
 }

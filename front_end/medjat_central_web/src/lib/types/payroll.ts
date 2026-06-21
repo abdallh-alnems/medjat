@@ -46,7 +46,7 @@ export interface Allowance {
 }
 
 export interface DeductionRule {
-  id: number;
+  id: number | string;
   name: string;
   amount: number;
   active: boolean;
@@ -90,6 +90,7 @@ export interface Loan {
 export type SettlementStatus = "draft" | "approved" | "paid";
 
 export interface Settlement {
+  id: number;
   employee_id: number;
   last_working_day: string;
   gratuity: number;

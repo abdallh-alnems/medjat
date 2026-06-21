@@ -1,20 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRef, useCallback, useEffect } from "react";
 
 /** Debounce a callback by `delay` ms. */
 export function useDebouncedCallback<T extends (...args: never[]) => void>(
   callback: T,
   delay: number,
 ) {
-  const [timer, setTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     return () => {
-      if (timer) clearTimeout(timer);
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [timer]);
-  return (...args: Parameters<T>) => {
-    if (timer) clearTimeout(timer);
-    setTimer(setTimeout(() => callback(...args), delay));
-  };
+  }, []);
+
+  return useCallback(
+    (...args: Parameters<T>) => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => callback(...args), delay);
+    },
+    [callback, delay],
+  );
 }

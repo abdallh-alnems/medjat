@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { login } from "./auth";
 
 /**
  * US5 Independent Test (T069):
@@ -10,6 +11,9 @@ import { test, expect } from "@playwright/test";
  * Runs against a real dev server with a seeded tenant. Skipped by default.
  */
 test.describe("US5 — payroll, loans & adjustments", () => {
+  test.beforeEach(async ({ page }) => {
+    await login(page);
+  });
   test.skip("payroll period totals render (SC-004 < 1 min)", async ({ page }) => {
     await page.goto("/payroll");
     await expect(page.getByText(/net|الصافي/i)).toBeVisible();

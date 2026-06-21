@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
+import { notFound } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -53,6 +54,9 @@ export default function EmployeeDocumentsPage({
   const qc = useQueryClient();
   const { can } = usePermissions();
   const invalidate = [["documents", employeeId]];
+
+  if (!id || Number.isNaN(employeeId)) notFound();
+
   const { data: employee } = useEmployee(employeeId);
 
   const docs = useQuery({

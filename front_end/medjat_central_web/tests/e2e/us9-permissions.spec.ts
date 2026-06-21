@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { login } from "./auth";
 
 /**
  * US9 Independent Test (T095):
@@ -10,6 +11,10 @@ import { test, expect } from "@playwright/test";
  * Runs against a real dev server with a seeded tenant. Skipped by default.
  */
 test.describe("US9 — settings, team & permissions", () => {
+  test.beforeEach(async ({ page }) => {
+    await login(page);
+  });
+
   test.skip("edit company settings", async ({ page }) => {
     await page.goto("/settings/company");
     await page.getByLabel(/company name|اسم الشركة/i).fill("شركة محدثة");

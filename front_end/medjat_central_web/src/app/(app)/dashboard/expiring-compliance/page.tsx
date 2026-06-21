@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/states";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, FileWarning } from "lucide-react";
+import { ArrowLeft, FileWarning } from "lucide-react";
 
 export default function ExpiringCompliancePage() {
   const { t } = useT();
@@ -23,7 +23,7 @@ export default function ExpiringCompliancePage() {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Link href="/dashboard" className="text-brand hover:underline">
-          <ArrowRight className="h-4 w-4" />
+          <ArrowLeft className="h-4 w-4" />
         </Link>
         <h1 className="text-headline-md font-bold">{t("expiring_compliance")}</h1>
       </div>

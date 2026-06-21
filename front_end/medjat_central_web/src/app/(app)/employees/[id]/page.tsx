@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, notFound } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -57,6 +57,8 @@ export default function EmployeeDetailPage({
   const locale = useUIStore((s) => s.locale);
   const { can } = usePermissions();
   const qc = useQueryClient();
+
+  if (!id || Number.isNaN(employeeId)) notFound();
 
   const { data: employee, isLoading, isError, refetch } = useEmployee(employeeId);
   const { data: branches } = useBranches();
@@ -315,7 +317,7 @@ function ProfileForm({
           phone: fd.get("phone"),
           email: fd.get("email"),
           job_title: fd.get("job_title"),
-          base_salary: Number(fd.get("base_salary")),
+          base_salary: Number(fd.get("base_salary")) || 0,
         });
       }}
       className="grid gap-3 sm:grid-cols-2"

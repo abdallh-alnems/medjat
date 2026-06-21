@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { login } from "./auth";
 
 /**
  * US7 Independent Test (T082):
@@ -9,6 +10,9 @@ import { test, expect } from "@playwright/test";
  * Runs against a real dev server with a seeded tenant. Skipped by default.
  */
 test.describe("US7 — branches, shifts & schedule", () => {
+  test.beforeEach(async ({ page }) => {
+    await login(page);
+  });
   test.skip("create a branch with a location", async ({ page }) => {
     await page.goto("/branches");
     await page.getByLabel(/company name|اسم/i).fill("فرع الاختبار");

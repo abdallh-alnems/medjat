@@ -26,7 +26,7 @@ export function EmployeeCard({ employee }: { employee: Employee }) {
         </p>
       </div>
       <Badge variant={STATUS_TONE[employee.status] ?? "secondary"}>
-        {t(employee.status as never)}
+        {t(employee.status)}
       </Badge>
     </Link>
   );

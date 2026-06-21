@@ -59,9 +59,9 @@ export default function DocumentsReportPage() {
         ))}
       </div>
 
-      <ComplianceTable title={t("expires_soon")} rows={expiring.data ?? []} loading={expiring.isLoading} />
-      <ComplianceTable title={t("expired")} rows={expired.data ?? []} loading={expired.isLoading} />
-      <ComplianceTable title={t("missing_documents")} rows={missing.data ?? []} loading={missing.isLoading} />
+      <ComplianceTable title={t("expires_soon")} rows={expiring.data ?? []} loading={expiring.isLoading} error={expiring.isError} />
+      <ComplianceTable title={t("expired")} rows={expired.data ?? []} loading={expired.isLoading} error={expired.isError} />
+      <ComplianceTable title={t("missing_documents")} rows={missing.data ?? []} loading={missing.isLoading} error={missing.isError} />
     </div>
   );
 }
@@ -70,12 +70,15 @@ function ComplianceTable({
   title,
   rows,
   loading,
+  error,
 }: {
   title: string;
   rows: { id: number; employee_name: string; type: string; status: string; expiry?: string | null }[];
   loading: boolean;
+  error?: boolean;
 }) {
   const { t } = useT();
+  if (error) return <ErrorState onRetry={() => {}} />;
   if (loading) return <LoadingState />;
   if (rows.length === 0)
     return <EmptyState message={t("no_report_data")} icon={FileText} />;
@@ -92,12 +95,12 @@ function ComplianceTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((r, i) => (
-            <TableRow key={i}>
+          {rows.map((r) => (
+            <TableRow key={r.id}>
               <TableCell className="font-medium">{r.employee_name}</TableCell>
               <TableCell>{r.type}</TableCell>
               <TableCell>
-                <Badge variant="outline">{t(r.status as never)}</Badge>
+                <Badge variant="outline">{t(r.status as "verified" | "pending" | "rejected" | "expired")}</Badge>
               </TableCell>
               <TableCell>{r.expiry ?? "—"}</TableCell>
             </TableRow>

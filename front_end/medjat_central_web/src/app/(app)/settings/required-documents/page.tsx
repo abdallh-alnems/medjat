@@ -38,8 +38,9 @@ export default function RequiredDocumentsPage() {
   const [expires, setExpires] = useState(false);
 
   const add = () => {
+    if (!name.trim()) return;
     create.mutate(
-      { name: name || "وثيقة", required, expires },
+      { name: name.trim(), required, expires },
       { onSuccess: () => setName("") },
     );
   };
@@ -68,7 +69,7 @@ export default function RequiredDocumentsPage() {
             />
             {t("expiry")}
           </label>
-          <Button onClick={add} disabled={create.isPending}>
+          <Button onClick={add} disabled={!name.trim() || create.isPending}>
             <Plus className="h-4 w-4" />
             {t("add")}
           </Button>

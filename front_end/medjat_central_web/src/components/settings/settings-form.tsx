@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,12 +24,9 @@ interface Props {
 /** Generic key→value settings form (loads values, edits, saves). */
 export function SettingsForm({ title, fields, initial, onSave, pending }: Props) {
   const { t } = useT();
-  const [values, setValues] = useState<Record<string, unknown>>({});
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (initial) setValues({ ...initial });
-  }, [initial]);
+  const [values, setValues] = useState<Record<string, unknown>>(
+    () => (initial ? { ...initial } : {}),
+  );
 
   return (
     <Card>
@@ -64,7 +61,11 @@ export function SettingsForm({ title, fields, initial, onSave, pending }: Props)
                   setValues((s) => ({
                     ...s,
                     [f.key]:
-                      f.type === "number" ? Number(e.target.value) : e.target.value,
+                      f.type === "number"
+                        ? e.target.value === ""
+                          ? null
+                          : Number(e.target.value)
+                        : e.target.value,
                   }))
                 }
               />

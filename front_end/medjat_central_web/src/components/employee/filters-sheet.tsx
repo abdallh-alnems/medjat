@@ -124,7 +124,7 @@ export function FiltersSheet({ filters, onChange }: Props) {
             onChange({ search: filters.search, page: 1, per_page: filters.per_page })
           }
         >
-          {t("reset_permissions")}
+          {t("reset_filters")}
         </Button>
       </SheetContent>
     </Sheet>

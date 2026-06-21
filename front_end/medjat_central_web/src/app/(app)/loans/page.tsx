@@ -69,12 +69,16 @@ export default function LoansPage() {
     new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-GB").format(n);
 
   const submit = () => {
+    const empId = Number(employeeId);
+    const princ = Number(principal);
+    const inst = Number(installment);
+    if (!empId || !princ || !inst || princ <= 0 || inst <= 0) return;
     create.mutate(
       {
-        employee_id: Number(employeeId),
-        principal: Number(principal),
-        installment: Number(installment),
-        remaining: Number(principal),
+        employee_id: empId,
+        principal: princ,
+        installment: inst,
+        remaining: princ,
       },
       {
         onSuccess: () => {
@@ -128,7 +132,7 @@ export default function LoansPage() {
               <SheetClose render={<Button variant="outline" />}>{t("cancel")}</SheetClose>
               <Button
                 onClick={submit}
-                disabled={create.isPending || !employeeId || !principal}
+                disabled={create.isPending || !employeeId || !principal || !installment}
               >
                 {create.isPending ? t("saving") : t("create")}
               </Button>

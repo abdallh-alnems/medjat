@@ -16,7 +16,12 @@ export function QrPoster({ branchName, token }: Props) {
   const [dataUrl, setDataUrl] = useState<string>("");
 
   useEffect(() => {
-    QRCode.toDataURL(token, { width: 320, margin: 2 }).then(setDataUrl).catch(() => setDataUrl(""));
+    QRCode.toDataURL(token, { width: 320, margin: 2 })
+      .then(setDataUrl)
+      .catch((err) => {
+        console.error("QR code generation failed:", err);
+        setDataUrl("");
+      });
   }, [token]);
 
   return (

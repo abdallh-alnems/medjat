@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useT } from "@/lib/i18n/use-t";
-import { useShifts } from "@/lib/hooks/use-org";
-import { useToastMutation } from "@/lib/hooks/use-org";
+import { useShifts, useToastMutation } from "@/lib/hooks/use-org";
+import { useEmployees } from "@/lib/hooks/use-employees";
 import { assignShift, unassignShift } from "@/lib/api/branches";
 import {
   LoadingState,
@@ -12,6 +12,7 @@ import {
   EmptyState,
 } from "@/components/ui/states";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
@@ -27,8 +28,12 @@ export default function AssignShiftPage() {
   const sp = useSearchParams();
   const shiftId = Number(sp.get("id") ?? 0);
   const { data: shifts, isLoading, isError, refetch } = useShifts();
+  const { data: employeesData } = useEmployees({ per_page: 500 });
   const shift = (shifts ?? []).find((s) => s.id === shiftId);
   const members = new Set(shift?.members ?? []);
+  const employees = Array.isArray(employeesData)
+    ? employeesData
+    : employeesData?.data ?? [];
 
   const [selected, setSelected] = useState<number[]>([]);
   const assign = useToastMutation(
@@ -85,22 +90,33 @@ export default function AssignShiftPage() {
             <TableRow>
               <TableHead className="w-8"></TableHead>
               <TableHead>{t("employee")}</TableHead>
+              <TableHead>{t("status")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {[...members].map((id) => (
-              <TableRow key={id}>
-                <TableCell>
-                  <Checkbox
-                    checked={selected.includes(id)}
-                    onCheckedChange={() => toggle(id)}
-                  />
-                </TableCell>
-                <TableCell>
-                  {t("employee")} #{id}
-                </TableCell>
-              </TableRow>
-            ))}
+            {employees.map((emp) => {
+              const isMember = members.has(emp.id);
+              return (
+                <TableRow key={emp.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selected.includes(emp.id)}
+                      onCheckedChange={() => toggle(emp.id)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {emp.name ?? `${t("employee")} #${emp.id}`}
+                  </TableCell>
+                  <TableCell>
+                    {isMember ? (
+                      <Badge variant="default">{t("assigned")}</Badge>
+                    ) : (
+                      <Badge variant="outline">{t("unassigned")}</Badge>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

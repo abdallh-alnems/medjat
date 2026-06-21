@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { login } from "./auth";
 
 /**
  * US8 Independent Test (T087):
@@ -8,6 +9,9 @@ import { test, expect } from "@playwright/test";
  * Runs against a real dev server with a seeded tenant. Skipped by default.
  */
 test.describe("US8 — reports & exports", () => {
+  test.beforeEach(async ({ page }) => {
+    await login(page);
+  });
   test.skip("generate an attendance report", async ({ page }) => {
     await page.goto("/reports/attendance");
     await page.getByRole("button", { name: /generate report|توليد التقرير/i }).click();

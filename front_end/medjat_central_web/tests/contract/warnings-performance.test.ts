@@ -63,4 +63,46 @@ describe("warnings + performance contract", () => {
     const removed = await deletePerformanceReview(2);
     expect(removed.status).toBe("ok");
   });
+
+  it("warnings: add — permission denied (403)", async () => {
+    server.use(
+      http.post(`${API}/app/warnings/add.php`, () =>
+        HttpResponse.json(
+          { status: "error", message: "permission_denied" },
+          { status: 403 },
+        ),
+      ),
+    );
+    const res = await addWarning(1, "test");
+    expect(res).toHaveProperty("status", "error");
+  });
+
+  it("warnings: add — offline rejects", async () => {
+    server.use(
+      http.post(`${API}/app/warnings/add.php`, () => HttpResponse.error()),
+    );
+    await expect(addWarning(1, "test")).rejects.toBeDefined();
+  });
+
+  it("performance: list — permission denied (403)", async () => {
+    server.use(
+      http.get(`${API}/app/performance/review_list.php`, () =>
+        HttpResponse.json(
+          { status: "error", message: "permission_denied" },
+          { status: 403 },
+        ),
+      ),
+    );
+    const res = await listPerformanceReviews(1);
+    expect(res).toHaveProperty("status", "error");
+  });
+
+  it("performance: list — offline rejects", async () => {
+    server.use(
+      http.get(`${API}/app/performance/review_list.php`, () =>
+        HttpResponse.error(),
+      ),
+    );
+    await expect(listPerformanceReviews(1)).rejects.toBeDefined();
+  });
 });

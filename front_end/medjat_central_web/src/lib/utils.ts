@@ -28,7 +28,17 @@ export function formatDate(
   options?: Intl.DateTimeFormatOptions,
 ): string {
   if (!date) return locale === "ar" ? "—" : "—";
-  const d = typeof date === "string" ? new Date(date) : date;
+  let d: Date;
+  if (typeof date === "string") {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      const [y, m, day] = date.split("-").map(Number);
+      d = new Date(y, m - 1, day);
+    } else {
+      d = new Date(date);
+    }
+  } else {
+    d = date;
+  }
   if (Number.isNaN(d.getTime())) return "—";
   const localeTag = locale === "ar" ? "ar-EG" : "en-GB";
   return new Intl.DateTimeFormat(
@@ -54,12 +64,19 @@ export function toArabicDigits(value: number | string): string {
   return String(value).replace(/\d/g, (d) => map[Number(d)]!);
 }
 
-/** Today's date as YYYY-MM-DD (for inputs / API day params). */
+/** Today's date as YYYY-MM-DD (for inputs / API day params). Local, not UTC. */
 export function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
-/** Current month as YYYY-MM (for payroll/period params). */
+/** Current month as YYYY-MM (for payroll/period params). Local, not UTC. */
 export function currentMonth(): string {
-  return new Date().toISOString().slice(0, 7);
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
 }

@@ -1,9 +1,5 @@
 import { apiGet, apiPost } from "./client";
-import type {
-  Document,
-  DocumentSubmission,
-  RequiredDocument,
-} from "@/lib/types";
+import type { Document } from "@/lib/types";
 
 export function getEmployeeDocuments(employeeId: number) {
   return apiGet<Document[]>("app/employees/get_documents.php", {
@@ -48,15 +44,4 @@ export function requestDocument(employeeId: number, type: string) {
     employee_id: employeeId,
     type,
   });
-}
-
-export function getRequiredDocuments() {
-  return apiGet<RequiredDocument[]>("app/documents/get_required.php");
-}
-
-export function getRequiredSubmissions(requiredDocumentId: number) {
-  return apiGet<DocumentSubmission[]>(
-    "app/documents/get_required_submissions.php",
-    { required_document_id: requiredDocumentId },
-  );
 }

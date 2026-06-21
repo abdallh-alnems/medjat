@@ -20,9 +20,9 @@ export default function StatutoryPayrollPage() {
       onSave={(v) => update.mutate(v)}
       pending={update.isPending}
       fields={[
-        { key: "social_insurance_rate", label: t("deductions"), type: "number" },
-        { key: "tax_rate", label: t("deductions"), type: "number" },
-        { key: "health_insurance_rate", label: t("deductions"), type: "number" },
+        { key: "social_insurance_rate", label: t("social_insurance_rate"), type: "number" },
+        { key: "tax_rate", label: t("tax_rate"), type: "number" },
+        { key: "health_insurance_rate", label: t("health_insurance_rate"), type: "number" },
       ]}
     />
   );

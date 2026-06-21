@@ -31,18 +31,6 @@ export function generateBranchQr(id: number) {
   return apiGet<{ qr_token: string }>("app/branches/generate_qr.php", { id });
 }
 
-export function setMethodOverride(data: {
-  branch_id?: number;
-  category_id?: number;
-  employee_id?: number;
-  method: string;
-}) {
-  return apiPost<{ status?: string }>(
-    "app/attendance/set_method_override.php",
-    data,
-  );
-}
-
 export function listShifts() {
   return apiGet<Shift[]>("app/shifts/list.php");
 }

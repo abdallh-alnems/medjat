@@ -30,7 +30,7 @@ export interface EmployeeListResponse {
 export function listEmployees(params: EmployeeListParams = {}) {
   return apiGet<Employee[] | EmployeeListResponse>(
     "app/employees/list.php",
-    params as Record<string, unknown>,
+    params,
   );
 }
 

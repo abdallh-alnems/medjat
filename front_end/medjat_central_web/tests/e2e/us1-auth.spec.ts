@@ -15,10 +15,10 @@ test.describe("US1 — auth & onboarding", () => {
     page,
   }) => {
     await page.goto("/login");
-    await page.getByLabel(/email/i).fill(process.env.E2E_EMAIL ?? "test@medjat.com");
+    await page.getByLabel(/email/i).fill(process.env.E2E_EMAIL ?? "");
     await page
       .getByLabel(/password/i)
-      .fill(process.env.E2E_PASSWORD ?? "password");
+      .fill(process.env.E2E_PASSWORD ?? "");
     await page.getByRole("button", { name: /sign in|تسجيل الدخول/i }).click();
     await expect(page).toHaveURL(/\/dashboard/);
     await expect(page.getByText(/dashboard|الرئيسية/i)).toBeVisible();

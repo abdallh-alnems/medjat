@@ -37,7 +37,7 @@ export default function CategoriesSettingsPage() {
             <Label>{t("name")}</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
-          <Button onClick={() => create.mutate(name)} disabled={!name}>
+          <Button onClick={() => create.mutate(name)} disabled={!name || create.isPending}>
             <Plus className="h-4 w-4" />
             {t("add_category")}
           </Button>

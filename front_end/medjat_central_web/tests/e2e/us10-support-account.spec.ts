@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { login } from "./auth";
 
 /**
  * US10 Independent Test (T103):
@@ -11,6 +12,10 @@ import { test, expect } from "@playwright/test";
  * Runs against a real dev server with a seeded tenant. Skipped by default.
  */
 test.describe("US10 — support, notifications, audit & account", () => {
+  test.beforeEach(async ({ page }) => {
+    await login(page);
+  });
+
   test.skip("create ticket and send a message", async ({ page }) => {
     await page.goto("/support");
     await page.getByRole("button", { name: /new ticket|تذكرة جديدة/i }).click();
@@ -27,13 +32,15 @@ test.describe("US10 — support, notifications, audit & account", () => {
 
   test.skip("audit log lists actions", async ({ page }) => {
     await page.goto("/activity-log");
-    await expect(page.locator("table")).toBeVisible({ timeout: 10000 }).catch(() => {});
+    await expect(page.locator("table")).toBeVisible({ timeout: 10000 });
   });
 
   test.skip("change language and appearance", async ({ page }) => {
     await page.goto("/account");
     await page.getByRole("button", { name: /^english$/i }).click();
+    await expect(page.getByText(/language|اللغة/i)).toBeVisible();
     await page.getByRole("button", { name: /^dark$/i }).click();
+    await expect(page.locator("html")).toHaveClass(/dark/);
   });
 
   test.skip("delete account shows last-GM warning for GM", async ({ page }) => {

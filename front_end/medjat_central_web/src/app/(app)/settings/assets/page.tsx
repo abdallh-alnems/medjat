@@ -89,8 +89,8 @@ export default function AssetsSettingsPage() {
             />
           </div>
           <Button
-            onClick={() => create.mutate({ name, value: Number(value) || 0 })}
-            disabled={!name || create.isPending}
+            onClick={() => create.mutate({ name, value: Number(value) })}
+            disabled={!name || !value || create.isPending}
           >
             <Plus className="h-4 w-4" />
             {t("add_asset")}

@@ -24,7 +24,6 @@ import { Plus } from "lucide-react";
 import { useT } from "@/lib/i18n/use-t";
 import { useManualCheckIn, useManualCheckInBatch } from "@/lib/hooks/use-attendance";
 import { useToastMutation } from "@/lib/hooks/use-org";
-import { toast } from "sonner";
 
 const STATUSES = [
   "present",

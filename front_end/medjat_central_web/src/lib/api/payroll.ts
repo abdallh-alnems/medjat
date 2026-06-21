@@ -7,7 +7,7 @@ export interface PayrollPeriodParams {
 }
 
 export function listSlips(params: PayrollPeriodParams) {
-  return apiGet<Payslip[]>("app/payroll/list_slips.php", params as unknown as Record<string, unknown>);
+  return apiGet<Payslip[]>("app/payroll/list_slips.php", params);
 }
 
 export function getLivePayroll(month: string) {

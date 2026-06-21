@@ -10,15 +10,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useT } from "@/lib/i18n/use-t";
+import { ATTENDANCE_STATUS_TONE } from "@/lib/constants/attendance";
 import type { LiveAttendance } from "@/lib/types";
-
-const TONE: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  present: "default",
-  late: "secondary",
-  leave: "outline",
-  holiday: "outline",
-  absent: "destructive",
-};
 
 /** Live/today board rows. Polled by the parent (refetchInterval: 25s). */
 export function LiveBoard({ rows }: { rows: LiveAttendance[] }) {
@@ -38,7 +31,7 @@ export function LiveBoard({ rows }: { rows: LiveAttendance[] }) {
             <TableRow key={r.employee_id}>
               <TableCell className="font-medium">{r.employee_name}</TableCell>
               <TableCell>
-                <Badge variant={TONE[r.status] ?? "outline"}>{t(r.status)}</Badge>
+                <Badge variant={ATTENDANCE_STATUS_TONE[r.status]}>{t(r.status)}</Badge>
               </TableCell>
               <TableCell>{r.check_in ?? "—"}</TableCell>
             </TableRow>

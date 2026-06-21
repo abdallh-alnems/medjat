@@ -1,6 +1,5 @@
 import { apiGet, apiPost } from "./client";
 import type { Admin, ManagerInvitation } from "@/lib/types";
-import type { PermissionCode } from "@/lib/permissions/model";
 
 export function inviteAdmin(data: {
   email: string;
@@ -50,7 +49,7 @@ export function getAdminPermissions(adminId: number) {
 
 export function updateAdminPermissions(
   adminId: number,
-  permissions: Record<PermissionCode, boolean>,
+  permissions: Record<string, boolean>,
 ) {
   return apiPost<{ status?: string }>(
     "app/managers/update_admin_permissions.php",

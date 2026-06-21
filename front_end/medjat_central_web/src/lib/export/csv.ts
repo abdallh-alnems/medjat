@@ -1,4 +1,5 @@
 import type { ReportData } from "@/lib/types";
+import { slug, triggerDownload } from "./helpers";
 
 /** Convert a tabular report to CSV text. */
 export function reportToCSV(report: ReportData): string {
@@ -25,19 +26,4 @@ export function downloadCSV(csv: string, filename: string) {
     type: "text/csv;charset=utf-8;",
   });
   triggerDownload(blob, filename);
-}
-
-function triggerDownload(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-function slug(s: string): string {
-  return s.replace(/\s+/g, "-").toLowerCase();
 }

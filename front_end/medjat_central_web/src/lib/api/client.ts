@@ -11,6 +11,12 @@ const API_HOST =
 const SECURITY_USER = process.env.SECURITY_USER ?? "";
 const SECURITY_KEY = process.env.SECURITY_KEY ?? "";
 
+if (!SECURITY_USER || !SECURITY_KEY) {
+  console.warn(
+    "SECURITY_USER and SECURITY_KEY are not set — server-side API calls will fail authentication.",
+  );
+}
+
 /** Server-side client (Basic auth injected directly; used in server components). */
 const serverClient: AxiosInstance = axios.create({
   baseURL: API_HOST,
@@ -79,9 +85,11 @@ export const apiClient: AxiosInstance =
 
 export async function apiGet<T>(
   endpoint: string,
-  params?: Record<string, unknown>,
+  params?: object,
 ) {
-  const res = await apiClient.get<T>(endpoint, { params });
+  const res = await apiClient.get<T>(endpoint, {
+    params: params as Record<string, unknown> | undefined,
+  });
   return res.data;
 }
 

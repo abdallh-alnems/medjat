@@ -36,7 +36,7 @@ export function ReportTable({ report }: Props) {
           {report.rows.map((row, i) => (
             <TableRow key={i}>
               {row.map((cell, j) => (
-                <TableCell key={j}>{String(cell)}</TableCell>
+                <TableCell key={j}>{cell == null ? "—" : String(cell)}</TableCell>
               ))}
             </TableRow>
           ))}

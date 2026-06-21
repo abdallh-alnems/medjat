@@ -25,7 +25,7 @@ export function ReportExport({ report }: Props) {
       <Button
         variant="outline"
         size="sm"
-        onClick={() => exportReportToPDF(report, { locale })}
+        onClick={() => void exportReportToPDF(report, { locale })}
       >
         <FileDown className="h-4 w-4" />
         {t("pdf")}

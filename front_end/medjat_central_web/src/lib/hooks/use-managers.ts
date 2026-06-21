@@ -75,7 +75,7 @@ export function useRemoveAdmin() {
 export function useUpdateAdminPermissions() {
   return useToastMutation(
     (args: { adminId: number; permissions: Record<string, boolean> }) =>
-      updateAdminPermissions(args.adminId, args.permissions as never),
+      updateAdminPermissions(args.adminId, args.permissions),
     {
       invalidate: [
         [...QK, "permissions"] as const,

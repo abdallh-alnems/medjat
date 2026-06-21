@@ -65,6 +65,7 @@ export default function SchedulePage() {
   const assignments = schedule.data?.assignments ?? [];
   const [empId, setEmpId] = useState("");
   const [shiftId, setShiftId] = useState("");
+  const [copyTarget, setCopyTarget] = useState("");
 
   const cellFor = (day: number) =>
     assignments.filter(
@@ -79,8 +80,8 @@ export default function SchedulePage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => copy.mutate(week)}
-            disabled={copy.isPending}
+            onClick={() => copy.mutate(copyTarget)}
+            disabled={copy.isPending || !copyTarget}
           >
             {t("copy_week")}
           </Button>
@@ -128,6 +129,15 @@ export default function SchedulePage() {
             ))}
           </select>
         </div>
+        <div className="space-y-1.5">
+          <label className="text-xs text-muted-foreground">{t("copy_to")}</label>
+          <input
+            type="date"
+            value={copyTarget}
+            onChange={(e) => setCopyTarget(e.target.value)}
+            className="h-8 rounded-lg border bg-transparent px-2 text-sm"
+          />
+        </div>
       </div>
 
       {schedule.isLoading ? (
@@ -165,18 +175,21 @@ export default function SchedulePage() {
                   <p className="text-xs text-muted-foreground">{t("none")}</p>
                 )}
               </div>
-              {empId && shiftId && (
+              {empId && shiftId && Number(empId) > 0 && Number(shiftId) > 0 && (
                 <Button
                   variant="ghost"
                   size="sm"
                   className="mt-1 h-6 w-full text-xs"
-                  onClick={() =>
+                  onClick={() => {
+                    const eid = Number(empId);
+                    const sid = Number(shiftId);
+                    if (!eid || !sid) return;
                     assign.mutate({
-                      employee_id: Number(empId),
-                      shift_id: Number(shiftId),
+                      employee_id: eid,
+                      shift_id: sid,
                       day,
-                    })
-                  }
+                    });
+                  }}
                 >
                   {t("add")}
                 </Button>

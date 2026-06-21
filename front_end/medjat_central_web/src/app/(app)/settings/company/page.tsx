@@ -24,7 +24,7 @@ export default function CompanySettingsPage() {
         { key: "phone", label: t("phone") },
         { key: "address", label: t("address") },
         { key: "radius", label: t("radius"), type: "number" },
-        { key: "currency", label: t("amount") },
+        { key: "currency", label: t("currency") },
       ]}
     />
   );

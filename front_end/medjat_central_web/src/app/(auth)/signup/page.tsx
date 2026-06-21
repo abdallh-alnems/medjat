@@ -74,7 +74,7 @@ export default function SignupPage() {
     <Card>
       <CardHeader>
         <CardTitle className="text-headline-md">{t("signup")}</CardTitle>
-        <CardDescription>{t("welcome_back")}</CardDescription>
+        <CardDescription>{t("create_account")}</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-3">
@@ -122,7 +122,11 @@ export default function SignupPage() {
               {...register("confirm")}
             />
             {errors.confirm && (
-              <p className="text-label-sm text-destructive">{t("required")}</p>
+              <p className="text-label-sm text-destructive">
+                {errors.confirm.message === "mismatch"
+                  ? t("passwords_must_match")
+                  : t("required")}
+              </p>
             )}
           </div>
         </CardContent>

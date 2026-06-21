@@ -20,7 +20,7 @@ export interface Admin {
   is_active: boolean;
   pending?: boolean;
   tenant_id: number;
-  permissions?: Record<PermissionCode, boolean> | Record<string, boolean> | null;
+  permissions?: Record<PermissionCode, boolean> | null;
 }
 
 export type User = Admin;

@@ -99,9 +99,11 @@ export function OverrideLineDialog({ slip }: { slip: Payslip }) {
   const mutate = useOverrideLine();
 
   const addLine = () => {
+    const numAmount = Number(amount);
+    if (amount.trim() === "" || Number.isNaN(numAmount)) return;
     const lines: PayslipLine[] = [
       ...(slip.lines ?? []),
-      { label: label || t("details"), amount: Number(amount) || 0, type },
+      { label: label || t("details"), amount: numAmount, type },
     ];
     mutate.mutate(
       { employeeId: slip.employee_id, month: slip.month, lines },

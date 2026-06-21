@@ -7,26 +7,50 @@ import {
   Users,
   CalendarCheck,
   Wallet,
-  MoreHorizontal,
+  LifeBuoy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/use-t";
+import { usePermissions } from "@/lib/hooks/use-permissions";
+import type { PermissionCode } from "@/lib/permissions/model";
 import type { TKey } from "@/lib/i18n/ar";
 
-const ITEMS: { href: string; labelKey: TKey; icon: React.ElementType }[] = [
+const ITEMS: {
+  href: string;
+  labelKey: TKey;
+  icon: React.ElementType;
+  permission?: PermissionCode;
+}[] = [
   { href: "/dashboard", labelKey: "nav_dashboard", icon: LayoutDashboard },
-  { href: "/employees", labelKey: "nav_employees", icon: Users },
-  { href: "/attendance", labelKey: "nav_attendance", icon: CalendarCheck },
-  { href: "/payroll", labelKey: "nav_payroll", icon: Wallet },
-  { href: "/support", labelKey: "more", icon: MoreHorizontal },
+  {
+    href: "/employees",
+    labelKey: "nav_employees",
+    icon: Users,
+    permission: "manage_employees",
+  },
+  {
+    href: "/attendance",
+    labelKey: "nav_attendance",
+    icon: CalendarCheck,
+    permission: "manage_attendance",
+  },
+  {
+    href: "/payroll",
+    labelKey: "nav_payroll",
+    icon: Wallet,
+    permission: "manage_payroll",
+  },
+  { href: "/support", labelKey: "nav_support", icon: LifeBuoy },
 ];
 
 export function MobileBottomNav() {
   const pathname = usePathname();
   const { t } = useT();
+  const { can } = usePermissions();
+  const visible = ITEMS.filter((i) => !i.permission || can(i.permission));
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 flex h-16 items-center justify-around border-t bg-background md:hidden">
-      {ITEMS.map(({ href, labelKey, icon: Icon }) => {
+      {visible.map(({ href, labelKey, icon: Icon }) => {
         const active =
           pathname === href || pathname.startsWith(`${href}/`);
         return (

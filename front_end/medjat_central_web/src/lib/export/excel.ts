@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
 import type { ReportData } from "@/lib/types";
+import { slug } from "./helpers";
 
 /** Export a tabular report (or rows) to Excel. */
 export function exportReportToExcel(
@@ -23,8 +24,4 @@ export function exportObjectsToExcel<T extends Record<string, unknown>>(
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
   XLSX.writeFile(wb, filename ?? `${slug(sheetName)}.xlsx`);
-}
-
-function slug(s: string): string {
-  return s.replace(/\s+/g, "-").toLowerCase();
 }

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { login } from "./auth";
 
 /**
  * US6 Independent Test (T075):
@@ -9,6 +10,9 @@ import { test, expect } from "@playwright/test";
  * Runs against a real dev server with a seeded tenant. Skipped by default.
  */
 test.describe("US6 — leave & breaks", () => {
+  test.beforeEach(async ({ page }) => {
+    await login(page);
+  });
   test.skip("approve a pending leave", async ({ page }) => {
     await page.goto("/leaves");
     await page.getByRole("button", { name: /^(approve|اعتماد)$/i }).first().click();

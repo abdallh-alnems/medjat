@@ -8,7 +8,7 @@ import { MobileBottomNav } from "./mobile-bottom-nav";
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
-      <aside className="hidden w-64 shrink-0 border-l bg-sidebar md:block">
+      <aside className="hidden w-64 shrink-0 border-e bg-sidebar md:block">
         <SidebarNav />
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">

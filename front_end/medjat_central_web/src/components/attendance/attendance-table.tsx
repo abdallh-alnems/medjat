@@ -23,6 +23,7 @@ import { useSetDayStatus } from "@/lib/hooks/use-attendance";
 import { useToastMutation } from "@/lib/hooks/use-org";
 import { NoteDialog } from "./note-dialog";
 import type { AttendanceRecord, AttendanceStatus } from "@/lib/types";
+import { ATTENDANCE_STATUS_TONE } from "@/lib/constants/attendance";
 
 const STATUSES: AttendanceStatus[] = [
   "present",
@@ -31,14 +32,6 @@ const STATUSES: AttendanceStatus[] = [
   "leave",
   "holiday",
 ];
-
-const STATUS_TONE: Record<AttendanceStatus, "default" | "secondary" | "destructive" | "outline"> = {
-  present: "default",
-  late: "secondary",
-  leave: "outline",
-  holiday: "outline",
-  absent: "destructive",
-};
 
 interface Props {
   records: AttendanceRecord[];
@@ -56,8 +49,9 @@ export function AttendanceTable({
   const { t, locale } = useT();
   const setDayStatus = useSetDayStatus();
 
+  const selectedSet = useMemo(() => new Set(selected), [selected]);
   const allSelected =
-    records.length > 0 && records.every((r) => selected.includes(r.id));
+    records.length > 0 && records.every((r) => selectedSet.has(r.id));
 
   const mutate = useToastMutation(
     async (args: { record: AttendanceRecord; status: AttendanceStatus }) =>
@@ -111,7 +105,7 @@ export function AttendanceTable({
                 {t("employee")} #{r.employee_id}
               </TableCell>
               <TableCell>
-                <Badge variant={STATUS_TONE[r.status]}>{t(r.status)}</Badge>
+                <Badge variant={ATTENDANCE_STATUS_TONE[r.status]}>{t(r.status)}</Badge>
               </TableCell>
               <TableCell>{r.check_in ?? "—"}</TableCell>
               <TableCell>{r.check_out ?? "—"}</TableCell>

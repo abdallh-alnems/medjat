@@ -23,10 +23,10 @@ export default function LeaveSettingsPage() {
         onSave={(v) => update.mutate(v)}
         pending={update.isPending}
         fields={[
-          { key: "annual_entitlement", label: t("leave_balance"), type: "number" },
-          { key: "sick_entitlement", label: t("leave_balance"), type: "number" },
-          { key: "max_carryover", label: t("carryover"), type: "number" },
-          { key: "carryover_enabled", label: t("carryover"), type: "checkbox" },
+          { key: "annual_entitlement", label: t("annual_leave_entitlement"), type: "number" },
+          { key: "sick_entitlement", label: t("sick_leave_entitlement"), type: "number" },
+          { key: "max_carryover", label: t("max_carryover_days"), type: "number" },
+          { key: "carryover_enabled", label: t("enable_carryover"), type: "checkbox" },
           { key: "encashable", label: t("encashment"), type: "checkbox" },
         ]}
       />

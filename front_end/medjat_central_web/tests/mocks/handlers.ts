@@ -3,11 +3,7 @@ import { http, HttpResponse } from "msw";
 const API = "/api";
 
 /** Success payload (the whole JSON body is the typed response). */
-const ok = <T,>(data: T) =>
-  HttpResponse.json(data as Record<string, unknown> | unknown[]);
-
-const noData = <T,>(data: T) =>
-  HttpResponse.json(data as Record<string, unknown> | unknown[]);
+const ok = <T,>(data: T) => HttpResponse.json(data as Record<string, unknown> | unknown[]);
 
 const permissionDenied = () =>
   HttpResponse.json(
@@ -123,8 +119,8 @@ export const handlers = [
   ),
 
   // ── Generic empty/error escape hatches for contract tests ──
-  http.get(`${API}/app/employees/list.php`, () => noData([])),
-  http.get(`${API}/app/dashboard/overview.php/empty`, () => noData(null)),
+  http.get(`${API}/app/employees/list.php`, () => ok([])),
+  http.get(`${API}/app/dashboard/overview.php/empty`, () => ok(null)),
   http.get(`${API}/app/employees/list.php/denied`, () => permissionDenied()),
   http.get(`${API}/app/employees/list.php/offline`, () => offline()),
 ];

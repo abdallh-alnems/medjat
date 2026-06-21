@@ -98,6 +98,7 @@ export function AttendanceSummary({
             fill="none"
             stroke="currentColor"
             strokeWidth="3.5"
+            pathLength={100}
             strokeDasharray={`${pct}, 100`}
             strokeLinecap="round"
             className="text-brand -rotate-90 [transform-origin:center]"

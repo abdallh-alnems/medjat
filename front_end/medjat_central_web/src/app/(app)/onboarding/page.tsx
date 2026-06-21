@@ -47,10 +47,15 @@ export default function OnboardingPage() {
     setBusy(true);
     try {
       const res = await createCompany(data.name, data.phone);
-      if (res.tenant_id) setTenant(res.tenant_id, data.name);
-      toast.success(t("success"));
-      router.replace("/dashboard");
-    } catch {
+      if (res.tenant_id) {
+        setTenant(res.tenant_id, data.name);
+        toast.success(t("success"));
+        router.replace("/dashboard");
+      } else {
+        toast.error(t("error_generic"));
+      }
+    } catch (err) {
+      console.error("Failed to create company:", err);
       toast.error(t("error_generic"));
     } finally {
       setBusy(false);
@@ -61,10 +66,15 @@ export default function OnboardingPage() {
     setBusy(true);
     try {
       const res = await joinCompany(data.code);
-      if (res.tenant_id) setTenant(res.tenant_id, res.company?.name);
-      toast.success(t("success"));
-      router.replace("/dashboard");
-    } catch {
+      if (res.tenant_id) {
+        setTenant(res.tenant_id, res.company?.name);
+        toast.success(t("success"));
+        router.replace("/dashboard");
+      } else {
+        toast.error(t("error_generic"));
+      }
+    } catch (err) {
+      console.error("Failed to join company:", err);
       toast.error(t("error_generic"));
     } finally {
       setBusy(false);
@@ -78,7 +88,7 @@ export default function OnboardingPage() {
           <CardTitle className="text-headline-md">
             {t("onboarding_title")}
           </CardTitle>
-          <CardDescription>{t("welcome_back")}</CardDescription>
+          <CardDescription>{t("onboarding_subtitle")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="create">

@@ -26,7 +26,7 @@ export default function BranchQrPage({
   const qr = useQuery({
     queryKey: ["org", "branches", numId, "qr"],
     queryFn: () => generateBranchQr(numId),
-    enabled: !!token === false,
+    enabled: false,
   });
 
   if (branch.isLoading) return <LoadingState />;
@@ -40,7 +40,7 @@ export default function BranchQrPage({
       <Button
         variant="outline"
         size="sm"
-        onClick={() => setToken(resolvedToken)}
+        onClick={() => void qr.refetch()}
         disabled={qr.isFetching}
       >
         {t("generate_qr")}

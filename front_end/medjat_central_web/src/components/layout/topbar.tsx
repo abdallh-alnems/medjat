@@ -62,9 +62,14 @@ export function Topbar() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => {
-            logout();
-            toast.success(t("logout"));
+          onClick={async () => {
+            try {
+              await logout();
+              toast.success(t("logout"));
+            } catch (err) {
+              console.error("Logout failed:", err);
+              toast.error(t("error_generic"));
+            }
           }}
           title={t("logout")}
         >

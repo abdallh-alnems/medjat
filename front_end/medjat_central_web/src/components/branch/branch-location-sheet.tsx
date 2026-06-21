@@ -55,8 +55,8 @@ export function BranchLocationSheet({ branch, onSave }: Props) {
 
   const save = () => {
     onSave({
-      lat: Number(lat) || null,
-      lng: Number(lng) || null,
+      lat: lat === "" ? null : isNaN(Number(lat)) ? null : Number(lat),
+      lng: lng === "" ? null : isNaN(Number(lng)) ? null : Number(lng),
       radius: Number(radius) || 100,
     });
     setOpen(false);

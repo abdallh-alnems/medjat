@@ -56,8 +56,14 @@ export default function LoginPage() {
       await completeLogin();
       toast.success(t("welcome_back"));
       router.replace("/dashboard");
-    } catch {
-      toast.error(t("invalid_credentials"));
+    } catch (err) {
+      const code = (err as { code?: string })?.code ?? "";
+      const isCredential =
+        code === "auth/invalid-credential" ||
+        code === "auth/wrong-password" ||
+        code === "auth/user-not-found" ||
+        code === "auth/invalid-email";
+      toast.error(isCredential ? t("invalid_credentials") : t("error_generic"));
     } finally {
       setBusy(null);
     }

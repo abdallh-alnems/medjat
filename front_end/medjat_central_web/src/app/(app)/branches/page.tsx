@@ -26,7 +26,7 @@ export default function BranchesPage() {
   const [name, setName] = useState("");
 
   const create = useToastMutation(
-    (data: Partial<Branch>) => createBranch({ name: name || "فرع", ...data }),
+    (data: Partial<Branch>) => createBranch({ name: name || t("branch"), ...data }),
     { successMessage: t("success"), invalidate: [["org", "branches"] as const] },
   );
 
@@ -43,7 +43,7 @@ export default function BranchesPage() {
       <Card>
         <CardContent className="flex items-end gap-3 p-4">
           <div className="flex-1 space-y-1.5">
-            <Label>{t("company_name")}</Label>
+            <Label>{t("branch_name")}</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <Button onClick={() => create.mutate({})} disabled={create.isPending}>

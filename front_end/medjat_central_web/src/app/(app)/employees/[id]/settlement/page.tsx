@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, notFound } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -36,6 +36,9 @@ export default function SettlementPage({
   const router = useRouter();
   const { t } = useT();
   const locale = useUIStore((s) => s.locale);
+
+  if (!id || Number.isNaN(employeeId)) notFound();
+
   const { data: employee } = useEmployee(employeeId);
   const [lastDay, setLastDay] = useState(todayISO());
   const [preview, setPreview] = useState<Awaited<ReturnType<typeof previewSettlement>> | null>(null);

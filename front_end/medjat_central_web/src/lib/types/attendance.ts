@@ -10,6 +10,7 @@ export type AttendanceStatus =
 export interface AttendanceRecord {
   id: number;
   employee_id: number;
+  employee_name?: string | null;
   date: string;
   status: AttendanceStatus;
   check_in?: string | null;
@@ -19,11 +20,22 @@ export interface AttendanceRecord {
   note?: string | null;
 }
 
-export interface AttendanceOverride {
+export type AttendanceOverride =
+  | (Omit<BaseAttendanceOverride, "branch_id" | "category_id" | "employee_id"> & {
+      type: "branch";
+      branch_id: number;
+    })
+  | (Omit<BaseAttendanceOverride, "branch_id" | "category_id" | "employee_id"> & {
+      type: "category";
+      category_id: number;
+    })
+  | (Omit<BaseAttendanceOverride, "branch_id" | "category_id" | "employee_id"> & {
+      type: "employee";
+      employee_id: number;
+    });
+
+interface BaseAttendanceOverride {
   id: number;
-  branch_id?: number | null;
-  category_id?: number | null;
-  employee_id?: number | null;
   method: AttendanceMethod;
 }
 
