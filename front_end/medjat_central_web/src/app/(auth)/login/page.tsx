@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -23,10 +24,12 @@ import {
   signInEmail,
   signInWithGoogle,
   signInWithApple,
+  consumeRedirectResult,
 } from "@/lib/firebase/auth";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Loader2, Apple } from "lucide-react";
+import { GoogleIcon } from "@/components/ui/brand-icons";
 
 const schema = z.object({
   email: z.string().email(),
@@ -49,6 +52,28 @@ export default function LoginPage() {
     defaultValues: { email: "", password: "" },
   });
 
+  // Complete a pending Google/Apple redirect sign-in when returning to this page.
+  useEffect(() => {
+    let cancelled = false;
+    consumeRedirectResult()
+      .then(async (user) => {
+        if (!user || cancelled) return;
+        setBusy("google");
+        await completeLogin();
+        router.replace("/dashboard");
+      })
+      .catch((err) => {
+        console.error("OAuth redirect sign-in failed:", err);
+        const msg = oauthErrorMessage(err);
+        if (msg) toast.error(msg);
+        setBusy(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function onEmailSubmit(data: FormData) {
     setBusy("email");
     try {
@@ -69,15 +94,35 @@ export default function LoginPage() {
     }
   }
 
+  /** Maps a Firebase OAuth error to a user message, or null when it should be silent. */
+  function oauthErrorMessage(err: unknown): string | null {
+    const code = (err as { code?: string })?.code ?? "";
+    // The user simply closed/cancelled the popup — not a real failure.
+    if (
+      code === "auth/popup-closed-by-user" ||
+      code === "auth/cancelled-popup-request" ||
+      code === "auth/user-cancelled"
+    ) {
+      return null;
+    }
+    if (code === "auth/popup-blocked") return t("popup_blocked");
+    if (code === "auth/unauthorized-domain") return t("oauth_domain_error");
+    if (code === "auth/account-exists-with-different-credential")
+      return t("account_exists_password");
+    return t("error_generic");
+  }
+
   async function onGoogle() {
     setBusy("google");
     try {
-      await signInWithGoogle();
+      const cred = await signInWithGoogle();
+      if (!cred) return; // redirect fallback started; the page will navigate away
       await completeLogin();
       router.replace("/dashboard");
-    } catch {
-      toast.error(t("error_generic"));
-    } finally {
+    } catch (err) {
+      console.error("Google sign-in failed:", err);
+      const msg = oauthErrorMessage(err);
+      if (msg) toast.error(msg);
       setBusy(null);
     }
   }
@@ -85,12 +130,14 @@ export default function LoginPage() {
   async function onApple() {
     setBusy("apple");
     try {
-      await signInWithApple();
+      const cred = await signInWithApple();
+      if (!cred) return; // redirect fallback started; the page will navigate away
       await completeLogin();
       router.replace("/dashboard");
-    } catch {
-      toast.error(t("error_generic"));
-    } finally {
+    } catch (err) {
+      console.error("Apple sign-in failed:", err);
+      const msg = oauthErrorMessage(err);
+      if (msg) toast.error(msg);
       setBusy(null);
     }
   }
@@ -102,7 +149,7 @@ export default function LoginPage() {
         <CardDescription>{t("welcome_back")}</CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onEmailSubmit)}>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email">{t("email")}</Label>
             <Input
@@ -120,9 +167,8 @@ export default function LoginPage() {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="password">{t("password")}</Label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               autoComplete="current-password"
               placeholder={t("enter_password")}
               {...register("password")}
@@ -159,7 +205,11 @@ export default function LoginPage() {
           onClick={onGoogle}
           disabled={busy !== null}
         >
-          {busy === "google" && <Loader2 className="h-4 w-4 animate-spin" />}
+          {busy === "google" ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <GoogleIcon className="h-4 w-4" />
+          )}
           {t("continue_with_google")}
         </Button>
         <Button
@@ -168,7 +218,11 @@ export default function LoginPage() {
           onClick={onApple}
           disabled={busy !== null}
         >
-          {busy === "apple" && <Loader2 className="h-4 w-4 animate-spin" />}
+          {busy === "apple" ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Apple className="h-4 w-4" />
+          )}
           {t("continue_with_apple")}
         </Button>
         <p className="mt-2 text-center text-label-md text-muted-foreground">

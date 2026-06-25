@@ -94,7 +94,8 @@ describe("warnings + performance contract", () => {
       ),
     );
     const res = await listPerformanceReviews(1);
-    expect(res).toHaveProperty("status", "error");
+    // List helpers always resolve to a (possibly empty) array, never an error body.
+    expect(res).toEqual([]);
   });
 
   it("performance: list — offline rejects", async () => {

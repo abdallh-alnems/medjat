@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { useT } from "@/lib/i18n/use-t";
+import type { TKey } from "@/lib/i18n/ar";
 import { useManualCheckIn, useManualCheckInBatch } from "@/lib/hooks/use-attendance";
 import { useToastMutation } from "@/lib/hooks/use-org";
 
@@ -102,7 +103,7 @@ export function ManualRecordSheet({ date, employeeIds, onDone }: Props) {
         <Plus className="h-4 w-4" />
         {t("manual_record")}
       </SheetTrigger>
-      <SheetContent side="left" className="w-80 space-y-4">
+      <SheetContent side="left" className="w-full max-w-sm space-y-4">
         <SheetHeader>
           <SheetTitle>
             {isBatch ? t("batch_record") : t("manual_record")}
@@ -144,7 +145,7 @@ export function ManualRecordSheet({ date, employeeIds, onDone }: Props) {
           <Label>{t("status")}</Label>
           <Select value={status} onValueChange={(v) => setStatus(v ?? "present")}>
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue>{(v) => t((v as string) as TKey)}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {STATUSES.map((s) => (

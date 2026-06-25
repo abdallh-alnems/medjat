@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "./client";
+import { apiGet, apiPost, unwrapList } from "./client";
 import type { Payslip, PayslipLine, PayrollAuditEntry } from "@/lib/types";
 
 export interface PayrollPeriodParams {
@@ -6,12 +6,18 @@ export interface PayrollPeriodParams {
   branch_id?: number;
 }
 
-export function listSlips(params: PayrollPeriodParams) {
-  return apiGet<Payslip[]>("app/payroll/list_slips.php", params);
+export async function listSlips(
+  params: PayrollPeriodParams,
+): Promise<Payslip[]> {
+  // Backend returns `{ items, page }`.
+  const raw = await apiGet<unknown>("app/payroll/list_slips.php", params);
+  return unwrapList<Payslip>(raw, ["items", "data"]);
 }
 
-export function getLivePayroll(month: string) {
-  return apiGet<Payslip[]>("app/payroll/live.php", { month });
+export async function getLivePayroll(month: string): Promise<Payslip[]> {
+  // Backend returns `{ items, total_count, ... }`.
+  const raw = await apiGet<unknown>("app/payroll/live.php", { month });
+  return unwrapList<Payslip>(raw, ["items", "data"]);
 }
 
 export function generatePayroll(month: string) {
@@ -78,6 +84,10 @@ export function exportBankFile(month: string) {
   return apiGet<{ csv: string }>("app/payroll/export_bank_file.php", { month });
 }
 
-export function getPayrollAudit(month: string) {
-  return apiGet<PayrollAuditEntry[]>("app/payroll/audit_log.php", { month });
+export async function getPayrollAudit(
+  month: string,
+): Promise<PayrollAuditEntry[]> {
+  // Backend returns `{ items, page, has_more }`.
+  const raw = await apiGet<unknown>("app/payroll/audit_log.php", { month });
+  return unwrapList<PayrollAuditEntry>(raw, ["items", "data"]);
 }

@@ -22,6 +22,7 @@ export default function TerminatedPage() {
   const locale = useUIStore((s) => s.locale);
   const { can } = usePermissions();
   const { data, isLoading, isError, refetch } = useTerminatedEmployees();
+  const list = Array.isArray(data) ? data : [];
   const reactivate = useToastMutation(
     (id: number) => reactivateEmployee(id),
     {
@@ -39,11 +40,11 @@ export default function TerminatedPage() {
             <LoadingState />
           ) : isError ? (
             <ErrorState onRetry={() => refetch()} />
-          ) : !data || data.length === 0 ? (
+          ) : list.length === 0 ? (
             <EmptyState message={t("no_employees")} />
           ) : (
             <ul className="divide-y">
-              {data.map((emp) => (
+              {list.map((emp) => (
                 <li key={emp.id} className="flex items-center justify-between py-2">
                   <div>
                     <Link href={`/employees/${emp.id}`} className="font-medium hover:underline">

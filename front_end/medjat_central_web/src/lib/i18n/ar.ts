@@ -178,6 +178,17 @@ export const ar = {
   search_employees: "ابحث عن موظف...",
   branch: "الفرع",
   branch_name: "اسم الفرع",
+  show_password: "إظهار كلمة السر",
+  hide_password: "إخفاء كلمة السر",
+  popup_blocked: "النافذة المنبثقة محجوبة. يرجى السماح بها والمحاولة مجدداً.",
+  oauth_domain_error: "هذا النطاق غير مصرّح به في Firebase. استخدم localhost أو أضف النطاق في إعدادات Firebase.",
+  account_exists_password: "هذا البريد مسجّل بكلمة سر. سجّل الدخول بالبريد وكلمة السر بدلاً من Google.",
+  nav_group_people: "الأفراد",
+  nav_group_finance: "المالية",
+  nav_group_operations: "العمليات",
+  nav_group_insights: "التحليلات",
+  nav_group_admin: "الإدارة",
+  nav_group_account: "الحساب",
   shift: "الوردية",
   category: "الفئة",
   job_title: "المسمى الوظيفي",
@@ -483,6 +494,50 @@ export const ar = {
   perm_add_managers: "إضافة مسؤولين",
   perm_manage_company_settings: "إعدادات الشركة",
   perm_manage_support: "إدارة الدعم",
+
+  // ── Dashboard (home) ──
+  welcome_greeting: "مرحباً",
+  attendance_today: "حضور اليوم",
+  needs_attention: "يحتاج انتباه",
+  all_clear: "كل شيء تمام",
+  all_clear_hint: "لا توجد طلبات بانتظار إجراء",
+  awaiting_action: "بانتظار إجراء",
+  expiring_soon: "قرب الانتهاء",
+  branch_performance: "أداء الفروع",
+  financials: "المالية",
+  pending_loans: "سلف معلّقة",
+  assets_to_return: "عُهد للإرجاع",
+  late_rate: "نسبة التأخير",
+  of_active: "من النشطين",
+  employees_count: "موظف",
+
+  // ── Backend enum values (rendered via t(value)) ──────────────────────────
+  // Employee / general status
+  on_leave: "في إجازة",
+  pending_activation: "في انتظار التفعيل",
+  inactive: "غير نشط",
+  probation: "تحت التجربة",
+  // Attendance day status (present/absent/late/leave/holiday already defined above)
+  not_arrived: "لم يحضر",
+  weekly_off: "راحة أسبوعية",
+  // Request / record status (pending/rejected/verified/expired/draft/paid… above)
+  approved: "معتمدة",
+  cancelled: "ملغاة",
+  settled: "مسدّدة",
+  postponed: "مؤجلة",
+  absence: "غياب",
+  single_day: "يوم واحد",
+  // Leave types
+  annual: "سنوية",
+  sick: "مرضية",
+  personal: "شخصية",
+  unpaid: "بدون راتب",
+  maternity: "إجازة وضع",
+  hajj: "حج",
+  marriage: "زواج",
+  bereavement: "وفاة",
+  emergency: "طارئة",
+  converted_from_absence: "محوّلة من غياب",
 };
 
 export type Dictionary = Record<string, string>;

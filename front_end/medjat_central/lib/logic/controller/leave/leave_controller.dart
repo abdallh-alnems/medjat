@@ -17,8 +17,8 @@ class LeaveController extends GetxController {
   List<LeaveModel> leaves = [];
   String? statusFilter;
 
-  /// 0 = current requests, 1 = ended & rejected archive.
-  int requestsTab = 0;
+  /// -1 = all, 0 = pending/current, 1 = ended/approved, 2 = rejected.
+  int requestsTab = -1;
   void setRequestsTab(int index) {
     if (requestsTab == index) return;
     requestsTab = index;

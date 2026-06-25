@@ -77,7 +77,6 @@ import '../../../logic/controller/schedule/schedule_controller.dart';
 import '../../../view/screen/team/team_screen.dart';
 import '../../../view/screen/team/invite_admin_screen.dart';
 import '../../../view/screen/team/invitation_code_screen.dart';
-import '../../../view/screen/employee/biometric_enrollment_screen.dart';
 import '../../../view/screen/employee/employee_documents_screen.dart';
 import '../../../view/screen/settings/required_documents_screen.dart';
 import '../../../view/screen/settings/required_document_submissions_screen.dart';
@@ -101,11 +100,9 @@ import '../../../view/screen/support/support_chat_screen.dart';
 import '../../../view/screen/support/new_ticket_screen.dart';
 import '../../../logic/controller/notification/notification_controller.dart';
 import '../../../logic/controller/settings/statutory_payroll_settings_controller.dart';
-import '../../../data/data_source/remote/biometric_data/biometric_data.dart';
 import '../../../data/data_source/remote/required_documents_data/required_documents_data.dart';
 import '../../../data/data_source/remote/document_reports_data/document_reports_data.dart';
 import '../../../data/data_source/remote/category_data/category_data.dart';
-import '../../../logic/controller/biometric/face_enrollment_controller.dart';
 import '../../../logic/controller/shift/shift_controller.dart';
 import '../../../logic/controller/category/category_controller.dart';
 import '../../../logic/controller/team/team_controller.dart';
@@ -540,17 +537,6 @@ List<GetPage<dynamic>> getPages = [
   GetPage(
     name: AppRoutes.invitationCode,
     page: () => const InvitationCodeScreen(),
-    middlewares: [AuthMiddleware()],
-    transition: Transition.fadeIn,
-    transitionDuration: AppMotion.transition,
-  ),
-  GetPage(
-    name: AppRoutes.biometricEnrollment,
-    page: () => const BiometricEnrollmentScreen(),
-    binding: BindingsBuilder<void>(() {
-      Get.lazyPut<BiometricData>(() => BiometricData());
-      Get.lazyPut<FaceEnrollmentController>(() => FaceEnrollmentController());
-    }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,
     transitionDuration: AppMotion.transition,

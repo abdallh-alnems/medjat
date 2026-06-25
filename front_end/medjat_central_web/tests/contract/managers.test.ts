@@ -48,7 +48,7 @@ describe("managers contract", () => {
       ),
     );
     const res = await listAdmins();
-    expect((res as { message?: string }).message).toBe("denied");
+    expect(res).toEqual([]);
   });
 
   it("invite admin: success", async () => {

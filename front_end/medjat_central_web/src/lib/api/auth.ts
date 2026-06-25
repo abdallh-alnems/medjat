@@ -7,6 +7,8 @@ export function login(idToken: string) {
     user?: Admin;
     tenant_id?: number | null;
     tenant_name?: string | null;
+    // The live backend nests the tenant as an object; mocks send tenant_id/name flat.
+    tenant?: { id: number; name: string } | null;
     message?: string;
     status?: string;
   }>("app/auth/login.php", { token: idToken });

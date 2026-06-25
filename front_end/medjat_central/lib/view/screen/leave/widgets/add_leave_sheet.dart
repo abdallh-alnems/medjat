@@ -48,6 +48,8 @@ class _AddLeaveSheetState extends State<AddLeaveSheet> {
 
   EmployeeModel? _employee;
   String _type = 'annual';
+  bool _singleDay = true;
+  DateTime? _singleDate;
   DateTimeRange? _range;
   String _onExceed = 'split';
   bool _submitting = false;
@@ -103,8 +105,10 @@ class _AddLeaveSheetState extends State<AddLeaveSheet> {
         [];
   }
 
-  int get _requestedDays =>
-      _range == null ? 0 : _range!.duration.inDays + 1;
+  int get _requestedDays {
+    if (_singleDay) return _singleDate == null ? 0 : 1;
+    return _range == null ? 0 : _range!.duration.inDays + 1;
+  }
 
   int get _remainingBalance =>
       (widget.controller.balanceInfo?['remaining_days'] as num?)?.toInt() ?? 0;
@@ -112,7 +116,7 @@ class _AddLeaveSheetState extends State<AddLeaveSheet> {
   bool get _exceedsBalance =>
       _type == 'annual' &&
       widget.controller.balanceInfo != null &&
-      _range != null &&
+      _requestedDays > 0 &&
       _requestedDays > _remainingBalance;
 
   void _onEmployeePicked(EmployeeModel employee) {
@@ -144,6 +148,23 @@ class _AddLeaveSheetState extends State<AddLeaveSheet> {
     if (picked != null) setState(() => _range = picked);
   }
 
+  Future<void> _pickSingleDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _singleDate ?? now,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 2, 12, 31),
+      helpText: 'leave_date'.tr,
+    );
+    if (picked != null) setState(() => _singleDate = picked);
+  }
+
+  void _setSingleDay(bool value) {
+    if (_singleDay == value) return;
+    setState(() => _singleDay = value);
+  }
+
   Future<void> _pickEmployee() async {
     final selected = await Get.bottomSheet<EmployeeModel>(
       _EmployeePicker(employees: _employees),
@@ -159,7 +180,9 @@ class _AddLeaveSheetState extends State<AddLeaveSheet> {
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
-    if (_range == null) {
+    final DateTime? startDate = _singleDay ? _singleDate : _range?.start;
+    final DateTime? endDate = _singleDay ? _singleDate : _range?.end;
+    if (startDate == null || endDate == null) {
       Get.snackbar('error'.tr, 'select_start_date'.tr,
           snackPosition: SnackPosition.BOTTOM);
       return;
@@ -169,8 +192,8 @@ class _AddLeaveSheetState extends State<AddLeaveSheet> {
     final ok = await widget.controller.createLeave(
       employeeId: _employee!.id,
       type: _type,
-      startDate: _range!.start,
-      endDate: _range!.end,
+      startDate: startDate,
+      endDate: endDate,
       reason: _reasonCtrl.text,
       // The manager creating the leave is granting it, so it is approved at once.
       autoApprove: true,
@@ -223,11 +246,31 @@ class _AddLeaveSheetState extends State<AddLeaveSheet> {
                     const SizedBox(height: AppSpacing.s4),
                     _sectionLabel('leave_period'.tr, colors),
                     const SizedBox(height: AppSpacing.s2),
-                    _buildPeriodField(colors),
+                    Row(
+                      children: [
+                        _ChoiceChip(
+                          label: 'single_day'.tr,
+                          selected: _singleDay,
+                          onTap: () => _setSingleDay(true),
+                          colors: colors,
+                        ),
+                        const SizedBox(width: AppSpacing.s2),
+                        _ChoiceChip(
+                          label: 'date_range'.tr,
+                          selected: !_singleDay,
+                          onTap: () => _setSingleDay(false),
+                          colors: colors,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.s2),
+                    _singleDay
+                        ? _buildSingleDayField(colors)
+                        : _buildPeriodField(colors),
                     _buildBalanceArea(colors),
                     const SizedBox(height: AppSpacing.s4),
                     PrimaryInput(
-                      label: 'leave_reason'.tr,
+                      label: '${'leave_reason'.tr} (${'optional'.tr})',
                       controller: _reasonCtrl,
                       hint: 'leave_reason'.tr,
                       maxLines: 2,
@@ -376,6 +419,35 @@ class _AddLeaveSheetState extends State<AddLeaveSheet> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildSingleDayField(AppColorScheme colors) {
+    final date = _singleDate;
+    return InkWell(
+      onTap: _pickSingleDate,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.s3),
+        decoration: _fieldDecoration(colors),
+        child: Row(
+          children: [
+            Icon(Icons.event_outlined, size: 20, color: colors.brand),
+            const SizedBox(width: AppSpacing.s3),
+            Expanded(
+              child: date == null
+                  ? Text('leave_date_hint'.tr,
+                      style: AppTextStyles.body(context)
+                          .copyWith(color: colors.textTertiary))
+                  : _DateColumn(
+                      label: 'leave_date'.tr,
+                      date: date,
+                      colors: colors,
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

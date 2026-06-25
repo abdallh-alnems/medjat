@@ -141,6 +141,9 @@ class _AddEmployeeFormState extends State<_AddEmployeeForm> {
     showCountryPicker(
       context: context,
       showPhoneCode: true,
+      // Huawei AppGallery rule 4.8 (territorial integrity): these regions must
+      // not be presented as standalone countries. Exclude them from the picker.
+      exclude: const ['TW', 'HK', 'MO'],
       onSelect: (country) => setState(() => selectedCountry = country),
     );
   }

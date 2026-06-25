@@ -68,7 +68,7 @@ export function BranchLocationSheet({ branch, onSave }: Props) {
         <MapPin className="h-4 w-4" />
         {t("branch_location")}
       </SheetTrigger>
-      <SheetContent side="left" className="w-80 space-y-4">
+      <SheetContent side="left" className="w-full max-w-sm space-y-4">
         <SheetHeader>
           <SheetTitle>{t("branch_location")}</SheetTitle>
         </SheetHeader>

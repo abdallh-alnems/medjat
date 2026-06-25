@@ -1,12 +1,26 @@
-import { apiGet, apiPost } from "./client";
+import { apiGet, apiPost, unwrapList, asObject } from "./client";
 import type { BulkAdjustment } from "@/lib/types";
 
-export function listBulkAdjustments() {
-  return apiGet<BulkAdjustment[]>("app/bulk_adjustments/list.php");
+export async function listBulkAdjustments(): Promise<BulkAdjustment[]> {
+  // Backend returns `{ items }`.
+  const raw = await apiGet<unknown>("app/bulk_adjustments/list.php");
+  return unwrapList<BulkAdjustment>(raw, ["items", "data"]);
 }
 
-export function getBulkAdjustment(id: number) {
-  return apiGet<BulkAdjustment>("app/bulk_adjustments/get.php", { id });
+export async function getBulkAdjustment(id: number): Promise<BulkAdjustment> {
+  // Backend returns `{ batch, members }`; the detail page reads the batch fields
+  // at the top level plus `members`. A flat batch object is accepted too.
+  const raw = asObject(await apiGet<unknown>("app/bulk_adjustments/get.php", { id }));
+  const batch = asObject(raw?.batch) ?? raw;
+  if (!batch || typeof batch.id !== "number") {
+    throw new Error("Unexpected bulk adjustment response");
+  }
+  const members = Array.isArray(raw?.members)
+    ? (raw.members as number[])
+    : Array.isArray(batch.members)
+      ? (batch.members as number[])
+      : [];
+  return { ...(batch as unknown as BulkAdjustment), members };
 }
 
 export function createBulkAdjustment(data: Partial<BulkAdjustment>) {

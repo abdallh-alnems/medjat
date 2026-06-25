@@ -9,4 +9,5 @@ export const ATTENDANCE_STATUS_TONE: Record<
   leave: "outline",
   holiday: "outline",
   absent: "destructive",
+  not_arrived: "outline",
 };

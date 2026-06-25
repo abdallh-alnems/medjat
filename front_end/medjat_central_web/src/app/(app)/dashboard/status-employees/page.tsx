@@ -12,12 +12,16 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 
-const STATUS_KEYS: Record<string, "present" | "absent" | "late" | "leave"> = {
-  present: "present",
-  absent: "absent",
-  late: "late",
-  leave: "leave",
-  on_leave: "leave",
+import type { AttendanceStatus } from "@/lib/types";
+
+// Match the dashboard buckets: "present" includes late arrivals (anyone checked
+// in), while "late" is the late subset — mirroring overview.php's counters.
+const STATUS_MATCH: Record<string, (s: AttendanceStatus) => boolean> = {
+  present: (s) => s === "present" || s === "late",
+  absent: (s) => s === "absent",
+  late: (s) => s === "late",
+  leave: (s) => s === "leave",
+  on_leave: (s) => s === "leave",
 };
 
 const STATUS_LABEL: Record<string, "present_today" | "absent_today" | "late_today" | "on_leave_today"> = {
@@ -34,8 +38,8 @@ export default function StatusEmployeesPage() {
   const { t } = useT();
   const { data, isLoading, isError, refetch } = useLiveAttendance();
 
-  const filterStatus = STATUS_KEYS[status] ?? "present";
-  const rows = (data ?? []).filter((r) => r.status === filterStatus);
+  const match = STATUS_MATCH[status] ?? STATUS_MATCH.present;
+  const rows = (data ?? []).filter((r) => match(r.status));
   const titleKey = STATUS_LABEL[status] ?? "present_today";
 
   return (

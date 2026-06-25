@@ -1,12 +1,17 @@
-import { apiGet, apiPost } from "./client";
+import { apiGet, apiPost, unwrapList } from "./client";
 import type { Branch, Shift, ScheduleAssignment } from "@/lib/types";
 
-export function listBranches() {
-  return apiGet<Branch[]>("app/branches/list.php");
+export async function listBranches(): Promise<Branch[]> {
+  // Backend returns `{ branches }`.
+  const raw = await apiGet<unknown>("app/branches/list.php");
+  return unwrapList<Branch>(raw, ["branches", "items", "data"]);
 }
 
-export function getBranch(id: number) {
-  return apiGet<Branch>("app/branches/list.php", { id });
+export async function getBranch(id: number): Promise<Branch | undefined> {
+  const raw = await apiGet<unknown>("app/branches/list.php", { id });
+  return unwrapList<Branch>(raw, ["branches", "items", "data"]).find(
+    (b) => b.id === id,
+  );
 }
 
 export function createBranch(data: Partial<Branch>) {
@@ -31,8 +36,10 @@ export function generateBranchQr(id: number) {
   return apiGet<{ qr_token: string }>("app/branches/generate_qr.php", { id });
 }
 
-export function listShifts() {
-  return apiGet<Shift[]>("app/shifts/list.php");
+export async function listShifts(): Promise<Shift[]> {
+  // Backend returns `{ items }`.
+  const raw = await apiGet<unknown>("app/shifts/list.php");
+  return unwrapList<Shift>(raw, ["items", "data"]);
 }
 
 export function createShift(data: Partial<Shift>) {

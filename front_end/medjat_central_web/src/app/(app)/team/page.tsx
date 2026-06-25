@@ -91,7 +91,7 @@ export default function TeamPage() {
             <Plus className="h-4 w-4" />
             {t("invite_admin")}
           </SheetTrigger>
-          <SheetContent side="left" className="w-80 space-y-4">
+          <SheetContent side="left" className="w-full max-w-sm space-y-4">
             <SheetHeader>
               <SheetTitle>{t("invite_admin")}</SheetTitle>
             </SheetHeader>
@@ -105,7 +105,11 @@ export default function TeamPage() {
                 value={role}
                 onValueChange={(v) => setRole((v ?? "hr") as AdminRole)}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue>
+                    {(v) => (v ? t(ROLE_KEY[v as AdminRole]) : "")}
+                  </SelectValue>
+                </SelectTrigger>
                 <SelectContent>
                   {ROLES.map((r) => (
                     <SelectItem key={r} value={r}>

@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "./client";
+import { apiGet, apiPost, unwrapList } from "./client";
 import type { AttendanceRecord } from "@/lib/types";
 
 export interface AttendanceParams {
@@ -6,11 +6,15 @@ export interface AttendanceParams {
   date?: string;
 }
 
-export function getBranchAttendance(params: AttendanceParams = {}) {
-  return apiGet<AttendanceRecord[]>(
+export async function getBranchAttendance(
+  params: AttendanceParams = {},
+): Promise<AttendanceRecord[]> {
+  // Backend returns `{ records, date }`.
+  const raw = await apiGet<unknown>(
     "app/attendance/get_branch_attendance.php",
     params,
   );
+  return unwrapList<AttendanceRecord>(raw, ["records", "items", "data"]);
 }
 
 export interface ManualCheckInData {

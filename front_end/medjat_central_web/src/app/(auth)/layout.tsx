@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2 } from "lucide-react";
+import Image from "next/image";
 
 export default function AuthLayout({
   children,
@@ -7,15 +7,20 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-10">
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-background px-4 py-8 sm:py-12">
       <Link
         href="/login"
-        className="mb-8 flex flex-col items-center gap-2 text-center"
+        className="mb-6 flex flex-col items-center gap-2 text-center sm:mb-8"
       >
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand text-brand-foreground">
-          <Building2 className="h-6 w-6" />
-        </div>
-        <span className="text-headline-md font-bold text-foreground">
+        <Image
+          src="/logo.png"
+          alt="Medjat Central"
+          width={64}
+          height={64}
+          priority
+          className="h-14 w-14 rounded-2xl shadow-elev-sm sm:h-16 sm:w-16"
+        />
+        <span className="text-headline-sm font-bold text-foreground sm:text-headline-md">
           Medjat Central
         </span>
       </Link>

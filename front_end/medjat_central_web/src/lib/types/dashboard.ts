@@ -6,9 +6,15 @@ export interface DashboardOverview {
   late: number;
   on_leave: number;
   attendance_rate: number;
+  total_employees: number;
+  active_in_scope: number;
+  present_yesterday: number;
+  total_branches: number;
   branch_comparison: BranchPerformance[];
   pending_leaves: number;
   pending_breaks: number;
+  pending_loans: number;
+  assets_to_return: number;
   payroll: DashboardPayrollSummary;
   category_distribution: { category: string; count: number }[];
   expiring_compliance: number;
@@ -18,8 +24,11 @@ export interface BranchPerformance {
   branch_id: number;
   branch_name: string;
   present: number;
+  absent: number;
+  late: number;
   total: number;
   rate: number;
+  late_rate: number;
 }
 
 export interface DashboardPayrollSummary {

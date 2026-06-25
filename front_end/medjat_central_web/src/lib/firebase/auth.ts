@@ -6,6 +6,8 @@ import {
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   signOut as fbSignOut,
   updatePassword as fbUpdatePassword,
   onAuthStateChanged,
@@ -14,7 +16,12 @@ import { auth } from "./config";
 import type { User } from "firebase/auth";
 
 const googleProvider = new GoogleAuthProvider();
+
 const appleProvider = new OAuthProvider("apple.com");
+// Request the user's name + email on first Apple sign-in (Apple only returns
+// these once, on the very first authorization).
+appleProvider.addScope("email");
+appleProvider.addScope("name");
 
 /** Email + password. */
 export async function signInEmail(email: string, password: string) {
@@ -25,14 +32,48 @@ export async function signUpEmail(email: string, password: string) {
   return createUserWithEmailAndPassword(auth, email, password);
 }
 
-/** Google popup. */
-export async function signInWithGoogle() {
-  return signInWithPopup(auth, googleProvider);
+// Popup-failure codes where a full-page redirect is the better fallback.
+const REDIRECT_FALLBACK_CODES = new Set([
+  "auth/popup-blocked",
+  "auth/operation-not-supported-in-this-environment",
+  "auth/web-storage-unsupported",
+]);
+
+/**
+ * Social sign-in. Tries popup first (reliable on localhost, works across the
+ * firebaseapp.com auth domain via postMessage). If the popup is blocked/unsupported,
+ * falls back to a full-page redirect — completion then happens via
+ * `consumeRedirectResult()` on return. Returns the credential on popup success,
+ * or null when a redirect was started (the page navigates away).
+ */
+async function oauthSignIn(provider: GoogleAuthProvider | OAuthProvider) {
+  try {
+    return await signInWithPopup(auth, provider);
+  } catch (err) {
+    const code = (err as { code?: string })?.code ?? "";
+    if (REDIRECT_FALLBACK_CODES.has(code)) {
+      await signInWithRedirect(auth, provider);
+      return null;
+    }
+    throw err;
+  }
 }
 
-/** Apple OAuth popup. */
+/** Google sign-in (popup, redirect fallback). */
+export async function signInWithGoogle() {
+  return oauthSignIn(googleProvider);
+}
+
+/** Apple sign-in (popup, redirect fallback). */
 export async function signInWithApple() {
-  return signInWithPopup(auth, appleProvider);
+  return oauthSignIn(appleProvider);
+}
+
+/** Resolves a pending redirect sign-in (call on login mount). Returns the
+ *  signed-in user when a redirect just completed, or null otherwise. */
+export async function consumeRedirectResult(): Promise<User | null> {
+  const result = await getRedirectResult(auth);
+  return result?.user ?? null;
 }
 
 export async function signOut() {

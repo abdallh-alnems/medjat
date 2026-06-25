@@ -33,6 +33,7 @@ import {
 import { exportReportToExcel } from "@/lib/export";
 import { currentMonth } from "@/lib/utils";
 import type { Payslip } from "@/lib/types";
+import type { TKey } from "@/lib/i18n/ar";
 import { Wallet, FileDown } from "lucide-react";
 
 export default function PayrollPage() {
@@ -95,7 +96,7 @@ export default function PayrollPage() {
         s.allowances_total,
         s.deductions_total,
         s.net,
-        s.status,
+        t(s.status as TKey),
       ]),
     });
   };

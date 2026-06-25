@@ -56,7 +56,7 @@ export function LeaveRow({ rows, onApprove, onReject }: Props) {
               <TableCell className="font-medium">
                 {l.employee_name ?? `${t("employee")} #${l.employee_id}`}
               </TableCell>
-              <TableCell>{l.type}</TableCell>
+              <TableCell>{t(l.type as TKey)}</TableCell>
               <TableCell>{l.from}</TableCell>
               <TableCell>{l.to}</TableCell>
               <TableCell>{l.days}</TableCell>

@@ -1,6 +1,6 @@
 // Medjat Central — shell-only service worker (offline cache, NO Web Push in v1).
-const CACHE_NAME = "medjat-shell-v1";
-const SHELL_ASSETS = ["/", "/manifest.json", "/icons/icon.svg"];
+const CACHE_NAME = "medjat-shell-v3";
+const SHELL_ASSETS = ["/", "/manifest.json", "/icons/icon-192.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -29,6 +29,14 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   // Never cache API calls — always go to network.
   if (url.pathname.startsWith("/api")) return;
+
+  // Navigations (HTML documents): network-first so a stale shell never points
+  // at expired JS bundles (which renders a blank page). Fall back to the cached
+  // shell only when offline.
+  if (request.mode === "navigate") {
+    event.respondWith(fetch(request).catch(() => caches.match("/")));
+    return;
+  }
 
   event.respondWith(
     caches.match(request).then((cached) => {

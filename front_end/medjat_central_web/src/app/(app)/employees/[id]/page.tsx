@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { useEmployee, useFinancialSummary, useAttendanceHistory, useYearToDate } from "@/lib/hooks/use-employees";
 import { useBranches } from "@/lib/hooks/use-org";
 import { useT } from "@/lib/i18n/use-t";
+import type { TKey } from "@/lib/i18n/ar";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useToastMutation } from "@/lib/hooks/use-org";
 import { updateEmployee } from "@/lib/api/employees";
@@ -118,7 +119,7 @@ export default function EmployeeDetailPage({
           <ArrowRight className="h-4 w-4" />
         </button>
         <h1 className="flex-1 text-headline-md font-bold">{employee.name}</h1>
-        <Badge>{employee.status}</Badge>
+        <Badge>{t(employee.status as TKey)}</Badge>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -183,7 +184,7 @@ export default function EmployeeDetailPage({
                     <li key={`${r.employee_id}-${r.date}`} className="flex items-center justify-between py-2">
                       <div>
                         <p className="font-medium">{formatDate(r.date, locale)}</p>
-                        <p className="text-label-sm text-muted-foreground">{r.status}</p>
+                        <p className="text-label-sm text-muted-foreground">{t(r.status as TKey)}</p>
                       </div>
                       <span className="text-label-md text-muted-foreground">
                         {r.check_in ?? "—"} → {r.check_out ?? "—"}

@@ -1,8 +1,10 @@
-import { apiGet, apiPost } from "./client";
+import { apiGet, apiPost, unwrapList } from "./client";
 import type { BreakRequest } from "@/lib/types";
 
-export function listBreaks() {
-  return apiGet<BreakRequest[]>("app/breaks/list.php");
+export async function listBreaks(): Promise<BreakRequest[]> {
+  // Backend returns `{ breaks }`.
+  const raw = await apiGet<unknown>("app/breaks/list.php");
+  return unwrapList<BreakRequest>(raw, ["breaks", "items", "data"]);
 }
 
 export function approveBreak(id: number) {

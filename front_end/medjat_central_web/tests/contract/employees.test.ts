@@ -7,7 +7,6 @@ import {
   createEmployee,
   reactivateEmployee,
 } from "@/lib/api/employees";
-import type { Employee } from "@/lib/types";
 
 const API = "/api";
 
@@ -30,7 +29,8 @@ describe("employees contract", () => {
       http.get(`${API}/app/employees/list.php`, () => HttpResponse.json([SAMPLE])),
     );
     const res = await listEmployees();
-    expect((res as Employee[])[0]).toBeTypeOf("object");
+    // listEmployees normalises the backend `{ items }` payload to `{ data }`.
+    expect(res.data[0]).toBeTypeOf("object");
   });
 
   it("list: empty", async () => {
@@ -38,7 +38,7 @@ describe("employees contract", () => {
       http.get(`${API}/app/employees/list.php`, () => HttpResponse.json([])),
     );
     const res = await listEmployees();
-    expect(res).toHaveLength(0);
+    expect(res.data).toHaveLength(0);
   });
 
   it("list: 4xx permission-denied", async () => {
@@ -48,7 +48,8 @@ describe("employees contract", () => {
       ),
     );
     const res = await listEmployees();
-    expect((res as { message?: string }).message).toBe("denied");
+    // List helpers always resolve to a (possibly empty) array, never an error body.
+    expect(res.data).toHaveLength(0);
   });
 
   it("list: offline rejects", async () => {

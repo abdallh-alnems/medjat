@@ -25,6 +25,7 @@ import {
 import { getBiometricStatus, deleteBiometric } from "@/lib/api/biometric";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useT } from "@/lib/i18n/use-t";
+import type { TKey } from "@/lib/i18n/ar";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import {
   LoadingState,
@@ -166,7 +167,7 @@ export default function EmployeeDocumentsPage({
                   </div>
                   <div className="flex items-center gap-1">
                     <Badge variant={doc.status === "verified" ? "default" : "secondary"}>
-                      {doc.status}
+                      {t(doc.status as TKey)}
                     </Badge>
                     <Can permission="documents_verify">
                       <Button variant="ghost" size="icon-sm" onClick={() => verifyMut.mutate(doc.id)}>

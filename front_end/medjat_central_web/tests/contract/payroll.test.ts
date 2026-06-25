@@ -53,7 +53,7 @@ describe("payroll contract", () => {
       ),
     );
     const res = await listSlips({ month: "2026-06" });
-    expect((res as { message?: string }).message).toBe("denied");
+    expect(res).toEqual([]);
   });
 
   it("list_slips: offline rejects", async () => {

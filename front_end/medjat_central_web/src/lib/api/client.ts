@@ -6,12 +6,15 @@ import axios, {
 } from "axios";
 
 const API_HOST =
-  process.env.NEXT_PUBLIC_API_HOST ?? "https://api.medjat.com/backend_medjat";
+  process.env.NEXT_PUBLIC_API_HOST ?? "https://api.medjatapp.com/backend_medjet";
 
 const SECURITY_USER = process.env.SECURITY_USER ?? "";
 const SECURITY_KEY = process.env.SECURITY_KEY ?? "";
 
-if (!SECURITY_USER || !SECURITY_KEY) {
+// These are server-only credentials (not exposed to the browser bundle), so only
+// warn on the server where serverClient actually needs them. The browser routes
+// through the /api proxy and never reads these.
+if (typeof window === "undefined" && (!SECURITY_USER || !SECURITY_KEY)) {
   console.warn(
     "SECURITY_USER and SECURITY_KEY are not set — server-side API calls will fail authentication.",
   );
@@ -48,6 +51,12 @@ async function attachMedjatHeaders(
 
   try {
     const { auth } = await import("@/lib/firebase/config");
+    // Wait for Firebase to finish restoring the persisted session before reading
+    // the current user. On a hard refresh `auth.currentUser` is briefly null
+    // while the SDK rehydrates, so without this the first request after a reload
+    // goes out unauthenticated — the backend returns an error and list pages
+    // render empty ("no records") until the next navigation.
+    await auth.authStateReady();
     const currentUser = auth.currentUser;
     if (currentUser) {
       const token = await currentUser.getIdToken();
@@ -59,10 +68,17 @@ async function attachMedjatHeaders(
 
   try {
     const { useTenantStore } = await import("@/lib/stores/tenant-store");
-    const tenantId = useTenantStore.getState().tenantId;
+    const { useAuthStore } = await import("@/lib/stores/auth-store");
+    // Prefer the explicitly selected tenant; fall back to the logged-in user's
+    // tenant so a session restored from persistence (where setTenant never ran)
+    // still scopes its requests.
+    const tenantId =
+      useTenantStore.getState().tenantId ??
+      useAuthStore.getState().user?.tenantId ??
+      null;
     if (tenantId) config.headers.set("X-Tenant-Id", String(tenantId));
   } catch {
-    /* tenant store not hydrated yet */
+    /* stores not hydrated yet */
   }
 
   config.headers.set("X-Device-Id", getDeviceId());
@@ -71,10 +87,77 @@ async function attachMedjatHeaders(
 
 browserClient.interceptors.request.use(attachMedjatHeaders);
 
-/** Treat non-2xx as resolved responses (so callers can read error bodies) — matches farkha. */
-const onFulfilled = (response: AxiosResponse) => response;
+/**
+ * Unwrap the backend success envelope. The Medjat backend wraps every successful
+ * payload as `{ status: "success", data: <payload> }` (see core/Response.php), while
+ * the whole frontend (and its contract mocks) treats the JSON body itself as the typed
+ * payload. So on a 2xx success envelope we hoist `data` up to be the response body.
+ * Error/fail/superseded bodies (`status !== "success"`) are left untouched so callers
+ * can still read `status`/`message`. Non-2xx are also resolved (matches farkha) so
+ * callers can read error bodies.
+ */
+const onFulfilled = (response: AxiosResponse) => {
+  const body = response.data;
+  if (
+    body &&
+    typeof body === "object" &&
+    !Array.isArray(body) &&
+    (body as { status?: string }).status === "success" &&
+    "data" in (body as Record<string, unknown>)
+  ) {
+    response.data = (body as { data: unknown }).data;
+  }
+  return response;
+};
+/**
+ * Single active session: when the same admin signs in on another device the
+ * backend rejects this device's next request with 401 + `session_superseded`.
+ * Sign the user out locally and bounce to /login instead of showing a retry error.
+ */
+let handlingSupersede = false;
+async function handleSessionSuperseded() {
+  try {
+    const [{ useAuthStore }, { useTenantStore }, { auth }] = await Promise.all([
+      import("@/lib/stores/auth-store"),
+      import("@/lib/stores/tenant-store"),
+      import("@/lib/firebase/config"),
+    ]);
+    try {
+      await auth.signOut();
+    } catch {
+      /* ignore */
+    }
+    useAuthStore.getState().logout();
+    useTenantStore.getState().clearTenant();
+  } catch {
+    /* stores/firebase unavailable */
+  }
+  try {
+    const { toast } = await import("sonner");
+    toast.error("تم تسجيل الدخول من جهاز آخر");
+  } catch {
+    /* ignore */
+  }
+  if (window.location.pathname !== "/login") {
+    window.location.href = "/login";
+  }
+}
+
 const onRejected = (error: unknown) => {
-  if (axios.isAxiosError(error) && error.response) return error.response;
+  if (axios.isAxiosError(error) && error.response) {
+    const res = error.response;
+    const code = (res.data as { error_code?: string } | undefined)?.error_code;
+    if (
+      typeof window !== "undefined" &&
+      res.status === 401 &&
+      code === "session_superseded" &&
+      !handlingSupersede
+    ) {
+      handlingSupersede = true;
+      void handleSessionSuperseded();
+    }
+    return res;
+  }
   return Promise.reject(error);
 };
 browserClient.interceptors.response.use(onFulfilled, onRejected);
@@ -100,6 +183,45 @@ export async function apiPost<T>(
 ) {
   const res = await apiClient.post<T>(endpoint, data, config);
   return res.data;
+}
+
+/**
+ * Pull the array out of a backend list payload. The Medjat backend wraps list
+ * results under a top-level key that varies per endpoint (`items`, `records`,
+ * `branches`, `breaks`, `tickets`, …) *inside* the success envelope. Once the
+ * envelope is unwrapped (see onFulfilled) the caller is left with
+ * `{ <key>: [...], ...meta }` rather than a bare array — so a page that does
+ * `Array.isArray(data) ? data : []` silently renders an empty list.
+ *
+ * Given the candidate keys, return the first array found. Tolerate a payload
+ * that is already an array, and return `[]` for null / error / permission-denied
+ * bodies so callers never crash on `.map`.
+ */
+export function unwrapList<T>(
+  payload: unknown,
+  keys: readonly string[] = ["items", "data", "records", "rows", "results"],
+): T[] {
+  if (Array.isArray(payload)) return payload as T[];
+  if (payload && typeof payload === "object") {
+    for (const key of keys) {
+      const value = (payload as Record<string, unknown>)[key];
+      if (Array.isArray(value)) return value as T[];
+    }
+  }
+  return [];
+}
+
+/**
+ * Narrow an unknown payload to a plain object (not null, not an array), or null.
+ * Used by the single-object adapters to validate a backend response shape at
+ * runtime before casting, instead of trusting `as Type` blindly.
+ */
+export function asObject(payload: unknown): Record<string, unknown> | null {
+  return payload !== null &&
+    typeof payload === "object" &&
+    !Array.isArray(payload)
+    ? (payload as Record<string, unknown>)
+    : null;
 }
 
 /** Stable per-browser device id, generated once and stored in localStorage. */

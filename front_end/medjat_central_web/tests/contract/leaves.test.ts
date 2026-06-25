@@ -49,7 +49,7 @@ describe("leaves contract", () => {
       ),
     );
     const res = await listLeaves();
-    expect((res as { message?: string }).message).toBe("denied");
+    expect(res).toEqual([]);
   });
 
   it("list: offline rejects", async () => {
@@ -65,7 +65,11 @@ describe("leaves contract", () => {
         HttpResponse.json(SAMPLE),
       ),
     );
-    const res = await createLeave({ employee_id: 10, type: "annual" });
+    const res = await createLeave({
+      employee_id: 10,
+      type: "annual",
+      start_date: "2026-07-01",
+    });
     expect(res.status).toBe("pending");
   });
 

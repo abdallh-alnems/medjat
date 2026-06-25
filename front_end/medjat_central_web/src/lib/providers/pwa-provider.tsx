@@ -8,10 +8,26 @@ import { useEffect } from "react";
  */
 export function PwaProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
+    if (!("serviceWorker" in navigator)) return;
+
+    if (process.env.NODE_ENV === "production") {
       navigator.serviceWorker.register("/sw.js").catch((err) => {
         console.error("Service worker registration failed:", err);
       });
+      return;
+    }
+
+    // In development the shell cache serves stale HTML that points at expired
+    // dev bundles (→ blank page). Make sure no SW or cache survives here.
+    navigator.serviceWorker
+      .getRegistrations()
+      .then((regs) => regs.forEach((r) => r.unregister()))
+      .catch(() => {});
+    if (typeof caches !== "undefined") {
+      caches
+        .keys()
+        .then((keys) => keys.forEach((k) => caches.delete(k)))
+        .catch(() => {});
     }
   }, []);
 

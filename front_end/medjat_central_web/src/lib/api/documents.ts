@@ -1,10 +1,14 @@
-import { apiGet, apiPost } from "./client";
+import { apiGet, apiPost, unwrapList } from "./client";
 import type { Document } from "@/lib/types";
 
-export function getEmployeeDocuments(employeeId: number) {
-  return apiGet<Document[]>("app/employees/get_documents.php", {
+export async function getEmployeeDocuments(
+  employeeId: number,
+): Promise<Document[]> {
+  // Backend returns `{ documents, required_documents }`.
+  const raw = await apiGet<unknown>("app/employees/get_documents.php", {
     employee_id: employeeId,
   });
+  return unwrapList<Document>(raw, ["documents", "items", "data"]);
 }
 
 export function viewDocument(id: number) {

@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "./client";
+import { apiGet, apiPost, unwrapList } from "./client";
 import type { Company, DeductionRule, AttendanceMethod } from "@/lib/types";
 
 export interface CompanySettings extends Company {
@@ -44,8 +44,10 @@ export function updateLeaveSettings(data: Partial<LeaveSettings>) {
   return apiPost<LeaveSettings>("app/settings/leave_settings.php", data);
 }
 
-export function getDeductionSettings() {
-  return apiGet<DeductionRule[]>("app/deductions/get_rules.php");
+export async function getDeductionSettings(): Promise<DeductionRule[]> {
+  // Backend returns `{ rules, config }`.
+  const raw = await apiGet<unknown>("app/deductions/get_rules.php");
+  return unwrapList<DeductionRule>(raw, ["rules", "items", "data"]);
 }
 
 export function saveDeductionSettings(rules: Partial<DeductionRule>[]) {

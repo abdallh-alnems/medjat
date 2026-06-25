@@ -31,10 +31,10 @@
               "client_type": 3
             },
             {
-              "client_id": "510933674549-bftc3lo3g97e3n04vh5jn5d7bii4shpu.apps.googleusercontent.com",
+              "client_id": "510933674549-8jfnid3bf46ci4vm15nuveu9c4jl1qub.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.khawarizmie.medjat"
+                "bundle_id": "com.khawarizmie.medjat-central"
               }
             }
           ]
@@ -49,6 +49,14 @@
         }
       },
       "oauth_client": [
+        {
+          "client_id": "510933674549-5n6uugtqe6utc0ecm0e3fqp4l25qvd9j.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.khawarizmie.medjat_central",
+            "certificate_hash": "29324f2753060e768a6c3fdea4c4fa6fc228a12a"
+          }
+        },
         {
           "client_id": "510933674549-ckg5c7otitn3vemvo15vhbjtni4bdqkg.apps.googleusercontent.com",
           "client_type": 1,
@@ -83,10 +91,10 @@
               "client_type": 3
             },
             {
-              "client_id": "510933674549-bftc3lo3g97e3n04vh5jn5d7bii4shpu.apps.googleusercontent.com",
+              "client_id": "510933674549-8jfnid3bf46ci4vm15nuveu9c4jl1qub.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.khawarizmie.medjat"
+                "bundle_id": "com.khawarizmie.medjat-central"
               }
             }
           ]

@@ -100,7 +100,7 @@ export default function LoansPage() {
             <Plus className="h-4 w-4" />
             {t("new_loan")}
           </SheetTrigger>
-          <SheetContent side="left" className="w-80 space-y-4">
+          <SheetContent side="left" className="w-full max-w-sm space-y-4">
             <SheetHeader>
               <SheetTitle>{t("new_loan")}</SheetTitle>
             </SheetHeader>

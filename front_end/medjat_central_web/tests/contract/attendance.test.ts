@@ -51,7 +51,7 @@ describe("attendance contract", () => {
       ),
     );
     const res = await getBranchAttendance();
-    expect((res as { message?: string }).message).toBe("denied");
+    expect(res).toEqual([]);
   });
 
   it("get_branch_attendance: offline rejects", async () => {

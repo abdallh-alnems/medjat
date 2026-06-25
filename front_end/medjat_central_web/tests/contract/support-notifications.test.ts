@@ -101,7 +101,7 @@ describe("support, notifications & audit contract", () => {
       ),
     );
     const res = await listNotifications();
-    expect((res as { message?: string }).message).toBe("denied");
+    expect(res).toEqual([]);
   });
 
   it("mark notification read: success", async () => {

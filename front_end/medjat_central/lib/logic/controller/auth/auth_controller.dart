@@ -305,26 +305,39 @@ class AuthController extends GetxController {
       status.value = StatusRequest.loading;
       update();
 
-      if (!_googleInitialized) {
-        await _googleSignIn.initialize(
-          serverClientId:
-              '510933674549-otcm2dholnti3pnq8iuoo2qo2jrh7amj.apps.googleusercontent.com',
+      final UserCredential userCredential;
+      if (Platform.isIOS) {
+        // On iOS the google_sign_in plugin's authenticate() flow is unreliable
+        // (it errors before reaching the backend), so we use Firebase's native
+        // OAuth provider flow instead — the exact mechanism already used for
+        // Apple sign-in below. It reuses the reversed-client-id URL scheme that
+        // is already configured in Info.plist, so no extra setup is needed.
+        final googleProvider = GoogleAuthProvider()
+          ..addScope('email')
+          ..addScope('profile');
+        userCredential = await _auth.signInWithProvider(googleProvider);
+      } else {
+        if (!_googleInitialized) {
+          await _googleSignIn.initialize(
+            serverClientId:
+                '510933674549-otcm2dholnti3pnq8iuoo2qo2jrh7amj.apps.googleusercontent.com',
+          );
+          _googleInitialized = true;
+        }
+
+        final googleUser = await _googleSignIn.authenticate();
+        final idToken = googleUser.authentication.idToken;
+        final authorization = await googleUser.authorizationClient
+            .authorizationForScopes(['email', 'profile']);
+        final accessToken = authorization?.accessToken;
+
+        final credential = GoogleAuthProvider.credential(
+          accessToken: accessToken,
+          idToken: idToken,
         );
-        _googleInitialized = true;
+
+        userCredential = await _auth.signInWithCredential(credential);
       }
-
-      final googleUser = await _googleSignIn.authenticate();
-      final idToken = googleUser.authentication.idToken;
-      final authorization = await googleUser.authorizationClient
-          .authorizationForScopes(['email', 'profile']);
-      final accessToken = authorization?.accessToken;
-
-      final credential = GoogleAuthProvider.credential(
-        accessToken: accessToken,
-        idToken: idToken,
-      );
-
-      final userCredential = await _auth.signInWithCredential(credential);
 
       if (userCredential.user == null) {
         isGoogleLoading.value = false;
@@ -357,6 +370,8 @@ class AuthController extends GetxController {
     } on FirebaseAuthException catch (e) {
       isGoogleLoading.value = false;
       status.value = StatusRequest.failure;
+      // User dismissed the OAuth sheet — not an error worth surfacing.
+      if (e.code == 'canceled' || e.code == 'web-context-canceled') return;
       Get.snackbar('error'.tr, _getFirebaseErrorMessage(e.code),
           snackPosition: SnackPosition.BOTTOM);
       update();

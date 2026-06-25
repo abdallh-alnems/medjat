@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { SlidersHorizontal } from "lucide-react";
 import { useT } from "@/lib/i18n/use-t";
+import type { TKey } from "@/lib/i18n/ar";
 import { useBranches, useShifts, useCategories } from "@/lib/hooks/use-org";
 import type { EmployeeListParams } from "@/lib/api/employees";
 
@@ -40,7 +41,7 @@ export function FiltersSheet({ filters, onChange }: Props) {
         <SlidersHorizontal className="h-4 w-4" />
         {t("filter")}
       </SheetTrigger>
-      <SheetContent side="left" className="w-80 space-y-4">
+      <SheetContent side="left" className="w-full max-w-sm space-y-4">
         <SheetHeader>
           <SheetTitle>{t("filter")}</SheetTitle>
         </SheetHeader>
@@ -53,7 +54,16 @@ export function FiltersSheet({ filters, onChange }: Props) {
               onChange({ ...filters, branch_id: !v || v === "all" ? undefined : Number(v) })
             }
           >
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue>
+                {(v) =>
+                  !v || v === "all"
+                    ? t("all")
+                    : (branches ?? []).find((b) => String(b.id) === v)?.name ??
+                      String(v)
+                }
+              </SelectValue>
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("all")}</SelectItem>
               {(branches ?? []).map((b) => (
@@ -71,7 +81,16 @@ export function FiltersSheet({ filters, onChange }: Props) {
               onChange({ ...filters, shift_id: !v || v === "all" ? undefined : Number(v) })
             }
           >
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue>
+                {(v) =>
+                  !v || v === "all"
+                    ? t("all")
+                    : (shifts ?? []).find((s) => String(s.id) === v)?.name ??
+                      String(v)
+                }
+              </SelectValue>
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("all")}</SelectItem>
               {(shifts ?? []).map((s) => (
@@ -89,7 +108,16 @@ export function FiltersSheet({ filters, onChange }: Props) {
               onChange({ ...filters, category_id: !v || v === "all" ? undefined : Number(v) })
             }
           >
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue>
+                {(v) =>
+                  !v || v === "all"
+                    ? t("all")
+                    : (categories ?? []).find((c) => String(c.id) === v)
+                        ?.name ?? String(v)
+                }
+              </SelectValue>
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("all")}</SelectItem>
               {(categories ?? []).map((c) => (
@@ -107,7 +135,11 @@ export function FiltersSheet({ filters, onChange }: Props) {
               onChange({ ...filters, status: !v || v === "all" ? undefined : v })
             }
           >
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue>
+                {(v) => (!v || v === "all" ? t("all") : t(v as TKey))}
+              </SelectValue>
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("all")}</SelectItem>
               <SelectItem value="active">{t("active")}</SelectItem>

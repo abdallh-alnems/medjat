@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useT } from "@/lib/i18n/use-t";
 import { useCategories } from "@/lib/hooks/use-org";
 import { useToastMutation } from "@/lib/hooks/use-org";
@@ -57,7 +58,17 @@ export default function CategoriesSettingsPage() {
               key={c.id}
               className="flex items-center justify-between rounded-lg border p-3"
             >
-              <span className="font-medium">{c.name}</span>
+              <Link
+                href={`/settings/categories/${c.id}`}
+                className="flex min-w-0 flex-1 items-center gap-2 font-medium hover:underline"
+              >
+                <span className="truncate">{c.name}</span>
+                {c.member_count != null && (
+                  <span className="text-label-sm text-muted-foreground">
+                    ({c.member_count})
+                  </span>
+                )}
+              </Link>
               <Button variant="ghost" size="icon-sm" onClick={() => remove.mutate(c.id)}>
                 <Trash2 className="h-4 w-4" />
               </Button>

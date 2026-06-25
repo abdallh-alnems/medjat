@@ -1,8 +1,10 @@
-import { apiGet, apiPost } from "./client";
+import { apiGet, apiPost, unwrapList } from "./client";
 import type { Notification, NotificationPrefs } from "@/lib/types";
 
-export function listNotifications() {
-  return apiGet<Notification[]>("app/notifications/list.php");
+export async function listNotifications(): Promise<Notification[]> {
+  // Backend returns `{ notifications, unread_count }`.
+  const raw = await apiGet<unknown>("app/notifications/list.php");
+  return unwrapList<Notification>(raw, ["notifications", "items", "data"]);
 }
 
 export function markNotificationRead(id: number) {

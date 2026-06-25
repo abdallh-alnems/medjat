@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useT } from "@/lib/i18n/use-t";
+import type { TKey } from "@/lib/i18n/ar";
 
 interface Props {
   value: string;
@@ -19,7 +20,9 @@ export function SortMenu({ value, onChange }: Props) {
   return (
     <Select value={value} onValueChange={(v) => v && onChange(v)}>
       <SelectTrigger className="w-40">
-        <SelectValue placeholder={t("sort_by")} />
+        <SelectValue placeholder={t("sort_by")}>
+          {(v) => (v ? t(`sort_${v as string}` as TKey) : t("sort_by"))}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="name">{t("sort_name")}</SelectItem>

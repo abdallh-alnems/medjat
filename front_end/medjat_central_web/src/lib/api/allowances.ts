@@ -1,8 +1,12 @@
-import { apiGet, apiPost } from "./client";
+import { apiGet, apiPost, unwrapList } from "./client";
 import type { Allowance } from "@/lib/types";
 
-export function listAllowances(employeeId: number) {
-  return apiGet<Allowance[]>("app/allowances/list.php", { employee_id: employeeId });
+export async function listAllowances(employeeId: number): Promise<Allowance[]> {
+  // Backend returns `{ allowances, types }`.
+  const raw = await apiGet<unknown>("app/allowances/list.php", {
+    employee_id: employeeId,
+  });
+  return unwrapList<Allowance>(raw, ["allowances", "items", "data"]);
 }
 
 export function createAllowance(data: Partial<Allowance>) {

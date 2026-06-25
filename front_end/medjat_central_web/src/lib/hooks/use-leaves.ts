@@ -9,14 +9,19 @@ import {
   rejectLeave,
   convertToAbsence,
   getLeaveBalance,
+  type LeaveListParams,
+  type CreateLeaveInput,
 } from "@/lib/api/leaves";
 import { useToastMutation } from "@/lib/hooks/use-org";
 import type { LeaveRequest } from "@/lib/types";
 
 const QK = ["leaves"] as const;
 
-export function useLeaves() {
-  return useQuery({ queryKey: [...QK, "list"], queryFn: listLeaves });
+export function useLeaves(params: LeaveListParams = {}) {
+  return useQuery({
+    queryKey: [...QK, "list", params],
+    queryFn: () => listLeaves(params),
+  });
 }
 
 export function useLeaveBalance(employeeId: number | null) {
@@ -29,7 +34,7 @@ export function useLeaveBalance(employeeId: number | null) {
 
 export function useCreateLeave() {
   return useToastMutation(
-    (data: Partial<LeaveRequest>) => createLeave(data),
+    (data: CreateLeaveInput) => createLeave(data),
     { invalidate: [QK, ["dashboard"] as const] },
   );
 }

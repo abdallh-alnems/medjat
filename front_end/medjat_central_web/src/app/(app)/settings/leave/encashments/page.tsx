@@ -43,7 +43,7 @@ export default function EncashmentsPage() {
               {rows.map((r, i) => (
                 <TableRow key={i}>
                   <TableCell>
-                    {t("employee")} #{r.employee_id}
+                    {r.employee_name ?? `${t("employee")} #${r.employee_id}`}
                   </TableCell>
                   <TableCell>
                     {new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-GB").format(

@@ -1,6 +1,7 @@
 "use client";
 
-import { LogOut, Menu, Moon, Sun, Languages } from "lucide-react";
+import { useState } from "react";
+import { LogOut, Menu, Moon, Sun, Loader2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +20,7 @@ export function Topbar() {
   const { theme, setTheme } = useTheme();
   const toggleLocale = useUIStore((s) => s.toggleLocale);
   const { logout } = useAuth();
+  const [loggingOut, setLoggingOut] = useState(false);
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-2 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
@@ -36,18 +38,19 @@ export function Topbar() {
             <SidebarNav />
           </SheetContent>
         </Sheet>
-        <span className="font-bold text-foreground">{t("app_name")}</span>
+        <span className="font-bold text-foreground md:hidden">{t("app_name")}</span>
       </div>
 
       <div className="flex items-center gap-1">
-        {/* Language toggle (persisted) — FR-031 */}
+        {/* Language toggle (persisted) — FR-031. Shows the language you'll switch to. */}
         <Button
           variant="ghost"
-          size="icon"
+          size="sm"
           onClick={() => toggleLocale()}
           title={t("language")}
+          className="font-semibold"
         >
-          <Languages className="h-5 w-5" />
+          {locale === "ar" ? "English" : "العربية"}
         </Button>
         {/* Appearance toggle (persisted) — FR-031 */}
         <Button
@@ -62,18 +65,25 @@ export function Topbar() {
         <Button
           variant="ghost"
           size="icon"
+          disabled={loggingOut}
           onClick={async () => {
+            setLoggingOut(true);
             try {
               await logout();
               toast.success(t("logout"));
             } catch (err) {
               console.error("Logout failed:", err);
               toast.error(t("error_generic"));
+              setLoggingOut(false);
             }
           }}
           title={t("logout")}
         >
-          <LogOut className="h-5 w-5" />
+          {loggingOut ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <LogOut className="h-5 w-5" />
+          )}
         </Button>
       </div>
     </header>

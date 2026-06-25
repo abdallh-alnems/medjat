@@ -23,6 +23,7 @@ import { useSetDayStatus } from "@/lib/hooks/use-attendance";
 import { useToastMutation } from "@/lib/hooks/use-org";
 import { NoteDialog } from "./note-dialog";
 import type { AttendanceRecord, AttendanceStatus } from "@/lib/types";
+import type { TKey } from "@/lib/i18n/ar";
 import { ATTENDANCE_STATUS_TONE } from "@/lib/constants/attendance";
 
 const STATUSES: AttendanceStatus[] = [
@@ -102,7 +103,7 @@ export function AttendanceTable({
                 />
               </TableCell>
               <TableCell className="font-medium">
-                {t("employee")} #{r.employee_id}
+                {r.employee_name ?? `${t("employee")} #${r.employee_id}`}
               </TableCell>
               <TableCell>
                 <Badge variant={ATTENDANCE_STATUS_TONE[r.status]}>{t(r.status)}</Badge>
@@ -120,7 +121,7 @@ export function AttendanceTable({
                   }
                 >
                   <SelectTrigger className="h-8 w-32">
-                    <SelectValue />
+                    <SelectValue>{(v) => t(v as TKey)}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {STATUSES.map((s) => (

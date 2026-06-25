@@ -81,7 +81,9 @@ export default function AccountPage() {
             >
               <SelectTrigger className="w-40">
                 <Globe className="me-2 h-4 w-4" />
-                <SelectValue />
+                <SelectValue>
+                  {(v) => (v === "en" ? t("english") : t("arabic"))}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ar">{t("arabic")}</SelectItem>

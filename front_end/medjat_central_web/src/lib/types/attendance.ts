@@ -5,7 +5,8 @@ export type AttendanceStatus =
   | "absent"
   | "late"
   | "leave"
-  | "holiday";
+  | "holiday"
+  | "not_arrived";
 
 export interface AttendanceRecord {
   id: number;
@@ -42,7 +43,8 @@ interface BaseAttendanceOverride {
 export interface LiveAttendance {
   employee_id: number;
   employee_name: string;
-  branch_id: number;
+  branch_id: number | null;
   status: AttendanceStatus;
+  is_late: boolean;
   check_in?: string | null;
 }

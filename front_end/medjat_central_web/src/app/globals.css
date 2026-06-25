@@ -284,3 +284,16 @@
     display: none;
   }
 }
+
+/* Top navigation progress bar — fills towards 90% while a route loads. */
+@keyframes nav-progress {
+  0% {
+    width: 0%;
+  }
+  40% {
+    width: 55%;
+  }
+  100% {
+    width: 90%;
+  }
+}

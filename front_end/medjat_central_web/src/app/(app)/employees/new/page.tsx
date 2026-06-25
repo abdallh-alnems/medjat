@@ -118,7 +118,14 @@ export default function AddEmployeePage() {
                       value={String(watch("branch_id") ?? "")}
                       onValueChange={(v) => v && setValue("branch_id", Number(v))}
                     >
-                      <SelectTrigger><SelectValue placeholder={t("branch")} /></SelectTrigger>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t("branch")}>
+                          {(v) =>
+                            (branches ?? []).find((b) => String(b.id) === v)
+                              ?.name ?? t("branch")
+                          }
+                        </SelectValue>
+                      </SelectTrigger>
                       <SelectContent>
                         {(branches ?? []).map((b) => (
                           <SelectItem key={b.id} value={String(b.id)}>{b.name}</SelectItem>
@@ -132,7 +139,14 @@ export default function AddEmployeePage() {
                     value={String(watch("shift_id") ?? "")}
                     onValueChange={(v) => v && setValue("shift_id", Number(v))}
                   >
-                    <SelectTrigger><SelectValue placeholder={t("none")} /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("none")}>
+                        {(v) =>
+                          (shifts ?? []).find((s) => String(s.id) === v)?.name ??
+                          t("none")
+                        }
+                      </SelectValue>
+                    </SelectTrigger>
                     <SelectContent>
                       {(shifts ?? []).map((s) => (
                         <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
@@ -145,7 +159,14 @@ export default function AddEmployeePage() {
                     value={String(watch("category_id") ?? "")}
                     onValueChange={(v) => v && setValue("category_id", Number(v))}
                   >
-                    <SelectTrigger><SelectValue placeholder={t("none")} /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("none")}>
+                        {(v) =>
+                          (categories ?? []).find((c) => String(c.id) === v)
+                            ?.name ?? t("none")
+                        }
+                      </SelectValue>
+                    </SelectTrigger>
                     <SelectContent>
                       {(categories ?? []).map((c) => (
                         <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>

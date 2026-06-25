@@ -28,6 +28,7 @@ import { ManualRecordSheet } from "@/components/attendance/manual-record-sheet";
 import { exportReportToPDF, exportReportToExcel } from "@/lib/export";
 import { todayISO } from "@/lib/utils";
 import type { AttendanceRecord } from "@/lib/types";
+import type { TKey } from "@/lib/i18n/ar";
 import { Radio, FileDown } from "lucide-react";
 
 type SortKey = "name" | "status" | "check_in";
@@ -138,7 +139,14 @@ export default function AttendancePage() {
                 }
               >
                 <SelectTrigger className="w-48">
-                  <SelectValue />
+                  <SelectValue>
+                    {(v) =>
+                      !v || v === "all"
+                        ? t("all")
+                        : (branches ?? []).find((b) => String(b.id) === v)
+                            ?.name ?? String(v)
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{t("all")}</SelectItem>
@@ -165,7 +173,9 @@ export default function AttendancePage() {
               <Label>{t("sort")}</Label>
               <Select value={sort} onValueChange={(v) => setSort((v ?? "check_in") as SortKey)}>
                 <SelectTrigger className="w-40">
-                  <SelectValue />
+                  <SelectValue>
+                    {(v) => t(`sort_${(v as string) || "check_in"}` as TKey)}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="name">{t("sort_name")}</SelectItem>

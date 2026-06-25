@@ -40,9 +40,13 @@ export const metadata: Metadata = {
     "لوحة إدارة الموارد البشرية والرواتب — حضور وانصراف، رواتب، إجازات، تقارير.",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icons/icon.svg",
-    shortcut: "/icons/icon.svg",
-    apple: "/icons/icon.svg",
+    icon: [
+      { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/icons/favicon-32.png",
+    apple: "/icons/apple-icon.png",
   },
   appleWebApp: {
     capable: true,

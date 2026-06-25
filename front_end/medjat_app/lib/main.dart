@@ -11,7 +11,15 @@ import 'core/services/locale_service.dart';
 import 'view/widget/ad/banner_ad_widget.dart';
 
 void main() async {
-  await initialServices();
+  // Never let a startup failure (e.g. Firebase/AdMob on a device without
+  // Google Mobile Services such as Huawei) prevent the UI from rendering.
+  // initialServices() already guards each step, but this is a final backstop
+  // so runApp() is always reached and the app never shows a blank screen.
+  try {
+    await initialServices();
+  } catch (e, s) {
+    debugPrint('initialServices failed: $e\n$s');
+  }
 
   runApp(const MedjatEmployeeApp());
 }

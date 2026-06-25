@@ -1,8 +1,14 @@
-import { apiGet, apiPost } from "./client";
+import { apiGet, apiPost, unwrapList } from "./client";
 import type { RequiredDocument, DocumentSubmission } from "@/lib/types";
 
-export function getRequiredDocuments() {
-  return apiGet<RequiredDocument[]>("app/documents/get_required.php");
+export async function getRequiredDocuments(): Promise<RequiredDocument[]> {
+  // Backend returns `{ required_documents }`.
+  const raw = await apiGet<unknown>("app/documents/get_required.php");
+  return unwrapList<RequiredDocument>(raw, [
+    "required_documents",
+    "items",
+    "data",
+  ]);
 }
 
 export function createRequiredDocument(data: Partial<RequiredDocument>) {
@@ -24,9 +30,13 @@ export function toggleRequiredDocument(id: number) {
   return apiPost<RequiredDocument>("app/documents/toggle_required.php", { id });
 }
 
-export function getRequiredSubmissions(requiredDocumentId: number) {
-  return apiGet<DocumentSubmission[]>(
+export async function getRequiredSubmissions(
+  requiredDocumentId: number,
+): Promise<DocumentSubmission[]> {
+  // Backend returns `{ required, submissions }`.
+  const raw = await apiGet<unknown>(
     "app/documents/get_required_submissions.php",
     { required_document_id: requiredDocumentId },
   );
+  return unwrapList<DocumentSubmission>(raw, ["submissions", "items", "data"]);
 }

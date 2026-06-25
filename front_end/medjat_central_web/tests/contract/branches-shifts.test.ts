@@ -53,7 +53,7 @@ describe("branches & shifts contract", () => {
       ),
     );
     const res = await listBranches();
-    expect((res as { message?: string }).message).toBe("denied");
+    expect(res).toEqual([]);
   });
 
   it("branches list: offline rejects", async () => {

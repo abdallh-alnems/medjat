@@ -47,7 +47,7 @@ void main() {
 
       await data.deleteReview(10);
 
-      verify(() => mockCrud.postData(any(), {})).called(1);
+      verify(() => mockCrud.postData(any(), {'id': 10})).called(1);
     });
   });
 }

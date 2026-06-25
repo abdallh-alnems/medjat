@@ -42,11 +42,15 @@ class MyServices extends GetxService {
   late GetStorage getStorage;
 
   Future<MyServices> init() async {
-    await dotenv.load();
-
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    // --- Critical, GMS-free services (the UI cannot start without these) ---
+    // Loaded first and individually guarded so that a device without Google
+    // Mobile Services (e.g. Huawei) still reaches a usable UI instead of a
+    // blank screen. See _initFirebase() for the GMS-dependent block.
+    try {
+      await dotenv.load();
+    } catch (e, s) {
+      debugPrint('dotenv.load failed: $e\n$s');
+    }
 
     await Hive.initFlutter();
     await GetStorage.init();
@@ -56,22 +60,67 @@ class MyServices extends GetxService {
     Get.put<LocaleService>(LocaleService(), permanent: true);
     Get.put<DarkLightService>(DarkLightService(), permanent: true);
 
-    await _initCrashlytics();
-
-    final analytics = FirebaseAnalytics.instance;
-    await analytics.setAnalyticsCollectionEnabled(true);
-
-    await _initRemoteConfig();
-
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    await _initMaintenanceSignals();
-
     _initSessionExpiredHandler();
 
-    // Initialize the Google Mobile Ads SDK (banner + native ads shown app-wide).
-    unawaited(MobileAds.instance.initialize());
+    // --- GMS-dependent services (Firebase + AdMob) ---
+    // Wrapped so failures on GMS-less devices never abort startup.
+    await _initFirebase();
 
     return this;
+  }
+
+  /// Initialize all Firebase + Google Mobile Ads services. Every step is
+  /// individually guarded: on devices without Google Mobile Services these
+  /// calls throw/hang, and a single failure must not prevent the app from
+  /// launching. The app degrades gracefully (no push, analytics, or ads).
+  Future<void> _initFirebase() async {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } catch (e, s) {
+      // Without Firebase core, every dependent service below is unavailable.
+      debugPrint('Firebase.initializeApp failed (GMS unavailable?): $e\n$s');
+      _initAds();
+      return;
+    }
+
+    try {
+      await _initCrashlytics();
+    } catch (e, s) {
+      debugPrint('Crashlytics init failed: $e\n$s');
+    }
+
+    try {
+      await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
+    } catch (e, s) {
+      debugPrint('Analytics init failed: $e\n$s');
+    }
+
+    try {
+      await _initRemoteConfig();
+    } catch (e, s) {
+      debugPrint('Remote Config init failed: $e\n$s');
+    }
+
+    try {
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      await _initMaintenanceSignals();
+    } catch (e, s) {
+      debugPrint('Messaging init failed: $e\n$s');
+    }
+
+    _initAds();
+  }
+
+  /// Initialize the Google Mobile Ads SDK (banner + native ads shown app-wide).
+  /// Fire-and-forget and guarded — AdMob also depends on GMS.
+  void _initAds() {
+    try {
+      unawaited(MobileAds.instance.initialize());
+    } catch (e, s) {
+      debugPrint('MobileAds init failed: $e\n$s');
+    }
   }
 
   /// Initialize Firebase Crashlytics for crash reporting.

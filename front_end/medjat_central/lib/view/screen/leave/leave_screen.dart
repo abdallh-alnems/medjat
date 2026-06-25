@@ -45,6 +45,14 @@ class LeaveScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _FilterChip(
+                        label: '${'leave_tab_all'.tr} (${filtered.length})',
+                        selected: ctrl.requestsTab == -1,
+                        onTap: () => ctrl.setRequestsTab(-1),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.s2),
+                    Expanded(
+                      child: _FilterChip(
                         label: '${'leave_tab_current'.tr} ($current)',
                         selected: ctrl.requestsTab == 0,
                         onTap: () => ctrl.setRequestsTab(0),
@@ -76,9 +84,11 @@ class LeaveScreen extends StatelessWidget {
               onRefresh: ctrl.loadLeaves,
               child: GetBuilder<LeaveController>(
                 builder: (_) {
-                  final list = ctrl.filteredLeaves
-                      .where((l) => _leaveCategory(l) == ctrl.requestsTab)
-                      .toList();
+                  final list = ctrl.requestsTab == -1
+                      ? ctrl.filteredLeaves.toList()
+                      : ctrl.filteredLeaves
+                          .where((l) => _leaveCategory(l) == ctrl.requestsTab)
+                          .toList();
                   return HandlingDataRequest(
                     statusRequest: ctrl.status,
                     onRetry: ctrl.loadLeaves,

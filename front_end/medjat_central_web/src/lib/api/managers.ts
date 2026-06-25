@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "./client";
+import { apiGet, apiPost, unwrapList } from "./client";
 import type { Admin, ManagerInvitation } from "@/lib/types";
 
 export function inviteAdmin(data: {
@@ -9,8 +9,10 @@ export function inviteAdmin(data: {
   return apiPost<ManagerInvitation>("app/managers/invite.php", data);
 }
 
-export function listInvitations() {
-  return apiGet<ManagerInvitation[]>("app/managers/list_invitations.php");
+export async function listInvitations(): Promise<ManagerInvitation[]> {
+  // Backend returns `{ items }`.
+  const raw = await apiGet<unknown>("app/managers/list_invitations.php");
+  return unwrapList<ManagerInvitation>(raw, ["items", "data"]);
 }
 
 export function cancelInvitation(id: number) {
@@ -21,8 +23,10 @@ export function resendInvitation(id: number) {
   return apiPost<{ status?: string }>("app/managers/resend_invitation.php", { id });
 }
 
-export function listAdmins() {
-  return apiGet<Admin[]>("app/managers/list_admins.php");
+export async function listAdmins(): Promise<Admin[]> {
+  // Backend returns `{ items }`.
+  const raw = await apiGet<unknown>("app/managers/list_admins.php");
+  return unwrapList<Admin>(raw, ["items", "data"]);
 }
 
 export function updateAdmin(id: number, data: Partial<Admin>) {

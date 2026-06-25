@@ -46,7 +46,7 @@ export function NewTicketForm({ onCreated }: { onCreated?: () => void }) {
         <Plus className="h-4 w-4" />
         {t("new_ticket")}
       </SheetTrigger>
-      <SheetContent side="left" className="w-80 space-y-4">
+      <SheetContent side="left" className="w-full max-w-sm space-y-4">
         <SheetHeader>
           <SheetTitle>{t("new_ticket")}</SheetTitle>
         </SheetHeader>

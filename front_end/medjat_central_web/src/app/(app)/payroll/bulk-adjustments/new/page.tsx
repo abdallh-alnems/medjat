@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { AdjustmentType, AdjustmentScope } from "@/lib/types";
+import type { TKey } from "@/lib/i18n/ar";
 
 export default function NewBulkAdjustmentPage() {
   const { t } = useT();
@@ -51,7 +52,9 @@ export default function NewBulkAdjustmentPage() {
       <div className="space-y-1.5">
         <Label>{t("adjustment_type")}</Label>
         <Select value={type} onValueChange={(v) => setType((v ?? "deduction") as AdjustmentType)}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger>
+            <SelectValue>{(v) => t((v as string) as TKey)}</SelectValue>
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="deduction">{t("deduction")}</SelectItem>
             <SelectItem value="bonus">{t("bonus")}</SelectItem>
@@ -62,7 +65,9 @@ export default function NewBulkAdjustmentPage() {
       <div className="space-y-1.5">
         <Label>{t("scope")}</Label>
         <Select value={scope} onValueChange={(v) => setScope((v ?? "all") as AdjustmentScope)}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger>
+            <SelectValue>{(v) => t((v as string) as TKey)}</SelectValue>
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("all")}</SelectItem>
             <SelectItem value="branch">{t("branch")}</SelectItem>
@@ -76,7 +81,19 @@ export default function NewBulkAdjustmentPage() {
         <div className="space-y-1.5">
           <Label>{t(scope === "branch" ? "branch" : scope === "shift" ? "shift" : "category")}</Label>
           <Select value={scopeId} onValueChange={(v) => setScopeId(v ?? "")}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue>
+                {(v) => {
+                  const list =
+                    scope === "branch"
+                      ? branches ?? []
+                      : scope === "shift"
+                        ? shifts ?? []
+                        : categories ?? [];
+                  return list.find((o) => String(o.id) === v)?.name ?? "";
+                }}
+              </SelectValue>
+            </SelectTrigger>
             <SelectContent>
               {(scope === "branch"
                 ? branches ?? []

@@ -40,7 +40,6 @@ abstract class AppRoutes {
   static const String team = '/team';
   static const String inviteAdmin = '/team/invite';
   static const String invitationCode = '/team/invite/code';
-  static const String biometricEnrollment = '/employee/biometric';
   static const String requiredDocuments = '/settings/required-documents';
   static const String requiredDocumentSubmissions =
       '/settings/required-documents/submissions';

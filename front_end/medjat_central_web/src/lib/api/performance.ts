@@ -1,10 +1,14 @@
-import { apiGet, apiPost } from "./client";
+import { apiGet, apiPost, unwrapList } from "./client";
 import type { PerformanceReview } from "@/lib/types";
 
-export function listPerformanceReviews(employeeId: number) {
-  return apiGet<PerformanceReview[]>("app/performance/review_list.php", {
+export async function listPerformanceReviews(
+  employeeId: number,
+): Promise<PerformanceReview[]> {
+  // Backend returns `{ items }`.
+  const raw = await apiGet<unknown>("app/performance/review_list.php", {
     employee_id: employeeId,
   });
+  return unwrapList<PerformanceReview>(raw, ["items", "data"]);
 }
 
 export function createPerformanceReview(

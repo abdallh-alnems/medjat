@@ -50,7 +50,8 @@ describe("reports contract", () => {
       ),
     );
     const res = await getEmployeesReport({});
-    expect((res as { message?: string }).message).toBe("denied");
+    // Report helpers always resolve to a ReportData with an empty table.
+    expect(res.rows).toHaveLength(0);
   });
 
   it("leaves report: offline rejects", async () => {

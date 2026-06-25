@@ -1,8 +1,10 @@
-import { apiGet, apiPost } from "./client";
+import { apiGet, apiPost, unwrapList } from "./client";
 import type { EmployeeCategory, AssetCustody } from "@/lib/types";
 
-export function listCategories() {
-  return apiGet<EmployeeCategory[]>("app/categories/list.php");
+export async function listCategories(): Promise<EmployeeCategory[]> {
+  // Backend returns `{ categories }`.
+  const raw = await apiGet<unknown>("app/categories/list.php");
+  return unwrapList<EmployeeCategory>(raw, ["categories", "items", "data"]);
 }
 
 export function createCategory(name: string, color?: string) {
@@ -24,8 +26,10 @@ export function assignCategory(employeeId: number, categoryId: number) {
   });
 }
 
-export function listAssets() {
-  return apiGet<AssetCustody[]>("app/assets/list.php");
+export async function listAssets(): Promise<AssetCustody[]> {
+  // Backend returns `{ items }`.
+  const raw = await apiGet<unknown>("app/assets/list.php");
+  return unwrapList<AssetCustody>(raw, ["items", "data"]);
 }
 
 export function createAsset(data: Partial<AssetCustody>) {

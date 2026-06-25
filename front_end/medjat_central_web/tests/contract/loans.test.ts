@@ -41,7 +41,7 @@ describe("loans contract", () => {
       ),
     );
     const res = await listLoans();
-    expect((res as { message?: string }).message).toBe("denied");
+    expect(res).toEqual([]);
   });
 
   it("list: offline rejects", async () => {

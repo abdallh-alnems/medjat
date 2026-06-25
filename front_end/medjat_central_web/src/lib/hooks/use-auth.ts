@@ -69,8 +69,12 @@ export function useAuth() {
         tenantId: res.user.tenant_id ?? null,
         permissions: res.user.permissions ?? null,
       });
-      if (res.tenant_id) {
-        setTenant(res.tenant_id, res.tenant_name ?? undefined);
+      // Tenant id/name may arrive flat (mocks) or nested on the live backend.
+      const tenantId =
+        res.tenant_id ?? res.tenant?.id ?? res.user?.tenant_id ?? null;
+      const tenantName = res.tenant_name ?? res.tenant?.name ?? undefined;
+      if (tenantId) {
+        setTenant(tenantId, tenantName);
       } else {
         clearTenant();
       }

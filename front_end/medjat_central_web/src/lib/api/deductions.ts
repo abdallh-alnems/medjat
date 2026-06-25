@@ -1,8 +1,10 @@
-import { apiGet, apiPost } from "./client";
+import { apiGet, apiPost, unwrapList } from "./client";
 import type { DeductionRule, ManualEntry } from "@/lib/types";
 
-export function getDeductionRules() {
-  return apiGet<DeductionRule[]>("app/deductions/get_rules.php");
+export async function getDeductionRules(): Promise<DeductionRule[]> {
+  // Backend returns `{ rules, config }`.
+  const raw = await apiGet<unknown>("app/deductions/get_rules.php");
+  return unwrapList<DeductionRule>(raw, ["rules", "items", "data"]);
 }
 
 export function saveDeductionConfig(rules: Partial<DeductionRule>[]) {
