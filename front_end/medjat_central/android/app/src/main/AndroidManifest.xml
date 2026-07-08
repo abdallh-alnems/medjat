@@ -51,6 +51,16 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="medjatcentral"/>
             </intent-filter>
+            <!-- App Link: team-invitation email link opens the app directly.
+                 Verified via https://api.medjatapp.com/.well-known/assetlinks.json -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https"
+                      android:host="api.medjatapp.com"
+                      android:pathPrefix="/backend_medjet/join_team.php"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

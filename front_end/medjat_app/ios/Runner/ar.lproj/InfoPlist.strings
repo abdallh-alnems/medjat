@@ -1,0 +1,6 @@
+/* أوصاف أذونات الاستخدام — العربية */
+"NSCameraUsageDescription" = "نحتاج إلى الكاميرا لمسح رمز الانضمام QR وتصوير مستنداتك المطلوبة.";
+"NSPhotoLibraryUsageDescription" = "نحتاج إلى الوصول للصور لاختيار مستنداتك المطلوبة.";
+"NSPhotoLibraryAddUsageDescription" = "نحتاج إلى حفظ المستندات والملفات في معرض الصور.";
+"NSLocationWhenInUseUsageDescription" = "يُستخدم موقعك لتحديد نقطة الفرع ونطاق تسجيل الحضور بالـ GPS.";
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "يُستخدم موقعك لتحديد نقطة الفرع ونطاق تسجيل الحضور بالـ GPS.";

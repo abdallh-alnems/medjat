@@ -18,6 +18,9 @@ export interface Employee {
   identity_number?: string | null;
   attendance_method?: AttendanceMethod | null;
   photo_url?: string | null;
+  annual_leave_days?: number | null;
+  /** Attached by getEmployeeProfile from the detail envelope. */
+  leave_balance?: EmployeeLeaveBalance | null;
 }
 
 export interface TerminatedEmployee extends Employee {
@@ -25,13 +28,29 @@ export interface TerminatedEmployee extends Employee {
   termination_reason?: string | null;
 }
 
+export interface EmployeeLeaveBalance {
+  year?: number;
+  used_days?: number;
+  remaining_days?: number;
+  total_days?: number;
+  carried_over_days?: number;
+  entitlement_days?: number;
+}
+
+export type SuspensionPayMode = "unpaid" | "partial" | "full";
+
 export interface Suspension {
   id: number;
   employee_id: number;
-  from: string;
-  to?: string | null;
-  reason?: string | null;
-  active: boolean;
+  reason: string;
+  pay_mode: SuspensionPayMode;
+  pay_percentage?: number | null;
+  start_date: string;
+  end_date?: string | null;
+  previous_status?: string | null;
+  status: "active" | "ended";
+  created_by_name?: string | null;
+  ended_by_name?: string | null;
 }
 
 export interface EmployeeCategory {

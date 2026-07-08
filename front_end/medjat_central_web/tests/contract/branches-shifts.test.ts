@@ -24,9 +24,8 @@ const BRANCH: Branch = {
 const SHIFT: Shift = {
   id: 1,
   name: "الوردية الصباحية",
-  start: "08:00",
-  end: "16:00",
-  days: [0, 1, 2, 3, 4],
+  start_time: "08:00",
+  end_time: "16:00",
 };
 
 describe("branches & shifts contract", () => {
@@ -86,7 +85,7 @@ describe("branches & shifts contract", () => {
       http.get(`${API}/app/shifts/list.php`, () => HttpResponse.json([SHIFT])),
     );
     const res = await listShifts();
-    expect(res[0]?.start).toBe("08:00");
+    expect(res[0]?.start_time).toBe("08:00");
   });
 
   it("create shift: success", async () => {

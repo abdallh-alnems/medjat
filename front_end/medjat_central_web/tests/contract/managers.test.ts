@@ -55,17 +55,15 @@ describe("managers contract", () => {
     server.use(
       http.post(`${API}/app/managers/invite.php`, () =>
         HttpResponse.json({
-          id: 1,
-          email: "x@y.com",
-          role: "hr",
-          code: "CODE-123",
-          status: "pending",
-          created_at: "2026-06-20",
+          invitation_id: 1,
+          invitation_code: "CODE-123",
+          expires_at: "2026-06-23 00:00:00",
+          expires_in_hours: 72,
         }),
       ),
     );
     const res = await inviteAdmin({ email: "x@y.com", role: "hr" });
-    expect(res.code).toBe("CODE-123");
+    expect(res.invitation_code).toBe("CODE-123");
   });
 
   it("update permissions: success", async () => {
@@ -74,7 +72,7 @@ describe("managers contract", () => {
         HttpResponse.json({ status: "ok" }),
       ),
     );
-    const res = await updateAdminPermissions(1, { manage_employees: true });
+    const res = await updateAdminPermissions(1, ["manage_employees"]);
     expect(res.status).toBe("ok");
   });
 

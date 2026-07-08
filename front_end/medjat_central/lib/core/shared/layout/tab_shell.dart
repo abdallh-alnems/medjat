@@ -4,10 +4,27 @@ import '../../constant/theme/app_colors.dart';
 import '../../services/push_notification_service.dart';
 import 'tap_to_exit.dart';
 
-class TabShell extends StatefulWidget {
-  final List<Widget> screens;
+/// One entry in the home bottom navigation: its screen plus the nav-bar icon
+/// and label. The visible set is decided per-user (by permission) before the
+/// shell is built, so a viewer never lands on a tab the backend would reject.
+class TabItem {
+  final IconData icon;
+  final IconData activeIcon;
+  final String labelKey;
+  final Widget screen;
 
-  const TabShell({super.key, required this.screens});
+  const TabItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.labelKey,
+    required this.screen,
+  });
+}
+
+class TabShell extends StatefulWidget {
+  final List<TabItem> tabs;
+
+  const TabShell({super.key, required this.tabs});
 
   @override
   State<TabShell> createState() => _TabShellState();
@@ -29,55 +46,43 @@ class _TabShellState extends State<TabShell> {
     final controller = Get.find<TabNavController>();
     final isLight = Theme.of(context).brightness == Brightness.light;
     final colors = isLight ? AppColors.light : AppColors.dark;
+    final tabs = widget.tabs;
 
-    return Obx(() => Scaffold(
-          body: TapToExit(
-            child: IndexedStack(
-              index: controller.currentIndex.value,
-              children: widget.screens,
-            ),
+    return Obx(() {
+      // Guard against a stale index after the visible tab set shrinks
+      // (e.g. permissions changed between sessions).
+      final index = controller.currentIndex.value.clamp(0, tabs.length - 1);
+      return Scaffold(
+        body: TapToExit(
+          child: IndexedStack(
+            index: index,
+            children: tabs.map((t) => t.screen).toList(),
           ),
-          bottomNavigationBar: Container(
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(
-                  color: colors.borderHairline,
-                ),
+        ),
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(
+                color: colors.borderHairline,
               ),
             ),
-            child: BottomNavigationBar(
-              currentIndex: controller.currentIndex.value,
-              onTap: controller.changeTab,
-              items: [
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.dashboard_outlined),
-                  activeIcon: const Icon(Icons.dashboard),
-                  label: 'home'.tr,
-                ),
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.groups_outlined),
-                  activeIcon: const Icon(Icons.groups),
-                  label: 'employees'.tr,
-                ),
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.access_time_outlined),
-                  activeIcon: const Icon(Icons.access_time),
-                  label: 'attendance'.tr,
-                ),
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.payments_outlined),
-                  activeIcon: const Icon(Icons.payments),
-                  label: 'payroll'.tr,
-                ),
-                BottomNavigationBarItem(
-                  icon: const Icon(Icons.menu_outlined),
-                  activeIcon: const Icon(Icons.menu),
-                  label: 'more'.tr,
-                ),
-              ],
-            ),
           ),
-        ));
+          child: BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            currentIndex: index,
+            onTap: controller.changeTab,
+            items: [
+              for (final t in tabs)
+                BottomNavigationBarItem(
+                  icon: Icon(t.icon),
+                  activeIcon: Icon(t.activeIcon),
+                  label: t.labelKey.tr,
+                ),
+            ],
+          ),
+        ),
+      );
+    });
   }
 }
 

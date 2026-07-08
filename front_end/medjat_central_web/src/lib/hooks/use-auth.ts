@@ -20,6 +20,7 @@ export function useAuth() {
   const user = useAuthStore((s) => s.user);
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn);
   const setUser = useAuthStore((s) => s.setUser);
+  const setPendingInvitation = useAuthStore((s) => s.setPendingInvitation);
   const logoutStore = useAuthStore((s) => s.logout);
   const setTenant = useTenantStore((s) => s.setTenant);
   const clearTenant = useTenantStore((s) => s.clearTenant);
@@ -78,9 +79,12 @@ export function useAuth() {
       } else {
         clearTenant();
       }
+      // No company yet → remember any invitation waiting for this email so the
+      // onboarding screen can offer a one-tap "Join {company}".
+      setPendingInvitation(tenantId ? null : (res.pending_invitation ?? null));
     }
     return res;
-  }, [setUser, setTenant, clearTenant, logoutStore]);
+  }, [setUser, setTenant, clearTenant, logoutStore, setPendingInvitation]);
 
   const logout = useCallback(async () => {
     try {

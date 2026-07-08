@@ -61,12 +61,27 @@ export const handlers = [
     ok({ email: true, push: false, in_app: true }),
   ),
 
-  // ── Tenant ──
+  // ── Tenant ── (mirrors live backend shape: { success, tenant, user })
   http.post(`${API}/app/tenant/create.php`, () =>
-    ok({ tenant_id: 2, company: { id: 2, name: "شركة جديدة" } }),
+    ok({
+      success: true,
+      tenant: { id: 2, name: "شركة جديدة" },
+      user: { id: 1, tenant_id: 2, role: "general_manager", role_key: "general_manager" },
+    }),
   ),
   http.post(`${API}/app/tenant/join.php`, () =>
-    ok({ tenant_id: 3, company: { id: 3, name: "شركة منضم إليها" } }),
+    ok({
+      success: true,
+      tenant: { id: 3, name: "شركة منضم إليها" },
+      user: { id: 1, tenant_id: 3, role: "hr", role_key: "hr" },
+    }),
+  ),
+  http.post(`${API}/app/tenant/accept_invitation.php`, () =>
+    ok({
+      success: true,
+      tenant: { id: 4, name: "شركة الدعوة" },
+      user: { id: 1, tenant_id: 4, role: "hr", role_key: "hr" },
+    }),
   ),
 
   // ── Dashboard ──

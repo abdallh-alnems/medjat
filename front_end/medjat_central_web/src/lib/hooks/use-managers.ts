@@ -10,9 +10,11 @@ import {
   resendInvitation,
   setAdminActive,
   removeAdmin,
+  updateAdmin,
   getAdminPermissions,
   updateAdminPermissions,
   resetAdminPermissions,
+  type InviteAdminInput,
 } from "@/lib/api/managers";
 import type { ManagerInvitation } from "@/lib/types";
 
@@ -39,7 +41,7 @@ export function useAdminPermissions(adminId: number | null) {
 
 export function useInviteAdmin() {
   return useToastMutation(
-    (data: { email: string; role: string }) => inviteAdmin(data),
+    (data: InviteAdminInput) => inviteAdmin(data),
     { invalidate: [[...QK, "invitations"] as const] },
   );
 }
@@ -72,9 +74,17 @@ export function useRemoveAdmin() {
   );
 }
 
+export function useUpdateAdmin() {
+  return useToastMutation(
+    (args: { id: number; role?: string; branch_id?: number | null }) =>
+      updateAdmin(args.id, { role: args.role, branch_id: args.branch_id }),
+    { invalidate: [[...QK, "admins"] as const] },
+  );
+}
+
 export function useUpdateAdminPermissions() {
   return useToastMutation(
-    (args: { adminId: number; permissions: Record<string, boolean> }) =>
+    (args: { adminId: number; permissions: string[] }) =>
       updateAdminPermissions(args.adminId, args.permissions),
     {
       invalidate: [

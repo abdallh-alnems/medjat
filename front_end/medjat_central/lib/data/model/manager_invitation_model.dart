@@ -58,6 +58,11 @@ class AdminModel {
   final bool isActive;
   final String? lastLoginAt;
 
+  /// Whether the signed-in admin outranks this one and may manage them
+  /// (edit / suspend / remove). Computed by the backend (`list_admins.php`).
+  /// Defaults to true so older payloads keep the previous behaviour.
+  final bool canManage;
+
   AdminModel({
     required this.id,
     required this.name,
@@ -68,6 +73,7 @@ class AdminModel {
     this.branchName,
     this.isActive = true,
     this.lastLoginAt,
+    this.canManage = true,
   });
 
   factory AdminModel.fromJson(Map<String, dynamic> json) => AdminModel(
@@ -80,6 +86,9 @@ class AdminModel {
         branchName: json['branch_name'] as String?,
         isActive: _parseBool(json['is_active']),
         lastLoginAt: json['last_login_at'] as String?,
+        canManage: json.containsKey('can_manage')
+            ? _parseBool(json['can_manage'])
+            : true,
       );
 
   static bool _parseBool(dynamic v) {

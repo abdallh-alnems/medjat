@@ -26,7 +26,7 @@ const ROUTE_PERMISSIONS: { match: string; permission: PermissionCode }[] = [
   { match: "/shifts", permission: "manage_company_settings" },
   { match: "/settings", permission: "manage_company_settings" },
   { match: "/team", permission: "add_managers" },
-  { match: "/activity-log", permission: "view_reports" },
+  { match: "/activity-log", permission: "manage_company_settings" },
 ];
 
 function routePermission(pathname: string): PermissionCode | null {

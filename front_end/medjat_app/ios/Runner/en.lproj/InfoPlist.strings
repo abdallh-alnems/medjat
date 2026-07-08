@@ -1,0 +1,6 @@
+/* Permission usage descriptions — English */
+"NSCameraUsageDescription" = "Medjat needs camera access to scan your join QR code and photograph your required documents.";
+"NSPhotoLibraryUsageDescription" = "Medjat needs access to your photos to attach your required documents.";
+"NSPhotoLibraryAddUsageDescription" = "Medjat needs permission to save documents and files to your photo library.";
+"NSLocationWhenInUseUsageDescription" = "Your location is used to verify your branch location and the GPS check-in radius when recording attendance.";
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "Your location is used to verify your branch location and the GPS check-in radius when recording attendance.";

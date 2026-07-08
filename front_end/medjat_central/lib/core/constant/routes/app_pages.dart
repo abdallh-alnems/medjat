@@ -166,17 +166,9 @@ List<GetPage<dynamic>> getPages = [
   ),
   GetPage(
     name: AppRoutes.home,
-    page: () => const MaintenanceGate(
+    page: () => MaintenanceGate(
       child: UpdateGate(
-        child: TabShell(
-          screens: [
-            DashboardScreen(),
-            EmployeesScreen(),
-            AttendanceScreen(),
-            PayrollScreen(),
-            MoreScreen(),
-          ],
-        ),
+        child: TabShell(tabs: _buildHomeTabs()),
       ),
     ),
     binding: HomeBinding(),
@@ -722,6 +714,50 @@ List<GetPage<dynamic>> getPages = [
   ),
 ];
 
+/// The home bottom-tab set for the signed-in user. Dashboard and "More" are
+/// always present (both are safe for any role); Employees / Attendance /
+/// Payroll appear only when the user can actually open them, so a view-only
+/// admin never taps into a page the backend rejects with a 403 ("an error
+/// occurred"). The visible permissions arrive from login.php via UserModel.
+List<TabItem> _buildHomeTabs() {
+  final user = Get.find<AuthController>().user;
+  return [
+    const TabItem(
+      icon: Icons.dashboard_outlined,
+      activeIcon: Icons.dashboard,
+      labelKey: 'home',
+      screen: DashboardScreen(),
+    ),
+    if (user?.canManageEmployees ?? false)
+      const TabItem(
+        icon: Icons.groups_outlined,
+        activeIcon: Icons.groups,
+        labelKey: 'employees',
+        screen: EmployeesScreen(),
+      ),
+    if (user?.canManageAttendance ?? false)
+      const TabItem(
+        icon: Icons.access_time_outlined,
+        activeIcon: Icons.access_time,
+        labelKey: 'attendance',
+        screen: AttendanceScreen(),
+      ),
+    if (user?.canManagePayroll ?? false)
+      const TabItem(
+        icon: Icons.payments_outlined,
+        activeIcon: Icons.payments,
+        labelKey: 'payroll',
+        screen: PayrollScreen(),
+      ),
+    const TabItem(
+      icon: Icons.menu_outlined,
+      activeIcon: Icons.menu,
+      labelKey: 'more',
+      screen: MoreScreen(),
+    ),
+  ];
+}
+
 class MoreScreen extends StatelessWidget {
   const MoreScreen({super.key});
 
@@ -740,7 +776,8 @@ class MoreScreen extends StatelessWidget {
     final canManageAssets = auth.user?.canManageAssets ?? false;
     final canViewReports = auth.user?.canViewReports ?? false;
     // A section header must never render without at least one visible item.
-    final showEmployees = canManageEmployees || canManageLeaves;
+    final showEmployees =
+        canManageEmployees || canManageLeaves || canManageCompany;
     final showFinance = canManagePayroll || canManageAssets;
 
     return Scaffold(
@@ -750,13 +787,18 @@ class MoreScreen extends StatelessWidget {
         children: [
           if (showEmployees) ...[
             _MoreSectionHeader(title: 'employees_and_time'.tr),
-            if (canManageEmployees)
+            // Weekly schedule endpoints require manage_company_settings, not
+            // manage_employees — gate to match so managers without it don't tap
+            // into a 403.
+            if (canManageCompany)
               _MenuTile(
                 icon: Icons.calendar_view_week_outlined,
                 title: 'weekly_schedule'.tr,
                 onTap: () => Get.toNamed<void>(AppRoutes.weeklySchedule),
               ),
-            if (canManageEmployees)
+            // Leave management endpoints require manage_leaves (branch managers
+            // hold manage_employees but not manage_leaves).
+            if (canManageLeaves)
               _MenuTile(
                 icon: Icons.event_note_outlined,
                 title: 'leaves'.tr,

@@ -7,8 +7,16 @@ export async function listCategories(): Promise<EmployeeCategory[]> {
   return unwrapList<EmployeeCategory>(raw, ["categories", "items", "data"]);
 }
 
-export function createCategory(name: string, color?: string) {
-  return apiPost<EmployeeCategory>("app/categories/create.php", { name, color });
+export function createCategory(
+  name: string,
+  color?: string,
+  description?: string,
+) {
+  return apiPost<EmployeeCategory>("app/categories/create.php", {
+    name,
+    color,
+    description,
+  });
 }
 
 export function updateCategory(id: number, data: Partial<EmployeeCategory>) {

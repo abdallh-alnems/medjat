@@ -122,6 +122,23 @@ final class PermissionMiddleware {
         return true;
     }
 
+    /**
+     * True when the caller may manage (edit / suspend / remove) the target —
+     * i.e. the caller's access is equal-to-or-greater-than the target's. A
+     * caller can never act on someone who is higher in the admin hierarchy,
+     * meaning someone who holds a permission the caller lacks. '*' (general
+     * manager) outranks everyone; only another '*' may manage a general manager.
+     */
+    public static function outranks(array|string $callerPerms, array|string $targetPerms): bool {
+        if ($callerPerms === '*') {
+            return true;
+        }
+        if ($targetPerms === '*') {
+            return false;
+        }
+        return self::isWithin($targetPerms, $callerPerms);
+    }
+
     public static function checkBranchAccess(array $user, ?int $branchId): void {
         $role = $user['role'] ?? '';
 

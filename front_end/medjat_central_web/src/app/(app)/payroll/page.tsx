@@ -4,13 +4,13 @@ import { useState } from "react";
 import { useT } from "@/lib/i18n/use-t";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import {
-  usePayrollSlips,
-  useGeneratePayroll,
+  useLivePayrollOverview,
   useApproveSlip,
   useApproveBulk,
   useRevertSlip,
   useMarkPaid,
   useDisburseAll,
+  useDisburseEmployee,
 } from "@/lib/hooks/use-payroll";
 import { Can } from "@/components/permissions/can";
 import {
@@ -19,10 +19,16 @@ import {
   EmptyState,
 } from "@/components/ui/states";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { PeriodSelector } from "@/components/payroll/period-selector";
+import { MonthCyclePicker } from "@/components/payroll/month-cycle-picker";
+import { PayrollSummary } from "@/components/payroll/payroll-summary";
 import { PayslipRow } from "@/components/payroll/payslip-row";
 import { PayslipDetail } from "@/components/payroll/payslip-detail";
+import {
+  PayrollToolbar,
+  type SortKey,
+  type StatusFilter,
+} from "@/components/payroll/payroll-toolbar";
+import { useBranches, useShifts, useCategories } from "@/lib/hooks/use-org";
 import {
   Dialog,
   DialogContent,
@@ -31,10 +37,20 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { exportReportToExcel } from "@/lib/export";
-import { currentMonth } from "@/lib/utils";
+import {
+  defaultLabelMonth,
+  isCycleOpen,
+  previousLabelMonth,
+  cycleLabelContaining,
+  isBefore,
+  toPeriod,
+  type LabelMonth,
+} from "@/lib/payroll-cycle";
 import type { Payslip } from "@/lib/types";
 import type { TKey } from "@/lib/i18n/ar";
 import { Wallet, FileDown } from "lucide-react";
+
+type ConfirmTarget = { kind: "all" } | { kind: "one"; slip: Payslip };
 
 export default function PayrollPage() {
   const { t, locale } = useT();
@@ -44,39 +60,180 @@ export default function PayrollPage() {
   const [year, setYear] = useState(now.getFullYear());
   const [selected, setSelected] = useState<number[]>([]);
   const [preview, setPreview] = useState<Payslip | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmTarget | null>(null);
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<SortKey>("name");
+  // Sort direction: true = ascending ("من الأقل"), false = descending ("من الأعلى").
+  const [sortAsc, setSortAsc] = useState(true);
+  const [branchFilter, setBranchFilter] = useState<number | null>(null);
+  const [shiftFilter, setShiftFilter] = useState<number | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<number | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(null);
+  const [groupByBranch, setGroupByBranch] = useState(false);
 
   const period = `${year}-${String(month).padStart(2, "0")}`;
 
-  const { data, isLoading, isError, refetch } = usePayrollSlips({
-    month: period,
-  });
-  const slips = Array.isArray(data) ? data : [];
+  const branches = useBranches().data ?? [];
+  const shifts = useShifts().data ?? [];
+  const categories = useCategories().data ?? [];
 
-  const generate = useGeneratePayroll();
+  // Live overview — every active employee with their calculated figures, just
+  // like the mobile app (no "generate" step needed for salaries to appear).
+  const overviewQ = useLivePayrollOverview(period);
+  const overview = overviewQ.data;
+  const slips = overview?.slips ?? [];
+  const cycleStartDay = overview?.cycleStartDay ?? 1;
+  const minHire = overview?.minHireDate ? new Date(overview.minHireDate) : null;
+
+  // On first data load, anchor the picker on the latest *completed* cycle so we
+  // open on the month that just ended rather than the still-running one. Done as
+  // a guarded state adjustment during render (React's documented pattern) so it
+  // happens before paint without an effect's cascading re-render.
+  const [anchored, setAnchored] = useState(false);
+  if (overview && !anchored) {
+    setAnchored(true);
+    const target = defaultLabelMonth(
+      new Date(),
+      overview.cycleStartDay,
+      overview.minHireDate ? new Date(overview.minHireDate) : null,
+    );
+    if (target.month !== month) setMonth(target.month);
+    if (target.year !== year) setYear(target.year);
+  }
+
+  // Disburse gating, mirroring the app: an open (in-advance) cycle may not be
+  // paid until its predecessor is fully settled.
+  const lm: LabelMonth = { year, month };
+  const cycleOpen = isCycleOpen(lm, cycleStartDay);
+  const prevLm = previousLabelMonth(lm);
+  const minReach = minHire ? cycleLabelContaining(minHire, cycleStartDay) : null;
+  const prevBeforeFloor = minReach ? isBefore(prevLm, minReach) : false;
+  const prevQ = useLivePayrollOverview(
+    toPeriod(prevLm),
+    cycleOpen && !prevBeforeFloor,
+  );
+  const prevSettled =
+    !cycleOpen || prevBeforeFloor
+      ? true
+      : prevQ.data
+        ? prevQ.data.slips.length === 0 ||
+          prevQ.data.slips.every((s) => s.status === "paid")
+        : false; // unknown → hold
+  const disburseBlocked = cycleOpen && !prevSettled;
+  const monthLabel = `${month}/${year}`;
+
   const approve = useApproveSlip();
   const approveBulk = useApproveBulk();
   const revert = useRevertSlip();
   const markPaid = useMarkPaid();
   const disburseAll = useDisburseAll();
+  const disburseEmployee = useDisburseEmployee();
 
   const fmt = (n: number) =>
-    new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-GB").format(n);
+    new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-GB").format(
+      Math.round(n),
+    );
 
-  const totals = slips.reduce(
+  // Search + branch/shift/category scope (mirrors the app's _scopedPayrolls);
+  // the paid badge is counted here so it ignores the status filter.
+  const lower = search.trim().toLowerCase();
+  const scoped = slips.filter((s) => {
+    if (lower && !(s.employee_name ?? "").toLowerCase().includes(lower))
+      return false;
+    if (branchFilter !== null && s.branch_id !== branchFilter) return false;
+    if (shiftFilter !== null && s.shift_id !== shiftFilter) return false;
+    if (
+      categoryFilter !== null &&
+      !(s.category_ids ?? []).includes(categoryFilter)
+    )
+      return false;
+    return true;
+  });
+  const paidCount = scoped.filter((s) => s.status === "paid").length;
+
+  const filtered = scoped
+    .filter((s) =>
+      statusFilter === null
+        ? true
+        : statusFilter === "paid"
+          ? s.status === "paid"
+          : s.status !== "paid",
+    )
+    .sort((a, b) => {
+      let cmp: number;
+      switch (sortBy) {
+        case "net":
+          cmp = a.net - b.net;
+          break;
+        case "deduction":
+          cmp = a.deductions_total - b.deductions_total;
+          break;
+        case "bonus":
+          cmp = a.bonuses_total - b.bonuses_total;
+          break;
+        default:
+          cmp = (a.employee_name ?? "").localeCompare(b.employee_name ?? "");
+          break;
+      }
+      return sortAsc ? cmp : -cmp;
+    });
+
+  const totals = filtered.reduce(
     (acc, s) => {
       acc.base += s.base;
       acc.net += s.net;
       acc.bonuses += s.bonuses_total;
       acc.deductions += s.deductions_total;
+      acc.projected += s.projected_net ?? s.net;
       return acc;
     },
-    { base: 0, net: 0, bonuses: 0, deductions: 0 },
+    { base: 0, net: 0, bonuses: 0, deductions: 0, projected: 0 },
   );
+  const prevTotal = overview?.previousSummary?.total_net ?? null;
+  const delta = prevTotal !== null ? totals.projected - prevTotal : null;
+
+  // Group-by-branch rows: preserve first-seen branch order.
+  const groups: { branchId: number | null; name: string; rows: Payslip[] }[] =
+    [];
+  if (groupByBranch) {
+    const byBranch = new Map<number | null, Payslip[]>();
+    for (const s of filtered) {
+      const b = s.branch_id ?? null;
+      if (!byBranch.has(b)) {
+        byBranch.set(b, []);
+        groups.push({
+          branchId: b,
+          name: s.branch_name ?? t("branch"),
+          rows: byBranch.get(b)!,
+        });
+      }
+      byBranch.get(b)!.push(s);
+    }
+  }
 
   const toggle = (id: number) =>
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   const toggleAll = (ids: number[]) =>
     setSelected((cur) => (ids.every((id) => cur.includes(id)) ? [] : ids));
+
+  const goToPrevMonth = () => {
+    setMonth(prevLm.month);
+    setYear(prevLm.year);
+    setSelected([]);
+    setConfirm(null);
+  };
+
+  const runDisburse = () => {
+    if (!confirm || disburseBlocked) return;
+    if (confirm.kind === "all") disburseAll.mutate(period);
+    else
+      disburseEmployee.mutate({
+        employeeId: confirm.slip.employee_id,
+        month: period,
+      });
+    setSelected([]);
+    setConfirm(null);
+  };
 
   const exportExcel = () => {
     exportReportToExcel({
@@ -90,7 +247,7 @@ export default function PayrollPage() {
         t("net"),
         t("status"),
       ],
-      rows: slips.map((s) => [
+      rows: filtered.map((s) => [
         s.employee_name ?? String(s.employee_id),
         s.base,
         s.allowances_total,
@@ -107,45 +264,64 @@ export default function PayrollPage() {
         <h1 className="text-headline-md font-bold">{t("payroll")}</h1>
         <Can permission="manage_payroll">
           <Button
-            variant="outline"
             size="sm"
-            onClick={() => generate.mutate(period)}
-            disabled={generate.isPending}
+            onClick={() => setConfirm({ kind: "all" })}
+            disabled={slips.length === 0}
           >
             <Wallet className="h-4 w-4" />
-            {t("generate_payroll")}
+            {t("disburse_month")}
           </Button>
         </Can>
       </div>
 
-      <PeriodSelector
+      <MonthCyclePicker
         month={month}
         year={year}
-        onMonthChange={(m) => {
+        cycleStartDay={cycleStartDay}
+        minHireDate={minHire}
+        onChange={(m, y) => {
           setMonth(m);
-          setSelected([]);
-        }}
-        onYearChange={(y) => {
           setYear(y);
           setSelected([]);
         }}
       />
 
-      <div className="grid gap-3 sm:grid-cols-4">
-        {[
-          { label: t("base_salary"), value: totals.base },
-          { label: t("bonuses_field"), value: totals.bonuses },
-          { label: t("deductions"), value: totals.deductions },
-          { label: t("net"), value: totals.net },
-        ].map((c) => (
-          <Card key={c.label}>
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">{c.label}</p>
-              <p className="text-headline-sm font-bold">{fmt(c.value)}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <PayrollToolbar
+        search={search}
+        onSearch={setSearch}
+        sortBy={sortBy}
+        onSort={(v) => {
+          setSortBy(v);
+          setSortAsc(v === "name"); // A→Z for name, highest-first for amounts
+        }}
+        sortAsc={sortAsc}
+        onToggleDir={() => setSortAsc((a) => !a)}
+        branchFilter={branchFilter}
+        onBranch={setBranchFilter}
+        shiftFilter={shiftFilter}
+        onShift={setShiftFilter}
+        categoryFilter={categoryFilter}
+        onCategory={setCategoryFilter}
+        statusFilter={statusFilter}
+        onStatus={setStatusFilter}
+        groupByBranch={groupByBranch}
+        onToggleGroup={() => setGroupByBranch((g) => !g)}
+        branches={branches}
+        shifts={shifts}
+        categories={categories}
+      />
+
+      <PayrollSummary
+        net={totals.net}
+        base={totals.base}
+        bonuses={totals.bonuses}
+        deductions={totals.deductions}
+        delta={delta}
+        employeeCount={filtered.length}
+        paidCount={paidCount}
+        scopedCount={scoped.length}
+        currency={overview?.currency ?? "EGP"}
+      />
 
       {selected.length > 0 && (
         <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-2">
@@ -158,7 +334,7 @@ export default function PayrollPage() {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => disburseAll.mutate(period)}
+            onClick={() => setConfirm({ kind: "all" })}
           >
             {t("disburse_all")}
           </Button>
@@ -175,21 +351,54 @@ export default function PayrollPage() {
       )}
 
       {can("manage_payroll") ? (
-        isLoading ? (
+        overviewQ.isLoading ? (
           <LoadingState />
-        ) : isError ? (
-          <ErrorState onRetry={() => refetch()} />
-        ) : slips.length === 0 ? (
+        ) : overviewQ.isError ? (
+          <ErrorState onRetry={() => overviewQ.refetch()} />
+        ) : filtered.length === 0 ? (
           <EmptyState message={t("no_records")} icon={Wallet} />
+        ) : groupByBranch ? (
+          <div className="space-y-4">
+            {groups.map((g) => {
+              const subtotal = g.rows.reduce((s, p) => s + p.net, 0);
+              return (
+                <div key={g.branchId ?? "none"} className="space-y-1.5">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-body-md font-semibold">
+                      {g.name}{" "}
+                      <span className="text-muted-foreground">
+                        ({g.rows.length})
+                      </span>
+                    </span>
+                    <span className="text-body-md font-semibold">
+                      {fmt(subtotal)}
+                    </span>
+                  </div>
+                  <PayslipRow
+                    slips={g.rows}
+                    selected={selected}
+                    onToggle={toggle}
+                    onToggleAll={toggleAll}
+                    onApprove={(id) => approve.mutate(id)}
+                    onRevert={(id) => revert.mutate(id)}
+                    onMarkPaid={(id) => markPaid.mutate(id)}
+                    onDisburse={(s) => setConfirm({ kind: "one", slip: s })}
+                    onPreview={setPreview}
+                  />
+                </div>
+              );
+            })}
+          </div>
         ) : (
           <PayslipRow
-            slips={slips}
+            slips={filtered}
             selected={selected}
             onToggle={toggle}
             onToggleAll={toggleAll}
             onApprove={(id) => approve.mutate(id)}
             onRevert={(id) => revert.mutate(id)}
             onMarkPaid={(id) => markPaid.mutate(id)}
+            onDisburse={(s) => setConfirm({ kind: "one", slip: s })}
             onPreview={setPreview}
           />
         )
@@ -204,6 +413,51 @@ export default function PayrollPage() {
           </DialogHeader>
           {preview && <PayslipDetail slip={preview} />}
           <DialogClose render={<Button variant="outline" />}>{t("close")}</DialogClose>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {confirm?.kind === "one" ? t("disburse_salary") : t("disburse_month")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-body-md">
+            <p className="text-muted-foreground">
+              {t("month")}: {monthLabel}
+              {confirm?.kind === "one" && confirm.slip.employee_name
+                ? ` — ${confirm.slip.employee_name}`
+                : ""}
+            </p>
+            <p>{confirm?.kind === "one" ? t("disburse_one_q") : t("disburse_confirm_q")}</p>
+            {disburseBlocked ? (
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                {t("disburse_prev_required")}
+              </div>
+            ) : (
+              cycleOpen && (
+                <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
+                  {t("mid_cycle_warning")}
+                </div>
+              )
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setConfirm(null)}>
+              {t("cancel")}
+            </Button>
+            {disburseBlocked ? (
+              <Button onClick={goToPrevMonth}>{t("go_to_previous_month")}</Button>
+            ) : (
+              <Button
+                onClick={runDisburse}
+                disabled={disburseAll.isPending || disburseEmployee.isPending}
+              >
+                {t("disburse")}
+              </Button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

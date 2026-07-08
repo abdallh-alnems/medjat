@@ -18,6 +18,12 @@ class CRUD {
   /// force a sign-out. Static so the low-level client stays decoupled.
   static void Function()? onSessionSuperseded;
 
+  /// Invoked when the backend reports that this account can no longer access the
+  /// app — it was removed from the company (`account_removed`) or suspended
+  /// (`account_deactivated`). Registered by AuthController to force a sign-out
+  /// and show the server-provided reason.
+  static void Function(String message)? onForceLogout;
+
   Map<String, String> _baseHeaders() {
     final securityUser = dotenv.env['SECURITY_USER'] ?? '';
     final securityKey = dotenv.env['SECURITY_KEY'] ?? '';
@@ -327,10 +333,26 @@ class CRUD {
     }
 
     if (statusCode == 403) {
+      String message = 'ليس لديك صلاحية';
+      try {
+        final body = jsonDecode(response.body);
+        if (body is Map) {
+          if (body['message'] is String &&
+              (body['message'] as String).isNotEmpty) {
+            message = body['message'] as String;
+          }
+          // The account was removed from the company or suspended — sign out
+          // cleanly instead of leaving the user on a broken "try again" screen.
+          if (body['error_code'] == 'account_removed' ||
+              body['error_code'] == 'account_deactivated') {
+            onForceLogout?.call(message);
+          }
+        }
+      } catch (_) {}
       return {
         'status': StatusRequest.failure,
         'statusCode': 403,
-        'message': 'ليس لديك صلاحية',
+        'message': message,
       };
     }
 

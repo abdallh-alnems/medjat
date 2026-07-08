@@ -31,16 +31,19 @@ describe("settings contract", () => {
     server.use(
       http.get(`${API}/app/settings/leave_settings.php`, () =>
         HttpResponse.json({
-          annual_entitlement: 21,
-          sick_entitlement: 10,
+          default_annual_leave_days: 21,
           carryover_enabled: true,
-          max_carryover: 7,
-          encashable: false,
+          leave_carryover_max_days: 7,
+          carryover_expiry_months: null,
+          carryover_encash_excess: false,
+          carryover_legal_min_days: null,
+          auto_rollover_enabled: false,
+          apply_legal_seniority_entitlement: true,
         }),
       ),
     );
     const res = await getLeaveSettings();
-    expect(res.annual_entitlement).toBe(21);
+    expect(res.default_annual_leave_days).toBe(21);
   });
 
   it("statutory payroll: 4xx permission-denied", async () => {

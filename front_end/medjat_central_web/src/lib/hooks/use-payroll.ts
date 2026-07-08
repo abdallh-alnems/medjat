@@ -4,12 +4,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   listSlips,
   getLivePayroll,
+  getLivePayrollOverview,
   generatePayroll,
   approveSlip,
   approveBulkSlips,
   revertSlip,
   markPaid,
   disburse,
+  disburseEmployee,
   disburseAll,
   overrideLine,
   getPayrollAudit,
@@ -33,6 +35,22 @@ export function useLivePayroll(month: string) {
     queryKey: [...QK, "live", month],
     queryFn: () => getLivePayroll(month),
   });
+}
+
+export function useLivePayrollOverview(month: string, enabled = true) {
+  return useQuery({
+    queryKey: [...QK, "live-overview", month],
+    queryFn: () => getLivePayrollOverview(month),
+    enabled,
+  });
+}
+
+export function useDisburseEmployee() {
+  return useToastMutation(
+    (args: { employeeId: number; month: string }) =>
+      disburseEmployee(args.employeeId, args.month),
+    { invalidate: [QK] },
+  );
 }
 
 export function useGeneratePayroll() {

@@ -47,7 +47,19 @@ final class Auth {
         }
 
         if (!$admin['is_active']) {
-            Response::fail('Account is deactivated', 403);
+            // Removal no longer disables the account (it only detaches the
+            // company), so an inactive account here is a genuine suspension.
+            Response::fail('تم إيقاف حسابك من قِبل المسؤول', 403, 'account_deactivated');
+        }
+
+        // Membership guard: a detached admin (removed from their company) whose
+        // app still carries a stale company context. Reject so the apps drop it
+        // and return to onboarding (join / create a company) — and so a lingering
+        // session can never touch a company the admin no longer belongs to.
+        $requestTenant = $_SERVER['HTTP_X_TENANT_ID']
+            ?? ($input['tenant_id'] ?? $_GET['tenant_id'] ?? null);
+        if ($requestTenant !== null && $requestTenant !== '' && empty($admin['tenant_id'])) {
+            Response::fail('تمت إزالتك من الشركة من قِبل المسؤول', 403, 'account_removed');
         }
 
         // Single active session: if a newer login set a different active device,

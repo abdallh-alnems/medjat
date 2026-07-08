@@ -14,6 +14,9 @@ class PayrollController extends GetxController {
   String searchQuery = '';
   /// One of: 'name', 'net', 'deduction', 'bonus'.
   String sortBy = 'name';
+  /// Sort direction. true = ascending (A→Z / lowest first "من الأقل"),
+  /// false = descending (Z→A / highest first "من الأعلى").
+  bool sortAscending = true;
   int selectedMonth = DateTime.now().month;
   int selectedYear = DateTime.now().year;
   int? branchFilter;
@@ -75,10 +78,21 @@ class PayrollController extends GetxController {
   /// was actually generated for that cycle). Used by the summary card for
   /// the delta arrow.
   PayrollPeriodSummary? previousSummary;
-  /// True once the controller has anchored on the current cycle (the cycle
-  /// that contains today, which can differ from the calendar month when
-  /// `cycleStartDay` ≠ 1). Until then loadPayrolls may auto-correct.
+  /// True once the controller has anchored on the default cycle (the latest
+  /// *completed* cycle — see [defaultLabelMonth]). Until then loadPayrolls may
+  /// auto-correct from the calendar-month seed.
   bool _anchoredOnCurrentCycle = false;
+
+  /// Whether the cycle immediately preceding the (still-open) selected cycle
+  /// has every payable employee marked `paid`. The in-advance disburse of an
+  /// open cycle is blocked until this is true, so an earlier month is always
+  /// paid before a later one. Only computed while [isSelectedCycleOpen].
+  bool? _previousSettled;
+
+  /// The `prevLabelMonth|branch` key that [_previousSettled] was computed for,
+  /// so a stale answer is never trusted for the wrong selection and we don't
+  /// refetch needlessly.
+  String? _prevSettledKey;
 
   /// Monotonically increasing id assigned to every `loadPayrolls` call.
   /// When a slow response arrives after a newer call started, we compare
@@ -124,6 +138,11 @@ class PayrollController extends GetxController {
   String get _selectedMonthStr =>
       '$selectedYear-${selectedMonth.toString().padLeft(2, '0')}';
 
+  /// Human-readable label of the selected month (e.g. "يونيو 2026"), matching
+  /// the month-picker formatting. Shown in the disburse confirmation so the
+  /// admin sees exactly which month is being paid.
+  String get selectedMonthLabel => '${'month_$selectedMonth'.tr} $selectedYear';
+
   /// True when the selected cycle hasn't ended yet (today falls before its
   /// last day). Disbursing now pays the full month in advance and freezes the
   /// figures, so the UI surfaces a warning before confirming.
@@ -140,6 +159,12 @@ class PayrollController extends GetxController {
   /// so the tile flips to "paid". Returns true on success.
   Future<bool> disburseOne(int employeeId) async {
     if (employeeId <= 0) return false;
+    if (disburseBlockedByPrevious) {
+      Get.snackbar('cannot_disburse'.tr,
+          'disburse_prev_required'.trParams({'month': previousLabelMonthStr}),
+          snackPosition: SnackPosition.BOTTOM);
+      return false;
+    }
     final response =
         await _payrollData.disburseEmployee(employeeId, _selectedMonthStr);
     if (response['status'] == StatusRequest.success) {
@@ -157,6 +182,12 @@ class PayrollController extends GetxController {
   /// the active branch filter so "pay this branch" pays exactly the rows the
   /// user is viewing. Already-paid slips are skipped server-side.
   Future<bool> disburseMonth() async {
+    if (disburseBlockedByPrevious) {
+      Get.snackbar('cannot_disburse'.tr,
+          'disburse_prev_required'.trParams({'month': previousLabelMonthStr}),
+          snackPosition: SnackPosition.BOTTOM);
+      return false;
+    }
     final response = await _payrollData.disburseAll(_selectedMonthStr,
         branchId: branchFilter);
     if (response['status'] == StatusRequest.success) {
@@ -218,6 +249,79 @@ class PayrollController extends GetxController {
     return cycleLabelContaining(h);
   }
 
+  /// Label month the picker defaults to on open: the latest cycle whose last
+  /// day has already passed. Companies pay the month that just ended, so we
+  /// land on the completed cycle instead of the still-open current one. Clamped
+  /// to the earliest reachable month so a brand-new tenant isn't sent before
+  /// its first cycle.
+  DateTime defaultLabelMonth() {
+    final current = currentCycleLabelMonth();
+    final end = cycleWindowTo(current);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final endDay = DateTime(end.year, end.month, end.day);
+    // Still inside the current cycle → step back to the completed predecessor.
+    final target = today.isBefore(endDay)
+        ? DateTime(current.year, current.month - 1)
+        : current;
+    final floor = minReachableMonth();
+    if (floor != null && target.isBefore(floor)) return floor;
+    return target;
+  }
+
+  /// Label month immediately before the selected one (its predecessor cycle).
+  DateTime get previousLabelMonth => DateTime(selectedYear, selectedMonth - 1);
+
+  /// Previous label month as "YYYY-MM".
+  String get previousLabelMonthStr =>
+      '${previousLabelMonth.year}-'
+      '${previousLabelMonth.month.toString().padLeft(2, '0')}';
+
+  /// True when disburse must be refused because the selected cycle is still
+  /// open (would be paid in advance) and its predecessor isn't fully paid yet.
+  /// Completed cycles are never blocked. While the predecessor's paid state is
+  /// still being verified we hold (return true) so nothing slips through.
+  bool get disburseBlockedByPrevious {
+    if (!isSelectedCycleOpen) return false;
+    final key = '$previousLabelMonthStr|${branchFilter ?? 'all'}';
+    if (_prevSettledKey != key) return true;
+    return !(_previousSettled ?? false);
+  }
+
+  /// Jump the picker to the previous label month (used by the "pay last month
+  /// first" prompt).
+  void goToPreviousMonth() =>
+      changeMonth(previousLabelMonth.month, previousLabelMonth.year);
+
+  /// While the selected cycle is open, fetch its predecessor and record whether
+  /// every payable employee there is already `paid`. A month before the
+  /// earliest reachable cycle carries no obligation, so it counts as settled.
+  /// Keyed so it runs once per (prev month + branch) and skips silent polls.
+  Future<void> _refreshPreviousSettled() async {
+    if (!isSelectedCycleOpen) return;
+    final key = '$previousLabelMonthStr|${branchFilter ?? 'all'}';
+    if (key == _prevSettledKey) return;
+    final floor = minReachableMonth();
+    if (floor != null && previousLabelMonth.isBefore(floor)) {
+      _previousSettled = true;
+      _prevSettledKey = key;
+      update();
+      return;
+    }
+    final response = await _payrollData.getPayrollLive(
+      previousLabelMonth.month,
+      previousLabelMonth.year,
+      branchId: branchFilter,
+    );
+    if (response['status'] == StatusRequest.success) {
+      final items = _extractItems(_unwrapPayload(response['data']));
+      _previousSettled =
+          items.isEmpty || items.every((p) => p.status == 'paid');
+      _prevSettledKey = key;
+      update();
+    }
+  }
+
   /// Rows matching search + branch/shift/category, *before* the status
   /// filter and sort. The status counts below derive from this set so a
   /// figure like "3 paid" stays stable while the user toggles the status
@@ -244,25 +348,31 @@ class PayrollController extends GetxController {
   List<PayrollModel> get filteredPayrolls {
     Iterable<PayrollModel> rows = _scopedPayrolls;
     if (statusFilter != null) {
-      rows = rows.where((p) => p.status == statusFilter);
+      // Two-state filter: 'paid' → paid only; 'unpaid' → anything not paid.
+      rows = statusFilter == 'paid'
+          ? rows.where((p) => p.status == 'paid')
+          : rows.where((p) => p.status != 'paid');
     }
     final list = rows.toList();
-    switch (sortBy) {
-      case 'net':
-        list.sort((a, b) => b.netSalary.compareTo(a.netSalary));
-        break;
-      case 'deduction':
-        list.sort((a, b) => b.totalDeductions.compareTo(a.totalDeductions));
-        break;
-      case 'bonus':
-        list.sort((a, b) => b.totalBonuses.compareTo(a.totalBonuses));
-        break;
-      case 'name':
-      default:
-        list.sort((a, b) => (a.employeeName ?? '')
-            .compareTo(b.employeeName ?? ''));
-        break;
-    }
+    list.sort((a, b) {
+      int cmp;
+      switch (sortBy) {
+        case 'net':
+          cmp = a.netSalary.compareTo(b.netSalary);
+          break;
+        case 'deduction':
+          cmp = a.totalDeductions.compareTo(b.totalDeductions);
+          break;
+        case 'bonus':
+          cmp = a.totalBonuses.compareTo(b.totalBonuses);
+          break;
+        case 'name':
+        default:
+          cmp = (a.employeeName ?? '').compareTo(b.employeeName ?? '');
+          break;
+      }
+      return sortAscending ? cmp : -cmp;
+    });
     return list;
   }
 
@@ -301,6 +411,10 @@ class PayrollController extends GetxController {
   double get totalBonuses =>
       filteredPayrolls.fold<double>(0, (s, p) => s + p.totalBonuses);
 
+  /// Sum of base salary for visible rows (before deductions/bonuses).
+  double get totalBase =>
+      filteredPayrolls.fold<double>(0, (s, p) => s + p.baseSalary);
+
   /// Difference of full-cycle projection vs the previous cycle's saved net.
   /// Null when no previous-cycle data is available, or when active filters
   /// make the comparison meaningless (shift/category scope can't be matched
@@ -320,6 +434,15 @@ class PayrollController extends GetxController {
   void setSortBy(String key) {
     if (sortBy == key) return;
     sortBy = key;
+    // Sensible default direction per field: names A→Z, amounts highest-first.
+    sortAscending = key == 'name';
+    update();
+  }
+
+  /// Manually set the sort direction (true = ascending "من الأقل").
+  void setSortAscending(bool asc) {
+    if (sortAscending == asc) return;
+    sortAscending = asc;
     update();
   }
 
@@ -443,14 +566,14 @@ class PayrollController extends GetxController {
       }
       status = StatusRequest.success;
 
-      // First successful load: if the calendar-month default missed the
-      // cycle that actually contains today (e.g. cycle_start_day = 12 and
-      // today is between day 1 and 11), snap to the correct cycle and
-      // re-fetch once. The recursive call gets its own myId; we return
-      // immediately so we don't double-update with stale state.
+      // First successful load: snap from the calendar-month seed to the cycle
+      // the picker should actually open on — the latest *completed* cycle, so
+      // the admin lands on the month that just ended rather than the still-open
+      // current one. Re-fetch once for that month; the recursive call gets its
+      // own myId, so we return immediately to avoid a stale double-update.
       if (!_anchoredOnCurrentCycle) {
         _anchoredOnCurrentCycle = true;
-        final target = currentCycleLabelMonth();
+        final target = defaultLabelMonth();
         if (target.year != selectedYear || target.month != selectedMonth) {
           selectedMonth = target.month;
           selectedYear = target.year;
@@ -459,6 +582,11 @@ class PayrollController extends GetxController {
           return;
         }
       }
+
+      // Gate the in-advance disburse of an open cycle behind its predecessor.
+      // No-op (and no extra fetch) for completed cycles or an unchanged
+      // selection, so silent polls stay cheap.
+      unawaited(_refreshPreviousSettled());
     } else if (!silent) {
       // A user-triggered load that failed — surface the error so they can
       // retry. Silent polls swallow failures and keep the previous data

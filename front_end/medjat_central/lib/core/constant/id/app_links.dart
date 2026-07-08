@@ -20,6 +20,8 @@ class AppLinks {
   // ── Tenant onboarding (Create / Join company) ──────────
   static String get tenantCreate => '$base/app/tenant/create.php';
   static String get tenantJoin => '$base/app/tenant/join.php';
+  static String get tenantAcceptInvitation =>
+      '$base/app/tenant/accept_invitation.php';
 
   // ── Dashboard ──────────────────────────────────────────
   static String get dashboard => '$base/app/dashboard/overview.php';

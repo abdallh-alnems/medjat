@@ -45,6 +45,13 @@ if ($admin['role'] === 'general_manager' && $inviterPerms !== '*') {
     Response::forbidden('لا يمكنك تعديل مدير عام');
 }
 
+// Hierarchy guard: cannot edit a team member higher than you in the admin
+// hierarchy (one who holds a permission you don't have).
+$currentTargetPerms = PermissionMiddleware::effectivePermissions($adminId, $tenantId, $admin['role']);
+if (!PermissionMiddleware::outranks($inviterPerms, $currentTargetPerms)) {
+    Response::forbidden('لا يمكنك تعديل مدير يعلوك في الصلاحيات الإدارية');
+}
+
 $roleChanged = false;
 if ($newRole !== null && $newRole !== $admin['role']) {
     $validRoles = ['general_manager', 'hr', 'branch_manager', 'attendance', 'viewer'];

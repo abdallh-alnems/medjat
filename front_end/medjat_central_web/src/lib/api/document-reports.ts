@@ -1,5 +1,10 @@
-import { apiGet, unwrapList, asObject } from "./client";
+import { apiGet, apiPost, unwrapList, asObject } from "./client";
 import type { ComplianceItem, DocumentStats } from "@/lib/types";
+
+/** Sweep and mark all past-expiry documents as expired. Returns the count. */
+export function markExpiredDocuments() {
+  return apiPost<{ marked_expired: number }>("app/documents/mark_expired.php");
+}
 
 export async function getExpiringSoon(): Promise<ComplianceItem[]> {
   // Backend returns `{ documents }`.

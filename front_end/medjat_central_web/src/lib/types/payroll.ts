@@ -1,4 +1,6 @@
-export type PayslipStatus = "draft" | "approved" | "paid";
+// "live" = an unsaved cycle figure straight from the calculator (no payroll
+// row generated yet), matching the live overview the mobile app shows.
+export type PayslipStatus = "live" | "draft" | "approved" | "paid";
 
 export interface Payslip {
   id: number;
@@ -13,6 +15,20 @@ export interface Payslip {
   net: number;
   status: PayslipStatus;
   lines?: PayslipLine[];
+  // ── Live-overview extras (populated only via getLivePayrollOverview) ──
+  branch_id?: number | null;
+  branch_name?: string | null;
+  shift_id?: number | null;
+  category_ids?: number[];
+  job_title?: string | null;
+  /** Full-cycle projection (vs the prorated "net so far"). */
+  projected_net?: number;
+  /** This employee's net for the previous label month, if generated. */
+  previous_net?: number | null;
+  /** Sum of overtime bonus lines this cycle (for the row chip). */
+  overtime_total?: number;
+  /** Sum of lateness deduction lines this cycle (for the row chip). */
+  late_total?: number;
 }
 
 export interface PayslipLine {
@@ -43,6 +59,9 @@ export interface Allowance {
   type: string;
   amount: number;
   active: boolean;
+  start_month?: string | null;
+  end_month?: string | null;
+  label?: string | null;
 }
 
 export interface DeductionRule {

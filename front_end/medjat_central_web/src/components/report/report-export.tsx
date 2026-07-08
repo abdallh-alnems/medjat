@@ -7,6 +7,7 @@ import {
   exportReportToPDF,
   exportReportToExcel,
   exportReportToCSV,
+  exportReportToWord,
 } from "@/lib/export";
 import type { ReportData } from "@/lib/types";
 
@@ -37,6 +38,14 @@ export function ReportExport({ report }: Props) {
       <Button variant="outline" size="sm" onClick={() => exportReportToCSV(report)}>
         <FileDown className="h-4 w-4" />
         {t("csv")}
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => exportReportToWord(report, { locale })}
+      >
+        <FileDown className="h-4 w-4" />
+        {t("word")}
       </Button>
     </div>
   );

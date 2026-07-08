@@ -19,7 +19,22 @@ import { useT } from "@/lib/i18n/use-t";
 import type { TKey } from "@/lib/i18n/ar";
 import { usePermissions } from "@/lib/hooks/use-permissions";
 import { useToastMutation } from "@/lib/hooks/use-org";
-import { updateEmployee } from "@/lib/api/employees";
+import {
+  updateEmployee,
+  getSuspensions,
+  suspendEmployee,
+  endSuspension,
+} from "@/lib/api/employees";
+import type { SuspensionPayMode } from "@/lib/types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ActivationCard } from "@/components/employee/activation-card";
+import { FinancialAdjustments } from "@/components/employee/financial-adjustments";
 import { addWarning, deleteWarning, listWarnings } from "@/lib/api/warnings";
 import {
   listPerformanceReviews,
@@ -34,12 +49,10 @@ import {
 } from "@/components/ui/states";
 import { formatEGP, formatDate, currentMonth } from "@/lib/utils";
 import { useUIStore } from "@/lib/stores/ui-store";
-import { toast } from "sonner";
 import {
   ArrowRight,
   FileText,
   Banknote,
-  CalendarCheck,
   AlertTriangle,
   Star,
   Trash2,
@@ -57,7 +70,6 @@ export default function EmployeeDetailPage({
   const { t } = useT();
   const locale = useUIStore((s) => s.locale);
   const { can } = usePermissions();
-  const qc = useQueryClient();
 
   if (!id || Number.isNaN(employeeId)) notFound();
 
@@ -140,10 +152,11 @@ export default function EmployeeDetailPage({
           <TabsTrigger value="attendance">{t("attendance_history")}</TabsTrigger>
           <TabsTrigger value="warnings">{t("warnings")}</TabsTrigger>
           <TabsTrigger value="reviews">{t("performance_reviews")}</TabsTrigger>
+          <TabsTrigger value="suspensions">{t("suspensions")}</TabsTrigger>
         </TabsList>
 
         {/* Profile / edit */}
-        <TabsContent value="profile">
+        <TabsContent value="profile" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="text-title-lg">{t("employee_details")}</CardTitle>
@@ -158,16 +171,59 @@ export default function EmployeeDetailPage({
               />
             </CardContent>
           </Card>
+
+          {employee.leave_balance && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-title-lg">
+                  {t("leave_balance")}
+                  {employee.leave_balance.year
+                    ? ` — ${employee.leave_balance.year}`
+                    : ""}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+                <Stat
+                  label={t("entitlement")}
+                  value={String(employee.leave_balance.entitlement_days ?? 0)}
+                />
+                <Stat
+                  label={t("carried_over")}
+                  value={String(employee.leave_balance.carried_over_days ?? 0)}
+                />
+                <Stat
+                  label={t("total")}
+                  value={String(employee.leave_balance.total_days ?? 0)}
+                />
+                <Stat
+                  label={t("leave_used")}
+                  value={String(employee.leave_balance.used_days ?? 0)}
+                />
+                <Stat
+                  label={t("remaining")}
+                  value={String(employee.leave_balance.remaining_days ?? 0)}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {can("manage_employees") && employee.status !== "terminated" && (
+            <ActivationCard employeeId={employeeId} />
+          )}
         </TabsContent>
 
         {/* Financials */}
-        <TabsContent value="financials">
+        <TabsContent value="financials" className="space-y-4">
           <Card>
             <CardContent className="grid gap-3 py-4 sm:grid-cols-2">
               <Stat label={t("net")} value={formatEGP(financials.data?.net ?? 0, locale)} />
               <Stat label={t("ytd")} value={formatEGP(ytd.data?.net ?? 0, locale)} />
             </CardContent>
           </Card>
+
+          {can("manage_payroll") && (
+            <FinancialAdjustments employeeId={employeeId} />
+          )}
         </TabsContent>
 
         {/* Attendance history */}
@@ -280,8 +336,258 @@ export default function EmployeeDetailPage({
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Suspensions */}
+        <TabsContent value="suspensions">
+          <SuspensionsTab
+            employeeId={employeeId}
+            canManage={can("manage_employees")}
+          />
+        </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function SuspensionsTab({
+  employeeId,
+  canManage,
+}: {
+  employeeId: number;
+  canManage: boolean;
+}) {
+  const { t } = useT();
+  const locale = useUIStore((s) => s.locale);
+  const qc = useQueryClient();
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["suspensions", employeeId],
+    queryFn: () => getSuspensions(employeeId),
+  });
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["suspensions", employeeId] });
+    qc.invalidateQueries({ queryKey: ["employees", "detail", employeeId] });
+  };
+
+  const suspend = useToastMutation(
+    (args: Parameters<typeof suspendEmployee>[0]) => suspendEmployee(args),
+    { successMessage: t("saved"), onSuccess: invalidate },
+  );
+  const end = useToastMutation(() => endSuspension(employeeId), {
+    successMessage: t("saved"),
+    onSuccess: invalidate,
+  });
+
+  const active = data?.active ?? null;
+  const history = data?.suspensions ?? [];
+
+  const payLabel = (m: SuspensionPayMode): TKey =>
+    m === "partial"
+      ? "suspension_pay_partial"
+      : m === "full"
+        ? "suspension_pay_full"
+        : "suspension_pay_unpaid";
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-title-lg">{t("suspension_history")}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isLoading ? (
+          <LoadingState />
+        ) : (
+          <>
+            {active ? (
+              <div className="space-y-2 rounded-lg border border-warning/40 bg-warning/5 p-3">
+                <p className="flex items-center gap-2 font-medium text-warning">
+                  <AlertTriangle className="h-4 w-4" />
+                  {t("suspension_active_title")}
+                </p>
+                <p className="text-body-md">{active.reason}</p>
+                <p className="text-label-sm text-muted-foreground">
+                  {formatDate(active.start_date, locale)} →{" "}
+                  {active.end_date
+                    ? formatDate(active.end_date, locale)
+                    : t("suspension_open_ended_short")}{" "}
+                  · {t(payLabel(active.pay_mode))}
+                  {active.pay_mode === "partial" && active.pay_percentage
+                    ? ` (${active.pay_percentage}%)`
+                    : ""}
+                </p>
+                {canManage && (
+                  <div className="pt-1">
+                    <p className="mb-2 text-label-sm text-muted-foreground">
+                      {t("end_suspension_hint")}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={end.isPending}
+                      onClick={() => end.mutate(undefined)}
+                    >
+                      {t("end_suspension")}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              canManage && (
+                <SuspendForm
+                  onSubmit={(args) => suspend.mutate(args)}
+                  busy={suspend.isPending}
+                  employeeId={employeeId}
+                />
+              )
+            )}
+
+            {history.length === 0 ? (
+              <EmptyState message={t("no_suspensions")} />
+            ) : (
+              <ul className="divide-y">
+                {history.map((s) => (
+                  <li key={s.id} className="py-2">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium">{s.reason}</p>
+                      <Badge
+                        variant={s.status === "active" ? "default" : "secondary"}
+                      >
+                        {s.status === "active" ? t("active") : t("inactive")}
+                      </Badge>
+                    </div>
+                    <p className="text-label-sm text-muted-foreground">
+                      {formatDate(s.start_date, locale)} →{" "}
+                      {s.end_date
+                        ? formatDate(s.end_date, locale)
+                        : t("suspension_open_ended_short")}{" "}
+                      · {t(payLabel(s.pay_mode))}
+                      {s.created_by_name
+                        ? ` · ${t("suspension_issued_by")}: ${s.created_by_name}`
+                        : ""}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function SuspendForm({
+  onSubmit,
+  busy,
+  employeeId,
+}: {
+  onSubmit: (args: Parameters<typeof suspendEmployee>[0]) => void;
+  busy: boolean;
+  employeeId: number;
+}) {
+  const { t } = useT();
+  const [reason, setReason] = useState("");
+  const [payMode, setPayMode] = useState<SuspensionPayMode>("unpaid");
+  const [payPercentage, setPayPercentage] = useState("50");
+  const [startDate, setStartDate] = useState(
+    () => new Date().toISOString().slice(0, 10),
+  );
+  const [endDate, setEndDate] = useState("");
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit({
+          employee_id: employeeId,
+          reason: reason.trim(),
+          pay_mode: payMode,
+          pay_percentage:
+            payMode === "partial" ? Number(payPercentage) || 0 : null,
+          start_date: startDate,
+          end_date: endDate || null,
+        });
+      }}
+      className="space-y-3 rounded-lg border p-3"
+    >
+      <p className="font-medium">{t("suspend_employee")}</p>
+      <div className="space-y-1.5">
+        <Label>{t("suspension_reason")}</Label>
+        <Input
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          required
+        />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label>{t("suspension_pay_treatment")}</Label>
+          <Select
+            value={payMode}
+            onValueChange={(v) => setPayMode((v ?? "unpaid") as SuspensionPayMode)}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue>
+                {(v) =>
+                  t(
+                    v === "partial"
+                      ? "suspension_pay_partial"
+                      : v === "full"
+                        ? "suspension_pay_full"
+                        : "suspension_pay_unpaid",
+                  )
+                }
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unpaid">
+                {t("suspension_pay_unpaid")}
+              </SelectItem>
+              <SelectItem value="partial">
+                {t("suspension_pay_partial")}
+              </SelectItem>
+              <SelectItem value="full">{t("suspension_pay_full")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        {payMode === "partial" && (
+          <div className="space-y-1.5">
+            <Label>{t("suspension_pay_percentage")}</Label>
+            <Input
+              type="number"
+              min={1}
+              max={99}
+              value={payPercentage}
+              onChange={(e) => setPayPercentage(e.target.value)}
+            />
+          </div>
+        )}
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label>{t("suspension_start_date")}</Label>
+          <Input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label>{t("suspension_end_date")}</Label>
+          <Input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
+        </div>
+      </div>
+      <div className="flex justify-end">
+        <Button type="submit" disabled={busy || !reason.trim()}>
+          {t("suspend")}
+        </Button>
+      </div>
+    </form>
   );
 }
 

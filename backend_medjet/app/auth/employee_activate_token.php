@@ -24,22 +24,50 @@ if (!in_array($platform, ['android', 'ios'], true)) {
     $platform = 'android';
 }
 
-$codeRow = ActivationCodeModel::findByToken($token);
-if (!$codeRow) {
-    Response::fail('رابط التفعيل غير صالح أو منتهي', 404, 'join_link_invalid');
-}
+// --- Store-review demo QR ------------------------------------------------
+// Mirrors the phone+code demo in employee_login.php: one configured token,
+// encoded into a permanent demo QR, signs straight into the demo employee
+// without consuming or expiring any activation row. This lets App Store /
+// Google Play reviewers test the "Scan Join QR" flow on every submission.
+// Inert in production unless REVIEW_DEMO_TOKEN and REVIEW_DEMO_PHONE are set.
+$codeRow = null;
+$isDemoLogin = false;
+$demoToken = trim((string) getenv('REVIEW_DEMO_TOKEN'));
+$demoPhone = trim((string) getenv('REVIEW_DEMO_PHONE'));
 
-$employee = Database::fetchOne(
-    "SELECT e.*, b.name as branch_name, t.name as tenant_name
-     FROM employees e
-     LEFT JOIN branches b ON b.id = e.branch_id
-     LEFT JOIN tenants t ON t.id = e.tenant_id
-     WHERE e.id = ? AND e.tenant_id = ? LIMIT 1",
-    [(int) $codeRow['employee_id'], (int) $codeRow['tenant_id']]
-);
+if ($demoToken !== '' && $demoPhone !== '' && hash_equals($demoToken, $token)) {
+    $isDemoLogin = true;
+    $demoCore = ltrim(preg_replace('/\D/', '', $demoPhone), '0');
+    $employee = Database::fetchOne(
+        "SELECT e.*, b.name as branch_name, t.name as tenant_name
+         FROM employees e
+         LEFT JOIN branches b ON b.id = e.branch_id
+         LEFT JOIN tenants t ON t.id = e.tenant_id
+         WHERE REPLACE(REPLACE(e.phone, '+', ''), ' ', '') LIKE ?
+         ORDER BY e.id LIMIT 1",
+        ['%' . $demoCore]
+    );
+    if (!$employee) {
+        Response::fail('Demo account not configured', 404, 'join_link_invalid');
+    }
+} else {
+    $codeRow = ActivationCodeModel::findByToken($token);
+    if (!$codeRow) {
+        Response::fail('رابط التفعيل غير صالح أو منتهي', 404, 'join_link_invalid');
+    }
 
-if (!$employee) {
-    Response::fail('Employee not found', 404, 'join_link_invalid');
+    $employee = Database::fetchOne(
+        "SELECT e.*, b.name as branch_name, t.name as tenant_name
+         FROM employees e
+         LEFT JOIN branches b ON b.id = e.branch_id
+         LEFT JOIN tenants t ON t.id = e.tenant_id
+         WHERE e.id = ? AND e.tenant_id = ? LIMIT 1",
+        [(int) $codeRow['employee_id'], (int) $codeRow['tenant_id']]
+    );
+
+    if (!$employee) {
+        Response::fail('Employee not found', 404, 'join_link_invalid');
+    }
 }
 
 if (($employee['status'] ?? '') === 'terminated') {
@@ -82,8 +110,11 @@ try {
         );
     }
 
-    // Consuming this row also burns the sibling hand-typed code.
-    ActivationCodeModel::markUsedByDevice((int) $codeRow['id'], $deviceId);
+    // Consuming this row also burns the sibling hand-typed code. The store-
+    // review demo token consumes nothing, so the demo QR keeps working forever.
+    if (!$isDemoLogin && $codeRow) {
+        ActivationCodeModel::markUsedByDevice((int) $codeRow['id'], $deviceId);
+    }
 
     $authToken = EmployeeAuthTokenModel::issue(
         (int) $employee['tenant_id'],

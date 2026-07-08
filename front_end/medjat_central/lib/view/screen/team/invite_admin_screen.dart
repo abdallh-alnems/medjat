@@ -173,7 +173,10 @@ class _InviteAdminScreenState extends State<InviteAdminScreen> {
     status.value = StatusRequest.none;
 
     if (code != null) {
-      unawaited(Get.offNamed<dynamic>(AppRoutes.invitationCode, arguments: code));
+      unawaited(Get.offNamed<dynamic>(
+        AppRoutes.invitationCode,
+        arguments: {'code': code, 'email': emailCtrl.text.trim()},
+      ));
     }
   }
 }

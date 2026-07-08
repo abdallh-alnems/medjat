@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/constant/theme/theme.dart';
@@ -31,12 +32,41 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
     _tenantData = Get.find<TenantData>();
     _auth = Get.find<AuthController>();
+
+    // A code arrived via the email's "open the app and join" deep link — join
+    // automatically now that we're on the onboarding screen and signed in.
+    final code = _auth.pendingInviteCode;
+    if (code != null && code.isNotEmpty) {
+      _auth.pendingInviteCode = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _joinWithCode(code);
+      });
+    }
   }
+
+  static const String _supportEmail = 'support@medjatapp.com';
 
   Future<String?> _firebaseToken() async {
     final fbUser = FirebaseAuth.instance.currentUser;
     if (fbUser == null) return null;
     return fbUser.getIdToken();
+  }
+
+  Future<void> _onContactSupport() async {
+    final email = _auth.user?.email ?? '';
+    final body = email.isEmpty ? '' : '\n\n---\n$email';
+    final uri = Uri(
+      scheme: 'mailto',
+      path: _supportEmail,
+      query: 'subject=${Uri.encodeComponent('support_email_subject'.tr)}'
+          '&body=${Uri.encodeComponent(body)}',
+    );
+
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok) {
+      Get.snackbar('error'.tr, 'cannot_open_email'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    }
   }
 
   Future<void> _onCreateCompany() async {
@@ -183,7 +213,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
 
     if (submitted != true) return;
+    await _joinWithCode(codeCtrl.text.trim());
+  }
 
+  /// Joins a company with an invite [code] — shared by the manual "enter code"
+  /// sheet and the email deep-link hand-off.
+  Future<void> _joinWithCode(String code) async {
+    if (code.isEmpty) return;
     setState(() => _loading = true);
     final token = await _firebaseToken();
     if (token == null) {
@@ -195,7 +231,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
     final resp = await _tenantData.joinCompany(
       firebaseToken: token,
-      inviteCode: codeCtrl.text.trim(),
+      inviteCode: code,
     );
     if (!mounted) return;
     setState(() => _loading = false);
@@ -223,6 +259,75 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         await TokenStorageService.saveUserData(jsonEncode(_auth.user!.toJson()));
         _auth.hasTenant.value = true;
         _auth.isLoggedIn.value = true;
+        _auth.pendingInvitation = null;
+        Get.snackbar('done'.tr, 'company_joined_success'.tr,
+            snackPosition: SnackPosition.BOTTOM);
+        unawaited(Get.offAllNamed<void>(AppRoutes.home));
+        return;
+      }
+    }
+    final msg = (resp['data'] as Map?)?['message'] as String? ??
+        'invalid_invite_code'.tr;
+    Get.snackbar('error'.tr, msg, snackPosition: SnackPosition.BOTTOM);
+  }
+
+  String _roleLabel(String role) {
+    switch (role) {
+      case 'general_manager':
+        return 'role_general_manager'.tr;
+      case 'hr':
+        return 'role_hr'.tr;
+      case 'branch_manager':
+        return 'role_branch_manager'.tr;
+      case 'attendance':
+        return 'role_attendance'.tr;
+      case 'viewer':
+        return 'role_viewer'.tr;
+      default:
+        return role;
+    }
+  }
+
+  /// One-tap accept of an invitation already addressed to this email (no code).
+  Future<void> _onAcceptInvitation() async {
+    setState(() => _loading = true);
+    final token = await _firebaseToken();
+    if (token == null) {
+      setState(() => _loading = false);
+      Get.snackbar('error'.tr, 'must_login_first'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+
+    final invId =
+        (_auth.pendingInvitation?['invitation_id'] as num?)?.toInt();
+    final resp = await _tenantData.acceptInvitation(
+      firebaseToken: token,
+      invitationId: invId,
+    );
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (resp['status'] == StatusRequest.success) {
+      final data = (resp['data'] as Map?)?['data'] as Map?;
+      if (data != null && data['success'] == true) {
+        final userJson = _auth.user?.toJson() ?? <String, dynamic>{};
+        final userResp = data['user'] as Map?;
+        final tenantResp = data['tenant'] as Map?;
+        if (userResp != null) {
+          userJson['tenant_id'] = userResp['tenant_id'];
+          userJson['role_key'] = userResp['role_key'] ?? userResp['role'];
+          if (userResp['branch_id'] != null) {
+            userJson['branch_id'] = userResp['branch_id'];
+          }
+        } else if (tenantResp != null) {
+          userJson['tenant_id'] = tenantResp['id'];
+        }
+        _auth.user = UserModel.fromJson(userJson);
+        await TokenStorageService.saveUserData(jsonEncode(_auth.user!.toJson()));
+        _auth.hasTenant.value = true;
+        _auth.isLoggedIn.value = true;
+        _auth.pendingInvitation = null;
         Get.snackbar('done'.tr, 'company_joined_success'.tr,
             snackPosition: SnackPosition.BOTTOM);
         unawaited(Get.offAllNamed<void>(AppRoutes.home));
@@ -238,6 +343,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final name = _auth.user?.name.split(' ').first ?? '';
+    final invite = _auth.pendingInvitation;
 
     return Scaffold(
       appBar: AppBar(
@@ -290,6 +396,54 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 style: TextStyle(fontSize: 16, color: colors.textSecondary),
               ),
               const SizedBox(height: AppSpacing.s8),
+              if (invite != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.s4),
+                  decoration: BoxDecoration(
+                    color: colors.brandSubtle,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border:
+                        Border.all(color: colors.brand.withValues(alpha: 0.4)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.mark_email_read_outlined,
+                              color: colors.brand),
+                          const SizedBox(width: AppSpacing.s2),
+                          Expanded(
+                            child: Text('pending_invitation_title'.tr,
+                                style: AppTextStyles.h3(context)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.s2),
+                      Text(
+                        '${invite['company_name'] ?? ''} · '
+                        '${_roleLabel(invite['role']?.toString() ?? '')}',
+                        style: AppTextStyles.bodySecondary(context),
+                      ),
+                      const SizedBox(height: AppSpacing.s3),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _loading ? null : _onAcceptInvitation,
+                          icon: const Icon(Icons.check),
+                          label: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: AppSpacing.s2),
+                            child: Text('accept_and_join'.tr,
+                                style: const TextStyle(fontSize: 16)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.s5),
+              ],
               ElevatedButton.icon(
                 onPressed: _loading ? null : _onCreateCompany,
                 icon: const Icon(Icons.add_business),
@@ -312,6 +466,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 const SizedBox(height: AppSpacing.s5),
                 const Center(child: CircularProgressIndicator()),
               ],
+              const SizedBox(height: AppSpacing.s8),
+              Text(
+                'need_help_question'.tr,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: colors.textTertiary),
+              ),
+              TextButton.icon(
+                onPressed: _loading ? null : _onContactSupport,
+                icon: const Icon(Icons.support_agent_outlined, size: 20),
+                label: Text('contact_support'.tr),
+              ),
             ],
           ),
         ),

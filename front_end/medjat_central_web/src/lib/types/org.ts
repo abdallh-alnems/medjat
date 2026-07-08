@@ -15,9 +15,11 @@ export interface Branch {
 export interface Shift {
   id: number;
   name: string;
-  start: string;
-  end: string;
-  days: number[];
+  start_time: string;
+  end_time: string;
+  branch_id?: number | null;
+  branch_name?: string | null;
+  employee_count?: number;
   members?: number[];
 }
 

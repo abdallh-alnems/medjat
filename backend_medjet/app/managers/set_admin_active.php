@@ -36,6 +36,12 @@ if ($admin['role'] === 'general_manager' && $inviterPerms !== '*') {
     Response::forbidden('لا يمكنك تعطيل مدير عام');
 }
 
+// Hierarchy guard: cannot suspend/activate a team member higher than you.
+$targetPerms = PermissionMiddleware::effectivePermissions($adminId, $tenantId, $admin['role']);
+if (!PermissionMiddleware::outranks($inviterPerms, $targetPerms)) {
+    Response::forbidden('لا يمكنك تعطيل مدير يعلوك في الصلاحيات الإدارية');
+}
+
 Database::execute(
     "UPDATE admins SET is_active = ? WHERE id = ? AND tenant_id = ?",
     [$isActive ? 1 : 0, $adminId, $tenantId]

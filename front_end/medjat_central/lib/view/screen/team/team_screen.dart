@@ -275,9 +275,11 @@ class _AdminCard extends StatelessWidget {
 
   Widget _adminMenu(BuildContext context) {
     final isGm = admin.role == 'general_manager';
-    // A non-general-manager admin cannot manage a general manager at all.
-    final canManageGm = ctrl.isGeneralManager;
-    if (isGm && !canManageGm) return const SizedBox.shrink();
+    // You can't manage a team member higher than you in the admin hierarchy.
+    // The backend decides this per row (`can_manage`); we fall back to the
+    // general-manager guard for older payloads that omit the flag.
+    if (!admin.canManage) return const SizedBox.shrink();
+    if (isGm && !ctrl.isGeneralManager) return const SizedBox.shrink();
 
     return PopupMenuButton<String>(
       icon: Icon(Icons.more_vert, color: colors.textSecondary),

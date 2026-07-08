@@ -51,13 +51,13 @@ describe("auth + tenant contract", () => {
   });
 
   it("tenant: create returns a new tenant id", async () => {
-    const res = await createCompany("شركة جديدة", "0100");
-    expect(res.tenant_id).toBe(2);
+    const res = await createCompany("شركة جديدة");
+    expect(res.tenant?.id).toBe(2);
   });
 
   it("tenant: join returns a tenant id", async () => {
     const res = await joinCompany("INVITE");
-    expect(res.tenant_id).toBe(3);
+    expect(res.tenant?.id).toBe(3);
   });
 
   it("tenant: empty/missing-data response", async () => {
@@ -66,7 +66,7 @@ describe("auth + tenant contract", () => {
         HttpResponse.json({ status: "success", data: null }),
       ),
     );
-    const res = await createCompany("", "");
+    const res = await createCompany("");
     expect(res).toBeDefined();
   });
 });

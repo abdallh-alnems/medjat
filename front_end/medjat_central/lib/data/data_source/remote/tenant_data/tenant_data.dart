@@ -24,4 +24,16 @@ class TenantData {
       'invite_code': inviteCode,
     });
   }
+
+  /// Accept a pending invitation addressed to the signed-in user's email —
+  /// no code required (powers the one-tap "Join {company}" on onboarding).
+  Future<Map<String, dynamic>> acceptInvitation({
+    required String firebaseToken,
+    int? invitationId,
+  }) async {
+    return await _crud.postData(AppLinks.tenantAcceptInvitation, {
+      'token': firebaseToken,
+      'invitation_id': ?invitationId,
+    });
+  }
 }

@@ -45,6 +45,17 @@ class AuthController extends GetxController {
   final isUpdatingProfile = false.obs;
 
   UserModel? user;
+
+  /// A team invitation waiting for the signed-in email (set from the login
+  /// response when the user has no company yet). Lets onboarding offer a
+  /// one-tap "Join {company}". Null when there's no pending invitation.
+  Map<String, dynamic>? pendingInvitation;
+
+  /// Invite code captured from a `medjatcentral://join?code=...` deep link
+  /// (the email's "open the app and join" button). Consumed by the onboarding
+  /// screen, which joins the company automatically once the user is signed in.
+  String? pendingInviteCode;
+
   bool _googleInitialized = false;
   Stream<User?>? _authStateStream;
   StreamSubscription<Uri>? _deepLinkSub;
@@ -63,16 +74,23 @@ class AuthController extends GetxController {
     _listenToAuthState();
     _listenToDeepLinks();
     CRUD.onSessionSuperseded = _onSessionSuperseded;
+    CRUD.onForceLogout = _forceLogout;
   }
 
-  bool _handlingSupersede = false;
+  bool _handlingForceLogout = false;
 
   /// Called by CRUD when the backend reports this device's session was
-  /// replaced by a login on another phone. Sign out locally (no network call,
-  /// it would just 401 again) and return to the login screen.
-  void _onSessionSuperseded() {
-    if (_handlingSupersede) return;
-    _handlingSupersede = true;
+  /// replaced by a login on another phone.
+  void _onSessionSuperseded() => _forceLogout(
+        'تم تسجيل الدخول من جهاز آخر، تم إنهاء الجلسة على هذا الجهاز',
+      );
+
+  /// Sign out locally (no network call — it would just fail again) and return
+  /// to the login screen with [message]. Used when the session is superseded,
+  /// or when the account was removed from the company / suspended.
+  void _forceLogout(String message) {
+    if (_handlingForceLogout) return;
+    _handlingForceLogout = true;
     () async {
       try {
         await _googleSignIn.signOut();
@@ -87,10 +105,10 @@ class AuthController extends GetxController {
       }
       Get.snackbar(
         'تنبيه',
-        'تم تسجيل الدخول من جهاز آخر، تم إنهاء الجلسة على هذا الجهاز',
+        message,
         snackPosition: SnackPosition.BOTTOM,
       );
-      _handlingSupersede = false;
+      _handlingForceLogout = false;
     }();
   }
 
@@ -99,6 +117,9 @@ class AuthController extends GetxController {
     _deepLinkSub?.cancel();
     if (CRUD.onSessionSuperseded == _onSessionSuperseded) {
       CRUD.onSessionSuperseded = null;
+    }
+    if (CRUD.onForceLogout == _forceLogout) {
+      CRUD.onForceLogout = null;
     }
     super.onClose();
   }
@@ -117,9 +138,41 @@ class AuthController extends GetxController {
   }
 
   void _handleDeepLink(Uri uri) {
-    if (uri.scheme != _kDeepLinkScheme) return;
+    // Team-invitation hand-off from the email, via either:
+    //   • Universal / App Link:  https://api.medjatapp.com/.../join_team.php?code=XXXX
+    //   • custom-scheme bridge:  medjatcentral://join?code=XXXX
+    final isHttpsInvite =
+        (uri.scheme == 'https' || uri.scheme == 'http') &&
+            uri.path.contains('join_team.php');
+    final isSchemeInvite = uri.scheme == _kDeepLinkScheme &&
+        (uri.host == 'join' || uri.pathSegments.contains('join'));
+    if (isHttpsInvite || isSchemeInvite) {
+      final code = uri.queryParameters['code']?.trim();
+      if (code != null && code.isNotEmpty) {
+        _handleInviteCode(code);
+        return;
+      }
+    }
 
+    // Other links only concern the custom scheme (e.g. email-verification).
+    if (uri.scheme != _kDeepLinkScheme) return;
     checkEmailVerified(silent: true);
+  }
+
+  /// Route an invite code captured from a deep link. Onboarding consumes
+  /// [pendingInviteCode] and joins automatically once the user is signed in.
+  void _handleInviteCode(String code) {
+    pendingInviteCode = code;
+    if (isLoggedIn.value && !hasTenant.value) {
+      Get.offAllNamed<void>(AppRoutes.onboarding);
+    } else if (!isLoggedIn.value) {
+      if (Get.currentRoute != AppRoutes.login) {
+        Get.offAllNamed<void>(AppRoutes.login);
+      }
+    } else {
+      Get.snackbar('alert'.tr, 'already_in_company'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+    }
   }
 
   void _listenToAuthState() {
@@ -470,6 +523,8 @@ class AuthController extends GetxController {
           payload = payload['data'];
         }
         if (payload is Map<String, dynamic> && payload['success'] == true) {
+          final pi = payload['pending_invitation'];
+          pendingInvitation = pi is Map ? Map<String, dynamic>.from(pi) : null;
           final userData = payload['user'] as Map<String, dynamic>?;
           if (userData != null) {
             user = UserModel.fromJson(userData);

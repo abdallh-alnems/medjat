@@ -10,6 +10,7 @@ require_once __DIR__ . '/cors.php';
 require_once __DIR__ . '/firebase.php';
 
 require_once __DIR__ . '/../core/Response.php';
+require_once __DIR__ . '/../core/Background.php';
 require_once __DIR__ . '/../core/Auth.php';
 require_once __DIR__ . '/../core/AdminAuth.php';
 require_once __DIR__ . '/../core/BaseApi.php';

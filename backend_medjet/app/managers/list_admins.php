@@ -19,4 +19,18 @@ $admins = Database::fetchAll(
     [$tenantId]
 );
 
+// Tell the app, per row, whether the signed-in admin outranks this one and may
+// therefore manage (edit / suspend / remove) them. The apps use this to hide
+// actions on admins higher in the hierarchy; the write endpoints enforce it too.
+$callerPerms = PermissionMiddleware::effectivePermissions(
+    $auth['admin_id'], $tenantId, $auth['role']
+);
+foreach ($admins as &$row) {
+    $targetPerms = PermissionMiddleware::effectivePermissions(
+        (int) $row['id'], $tenantId, $row['role']
+    );
+    $row['can_manage'] = PermissionMiddleware::outranks($callerPerms, $targetPerms);
+}
+unset($row);
+
 Response::success(['items' => $admins]);

@@ -34,7 +34,7 @@ Future<void> _openQuickAdjust(
 /// Amber callout shown in the disburse dialogs when the selected cycle is
 /// still open — paying now disburses the full month in advance and freezes
 /// the figures, so anything happening in the remaining days won't be counted.
-Widget _midCycleWarningBox(AppColorScheme colors) {
+Widget _midCycleWarningBox(AppColorScheme colors, String monthLabel) {
   return Container(
     margin: const EdgeInsets.only(top: AppSpacing.s3),
     padding: const EdgeInsets.all(AppSpacing.s3),
@@ -50,7 +50,7 @@ Widget _midCycleWarningBox(AppColorScheme colors) {
         const SizedBox(width: AppSpacing.s2),
         Expanded(
           child: Text(
-            'disburse_mid_cycle_warning'.tr,
+            'disburse_mid_cycle_warning'.trParams({'month': monthLabel}),
             style: TextStyle(
               fontFamily: 'IBM Plex Sans Arabic',
               fontSize: 12,
@@ -64,9 +64,44 @@ Widget _midCycleWarningBox(AppColorScheme colors) {
   );
 }
 
+/// Blocks paying an open cycle in advance while its predecessor is unpaid.
+/// Returns true when disbursing may proceed; otherwise shows a prompt that
+/// offers to jump to the previous month and returns false.
+Future<bool> _ensurePreviousSettled(
+    BuildContext context, PayrollController ctrl) async {
+  if (!ctrl.disburseBlockedByPrevious) return true;
+  await showDialog<void>(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: Text('cannot_disburse'.tr,
+          style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic')),
+      content: Text(
+        'disburse_prev_required'.trParams({'month': ctrl.previousLabelMonthStr}),
+        style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic'),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('cancel'.tr),
+        ),
+        FilledButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            ctrl.goToPreviousMonth();
+          },
+          child: Text('go_to_previous_month'.tr),
+        ),
+      ],
+    ),
+  );
+  return false;
+}
+
 /// Confirm + disburse one employee's salary (walks live/draft/approved → paid).
 Future<void> _openDisburse(
     BuildContext context, PayrollController ctrl, PayrollModel p) async {
+  if (!await _ensurePreviousSettled(context, ctrl)) return;
+  if (!context.mounted) return;
   final colors = AppColors.of(context);
   final ok = await showDialog<bool>(
     context: context,
@@ -78,11 +113,14 @@ Future<void> _openDisburse(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'disburse_confirm_one'
-                .trParams({'name': p.employeeName ?? 'employee'.tr}),
+            'disburse_confirm_one'.trParams({
+              'name': p.employeeName ?? 'employee'.tr,
+              'month': ctrl.selectedMonthLabel,
+            }),
             style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic'),
           ),
-          if (ctrl.isSelectedCycleOpen) _midCycleWarningBox(colors),
+          if (ctrl.isSelectedCycleOpen)
+            _midCycleWarningBox(colors, ctrl.selectedMonthLabel),
         ],
       ),
       actions: [
@@ -104,6 +142,8 @@ Future<void> _openDisburse(
 /// Confirm + disburse every in-scope employee's salary for the current month.
 Future<void> _openDisburseAll(
     BuildContext context, PayrollController ctrl) async {
+  if (!await _ensurePreviousSettled(context, ctrl)) return;
+  if (!context.mounted) return;
   final colors = AppColors.of(context);
   final count = ctrl.scopedCount;
   final ok = await showDialog<bool>(
@@ -116,10 +156,12 @@ Future<void> _openDisburseAll(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'disburse_confirm_all'.trParams({'count': '$count'}),
+            'disburse_confirm_all'
+                .trParams({'count': '$count', 'month': ctrl.selectedMonthLabel}),
             style: const TextStyle(fontFamily: 'IBM Plex Sans Arabic'),
           ),
-          if (ctrl.isSelectedCycleOpen) _midCycleWarningBox(colors),
+          if (ctrl.isSelectedCycleOpen)
+            _midCycleWarningBox(colors, ctrl.selectedMonthLabel),
         ],
       ),
       actions: [
@@ -942,6 +984,31 @@ class _SortButton extends StatelessWidget {
               child: Text('sort_by'.tr, style: AppTextStyles.h3(context)),
             ),
             const SizedBox(height: AppSpacing.s2),
+            // Direction toggle: highest-first vs lowest-first.
+            GetBuilder<PayrollController>(
+              builder: (c) => Row(
+                children: [
+                  Expanded(
+                    child: _DirChip(
+                      label: 'sort_desc'.tr,
+                      icon: Icons.arrow_downward_rounded,
+                      selected: !c.sortAscending,
+                      onTap: () => c.setSortAscending(false),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.s2),
+                  Expanded(
+                    child: _DirChip(
+                      label: 'sort_asc'.tr,
+                      icon: Icons.arrow_upward_rounded,
+                      selected: c.sortAscending,
+                      onTap: () => c.setSortAscending(true),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.s3),
             ..._options.map((opt) {
               final key = opt['key']!;
               final isSelected = ctrl.sortBy == key;
@@ -992,6 +1059,64 @@ class _SortButton extends StatelessWidget {
               );
             }),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DirChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+  const _DirChip({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Material(
+      color: selected
+          ? colors.brand.withValues(alpha: 0.12)
+          : Colors.transparent,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.s2,
+            vertical: AppSpacing.s3,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: selected ? colors.brand : colors.borderHairline,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon,
+                  size: 16,
+                  color: selected ? colors.brand : colors.textSecondary),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 13,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  color: selected ? colors.brand : colors.textPrimary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1109,8 +1234,7 @@ class _PayrollFilterPanelState extends State<_PayrollFilterPanel> {
   static const _statusOptions = <Map<String, String?>>[
     {'key': null, 'label': 'filter_all'},
     {'key': 'paid', 'label': 'status_paid'},
-    {'key': 'approved', 'label': 'status_approved'},
-    {'key': 'draft', 'label': 'status_draft'},
+    {'key': 'unpaid', 'label': 'status_not_paid'},
   ];
 
   List<ShiftModel> get _visibleShifts {
@@ -1471,6 +1595,13 @@ class _PayrollSummaryCard extends StatelessWidget {
               ),
               if (delta != null) _DeltaBadge(amount: delta),
             ],
+          ),
+          const SizedBox(height: AppSpacing.s3),
+          // Total base salary (before deductions/bonuses).
+          _MiniStat(
+            icon: Icons.account_balance_wallet_outlined,
+            label: 'payroll_total_base'.tr,
+            value: _money(ctrl.totalBase),
           ),
           const SizedBox(height: AppSpacing.s3),
           // Middle row: bonus / deduction mini-stats
@@ -1911,11 +2042,10 @@ class _StatusBadge extends StatelessWidget {
     // glance: green = salary disbursed, anything else is clearly not green.
     // 'live' (no slip generated yet) and any unknown state fall through to
     // the muted "not paid" badge.
+    // Two-state display: paid vs everything-else. Draft/approved are internal
+    // states that both show as "not paid".
     final (Color color, IconData icon, String label) = switch (status) {
       'paid' => (colors.success, Icons.check_circle, 'status_paid'.tr),
-      'approved' =>
-        (colors.brand, Icons.verified_outlined, 'status_approved'.tr),
-      'draft' => (colors.warning, Icons.edit_note, 'status_draft'.tr),
       _ => (colors.textTertiary, Icons.schedule, 'status_not_paid'.tr),
     };
     return Container(

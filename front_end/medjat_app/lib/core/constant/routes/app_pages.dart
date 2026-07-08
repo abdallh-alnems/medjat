@@ -45,10 +45,17 @@ import '../../services/location_service.dart';
 class AppBindings extends Bindings {
   @override
   void dependencies() {
-    Get.lazyPut<CRUD>(() => CRUD());
+    // fenix: every data source finds CRUD on (re)creation. The fenix data
+    // sources below can be recreated long after login, so CRUD must always be
+    // re-resolvable or those recreations would throw "CRUD not found".
+    Get.lazyPut<CRUD>(() => CRUD(), fenix: true);
     Get.lazyPut<AuthData>(() => AuthData());
-    Get.lazyPut<ProfileData>(() => ProfileData());
-    Get.lazyPut<PayrollData>(() => PayrollData());
+    // fenix: the home tabs (profile/payroll) lazyPut their controllers in build,
+    // which find these data sources. The offAll login flow disposes the route
+    // these were linked to, so without fenix they're dropped and the tab throws
+    // "ProfileData/PayrollData not found" on first build.
+    Get.lazyPut<ProfileData>(() => ProfileData(), fenix: true);
+    Get.lazyPut<PayrollData>(() => PayrollData(), fenix: true);
     // fenix: AttendanceHistoryController is route-scoped; keep the data source
     // alive so a second visit to /attendance-history can re-resolve it.
     Get.lazyPut<AttendanceData>(() => AttendanceData(), fenix: true);
@@ -58,7 +65,9 @@ class AppBindings extends Bindings {
     Get.lazyPut<BreakData>(() => BreakData(), fenix: true);
     Get.lazyPut<AdvanceData>(() => AdvanceData(), fenix: true);
     Get.lazyPut<AssetData>(() => AssetData(), fenix: true);
-    Get.lazyPut<NotificationData>(() => NotificationData());
+    // fenix: SettingsScreen (a home tab) finds NotificationData on build; keep
+    // it alive across the offAll login flow so the tab doesn't throw.
+    Get.lazyPut<NotificationData>(() => NotificationData(), fenix: true);
     Get.put<ConnectivityService>(ConnectivityService(), permanent: true);
     Get.put<LocationService>(LocationService(), permanent: true);
     Get.put<AuthController>(AuthController(), permanent: true);

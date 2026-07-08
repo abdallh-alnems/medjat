@@ -7,6 +7,8 @@ import type {
   FinancialSummary,
   YearToDate,
   RequiredDocument,
+  Suspension,
+  SuspensionPayMode,
 } from "@/lib/types";
 
 export interface EmployeeListParams {
@@ -55,10 +57,38 @@ export async function getEmployeeProfile(id: number): Promise<Employee> {
   if (!employee || typeof employee.id !== "number") {
     throw new Error("Unexpected employee profile response");
   }
-  return employee as unknown as Employee;
+  // Attach the leave balance from the detail envelope (top-level, next to the
+  // employee) so the detail page can show it without a second request.
+  const leaveBalance = asObject(raw?.leave_balance);
+  return {
+    ...employee,
+    leave_balance: leaveBalance ?? null,
+  } as unknown as Employee;
 }
 
-export function createEmployee(data: Partial<Employee>) {
+/** Full field set accepted by create.php (superset of the Employee shape). */
+export interface EmployeeCreateFields {
+  name: string;
+  phone: string;
+  national_id: string;
+  job_title: string;
+  hire_date: string;
+  branch_id: number;
+  shift_id: number;
+  category_ids: number[];
+  base_salary: number;
+  annual_leave_days: number | null;
+  work_start_time: string;
+  work_end_time: string;
+  weekly_off_days: number[];
+  bank_name: string;
+  bank_account_number: string;
+  bank_iban: string;
+  bank_swift: string;
+  auto_terminate_at: string | null;
+}
+
+export function createEmployee(data: Partial<EmployeeCreateFields>) {
   return apiPost<Employee>("app/employees/create.php", data);
 }
 
@@ -80,13 +110,31 @@ export function reactivateEmployee(id: number) {
   return apiPost<Employee>("app/employees/reactivate.php", { id });
 }
 
-export function suspendEmployee(id: number, from: string, to?: string, reason?: string) {
-  return apiPost<{ status?: string }>("app/employees/suspend.php", {
-    id,
-    from,
-    to,
-    reason,
-  });
+export async function getSuspensions(
+  employeeId: number,
+): Promise<{ suspensions: Suspension[]; active: Suspension | null }> {
+  const raw = await apiGet<{
+    suspensions?: Suspension[];
+    active?: Suspension | null;
+  }>("app/employees/get_suspensions.php", { employee_id: employeeId });
+  return {
+    suspensions: Array.isArray(raw?.suspensions) ? raw.suspensions : [],
+    active: raw?.active ?? null,
+  };
+}
+
+export function suspendEmployee(data: {
+  employee_id: number;
+  reason: string;
+  pay_mode: SuspensionPayMode;
+  pay_percentage?: number | null;
+  start_date: string;
+  end_date?: string | null;
+}) {
+  return apiPost<{ id: number; message?: string }>(
+    "app/employees/suspend.php",
+    data,
+  );
 }
 
 export function endSuspension(employeeId: number) {
@@ -160,8 +208,30 @@ export function getMissingDocuments(employeeId: number) {
   );
 }
 
+export interface ActivationInfo {
+  activation_code: string | null;
+  activation_token: string | null;
+  join_link: string | null;
+  expires_at: string | null;
+  employee_status: string;
+  device_bound: boolean;
+  device: {
+    platform?: string | null;
+    device_model?: string | null;
+    last_used_at?: string | null;
+  } | null;
+}
+
 export function getActivationCode(id: number) {
-  return apiGet<{ code: string }>("app/employees/activation_code.php", { id });
+  return apiGet<ActivationInfo>("app/employees/activation_code.php", { id });
+}
+
+/** Regenerate the activation code. For an active employee this also revokes the
+ *  bound device (id must go in the query string — the endpoint reads $_GET). */
+export function regenerateActivationCode(id: number) {
+  return apiPost<ActivationInfo>(
+    `app/employees/activation_code.php?id=${id}`,
+  );
 }
 
 export async function getExpiringCompliance(): Promise<ComplianceItem[]> {

@@ -59,7 +59,10 @@ if (!$admin) {
     }
 
     if (!$admin['is_active']) {
-        Response::fail('Account is deactivated', 403, 'account_deactivated');
+        if (empty($admin['tenant_id'])) {
+            Response::fail('تمت إزالتك من الشركة من قِبل المسؤول', 403, 'account_removed');
+        }
+        Response::fail('تم إيقاف حسابك من قِبل المسؤول', 403, 'account_deactivated');
     }
 
     Database::execute(
@@ -81,12 +84,36 @@ if (is_string($deviceId) && $deviceId !== '') {
 
 $tenant = null;
 $employee = null;
+$pendingInvitation = null;
 if ($admin['tenant_id']) {
     $tenant = Database::fetchOne(
         "SELECT id, name, currency, timezone FROM tenants WHERE id = ? LIMIT 1",
         [(int) $admin['tenant_id']]
     );
     $employee = EmployeeModel::findByAdminId((int) $admin['id'], (int) $admin['tenant_id']);
+} elseif (!empty($admin['email'])) {
+    // No company yet: if someone invited this email, surface it so onboarding
+    // can offer a one-tap "Join {company}" instead of asking for the code.
+    $inv = Database::fetchOne(
+        "SELECT mi.id, mi.role, mi.expires_at, t.name AS company_name, b.name AS branch_name
+         FROM manager_invitations mi
+         JOIN tenants t ON t.id = mi.tenant_id
+         LEFT JOIN branches b ON b.id = mi.branch_id
+         WHERE mi.email = ? AND mi.cancelled_at IS NULL AND mi.accepted_at IS NULL
+           AND mi.expires_at > NOW() AND t.is_active = 1
+         ORDER BY mi.created_at DESC LIMIT 1",
+        [$admin['email']]
+    );
+    if ($inv) {
+        $pendingInvitation = [
+            'invitation_id' => (int) $inv['id'],
+            'company_name'  => $inv['company_name'],
+            'role'          => $inv['role'],
+            'role_key'      => $inv['role'],
+            'branch_name'   => $inv['branch_name'],
+            'expires_at'    => $inv['expires_at'],
+        ];
+    }
 }
 
 Database::execute(
@@ -101,10 +128,24 @@ Database::execute(
     ]
 );
 
-LoginAlertService::handle(
-    $admin,
-    $_SERVER['REMOTE_ADDR'] ?? '',
-    substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255)
+// Fire the new-device alert (in-app notification, FCM push, email) *after* the
+// response is sent. These are slow network calls — chiefly the SMTP send — and
+// must never sit on the login critical path. See Background.
+$alertIp = $_SERVER['REMOTE_ADDR'] ?? '';
+$alertUa = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255);
+Background::defer(static function () use ($admin, $alertIp, $alertUa) {
+    LoginAlertService::handle($admin, $alertIp, $alertUa);
+});
+
+// The client gates its navigation (bottom tabs, "more" menu) on these. Send
+// the *effective* set so permission-based roles (viewer, attendance, custom
+// roles) see only what they can actually open — otherwise every gated tab
+// falls through to a backend 403 ("an error occurred"). general_manager holds
+// '*' and is already handled by role_key on the client, so send [] for it.
+$effectivePermissions = PermissionMiddleware::effectivePermissions(
+    (int) $admin['id'],
+    (int) ($admin['tenant_id'] ?? 0),
+    (string) $admin['role']
 );
 
 Response::success([
@@ -121,7 +162,9 @@ Response::success([
         'branch_name' => null,
         'job_title' => $employee['job_title'] ?? null,
         'tenant_id' => $admin['tenant_id'] ? (int) $admin['tenant_id'] : null,
-        'permissions' => [],
+        'permissions' => $effectivePermissions === '*'
+            ? []
+            : array_values($effectivePermissions),
     ],
     'tenant' => $tenant ? [
         'id' => (int) $tenant['id'],
@@ -136,4 +179,5 @@ Response::success([
         'hire_date' => $employee['hire_date'] ?? null,
         'status' => $employee['status'] ?? null,
     ] : null,
+    'pending_invitation' => $pendingInvitation,
 ]);

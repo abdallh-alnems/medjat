@@ -11,12 +11,14 @@ import {
   updateLeaveSettings,
   getDeductionSettings,
   saveDeductionSettings,
-  getAttendanceMethodSettings,
-  updateAttendanceMethodSettings,
+  getAttendanceMethodConfig,
+  updateAttendanceConfig,
+  setCompanyGeofence,
+  updateBranchAttendanceConfig,
+  setScopeMethodOverride,
   type CompanySettings,
   type LeaveSettings,
   type StatutoryPayroll,
-  type AttendanceMethodSettings,
 } from "@/lib/api/settings";
 import type { DeductionRule } from "@/lib/types";
 
@@ -74,16 +76,43 @@ export function useSaveDeductionSettings() {
   );
 }
 
-export function useAttendanceMethodSettings() {
+const AM_KEY = [...QK, "attendance-method"] as const;
+
+export function useAttendanceMethodConfig() {
   return useQuery({
-    queryKey: [...QK, "attendance-method"],
-    queryFn: getAttendanceMethodSettings,
+    queryKey: AM_KEY,
+    queryFn: getAttendanceMethodConfig,
   });
 }
-export function useUpdateAttendanceMethodSettings() {
+
+export function useUpdateAttendanceConfig() {
   return useToastMutation(
-    (data: Partial<AttendanceMethodSettings>) =>
-      updateAttendanceMethodSettings(data),
-    { invalidate: [[...QK, "attendance-method"] as const] },
+    (data: Parameters<typeof updateAttendanceConfig>[0]) =>
+      updateAttendanceConfig(data),
+    { invalidate: [AM_KEY, [...QK, "company"] as const] },
+  );
+}
+
+export function useSetCompanyGeofence() {
+  return useToastMutation(
+    (data: Parameters<typeof setCompanyGeofence>[0]) =>
+      setCompanyGeofence(data),
+    { invalidate: [AM_KEY] },
+  );
+}
+
+export function useUpdateBranchAttendanceConfig() {
+  return useToastMutation(
+    (data: Parameters<typeof updateBranchAttendanceConfig>[0]) =>
+      updateBranchAttendanceConfig(data),
+    { invalidate: [AM_KEY] },
+  );
+}
+
+export function useSetScopeMethodOverride() {
+  return useToastMutation(
+    (data: Parameters<typeof setScopeMethodOverride>[0]) =>
+      setScopeMethodOverride(data),
+    { invalidate: [AM_KEY] },
   );
 }

@@ -21,6 +21,11 @@ export interface Admin {
   pending?: boolean;
   tenant_id: number;
   permissions?: Record<PermissionCode, boolean> | null;
+  /** Whether the signed-in admin outranks this one and may manage them
+   *  (edit / suspend / remove). Computed by the backend (`list_admins.php`). */
+  can_manage?: boolean;
+  branch_name?: string | null;
+  last_login_at?: string | null;
 }
 
 export type User = Admin;
@@ -28,11 +33,15 @@ export type User = Admin;
 export interface ManagerInvitation {
   id: number;
   email: string;
+  name?: string;
   role: AdminRole;
   branch_id?: number | null;
-  code: string;
-  status: "pending" | "cancelled" | "accepted";
+  branch_name?: string | null;
+  code?: string;
   created_at: string;
+  expires_at?: string;
+  accepted_at?: string | null;
+  cancelled_at?: string | null;
 }
 
 export interface Company {

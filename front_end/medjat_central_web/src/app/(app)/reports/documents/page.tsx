@@ -7,11 +7,16 @@ import {
   useExpiredDocs,
   useMissingDocs,
 } from "@/lib/hooks/use-reports";
+import { useToastMutation } from "@/lib/hooks/use-org";
+import { usePermissions } from "@/lib/hooks/use-permissions";
+import { markExpiredDocuments } from "@/lib/api/document-reports";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   LoadingState,
   ErrorState,
   EmptyState,
 } from "@/components/ui/states";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -26,10 +31,18 @@ import { FileText } from "lucide-react";
 
 export default function DocumentsReportPage() {
   const { t } = useT();
+  const { can } = usePermissions();
+  const qc = useQueryClient();
   const stats = useDocumentStats();
   const expiring = useExpiringSoon();
   const expired = useExpiredDocs();
   const missing = useMissingDocs();
+
+  const markExpired = useToastMutation(() => markExpiredDocuments(), {
+    successMessage: t("saved"),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["reports", "documents"] }),
+  });
 
   if (stats.isLoading) return <LoadingState />;
   if (stats.isError) return <ErrorState onRetry={() => stats.refetch()} />;
@@ -46,7 +59,19 @@ export default function DocumentsReportPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-headline-md font-bold">{t("documents_report")}</h1>
+      <div className="flex items-center justify-between gap-2">
+        <h1 className="text-headline-md font-bold">{t("documents_report")}</h1>
+        {can("documents_manage_types") && (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={markExpired.isPending}
+            onClick={() => markExpired.mutate(undefined)}
+          >
+            {t("mark_expired")}
+          </Button>
+        )}
+      </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
         {cards.map((c) => (

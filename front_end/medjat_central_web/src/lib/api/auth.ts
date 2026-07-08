@@ -1,5 +1,6 @@
 import { apiGet, apiPost } from "./client";
 import type { Admin, NotificationPrefs } from "@/lib/types";
+import type { PendingInvitation } from "@/lib/stores/auth-store";
 
 /** Firebase ID token → backend session + user/tenant context. */
 export function login(idToken: string) {
@@ -9,6 +10,8 @@ export function login(idToken: string) {
     tenant_name?: string | null;
     // The live backend nests the tenant as an object; mocks send tenant_id/name flat.
     tenant?: { id: number; name: string } | null;
+    // Surfaced when the (company-less) user has a team invitation waiting.
+    pending_invitation?: PendingInvitation | null;
     message?: string;
     status?: string;
   }>("app/auth/login.php", { token: idToken });

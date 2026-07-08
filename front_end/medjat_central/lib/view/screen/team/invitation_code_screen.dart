@@ -10,7 +10,9 @@ class InvitationCodeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final code = Get.arguments as String? ?? '';
+    final args = Get.arguments;
+    final code = args is Map ? (args['code']?.toString() ?? '') : (args as String? ?? '');
+    final email = args is Map ? (args['email']?.toString() ?? '') : '';
 
     return Scaffold(
       appBar: AppBar(title: Text('invitation_code_label'.tr)),
@@ -65,6 +67,37 @@ class InvitationCodeScreen extends StatelessWidget {
                 style: AppTextStyles.sm(context),
                 textAlign: TextAlign.center,
               ),
+              if (email.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.s4),
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.s3),
+                  decoration: BoxDecoration(
+                    color: colors.sunken,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.mark_email_read_outlined,
+                          size: 18, color: colors.brand),
+                      const SizedBox(width: AppSpacing.s2),
+                      Expanded(
+                        child: Text.rich(
+                          TextSpan(children: [
+                            TextSpan(text: '${'invitation_email_sent'.tr} '),
+                            TextSpan(
+                              text: email,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                          ]),
+                          style: AppTextStyles.sm(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: AppSpacing.s5),
               OutlinedButton.icon(
                 onPressed: () {

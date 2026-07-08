@@ -64,12 +64,14 @@ final class EmailService {
 
         $errno = 0;
         $errstr = '';
-        $fp = @fsockopen($transport, $port, $errno, $errstr, 20);
+        // Short connect timeout so an unreachable/slow relay fast-fails instead
+        // of hanging a worker (this send already runs off the request path).
+        $fp = @fsockopen($transport, $port, $errno, $errstr, 8);
         if (!$fp) {
             error_log("EmailService SMTP connect failed: {$errstr} ({$errno})");
             return false;
         }
-        stream_set_timeout($fp, 20);
+        stream_set_timeout($fp, 15);
 
         $read = static function () use ($fp): string {
             $data = '';

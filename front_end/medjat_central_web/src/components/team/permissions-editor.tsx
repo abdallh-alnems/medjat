@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { Info } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,18 +13,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { LoadingState } from "@/components/ui/states";
 import { useT } from "@/lib/i18n/use-t";
 import {
   useAdminPermissions,
   useUpdateAdminPermissions,
   useResetAdminPermissions,
 } from "@/lib/hooks/use-managers";
-import { useAdmins } from "@/lib/hooks/use-managers";
-import {
-  PERMISSION_CODES,
-  resolvePermissions,
-} from "@/lib/permissions/model";
-import type { PermissionCode } from "@/lib/permissions/model";
+import type { AdminPermissions } from "@/lib/api/managers";
+import { PERMISSION_CODES, type PermissionCode } from "@/lib/permissions/model";
 import type { TKey } from "@/lib/i18n/ar";
 
 const PERM_LABEL: Record<PermissionCode, TKey> = {
@@ -50,93 +49,162 @@ interface Props {
 /** Per-admin permission overrides editor. General Manager is locked (all granted). */
 export function PermissionsEditor({ adminId, onClose }: Props) {
   const { t } = useT();
-  const { data: admins } = useAdmins();
-  const admin = (admins ?? []).find((a) => a.id === adminId) ?? null;
   const perms = useAdminPermissions(adminId);
-  const update = useUpdateAdminPermissions();
-  const reset = useResetAdminPermissions();
-
-  const isGM = admin?.role === "general_manager";
-  const effective = isGM
-    ? null
-    : perms.data ?? resolvePermissions(admin?.role ?? null, null);
-
-  if (adminId && !admin) {
-    return (
-      <Dialog open={adminId != null} onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("error_generic")}</DialogTitle>
-          </DialogHeader>
-          <p className="text-body-md text-muted-foreground">{t("no_data")}</p>
-          <DialogFooter>
-            <DialogClose render={<Button variant="outline" />}>
-              {t("close")}
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    );
-  }
-
-  const toggle = (code: PermissionCode, value: boolean) => {
-    if (perms.isLoading || !perms.data) return;
-    const next = { ...perms.data };
-    next[code] = value;
-    update.mutate({ adminId: adminId as number, permissions: next });
-  };
 
   return (
     <Dialog open={adminId != null} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>
-            {t("edit_permissions")}
-            {isGM && (
-              <Badge variant="secondary" className="ms-2">
-                {t("gm_locked")}
-              </Badge>
+          <DialogTitle className="flex items-center gap-2">
+            {t("permissions_for_admin")}
+            {perms.data?.is_customized && (
+              <Badge variant="secondary">{t("customized_permissions")}</Badge>
             )}
           </DialogTitle>
         </DialogHeader>
 
-        {isGM ? (
-          <p className="text-body-md text-muted-foreground">
-            {t("gm_locked")}
-          </p>
+        {adminId == null ? null : perms.isLoading ? (
+          <LoadingState />
+        ) : perms.data ? (
+          <PermForm
+            key={adminId}
+            adminId={adminId}
+            data={perms.data}
+            onClose={onClose}
+          />
         ) : (
-          <div className="max-h-80 space-y-1 overflow-y-auto">
-            {PERMISSION_CODES.map((code) => (
-              <label
-                key={code}
-                className="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-muted/50"
-              >
-                <span className="text-body-md">{t(PERM_LABEL[code])}</span>
-                <Checkbox
-                  checked={effective?.[code] ?? false}
-                  onCheckedChange={(v) => toggle(code, Boolean(v))}
-                  disabled={perms.isLoading || update.isPending}
-                />
-              </label>
-            ))}
-          </div>
+          <p className="text-body-md text-muted-foreground">{t("no_data")}</p>
         )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
+function PermForm({
+  adminId,
+  data,
+  onClose,
+}: {
+  adminId: number;
+  data: AdminPermissions;
+  onClose: () => void;
+}) {
+  const { t } = useT();
+  const update = useUpdateAdminPermissions();
+  const reset = useResetAdminPermissions();
+
+  const isGM = data.role === "general_manager";
+  const roleDefaults = new Set(data.role_defaults);
+  const codes = (
+    data.all_permissions.length ? data.all_permissions : PERMISSION_CODES
+  ) as PermissionCode[];
+
+  const [selected, setSelected] = useState<Set<string>>(
+    () => new Set(data.effective_permissions),
+  );
+  const [confirmingReset, setConfirmingReset] = useState(false);
+
+  if (isGM) {
+    return (
+      <>
+        <p className="text-body-md text-muted-foreground">{t("gm_locked")}</p>
         <DialogFooter>
-          {!isGM && (
-            <Button
-              variant="outline"
-              onClick={() => reset.mutate(adminId as number)}
-              disabled={reset.isPending}
-            >
-              {t("reset_permissions")}
-            </Button>
-          )}
           <DialogClose render={<Button variant="outline" />}>
             {t("close")}
           </DialogClose>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </>
+    );
+  }
+
+  const toggle = (code: string, value: boolean) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (value) next.add(code);
+      else next.delete(code);
+      return next;
+    });
+  };
+
+  const save = () => {
+    update.mutate(
+      { adminId, permissions: [...selected] },
+      { onSuccess: () => onClose() },
+    );
+  };
+
+  const doReset = () => {
+    reset.mutate(adminId, { onSuccess: () => onClose() });
+  };
+
+  return (
+    <>
+      <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-3">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+        <span className="text-body-sm text-muted-foreground">
+          {t("permissions_override_hint")}
+        </span>
+      </div>
+
+      <div className="max-h-80 space-y-1 overflow-y-auto">
+        {codes.map((code) => (
+          <label
+            key={code}
+            className="flex items-center justify-between rounded-lg px-2 py-1.5 hover:bg-muted/50"
+          >
+            <span className="flex items-center gap-2 text-body-md">
+              {t(PERM_LABEL[code] ?? (`perm_${code}` as TKey))}
+              {roleDefaults.has(code) && (
+                <Badge variant="secondary" className="text-label-sm">
+                  {t("default_for_role")}
+                </Badge>
+              )}
+            </span>
+            <Checkbox
+              checked={selected.has(code)}
+              onCheckedChange={(v) => toggle(code, Boolean(v))}
+            />
+          </label>
+        ))}
+      </div>
+
+      {confirmingReset ? (
+        <div className="space-y-2 rounded-lg border p-3">
+          <p className="text-body-sm text-muted-foreground">
+            {t("reset_permissions_confirm")}
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setConfirmingReset(false)}
+            >
+              {t("cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={doReset}
+              disabled={reset.isPending}
+            >
+              {t("reset_to_default")}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <DialogFooter className="sm:justify-between">
+          {data.is_customized ? (
+            <Button variant="outline" onClick={() => setConfirmingReset(true)}>
+              {t("reset_to_default")}
+            </Button>
+          ) : (
+            <span />
+          )}
+          <Button onClick={save} disabled={update.isPending}>
+            {t("save")}
+          </Button>
+        </DialogFooter>
+      )}
+    </>
   );
 }

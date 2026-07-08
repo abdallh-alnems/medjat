@@ -110,12 +110,14 @@ const onFulfilled = (response: AxiosResponse) => {
   return response;
 };
 /**
- * Single active session: when the same admin signs in on another device the
- * backend rejects this device's next request with 401 + `session_superseded`.
- * Sign the user out locally and bounce to /login instead of showing a retry error.
+ * Force a sign-out when the backend invalidates this device's session and bounce
+ * to /login (instead of leaving the user on a generic "try again" error):
+ *  - `session_superseded` (401): the admin signed in on another device.
+ *  - `account_removed` / `account_deactivated` (403): the admin was removed from
+ *    the company or suspended.
  */
-let handlingSupersede = false;
-async function handleSessionSuperseded() {
+let handlingForceLogout = false;
+async function forceLogout(message: string) {
   try {
     const [{ useAuthStore }, { useTenantStore }, { auth }] = await Promise.all([
       import("@/lib/stores/auth-store"),
@@ -134,7 +136,7 @@ async function handleSessionSuperseded() {
   }
   try {
     const { toast } = await import("sonner");
-    toast.error("تم تسجيل الدخول من جهاز آخر");
+    toast.error(message);
   } catch {
     /* ignore */
   }
@@ -146,15 +148,23 @@ async function handleSessionSuperseded() {
 const onRejected = (error: unknown) => {
   if (axios.isAxiosError(error) && error.response) {
     const res = error.response;
-    const code = (res.data as { error_code?: string } | undefined)?.error_code;
-    if (
-      typeof window !== "undefined" &&
-      res.status === 401 &&
-      code === "session_superseded" &&
-      !handlingSupersede
-    ) {
-      handlingSupersede = true;
-      void handleSessionSuperseded();
+    const body = res.data as
+      | { error_code?: string; message?: string }
+      | undefined;
+    const code = body?.error_code;
+    if (typeof window !== "undefined" && !handlingForceLogout) {
+      if (res.status === 401 && code === "session_superseded") {
+        handlingForceLogout = true;
+        void forceLogout(body?.message || "تم تسجيل الدخول من جهاز آخر");
+      } else if (
+        (res.status === 403 || res.status === 401) &&
+        (code === "account_removed" || code === "account_deactivated")
+      ) {
+        handlingForceLogout = true;
+        void forceLogout(
+          body?.message || "تمت إزالتك من الشركة من قِبل المسؤول",
+        );
+      }
     }
     return res;
   }

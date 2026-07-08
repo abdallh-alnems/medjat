@@ -18,12 +18,20 @@ export default function CategoriesSettingsPage() {
   const { data, isLoading, isError, refetch } = useCategories();
   const rows = Array.isArray(data) ? data : [];
   const [name, setName] = useState("");
+  const [color, setColor] = useState("#3b82f6");
+  const [description, setDescription] = useState("");
 
-  const create = useToastMutation((n: string) => createCategory(n), {
-    successMessage: t("success"),
-    invalidate: [["org", "categories"] as const],
-    onSuccess: () => setName(""),
-  });
+  const create = useToastMutation(
+    () => createCategory(name, color, description || undefined),
+    {
+      successMessage: t("success"),
+      invalidate: [["org", "categories"] as const],
+      onSuccess: () => {
+        setName("");
+        setDescription("");
+      },
+    },
+  );
   const remove = useToastMutation((id: number) => deleteCategory(id), {
     invalidate: [["org", "categories"] as const],
   });
@@ -33,12 +41,35 @@ export default function CategoriesSettingsPage() {
       <h1 className="text-headline-md font-bold">{t("categories")}</h1>
 
       <Card>
-        <CardContent className="flex items-end gap-3 p-4">
-          <div className="flex-1 space-y-1.5">
-            <Label>{t("name")}</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
+        <CardContent className="space-y-3 p-4">
+          <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+            <div className="space-y-1.5">
+              <Label>{t("name")}</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("color")}</Label>
+              <Input
+                type="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="h-10 w-16 p-1"
+              />
+            </div>
           </div>
-          <Button onClick={() => create.mutate(name)} disabled={!name || create.isPending}>
+          <div className="space-y-1.5">
+            <Label>
+              {t("description")} ({t("optional")})
+            </Label>
+            <Input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+          <Button
+            onClick={() => create.mutate(undefined)}
+            disabled={!name || create.isPending}
+          >
             <Plus className="h-4 w-4" />
             {t("add_category")}
           </Button>

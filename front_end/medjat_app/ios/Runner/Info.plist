@@ -5,15 +5,15 @@
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-8595701567488603~2330701747</string>
 	<key>NSCameraUsageDescription</key>
-	<string>نحتاج إلى الكاميرا لتصوير مستنداتك المطلوبة.</string>
+	<string>Medjat needs camera access to scan your join QR code and photograph your required documents.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>نحتاج إلى الوصول للصور لاختيار مستنداتك المطلوبة.</string>
+	<string>Medjat needs access to your photos to attach your required documents.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>نحتاج إلى حفظ المستندات والملفات في معرض الصور.</string>
+	<string>Medjat needs permission to save documents and files to your photo library.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>يُستخدم موقعك لتحديد نقطة الفرع ونطاق تسجيل الحضور بالـ GPS.</string>
+	<string>Your location is used to verify your branch location and the GPS check-in radius when recording attendance.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>يُستخدم موقعك لتحديد نقطة الفرع ونطاق تسجيل الحضور بالـ GPS.</string>
+	<string>Your location is used to verify your branch location and the GPS check-in radius when recording attendance.</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict><key>SKAdNetworkIdentifier</key><string>cstr6suwn9.skadnetwork</string></dict>
@@ -79,6 +79,11 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>ar</string>
+	</array>
 	<key>CFBundleName</key>
 	<string>medjat_app</string>
 	<key>CFBundlePackageType</key>
