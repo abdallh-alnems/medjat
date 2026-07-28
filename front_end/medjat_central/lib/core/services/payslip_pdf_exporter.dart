@@ -94,7 +94,7 @@ class PayslipPdfExporter {
               padding: const pw.EdgeInsets.symmetric(
                   horizontal: 16, vertical: 12),
               decoration: const pw.BoxDecoration(
-                color: PdfColor.fromInt(0xFF2563EB),
+                color: PdfColor.fromInt(0xFF0E7C86),
                 borderRadius: pw.BorderRadius.all(pw.Radius.circular(8)),
               ),
               child: pw.Row(
@@ -179,7 +179,7 @@ class PayslipPdfExporter {
                         font: _bold,
                         color: payroll.netSalary < 0
                             ? const PdfColor.fromInt(0xFFC0392B)
-                            : const PdfColor.fromInt(0xFF2563EB),
+                            : const PdfColor.fromInt(0xFF0E7C86),
                       ),
                     ),
                     pw.SizedBox(width: 4),

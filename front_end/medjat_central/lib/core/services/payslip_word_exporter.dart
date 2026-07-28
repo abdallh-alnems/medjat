@@ -93,7 +93,7 @@ class PayslipWordExporter {
     String figure(String label, String amount, String color) =>
         '<tr><td class="fl">${_esc(label)}</td><td class="fv" style="color:$color">${_esc(amount)}</td></tr>';
 
-    final netColor = payroll.netSalary < 0 ? '#C0392B' : '#2563EB';
+    final netColor = payroll.netSalary < 0 ? '#C0392B' : '#0E7C86';
 
     return '''
 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
@@ -102,7 +102,7 @@ class PayslipWordExporter {
 <title>${_esc('payslip_title'.tr)}</title>
 <style>
   body { font-family: 'IBM Plex Sans Arabic', Arial, sans-serif; direction: $dir; }
-  .bar { background-color: #2563EB; color: #ffffff; padding: 12px 16px; border-radius: 8px;
+  .bar { background-color: #0E7C86; color: #ffffff; padding: 12px 16px; border-radius: 8px;
          display: flex; justify-content: space-between; }
   .bar .t { font-size: 18pt; font-weight: bold; }
   .bar .c { font-size: 12pt; font-weight: bold; }

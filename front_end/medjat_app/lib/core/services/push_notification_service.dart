@@ -10,7 +10,12 @@ import '../constant/id/app_links.dart';
 import '../constant/routes/app_routes.dart';
 import '../class/crud.dart';
 import '../services/token_storage_service.dart';
+import 'firebase_ready.dart';
 import 'local_notifications_service.dart';
+
+/// FCM token/permission calls reach Google servers and hang, rather than fail,
+/// when those servers are unreachable. See [FirebaseReady].
+const Duration _fcmTimeout = Duration(seconds: 15);
 
 class PushNotificationService {
   PushNotificationService._();
@@ -20,6 +25,10 @@ class PushNotificationService {
   /// يُفعّل الإشعارات للموظف المسجّل دخوله فقط: يطلب الإذن، يجهّز المستمعين،
   /// ويسجّل التوكن. لا يُستدعى أبداً في وضع الكيوسك أو قبل تسجيل الدخول.
   static Future<void> enableForUser() async {
+    // Firebase now initializes after the first frame, and not at all on a
+    // device without GMS. Never touch FirebaseMessaging before that resolves.
+    if (!await FirebaseReady.future) return;
+
     try {
       final messaging = FirebaseMessaging.instance;
 
@@ -34,7 +43,7 @@ class PushNotificationService {
         debugPrint('LocalNotifications init error: $e');
       }
 
-      await messaging.requestPermission();
+      await messaging.requestPermission().timeout(_fcmTimeout);
 
       await registerTokenNow();
     } catch (e) {
@@ -65,7 +74,8 @@ class PushNotificationService {
 
   static Future<void> registerTokenNow() async {
     try {
-      final token = await FirebaseMessaging.instance.getToken();
+      final token =
+          await FirebaseMessaging.instance.getToken().timeout(_fcmTimeout);
       if (token != null) {
         await _sendTokenToBackend(token);
       }

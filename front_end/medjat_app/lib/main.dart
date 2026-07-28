@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
@@ -11,10 +13,11 @@ import 'core/services/locale_service.dart';
 import 'view/widget/ad/banner_ad_widget.dart';
 
 void main() async {
-  // Never let a startup failure (e.g. Firebase/AdMob on a device without
-  // Google Mobile Services such as Huawei) prevent the UI from rendering.
-  // initialServices() already guards each step, but this is a final backstop
-  // so runApp() is always reached and the app never shows a blank screen.
+  // initialServices() must stay free of network calls. Firebase and AdMob both
+  // hang — rather than throw — on a device without Google Mobile Services (e.g.
+  // Huawei) or on a network that cannot reach Google, so awaiting them here
+  // would leave the app on a blank window forever. They start after the first
+  // frame instead, and the app stays fully usable if they never finish.
   try {
     await initialServices();
   } catch (e, s) {
@@ -22,6 +25,10 @@ void main() async {
   }
 
   runApp(const MedjatEmployeeApp());
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    unawaited(Get.find<MyServices>().initGmsServices());
+  });
 }
 
 class MedjatEmployeeApp extends StatelessWidget {

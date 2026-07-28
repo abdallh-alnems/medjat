@@ -17,7 +17,7 @@ import type {
   BranchPerformance,
 } from "@/lib/types";
 
-const PALETTE = ["#2563EB", "#60A5FA", "#B8860B", "#27AE60", "#D4A017"];
+const PALETTE = ["#0E7C86", "#60A5FA", "#B8860B", "#27AE60", "#D4A017"];
 
 export function BranchComparison({ data }: { data: BranchPerformance[] }) {
   const { t } = useT();

@@ -23,8 +23,8 @@ const geist = Geist({
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#2563EB" },
-    { media: "(prefers-color-scheme: dark)", color: "#60A5FA" },
+    { media: "(prefers-color-scheme: light)", color: "#0E7C86" },
+    { media: "(prefers-color-scheme: dark)", color: "#4FC6CC" },
   ],
   width: "device-width",
   initialScale: 1,

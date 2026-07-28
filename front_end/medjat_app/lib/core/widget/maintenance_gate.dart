@@ -6,6 +6,7 @@ import 'package:get_storage/get_storage.dart';
 import '../constant/strings/update_strings.dart';
 import '../constant/theme/app_colors.dart';
 import '../constant/theme/app_spacing.dart';
+import '../services/firebase_ready.dart';
 
 /// مفتاح التخزين الذي يحمل إشارة الصيانة الواردة عبر FCM بينما التطبيق في
 /// الخلفية أو مغلق؛ تقرأه البوابة عند أول بناء فور إعادة الفتح.
@@ -63,6 +64,14 @@ class _MaintenanceGateState extends State<MaintenanceGate>
       unawaited(storage.remove(kPendingMaintenanceKey));
     }
 
+    // Firebase initializes after the first frame, so this gate can mount before
+    // it is ready. Wait briefly, then give up rather than spin on a device
+    // where Firebase will never become available.
+    if (!await FirebaseReady.orGiveUp()) {
+      if (mounted) setState(() => _isChecking = false);
+      return;
+    }
+
     try {
       final rc = FirebaseRemoteConfig.instance;
       await rc.setConfigSettings(RemoteConfigSettings(
@@ -95,6 +104,8 @@ class _MaintenanceGateState extends State<MaintenanceGate>
   }
 
   Future<void> _checkNow() async {
+    if (!await FirebaseReady.orGiveUp()) return;
+
     try {
       final rc = FirebaseRemoteConfig.instance;
       await rc.fetchAndActivate();

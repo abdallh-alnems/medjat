@@ -18,6 +18,7 @@ import '../class/crud.dart';
 import '../constant/firebase_options.dart';
 import '../constant/routes/app_routes.dart';
 import '../widget/maintenance_gate.dart';
+import 'firebase_ready.dart';
 import 'locale_service.dart';
 import 'dark_light_service.dart';
 import 'token_storage_service.dart';
@@ -38,21 +39,25 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   }
 }
 
+/// Every Firebase/AdMob call reaches a Google server. On a device without
+/// Google Mobile Services, or on a network that cannot reach Google, those
+/// calls do not fail — they hang forever. A `try`/`catch` cannot recover from
+/// a hang, so each one is bounded by this timeout instead.
+const Duration _gmsTimeout = Duration(seconds: 8);
+
 class MyServices extends GetxService {
   late GetStorage getStorage;
 
+  /// Critical, GMS-free services only. Nothing here touches the network, so
+  /// the first frame is never blocked. The GMS-dependent block runs later,
+  /// from [initGmsServices], after the UI is on screen.
   Future<MyServices> init() async {
-    // --- Critical, GMS-free services (the UI cannot start without these) ---
-    // Loaded first and individually guarded so that a device without Google
-    // Mobile Services (e.g. Huawei) still reaches a usable UI instead of a
-    // blank screen. See _initFirebase() for the GMS-dependent block.
     try {
       await dotenv.load();
     } catch (e, s) {
       debugPrint('dotenv.load failed: $e\n$s');
     }
 
-    await Hive.initFlutter();
     await GetStorage.init();
 
     getStorage = GetStorage();
@@ -60,52 +65,59 @@ class MyServices extends GetxService {
     Get.put<LocaleService>(LocaleService(), permanent: true);
     Get.put<DarkLightService>(DarkLightService(), permanent: true);
 
-    _initSessionExpiredHandler();
+    try {
+      await Hive.initFlutter();
+    } catch (e, s) {
+      debugPrint('Hive.initFlutter failed: $e\n$s');
+    }
 
-    // --- GMS-dependent services (Firebase + AdMob) ---
-    // Wrapped so failures on GMS-less devices never abort startup.
-    await _initFirebase();
+    _initSessionExpiredHandler();
 
     return this;
   }
 
-  /// Initialize all Firebase + Google Mobile Ads services. Every step is
-  /// individually guarded: on devices without Google Mobile Services these
-  /// calls throw/hang, and a single failure must not prevent the app from
-  /// launching. The app degrades gracefully (no push, analytics, or ads).
-  Future<void> _initFirebase() async {
+  /// Initialize all Firebase + Google Mobile Ads services. Called after the
+  /// first frame and never awaited by `main()`. Every step is individually
+  /// guarded and bounded by [_gmsTimeout]: on GMS-less devices these calls
+  /// throw or hang, and neither must prevent the app from being used. The app
+  /// degrades gracefully (no push, analytics, or ads).
+  Future<void> initGmsServices() async {
     try {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
-      );
+      ).timeout(_gmsTimeout);
+      FirebaseReady.complete(true);
     } catch (e, s) {
       // Without Firebase core, every dependent service below is unavailable.
       debugPrint('Firebase.initializeApp failed (GMS unavailable?): $e\n$s');
+      FirebaseReady.complete(false);
       _initAds();
       return;
     }
 
     try {
-      await _initCrashlytics();
+      await _initCrashlytics().timeout(_gmsTimeout);
     } catch (e, s) {
       debugPrint('Crashlytics init failed: $e\n$s');
     }
 
     try {
-      await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
+      await FirebaseAnalytics.instance
+          .setAnalyticsCollectionEnabled(true)
+          .timeout(_gmsTimeout);
     } catch (e, s) {
       debugPrint('Analytics init failed: $e\n$s');
     }
 
     try {
-      await _initRemoteConfig();
+      await _initRemoteConfig().timeout(_gmsTimeout);
     } catch (e, s) {
       debugPrint('Remote Config init failed: $e\n$s');
     }
 
     try {
       FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-      await _initMaintenanceSignals();
+      _initMaintenanceSignals();
     } catch (e, s) {
       debugPrint('Messaging init failed: $e\n$s');
     }
@@ -154,10 +166,17 @@ class MyServices extends GetxService {
   /// اشترك في موضوع الصيانة واستقبل إشارات FCM الفورية. في المقدمة نطبّق الحالة
   /// مباشرةً عبر [MaintenanceGate.trigger]؛ وعند الفتح من إشعار نخزّن العلم لتقرأه
   /// البوابة. (حالة الخلفية/المغلق يعالجها معالج الخلفية.)
-  Future<void> _initMaintenanceSignals() async {
-    try {
-      await FirebaseMessaging.instance.subscribeToTopic(kMaintenanceTopic);
-    } catch (_) {}
+  void _initMaintenanceSignals() {
+    // subscribeToTopic only completes once FCM has registered a token, which
+    // never happens without GMS — so it is fired, never awaited.
+    unawaited(
+      FirebaseMessaging.instance
+          .subscribeToTopic(kMaintenanceTopic)
+          .timeout(_gmsTimeout)
+          .catchError((Object e) {
+        debugPrint('subscribeToTopic failed: $e');
+      }),
+    );
 
     FirebaseMessaging.onMessage.listen((message) {
       if (message.data['type'] == 'maintenance_mode') {

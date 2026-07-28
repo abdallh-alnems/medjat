@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../constant/strings/update_strings.dart';
 import '../utils/version_compare.dart';
+import 'firebase_ready.dart';
 
 enum UpdateAction { none, optional, force }
 
@@ -39,6 +40,13 @@ class UpdateService extends GetxService {
         return action.value;
       }
       _lastCheckTime = now;
+
+      // Remote Config is unreachable without Firebase; skip the version gate
+      // rather than block the user behind it.
+      if (!await FirebaseReady.orGiveUp()) {
+        action.value = UpdateAction.none;
+        return UpdateAction.none;
+      }
 
       await FirebaseRemoteConfig.instance.setConfigSettings(
         RemoteConfigSettings(

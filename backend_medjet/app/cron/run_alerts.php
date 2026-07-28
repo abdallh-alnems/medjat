@@ -20,7 +20,7 @@ $counts = [
 ];
 
 $tenants = Database::fetchAll(
-    "SELECT id FROM tenants WHERE status = 'active'"
+    "SELECT id FROM tenants WHERE is_active = 1"
 );
 
 $today = date('Y-m-d');
@@ -97,20 +97,11 @@ function _checkLateAbsence(int $tenantId, string $today, array &$counts): void
 
 function _checkMissingCheckout(int $tenantId, string $today, array &$counts): void
 {
-    $branches = Database::fetchAll(
-        "SELECT id, work_end_time FROM branches WHERE tenant_id = ?",
-        [$tenantId]
-    );
-
-    $branchEndTimes = [];
     $defaultEndTime = '18:00:00';
-    foreach ($branches as $br) {
-        $branchEndTimes[(int) $br['id']] = $br['work_end_time'] ?: $defaultEndTime;
-    }
 
     $rows = Database::fetchAll(
         "SELECT a.employee_id, a.branch_id, a.check_in_time,
-                e.name as employee_name
+                e.name as employee_name, e.work_end_time
          FROM attendance a
          JOIN employees e ON e.id = a.employee_id
          WHERE a.tenant_id = ? AND a.date = ?
@@ -124,7 +115,7 @@ function _checkMissingCheckout(int $tenantId, string $today, array &$counts): vo
 
     foreach ($rows as $row) {
         $branchId = $row['branch_id'] ? (int) $row['branch_id'] : null;
-        $endTime = $branchId ? ($branchEndTimes[$branchId] ?? $defaultEndTime) : $defaultEndTime;
+        $endTime = $row['work_end_time'] ?: $defaultEndTime;
 
         if ($now < $endTime) {
             continue;

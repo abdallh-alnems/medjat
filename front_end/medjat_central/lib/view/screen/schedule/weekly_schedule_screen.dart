@@ -24,7 +24,7 @@ class _WeeklyScheduleScreenState extends State<WeeklyScheduleScreen> {
   /// Stable accent colours assigned to shifts by their order in the palette,
   /// so "morning / evening / night" stay visually distinct across the screen.
   static const List<Color> _shiftPalette = [
-    Color(0xFF0D7377),
+    Color(0xFF0E7C86),
     Color(0xFFB8860B),
     Color(0xFF6C5CE7),
     Color(0xFFE17055),
