@@ -91,6 +91,12 @@ export interface AttendanceBranchOverride {
   name: string;
   qr_code?: string | null;
   attendance_methods: AttendanceMethod[] | null;
+  /** null on either field = inherit the company face settings. */
+  face_match_threshold: number | null;
+  face_liveness_required: boolean | null;
+  /** null = the branch has never enabled the WiFi method. */
+  wifi_mode: "learning" | "enforcing" | "optional" | null;
+  wifi_match: "bssid" | "ip" | "either";
   gps_radius_meters: number;
   lat: number | null;
   lng: number | null;
@@ -116,9 +122,13 @@ export interface AttendanceMethodConfig {
   attendance_methods: AttendanceMethod[];
   manual_attendance_admin_ids: number[] | null;
   allow_offline_attendance: boolean;
+  reject_mock_location: boolean;
   gps_latitude: number | null;
   gps_longitude: number | null;
   gps_radius_meters: number | null;
+  face_match_threshold: number;
+  face_liveness_required: boolean;
+  face_enforce_mode: "log_only" | "enforce";
   branches: AttendanceBranchOverride[];
   categories: AttendanceCategoryOverride[];
   employee_overrides: AttendanceEmployeeOverride[];
@@ -134,6 +144,16 @@ export function updateAttendanceConfig(data: {
   attendance_methods: AttendanceMethod[];
   manual_attendance_admin_ids?: number[] | null;
   allow_offline_attendance?: boolean;
+  reject_mock_location?: boolean;
+}) {
+  return apiPost<{ message?: string }>("app/settings/company.php", data);
+}
+
+/** Company-wide face-recognition settings for the face_selfie method. */
+export function updateFaceSettings(data: {
+  face_match_threshold?: number;
+  face_liveness_required?: boolean;
+  face_enforce_mode?: "log_only" | "enforce";
 }) {
   return apiPost<{ message?: string }>("app/settings/company.php", data);
 }
@@ -153,6 +173,9 @@ export function updateBranchAttendanceConfig(data: {
   attendance_methods: AttendanceMethod[] | null;
   gps_radius_meters?: number;
   allow_offline_attendance?: boolean | null;
+  /** null = inherit the company face settings; omit to leave unchanged. */
+  face_match_threshold?: number | null;
+  face_liveness_required?: boolean | null;
 }) {
   return apiPost<{ message?: string }>(
     "app/branches/update_attendance_method.php",
@@ -168,6 +191,53 @@ export function setScopeMethodOverride(data: {
 }) {
   return apiPost<{ message?: string }>(
     "app/attendance/set_method_override.php",
+    data,
+  );
+}
+
+// ── Branch WiFi networks (wifi_gps) ──
+
+export interface BranchNetworkSighting {
+  bssid: string;
+  ssid: string | null;
+  sightings: number;
+  inside_count: number;
+  outside_count: number;
+  all_inside: boolean;
+  all_outside: boolean;
+  employee_count: number;
+  last_seen: string;
+  is_approved: boolean;
+}
+
+export interface BranchNetworkReport {
+  branch_id: number;
+  wifi_mode: "learning" | "enforcing" | "optional" | null;
+  wifi_match: "bssid" | "ip" | "either";
+  days: number;
+  total_sightings: number;
+  coverage_percent: number;
+  networks: BranchNetworkSighting[];
+}
+
+/** Networks seen at a branch during the learning window. */
+export function getBranchNetworks(branchId: number, days?: number) {
+  return apiPost<BranchNetworkReport>("app/branches/network_sightings.php", {
+    branch_id: branchId,
+    ...(days ? { days } : {}),
+  });
+}
+
+/** Approve/deactivate networks and optionally switch the enforcement mode. */
+export function approveBranchNetworks(data: {
+  branch_id: number;
+  approve?: { kind: "bssid" | "ip_v4" | "ip_cidr"; value: string; label?: string }[];
+  deactivate?: number[];
+  wifi_mode?: "learning" | "enforcing" | "optional" | null;
+  wifi_match?: "bssid" | "ip" | "either";
+}) {
+  return apiPost<{ approved: number; deactivated: number }>(
+    "app/branches/approve_networks.php",
     data,
   );
 }

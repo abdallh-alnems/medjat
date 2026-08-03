@@ -1,0 +1,24 @@
+# Paths never pushed to the live server by deploy.sh.
+#
+# Two kinds of entry live here:
+#   1. Things the server owns and must keep (env.php, uploads, vendor,
+#      firebase credentials) — rsync --delete would otherwise wipe them.
+#   2. Things that are ours alone and would be publicly reachable under the
+#      docroot if copied (tests, local dumps, editor state).
+
+# --- server-owned: never overwrite, never delete ---
+config/env.php
+firebase_credentials.json
+uploads/
+vendor/
+logs/
+*.log
+
+# --- local-only: must not land in a public docroot ---
+.claude/
+.DS_Store
+tests/
+backup_*.sql
+*.bak
+*.bak-*
+.deployignore

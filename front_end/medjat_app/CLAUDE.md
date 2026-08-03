@@ -1,13 +1,13 @@
 # Medjat App
 
-تطبيق Flutter. الواجهة عربية RTL.
+تطبيق Flutter للموظف. الواجهة عربية RTL.
 
 ## هيكل المشروع
 
 ```
-medjat/
+Medjat/
 ├── front_end/medjat_app/    — تطبيق Flutter (هذا المشروع)
-└── backend_medjat/          — PHP REST API
+└── backend_medjet/          — PHP REST API
 ```
 
 ## Architecture
@@ -18,12 +18,15 @@ MVVM باستخدام GetX:
 lib/
 ├── core/
 │   ├── class/       — CRUD, StatusRequest, HandlingData
-│   ├── constant/    — routes, theme, api, ad IDs
-│   ├── services/    — initialization, notifications, permissions
+│   ├── constant/    — routes, theme, locale, api, ad IDs
+│   ├── middleware/  — حماية المسارات
+│   ├── services/    — initialization, notifications, permissions, location,
+│   │                  network (WiFi/BSSID), face_embedder + face_liveness,
+│   │                  device_integrity, deep_link, update
 │   └── shared/      — shared widgets
 ├── data/
 │   ├── data_source/remote/  — API calls per feature
-│   └── models/
+│   └── model/
 ├── logic/
 │   ├── bindings/    — GetX dependency injection
 │   └── controller/  — GetX controllers
@@ -35,12 +38,16 @@ lib/
 ## Tech Stack
 
 - **State:** GetX (`get: ^4.7.2`) — GetxController, GetBuilder, Obx
-- **HTTP:** `core/class/crud.dart` — CRUD class wraps all API calls
-- **Firebase:** Auth, Analytics, Crashlytics, Messaging, Remote Config
-- **Auth:** Firebase Auth + Google Sign-In
-- **UI:** flutter_screenutil, Cairo font, flutter_svg, lottie
-- **Localization:** Arabic (ar) default, flutter_localizations
-- **Env:** flutter_dotenv — `.env` file required
+- **HTTP:** `core/class/crud.dart` — CRUD class wraps all API calls; كل الكتابة **POST**
+- **Auth:** رقم الهاتف + رمز تفعيل (أو رمز/رابط/QR انضمام) — لا Google Sign-In هنا
+- **Firebase:** Core, Messaging, Analytics, Crashlytics, Remote Config, App Check
+- **Attendance:** `mobile_scanner` (QR)، `geolocator` (GPS)، `network_info_plus` (BSSID لطريقة
+  `wifi_gps`)، `camera` + `google_mlkit_face_detection` + `tflite_flutter` (سيلفي الوجه)
+- **Offline:** `Hive` لطابور الحضور + `connectivity_plus` للمزامنة عند عودة الاتصال
+- **UI:** flutter_screenutil، خطوط IBM Plex Sans Arabic (عربي) + Geist (لاتيني/أرقام)،
+  flutter_svg، lottie
+- **Localization:** العربية (ar) افتراضيًا + الإنجليزية، `flutter_localizations`
+- **Env:** flutter_dotenv — ملف `.env` مطلوب
 
 ## Conventions
 
@@ -49,6 +56,8 @@ lib/
 - Bindings: `*Binding` suffix
 - API responses handled via `StatusRequest` enum + `HandlingData`
 - Light/Dark mode via `DarkLightService`
+- **لا تُصدِّق حكم العميل:** الهاتف يستخرج بصمة الوجه فقط، والخادم يحسب التطابق ويقرّر.
+  إرسال `matched: true` من التطبيق ليس مصدر ثقة.
 
 ## Commands
 
@@ -63,4 +72,11 @@ flutter clean && flutter pub get
 
 ## Backend PHP
 
-كل endpoint في ملف منفصل داخل `backend_medjat/app/`. الـ queries في `backend_medjat/core/queries/`.
+كل endpoint في ملف منفصل داخل `backend_medjet/app/<module>/`، والمنطق المشترك في `backend_medjet/core/`.
+
+## ملاحظات
+
+- `assets/models/mobilefacenet.tflite` **غير موجود في المستودع** (راجع `assets/models/README.md`).
+  بدونه تفشل `FaceEmbedder.load()` وتظهر رسالة `face_unavailable` — وهذا مقصود: الفشل ظاهر ولا
+  يُقبَل الحضور صامتًا.
+- `SCREENSHOT_MODE` (dart-define) يخفي الإعلانات لالتقاط صور المتجر.

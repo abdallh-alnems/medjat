@@ -97,6 +97,8 @@ const Map<String, String> en = {
   'not_part_of_company':
       "You're not part of any company yet. Choose how you'd like to start:",
   'create_your_company': 'Create your company',
+  'onboarding_locale_hint':
+      "Detected from your device — check these before continuing. Attendance times and lateness are measured on the company's timezone, and changing it later affects existing records.",
   'join_company_with_code': 'Join company with invite code',
   'need_help_question': 'Need help?',
   'contact_support': 'Contact support',
@@ -409,6 +411,14 @@ const Map<String, String> en = {
   'reports': 'Reports',
   'attendance_report': 'Attendance Report',
   'attendance_summary': 'Attendance, departure and lateness summary',
+  'overtime_late_report': 'Overtime & Lateness Report',
+  'overtime_late_subtitle': 'Overtime hours and late minutes per employee',
+  'overtime_days': 'Overtime days',
+  'late_days': 'Late days',
+  'worst_late': 'Longest delay',
+  'sort_most_overtime': 'Most overtime',
+  'sort_most_late': 'Most late',
+  'no_overtime_late_data': 'No overtime or lateness in this period',
   'payroll_report': 'Payroll Report',
   'payroll_statements': 'Payroll statements and deductions',
   'employees_report': 'Employees Report',
@@ -827,6 +837,48 @@ const Map<String, String> en = {
   'method_gps_only': 'GPS Only',
   'method_gps_only_desc':
       'Employee checks in based on being within the branch GPS radius, no QR scan needed.',
+  'method_wifi_gps': 'Branch WiFi',
+  'method_wifi_gps_desc':
+      'The employee must be connected to one of the branch\'s approved access points when checking in.',
+  'wifi_networks': 'Branch networks',
+  'wifi_networks_hint':
+      'Check-in requires being connected to one of the branch\'s approved access points, on top of the location check.',
+  'wifi_mode': 'Enforcement mode',
+  'wifi_mode_learning': 'Learning (record only)',
+  'wifi_mode_enforcing': 'Reject unapproved networks',
+  'wifi_mode_optional': 'Optional (location or WiFi)',
+  'wifi_mode_hint':
+      'Start in learning for a week: the system collects the branch access points from real check-ins without rejecting anyone. One router usually broadcasts several addresses (2.4 and 5 GHz) — approve them all.',
+  'wifi_seen_networks': 'Networks seen',
+  'wifi_no_sightings':
+      'No networks recorded yet. Enable learning mode and let employees check in.',
+  'wifi_sightings_count': '@count sightings',
+  'wifi_all_inside': 'all inside area',
+  'wifi_all_outside': 'all outside area',
+  'wifi_mixed_location': '@inside inside · @outside outside',
+  'wifi_coverage': 'Coverage of selected networks',
+  'wifi_coverage_warning':
+      'Warning: ~@percent% of check-ins would be rejected with this selection.',
+  'wifi_save_and_enforce': 'Approve selected and enable enforcement',
+  'wifi_save_selection': 'Save approvals',
+  'wifi_needs_one_network': 'Approve at least one network before enabling enforcement.',
+  'wifi_outside_hint':
+      'Only ever seen from outside the branch area — most likely an employee home router. Do not approve.',
+  'method_face_selfie': 'Selfie + Face Recognition',
+  'method_face_selfie_desc':
+      'Employee takes a selfie at check-in and the system matches it against their enrolled face.',
+  'face_badge': 'Face',
+  'face_match_threshold': 'Match threshold',
+  'face_match_threshold_hint':
+      'Minimum similarity to accept a face. Higher is stricter and rejects more genuine employees.',
+  'face_liveness_required': 'Require proof of presence',
+  'face_liveness_hint':
+      'Asks for a random action (blink / turn / smile) so a printed photo cannot pass.',
+  'face_enforce_mode': 'Enforcement mode',
+  'face_mode_log_only': 'Log only (tuning)',
+  'face_mode_enforce': 'Reject non-matches',
+  'face_mode_hint':
+      'Start in log-only for two weeks: scores are recorded and nobody is blocked. Review, then switch to rejecting.',
   'method_manual_admin': 'Manual by Admins',
   'method_manual_admin_desc':
       'An admin manually records employee attendance and departure.',
@@ -857,6 +909,12 @@ const Map<String, String> en = {
   'allow_offline': 'Allow Offline Attendance',
   'allow_offline_hint':
       'Allow employees to record attendance without internet and sync later when connection is restored.',
+  'reject_mock_location': 'Reject Fake Locations',
+  'reject_mock_location_hint':
+      'Block check-in and check-out from a device running a location-spoofing app. Android only — iOS does not expose this to apps.',
+  'require_local_biometric': 'Confirm Identity with Device Biometrics',
+  'require_local_biometric_hint':
+      'Ask the employee for the fingerprint or face enrolled on their own phone before recording attendance, so a colleague holding the phone cannot check in for them. Requires the updated employee app; older builds will be rejected.',
   'inherit_company_default': 'Company Default',
   'offline_enabled': 'Enabled',
   'offline_disabled': 'Disabled',
@@ -2151,4 +2209,109 @@ const Map<String, String> en = {
   'all_admins': 'All admins',
   'meters_unit': 'm',
   'manager_fallback': 'Manager',
+
+  // ── Biometric devices (fingerprint / face terminals) ───
+  'method_device': 'Fingerprint / face device',
+  'method_device_desc':
+      'The employee punches on a terminal installed at the branch, and the device sends the records to the system.',
+  'devices': 'Attendance devices',
+  'import_punches': 'Import punches from a file',
+  'import_punches_hint':
+      'Every fingerprint terminal, of any brand, can export a file to a USB stick. Upload it here and it becomes attendance — even if the device is not connected to the internet.',
+  'import_punches_branch': 'Branch',
+  'import_punches_choose_file': 'Choose the punch file',
+  'import_punches_formats': 'CSV, TXT or DAT — any column order',
+  'import_punches_check': 'Check the file',
+  'import_punches_preview': 'What we read from the file',
+  'import_punches_readable': 'Readable punches',
+  'import_punches_unreadable': 'Rows we could not read',
+  'import_punches_users': 'Distinct user ids',
+  'import_punches_period': 'Period',
+  'import_punches_date_ambiguous':
+      'Every date in this file is ambiguous (like 03/04) — nothing in it says which number is the day. We read them as day/month. Check the period above: if it looks wrong, the file is month/day and needs fixing before you import.',
+  'import_punches_confirm': 'Confirm import',
+  'import_punches_done': 'Import finished',
+  'import_punches_applied': 'Recorded as attendance',
+  'import_punches_already': 'Imported before (skipped)',
+  'import_punches_unmatched': 'Waiting to be linked',
+  'import_punches_link_hint':
+      'These user ids are not linked to an employee yet. Open the device from the devices screen and link them — the punches turn into attendance automatically.',
+  'import_punches_another': 'Import another file',
+  'import_failed': 'Import failed',
+  'devices_hint':
+      'The device pushes its punch log to the server on its own. Register the serial number printed on it, then link each User ID on the device to an employee.',
+  'devices_empty':
+      'No devices registered.\nAdd one using the serial number printed on the back.',
+  'device_add': 'Add device',
+  'device_serial': 'Serial number (SN)',
+  'device_serial_hint':
+      'The serial number is on the sticker behind the device, or in its menu under System Info.',
+  'device_name_optional': 'Device name (optional)',
+  'device_register': 'Register device',
+  'device_registered_online': 'Device registered and connected to the server.',
+  'device_registered_offline':
+      'Device registered, but it has not contacted the server yet. Check its network settings (Cloud Server Setting).',
+  'device_registered_with_punches':
+      'Device registered, and @n punches it sent before registration were recovered.',
+  'device_updated': 'Device settings saved',
+  'device_released': 'Device released',
+  'device_command_queued': 'Command sent — the device will run it within seconds.',
+  'device_never_connected': 'Has never contacted the server',
+  'device_seen_now': 'Online now',
+  'device_seen_minutes': 'Last seen @n minutes ago',
+  'device_seen_hours': 'Last seen @n hours ago',
+  'device_seen_days': 'Last seen @n days ago',
+  'device_status': 'Status',
+  'device_online': 'Online',
+  'device_offline': 'Offline',
+  'device_disabled': 'Disabled',
+  'device_punches_today': 'Punches today',
+  'device_linked_users': 'Linked',
+  'device_pending_users': '@n device users are not linked to an employee',
+  'device_sync_time': 'Sync device clock',
+  'device_settings': 'Device settings',
+  'device_enable': 'Enable',
+  'device_disable': 'Disable',
+  'device_release': 'Release device',
+  'device_release_confirm':
+      'The device will be unlinked from the company and its user links deleted. Recorded attendance stays as it is.',
+  'device_direction_mode': 'How in/out is decided',
+  'device_direction_auto': 'Automatic (recommended)',
+  'device_direction_auto_desc':
+      'First punch of the day is the check-in, the last one is the check-out. Staff press nothing.',
+  'device_direction_status': 'Use the device keys',
+  'device_direction_status_desc':
+      'Relies on staff pressing F1 to check in and F2 to check out. Only use it if they actually do.',
+  'device_min_interval': 'Minimum gap between punches (seconds)',
+  'device_min_interval_desc':
+      'A second punch within this window counts as a repeat — someone tapping twice because the beep was late.',
+  'device_clock_offset': 'Device clock correction (minutes)',
+  'device_clock_offset_desc':
+      'Only for a device whose clock is off and cannot be set. Prefer "Sync device clock".',
+  'device_debug_logging': 'Verbose connection log',
+  'device_debug_logging_desc':
+      'Records every message between the device and the server for diagnosis. Turn it off when done.',
+  'device_tab_users': 'Users',
+  'device_tab_punches': 'Punch log',
+  'device_no_users':
+      'The device has not reported any users yet. Enrol staff on the device itself and they will appear here.',
+  'device_users_pending': 'Waiting to be linked (@n)',
+  'device_users_linked': 'Linked (@n)',
+  'device_unlinked_user': 'Unnamed user',
+  'device_name_on_device': 'Name on device: @name',
+  'device_waiting_punches': '@n punches stored, waiting for a link',
+  'device_link': 'Link',
+  'device_unlink': 'Unlink',
+  'device_link_title': 'Link User ID @id to an employee',
+  'device_user_linked': 'Linked',
+  'device_user_linked_with_replay': 'Linked, and @n earlier punches were recorded.',
+  'device_user_unlinked': 'Unlinked',
+  'device_no_punches': 'No punches yet.',
+  'device_user_number': 'User @id',
+  'device_punch_state_applied': 'Recorded',
+  'device_punch_state_duplicate': 'Duplicate',
+  'device_punch_state_unmatched': 'Not linked',
+  'device_punch_state_ignored': 'Ignored',
+  'device_punch_state_failed': 'Failed',
+  'change': 'Change',
 };

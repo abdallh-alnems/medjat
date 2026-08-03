@@ -56,8 +56,11 @@ import '../../../view/screen/report/attendance_report_screen.dart';
 import '../../../view/screen/report/payroll_report_screen.dart';
 import '../../../view/screen/report/employees_report_screen.dart';
 import '../../../view/screen/report/leaves_report_screen.dart';
+import '../../../view/screen/report/overtime_late_report_screen.dart';
 import '../../../view/screen/settings/deduction_rules_screen.dart';
 import '../../../view/screen/settings/attendance_method_screen.dart';
+import '../../../view/screen/settings/branch_networks_screen.dart';
+import '../../../logic/controller/settings/branch_networks_controller.dart';
 import '../../../view/screen/settings/company_settings_screen.dart';
 import '../../../view/screen/settings/company_settings_hub_screen.dart';
 import '../../../view/screen/settings/leave_settings_screen.dart';
@@ -111,7 +114,16 @@ import '../../../logic/controller/report/attendance_report_controller.dart';
 import '../../../logic/controller/report/payroll_report_controller.dart';
 import '../../../logic/controller/report/employees_report_controller.dart';
 import '../../../logic/controller/report/leaves_report_controller.dart';
+import '../../../logic/controller/report/overtime_late_report_controller.dart';
+import '../../../logic/controller/branch/branch_controller.dart';
 import '../../../core/shared/layout/tab_shell.dart';
+import '../../../view/screen/devices/devices_screen.dart';
+import '../../../view/screen/devices/device_users_screen.dart';
+import '../../../view/screen/devices/import_punches_screen.dart';
+import '../../../logic/controller/devices/devices_controller.dart';
+import '../../../logic/controller/devices/device_users_controller.dart';
+import '../../../logic/controller/devices/import_punches_controller.dart';
+import '../../../data/data_source/remote/device_data/device_data.dart';
 import '../../middleware/auth_middleware.dart';
 
 class AppBindings extends Bindings {
@@ -367,6 +379,23 @@ List<GetPage<dynamic>> getPages = [
     transitionDuration: AppMotion.transition,
   ),
   GetPage(
+    name: AppRoutes.reportOvertimeLate,
+    page: () => const OvertimeLateReportScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<ReportData>(() => ReportData());
+      Get.lazyPut<OvertimeLateReportController>(
+          () => OvertimeLateReportController());
+      // The branch filter reuses the app-wide BranchController that
+      // home_binding registers; declaring it the same way here (a no-op when it
+      // already exists) also covers reaching this screen first.
+      Get.lazyPut<BranchData>(() => BranchData(), fenix: true);
+      Get.lazyPut<BranchController>(() => BranchController(), fenix: true);
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
     name: AppRoutes.deductionRules,
     page: () => const DeductionRulesScreen(),
     binding: BindingsBuilder<void>(() {
@@ -384,6 +413,63 @@ List<GetPage<dynamic>> getPages = [
       Get.lazyPut<CompanySettingsData>(() => CompanySettingsData());
       Get.lazyPut<BranchData>(() => BranchData());
       Get.lazyPut<ManagerData>(() => ManagerData());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.branchNetworks,
+    page: () => const BranchNetworksScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<BranchData>(() => BranchData());
+      // Arguments: {'branch_id': int, 'branch_name': String}
+      final args = (Get.arguments as Map?) ?? const {};
+      Get.lazyPut<BranchNetworksController>(() => BranchNetworksController(
+            (args['branch_id'] as num?)?.toInt() ?? 0,
+            args['branch_name']?.toString() ?? '',
+          ));
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.devices,
+    page: () => const DevicesScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<DeviceData>(() => DeviceData());
+      Get.lazyPut<BranchData>(() => BranchData());
+      Get.lazyPut<DevicesController>(() => DevicesController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.importPunches,
+    page: () => const ImportPunchesScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<DeviceData>(() => DeviceData());
+      Get.lazyPut<BranchData>(() => BranchData());
+      Get.lazyPut<ImportPunchesController>(() => ImportPunchesController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.deviceUsers,
+    page: () => const DeviceUsersScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<DeviceData>(() => DeviceData());
+      Get.lazyPut<EmployeeData>(() => EmployeeData());
+      // Arguments: {'device_id': int, 'device_label': String}
+      final args = (Get.arguments as Map?) ?? const {};
+      Get.lazyPut<DeviceUsersController>(() => DeviceUsersController(
+            (args['device_id'] as num?)?.toInt() ?? 0,
+            args['device_label']?.toString() ?? '',
+          ));
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,

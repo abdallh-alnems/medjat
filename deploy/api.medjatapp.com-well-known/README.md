@@ -6,7 +6,16 @@ open the **medjat_central** app directly (no browser page), so the app then join
 the company automatically. When the app is not installed, the same link falls
 back to the existing `join_team.php` landing page (install / web / code).
 
-## 1) Upload these two files to the **document root of `api.medjatapp.com`**
+> **Status (verified 2026-07-31): this is live** — both URLs below return 200. The source of
+> truth is now `backend_medjet/.well-known/` in the repo; this folder is the historical
+> Hostinger upload copy. There are **two separate sets**, one per app:
+>
+> | Host | App | Repo file |
+> |------|-----|-----------|
+> | `api.medjatapp.com` | **medjat_central** (team invite `join_team.php`) | `.well-known/apple-app-site-association-central`, `assetlinks-central.json` |
+> | `medjatapp.com` | **medjat_app** (employee `/join`) | `.well-known/apple-app-site-association`, `assetlinks.json` |
+
+## 1) Serve these two files from the **document root of `api.medjatapp.com`**
 
 They must resolve at the domain **root** (not under `/backend_medjet/`):
 
@@ -19,8 +28,8 @@ Requirements (both):
 - Served over **HTTPS**, **HTTP 200**, **no redirects**.
 - `Content-Type: application/json`.
 - `apple-app-site-association` has **no file extension**.
-- Make sure the root `.htaccess` does **not** block `.json` files or the
-  `.well-known` directory (and no Basic-Auth on these paths).
+- The server is now **nginx on the Hetzner VPS** — there is no `.htaccess`. What the vhost must
+  not do: send these paths through the API Basic-auth gate, or rewrite them into PHP.
 
 Verify after upload:
 ```

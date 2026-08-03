@@ -20,47 +20,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Minus, Plus } from "lucide-react";
-import type { TKey } from "@/lib/i18n/ar";
-
-const CURRENCIES = ["EGP", "SAR", "AED", "USD", "EUR", "KWD", "QAR"] as const;
-
-// Saturday-first ordering to match the Arab work week, ISO weekday → label key.
-const WEEKDAYS: { value: number; key: TKey }[] = [
-  { value: 6, key: "weekday_sat" },
-  { value: 7, key: "weekday_sun" },
-  { value: 1, key: "weekday_mon" },
-  { value: 2, key: "weekday_tue" },
-  { value: 3, key: "weekday_wed" },
-  { value: 4, key: "weekday_thu" },
-  { value: 5, key: "weekday_fri" },
-];
-
-/** Full IANA timezone list, falling back to a small curated set on old runtimes. */
-function timezoneList(current?: string): string[] {
-  let zones: string[] = [];
-  try {
-    const supported = (
-      Intl as unknown as { supportedValuesOf?: (k: string) => string[] }
-    ).supportedValuesOf;
-    if (supported) zones = supported("timeZone");
-  } catch {
-    /* ignore */
-  }
-  if (zones.length === 0) {
-    zones = [
-      "Africa/Cairo",
-      "Asia/Riyadh",
-      "Asia/Dubai",
-      "Asia/Kuwait",
-      "Asia/Qatar",
-      "Europe/London",
-      "America/New_York",
-      "UTC",
-    ];
-  }
-  if (current && !zones.includes(current)) zones = [current, ...zones];
-  return zones;
-}
+// Shared with the onboarding form so the two cannot offer different lists.
+import {
+  CURRENCIES,
+  WEEKDAYS,
+  supportedZones,
+} from "@/lib/locale-defaults";
 
 export default function CompanySettingsPage() {
   const { data, isLoading, isError, refetch } = useCompanySettings();
@@ -84,7 +49,7 @@ function CompanyForm({ initial }: { initial: CompanySettings }) {
 
   const cycleStart = form.cycle_start_day ?? 1;
   const weekStart = form.week_start_day ?? 6;
-  const zones = timezoneList(form.timezone);
+  const zones = supportedZones(form.timezone);
 
   const cyclePreview =
     cycleStart <= 1

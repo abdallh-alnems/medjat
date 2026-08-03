@@ -10,10 +10,11 @@ $input = $auth['input'];
 
 $reasonRaw = $input['reason'] ?? '';
 $reasonMap = [
-    'mock_location' => 'mock_location',
-    'rooted'        => 'rooted',
-    'jailbroken'    => 'jailbroken',
-    'vpn'           => 'vpn',
+    'mock_location'      => 'mock_location',
+    'rooted'             => 'rooted',
+    'jailbroken'         => 'jailbroken',
+    'vpn'                => 'vpn',
+    'no_local_biometric' => 'no_local_biometric',
 ];
 $reason = $reasonMap[$reasonRaw] ?? null;
 if ($reason === null) {

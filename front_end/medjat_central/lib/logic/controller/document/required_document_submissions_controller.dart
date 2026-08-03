@@ -33,6 +33,14 @@ class RequiredDocumentSubmissionsController extends GetxController {
   }
 
   Future<void> load() async {
+    // Opened without a document type (e.g. from a payload that carries none):
+    // the request would 404, so fail fast instead of hitting the server.
+    if (requiredDocumentId <= 0) {
+      status = StatusRequest.failure;
+      update();
+      return;
+    }
+
     status = StatusRequest.loading;
     update();
 

@@ -70,6 +70,28 @@ void main() {
       expect(controller.status, StatusRequest.failure);
     });
 
+    test('extractPdf accepts a real PDF payload untouched', () {
+      final bytes = [...'%PDF-1.4'.codeUnits, 0x0A, 0x25, 0xE2, 0xE3];
+
+      expect(PayrollController.extractPdf(bytes), bytes);
+    });
+
+    test('extractPdf rejects a JSON payload saved under a .pdf name', () {
+      // The AppGallery rejection: the endpoint answered JSON with HTTP 200 and
+      // the bytes were written to payslip.pdf, so the viewer popped "the
+      // current document format is not pdf".
+      final json = '{"status":"success","data":{"net_salary":5000}}'.codeUnits;
+
+      expect(PayrollController.extractPdf(json), isNull);
+    });
+
+    test('extractPdf trims stray output printed before the PDF header', () {
+      final noise = 'Warning: something in /var/www/x.php on line 3\n'.codeUnits;
+      final pdf = [...'%PDF-1.4'.codeUnits, 0x0A, 0x31];
+
+      expect(PayrollController.extractPdf([...noise, ...pdf]), pdf);
+    });
+
     test('changeMonth updates selectedMonth and reloads', () async {
       when(() => mockPayrollData.getSlip(any())).thenAnswer((_) async => {
             'status': StatusRequest.success,

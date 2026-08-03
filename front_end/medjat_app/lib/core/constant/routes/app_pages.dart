@@ -27,6 +27,8 @@ import '../../../view/screen/security/vpn_blocked_screen.dart';
 import '../../../view/screen/home/home_screen.dart';
 import '../../../view/screen/attendance/scan_qr_screen.dart';
 import '../../../view/screen/attendance/gps_check_in_screen.dart';
+import '../../../view/screen/attendance/face_check_in_screen.dart';
+import '../../../view/screen/attendance/face_enroll_screen.dart';
 import '../../../view/screen/attendance/attendance_success_screen.dart';
 import '../../../view/screen/profile/my_profile_screen.dart';
 import '../../../view/screen/documents/my_documents_screen.dart';
@@ -128,6 +130,20 @@ List<GetPage<dynamic>> getPages = [
   GetPage(
     name: AppRoutes.gpsCheckIn,
     page: () => const GpsCheckInScreen(),
+    binding: AttendanceBinding(),
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.faceCheckIn,
+    page: () => const FaceCheckInScreen(),
+    binding: AttendanceBinding(),
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.faceEnroll,
+    page: () => const FaceEnrollScreen(),
     binding: AttendanceBinding(),
     transition: Transition.fadeIn,
     transitionDuration: AppMotion.transition,

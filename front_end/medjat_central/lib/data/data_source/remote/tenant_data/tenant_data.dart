@@ -5,13 +5,24 @@ import '../../../../core/constant/id/app_links.dart';
 class TenantData {
   final CRUD _crud = Get.find<CRUD>();
 
+  /// Locale settings are sent at creation so the company never runs on a
+  /// guessed default. The backend treats them as optional and falls back to the
+  /// column defaults, which is what older builds still in the stores rely on.
   Future<Map<String, dynamic>> createCompany({
     required String firebaseToken,
     required String companyName,
+    String? timezone,
+    String? currency,
+    int? cycleStartDay,
+    int? weekStartDay,
   }) async {
     return await _crud.postData(AppLinks.tenantCreate, {
       'token': firebaseToken,
       'company_name': companyName,
+      'timezone': ?timezone,
+      'currency': ?currency,
+      'cycle_start_day': ?cycleStartDay,
+      'week_start_day': ?weekStartDay,
     });
   }
 

@@ -19,6 +19,8 @@ class CompanySettingsData {
     required List<String> methods,
     List<int>? manualAdminIds,
     bool? allowOfflineAttendance,
+    bool? rejectMockLocation,
+    bool? requireLocalBiometric,
   }) async {
     final data = <String, dynamic>{
       'attendance_methods': methods,
@@ -27,7 +29,29 @@ class CompanySettingsData {
     if (allowOfflineAttendance != null) {
       data['allow_offline_attendance'] = allowOfflineAttendance;
     }
+    if (rejectMockLocation != null) {
+      data['reject_mock_location'] = rejectMockLocation;
+    }
+    if (requireLocalBiometric != null) {
+      data['require_local_biometric'] = requireLocalBiometric;
+    }
     // POST (not PUT): the backend uses POST and PUT is unreliable on the host.
+    return await _crud.postData(AppLinks.companySettings, data);
+  }
+
+  /// Company-wide face-recognition settings for the `face_selfie` method.
+  /// Sent on their own so they never overwrite the method list.
+  Future<Map<String, dynamic>> updateFaceSettings({
+    double? matchThreshold,
+    bool? livenessRequired,
+    String? enforceMode,
+  }) async {
+    final data = <String, dynamic>{};
+    if (matchThreshold != null) data['face_match_threshold'] = matchThreshold;
+    if (livenessRequired != null) {
+      data['face_liveness_required'] = livenessRequired;
+    }
+    if (enforceMode != null) data['face_enforce_mode'] = enforceMode;
     return await _crud.postData(AppLinks.companySettings, data);
   }
 

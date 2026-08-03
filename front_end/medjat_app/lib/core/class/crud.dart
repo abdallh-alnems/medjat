@@ -37,6 +37,26 @@ class CRUD {
     return headers;
   }
 
+  /// Builds the request URI, **keeping** any query string already baked into
+  /// [url] and merging [queryParameters] on top of it.
+  ///
+  /// `Uri.replace(queryParameters: …)` overwrites the whole query, so calling
+  /// it unconditionally erased the parameters carried by links such as
+  /// `get_slip.php?month=2026-04&format=pdf` — the endpoint then fell back to
+  /// its defaults (JSON, current month) and the caller silently got the wrong
+  /// response.
+  @visibleForTesting
+  static Uri buildUri(String url, Map<String, dynamic>? queryParameters) {
+    final uri = Uri.parse(url);
+    if (queryParameters == null || queryParameters.isEmpty) return uri;
+
+    return uri.replace(queryParameters: <String, String>{
+      ...uri.queryParameters,
+      for (final entry in queryParameters.entries)
+        entry.key: entry.value.toString(),
+    });
+  }
+
   Future<StatusRequest> _checkConnectivity() async {
     final results = await Connectivity().checkConnectivity();
     final online = results.any((r) => r != ConnectivityResult.none);
@@ -51,14 +71,9 @@ class CRUD {
     }
 
     try {
-      final uri = Uri.parse(url);
       final headers = await _headers();
-      final params = <String, String>{};
-      if (queryParameters != null) {
-        queryParameters.forEach((k, v) => params[k] = v.toString());
-      }
       final response = await _client
-          .get(uri.replace(queryParameters: params), headers: headers)
+          .get(buildUri(url, queryParameters), headers: headers)
           .timeout(const Duration(seconds: 15));
 
       return handleResponse(response);
@@ -76,18 +91,20 @@ class CRUD {
     }
 
     try {
-      final uri = Uri.parse(url);
       final headers = await _headers();
-      final params = <String, String>{};
-      if (queryParameters != null) {
-        queryParameters.forEach((k, v) => params[k] = v.toString());
-      }
       final response = await _client
-          .get(uri.replace(queryParameters: params), headers: headers)
+          .get(buildUri(url, queryParameters), headers: headers)
           .timeout(const Duration(seconds: 30));
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        return {'status': StatusRequest.success, 'bytes': response.bodyBytes};
+        // The content type travels with the bytes: a 200 does not guarantee a
+        // binary payload — an endpoint can answer JSON (or an HTML error page)
+        // with the same status, and the caller must be able to tell.
+        return {
+          'status': StatusRequest.success,
+          'bytes': response.bodyBytes,
+          'contentType': response.headers['content-type'] ?? '',
+        };
       }
       return _errorFromStatus(response.statusCode);
     } catch (e) {

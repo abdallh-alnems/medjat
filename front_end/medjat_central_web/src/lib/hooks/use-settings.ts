@@ -13,6 +13,9 @@ import {
   saveDeductionSettings,
   getAttendanceMethodConfig,
   updateAttendanceConfig,
+  updateFaceSettings,
+  getBranchNetworks,
+  approveBranchNetworks,
   setCompanyGeofence,
   updateBranchAttendanceConfig,
   setScopeMethodOverride,
@@ -90,6 +93,29 @@ export function useUpdateAttendanceConfig() {
     (data: Parameters<typeof updateAttendanceConfig>[0]) =>
       updateAttendanceConfig(data),
     { invalidate: [AM_KEY, [...QK, "company"] as const] },
+  );
+}
+
+export function useUpdateFaceSettings() {
+  return useToastMutation(
+    (data: Parameters<typeof updateFaceSettings>[0]) => updateFaceSettings(data),
+    { invalidate: [AM_KEY] },
+  );
+}
+
+export function useBranchNetworks(branchId: number | null, days?: number) {
+  return useQuery({
+    queryKey: [...QK, "branch-networks", branchId, days] as const,
+    queryFn: () => getBranchNetworks(branchId!, days),
+    enabled: branchId != null,
+  });
+}
+
+export function useApproveBranchNetworks() {
+  return useToastMutation(
+    (data: Parameters<typeof approveBranchNetworks>[0]) =>
+      approveBranchNetworks(data),
+    { invalidate: [AM_KEY, [...QK, "branch-networks"] as const] },
   );
 }
 

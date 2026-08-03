@@ -24,10 +24,30 @@ function streamOwnPayslipPdf(int $tenantId, array $employee, array $breakdown, s
         Response::notFound('Tenant');
     }
 
+    // Generate inside an output buffer. A stray notice or warning printed by
+    // any library here would otherwise be flushed ahead of the PDF bytes, and
+    // a file that does not start with "%PDF-" is rejected by every reader
+    // ("the current document format is not pdf"). Whatever lands in the buffer
+    // is discarded — errors go to the log, never into the download.
+    ob_start();
     try {
         $path = PayslipPdfService::generate($tenant, $employee, $breakdown, $month);
     } catch (Throwable $e) {
+        $noise = ob_get_clean();
         error_log('Employee payslip PDF generation failed: ' . $e->getMessage());
+        if ($noise !== '' && $noise !== false) {
+            error_log('Employee payslip PDF stray output: ' . substr($noise, 0, 500));
+        }
+        Response::fail('Failed to generate payslip', 500, 'failed_generate_payslip');
+    }
+
+    $noise = ob_get_clean();
+    if ($noise !== '' && $noise !== false) {
+        error_log('Employee payslip PDF stray output: ' . substr($noise, 0, 500));
+    }
+
+    if (!is_string($path) || !is_file($path) || filesize($path) === 0) {
+        error_log('Employee payslip PDF missing after generation: ' . var_export($path, true));
         Response::fail('Failed to generate payslip', 500, 'failed_generate_payslip');
     }
 

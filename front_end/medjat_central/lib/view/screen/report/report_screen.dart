@@ -24,6 +24,14 @@ class ReportScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.s3),
           _ReportCard(
+            icon: Icons.timelapse_outlined,
+            title: 'overtime_late_report'.tr,
+            subtitle: 'overtime_late_subtitle'.tr,
+            color: colors.accentWarm,
+            onTap: () => Get.toNamed<void>(AppRoutes.reportOvertimeLate),
+          ),
+          const SizedBox(height: AppSpacing.s3),
+          _ReportCard(
             icon: Icons.payments_outlined,
             title: 'payroll_report'.tr,
             subtitle: 'payroll_statements'.tr,

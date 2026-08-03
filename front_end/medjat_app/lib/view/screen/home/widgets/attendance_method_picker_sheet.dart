@@ -30,51 +30,67 @@ class AttendanceMethodPickerSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.s4),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius:
-            const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
+    // Material (not a coloured Container) so the option ripples land on top of
+    // the sheet background instead of underneath it.
+    return Material(
+      color: colors.surface,
+      clipBehavior: Clip.antiAlias,
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(AppRadius.lg),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: AppSpacing.s3),
-              decoration: BoxDecoration(
-                color: colors.borderHairline,
-                borderRadius: BorderRadius.circular(2),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.s4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: AppSpacing.s3),
+                decoration: BoxDecoration(
+                  color: colors.borderHairline,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          Text('choose_attendance_method'.tr, style: AppTextStyles.h3(context)),
-          const SizedBox(height: AppSpacing.s4),
-          for (final method in methods) ...[
-            _MethodTile(
-              colors: colors,
-              icon: method == 'gps_only'
-                  ? Icons.location_on_outlined
-                  : Icons.qr_code_scanner,
-              title: (method == 'gps_only' ? 'method_gps_only' : 'method_qr_gps')
-                  .tr,
-              description: (method == 'gps_only'
-                      ? 'method_gps_only_desc'
-                      : 'method_qr_gps_desc')
-                  .tr,
-              onTap: () {
-                Get.back<void>();
-                onSelected(method);
-              },
+            Text(
+              'choose_attendance_method'.tr,
+              style: AppTextStyles.h3(context),
             ),
+            const SizedBox(height: AppSpacing.s4),
+            for (final method in methods) ...[
+              _MethodTile(
+                colors: colors,
+                icon: switch (method) {
+                  'gps_only' => Icons.location_on_outlined,
+                  'wifi_gps' => Icons.wifi,
+                  'face_selfie' => Icons.face_retouching_natural_outlined,
+                  _ => Icons.qr_code_scanner,
+                },
+                title: switch (method) {
+                  'gps_only' => 'method_gps_only'.tr,
+                  'wifi_gps' => 'method_wifi_gps'.tr,
+                  'face_selfie' => 'method_face_selfie'.tr,
+                  _ => 'method_qr_gps'.tr,
+                },
+                description: switch (method) {
+                  'gps_only' => 'method_gps_only_desc'.tr,
+                  'wifi_gps' => 'method_wifi_gps_desc'.tr,
+                  'face_selfie' => 'method_face_selfie_desc'.tr,
+                  _ => 'method_qr_gps_desc'.tr,
+                },
+                onTap: () {
+                  Get.back<void>();
+                  onSelected(method);
+                },
+              ),
+              const SizedBox(height: AppSpacing.s2),
+            ],
             const SizedBox(height: AppSpacing.s2),
           ],
-          const SizedBox(height: AppSpacing.s2),
-        ],
+        ),
       ),
     );
   }
@@ -97,47 +113,51 @@ class _MethodTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.s3),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: colors.borderHairline),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 24, color: colors.brand),
-            const SizedBox(width: AppSpacing.s3),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontFamily: AppTextStyles.arabicFamily,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+    // The card's own fill lives on a Material so the tap ripple is drawn over
+    // it; an InkWell wrapping an opaque Container hides its own splash.
+    return Material(
+      color: colors.surface,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        side: BorderSide(color: colors.borderHairline),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.s3),
+          child: Row(
+            children: [
+              Icon(icon, size: 24, color: colors.brand),
+              const SizedBox(width: AppSpacing.s3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontFamily: AppTextStyles.arabicFamily,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      fontFamily: AppTextStyles.arabicFamily,
-                      fontSize: 11,
-                      color: colors.textTertiary,
-                      height: 1.4,
+                    const SizedBox(height: 2),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        fontFamily: AppTextStyles.arabicFamily,
+                        fontSize: 11,
+                        color: colors.textTertiary,
+                        height: 1.4,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Icon(Icons.chevron_left, size: 20, color: colors.textTertiary),
-          ],
+              Icon(Icons.chevron_left, size: 20, color: colors.textTertiary),
+            ],
+          ),
         ),
       ),
     );

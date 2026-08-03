@@ -14,7 +14,12 @@
  * de-duplicated list of valid methods, defaulting to ['qr_gps'].
  */
 final class AttendanceMethodResolver {
-    private const ALLOWED = ['qr_gps', 'gps_only', 'manual'];
+    // 'device' (a biometric terminal at the branch) and 'manual' are listed so
+    // a company can be set to those alone, which is how the employee app is
+    // told to stop offering self check-in. Neither is a self-service method:
+    // the device path authorises itself by serial number + User ID link, and
+    // never consults this resolver.
+    public const ALLOWED = ['qr_gps', 'gps_only', 'face_selfie', 'wifi_gps', 'device', 'manual'];
 
     public static function resolveForEmployee(array $employee, int $tenantId): array {
         // 1) employee override

@@ -38,11 +38,25 @@ export interface OnboardingResult {
 // The backend onboarding endpoints verify the Firebase token from the request
 // body (they run before a tenant context exists), so we send it explicitly.
 
-export async function createCompany(name: string) {
+/**
+ * Locale settings are sent at creation so the company never runs on a guessed
+ * default — the backend treats them as optional and falls back to the column
+ * defaults, which is what older app builds still rely on.
+ */
+export async function createCompany(
+  name: string,
+  locale?: {
+    timezone: string;
+    currency: string;
+    cycle_start_day: number;
+    week_start_day: number;
+  },
+) {
   const token = await firebaseIdToken();
   return apiPost<OnboardingResult>("app/tenant/create.php", {
     token,
     company_name: name,
+    ...(locale ?? {}),
   });
 }
 

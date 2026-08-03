@@ -7,7 +7,7 @@ $tenantId = TenantMiddleware::requireTenant();
 
 $method = $_SERVER['REQUEST_METHOD'];
 
-$allowedMethods = ['qr_gps', 'gps_only', 'manual'];
+$allowedMethods = AttendanceMethodResolver::ALLOWED;
 
 if ($method === 'GET') {
     $tenant = TenantModel::findById($tenantId);
@@ -27,6 +27,16 @@ if ($method === 'GET') {
             'name' => $b['name'],
             'qr_code' => $b['qr_code'] ?? null,
             'attendance_methods' => $methods,
+            // NULL = inherit the company face settings.
+            'face_match_threshold' => $b['face_match_threshold'] !== null
+                ? (float) $b['face_match_threshold']
+                : null,
+            'face_liveness_required' => $b['face_liveness_required'] !== null
+                ? (bool) $b['face_liveness_required']
+                : null,
+            // NULL wifi_mode = the branch has never enabled the WiFi method.
+            'wifi_mode' => $b['wifi_mode'] ?? null,
+            'wifi_match' => $b['wifi_match'] ?? 'bssid',
             'gps_radius_meters' => (int) ($b['gps_radius_meters'] ?? 100),
             // latitude/longitude are NOT NULL; 0,0 means "unset".
             'lat' => ((float) ($b['latitude'] ?? 0)) != 0.0 ? (float) $b['latitude'] : null,
@@ -77,6 +87,11 @@ if ($method === 'GET') {
         'attendance_methods' => $tenantMethods,
         'manual_attendance_admin_ids' => $manualAdminIds,
         'allow_offline_attendance' => (bool) ($tenant['allow_offline_attendance'] ?? true),
+        'reject_mock_location' => (bool) ($tenant['reject_mock_location'] ?? false),
+        'require_local_biometric' => (bool) ($tenant['require_local_biometric'] ?? false),
+        'face_match_threshold' => (float) ($tenant['face_match_threshold'] ?? FaceMatchService::DEFAULT_THRESHOLD),
+        'face_liveness_required' => (bool) ($tenant['face_liveness_required'] ?? true),
+        'face_enforce_mode' => $tenant['face_enforce_mode'] ?? 'log_only',
         'gps_latitude' => $tenant['gps_latitude'] !== null ? (float) $tenant['gps_latitude'] : null,
         'gps_longitude' => $tenant['gps_longitude'] !== null ? (float) $tenant['gps_longitude'] : null,
         'gps_radius_meters' => $tenant['gps_radius_meters'] !== null ? (int) $tenant['gps_radius_meters'] : null,
@@ -84,6 +99,9 @@ if ($method === 'GET') {
         'week_start_day' => (int) ($tenant['week_start_day'] ?? 6),
         'currency' => $tenant['currency'] ?? 'EGP',
         'timezone' => $tenant['timezone'] ?? 'Africa/Cairo',
+        // False means nobody ever picked one, so the client may suggest the
+        // device's zone. True means hands off.
+        'timezone_is_explicit' => (bool) ($tenant['timezone_is_explicit'] ?? false),
         'branches' => $branchList,
         'categories' => $categoryList,
         'employee_overrides' => $employeeOverrides,
@@ -122,6 +140,9 @@ if ($method === 'PUT' || $method === 'POST') {
             Response::fail('Invalid timezone identifier', 422, 'invalid_timezone_identifier');
         }
         $updateData['timezone'] = $timezone;
+        // Saving from this screen is a deliberate choice, so stop the client
+        // from ever auto-suggesting a device timezone over it again.
+        $updateData['timezone_is_explicit'] = 1;
     }
 
     if (isset($input['attendance_methods'])) {
@@ -197,6 +218,51 @@ if ($method === 'PUT' || $method === 'POST') {
             Response::fail('allow_offline_attendance must be true or false', 422, 'allow_offline_attendance_true_false');
         }
         TenantModel::updateAllowOffline($tenantId, $allowOffline);
+    }
+
+    if (isset($input['reject_mock_location'])) {
+        $rejectMock = filter_var($input['reject_mock_location'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        if ($rejectMock === null) {
+            Response::fail('reject_mock_location must be true or false', 422, 'reject_mock_location_true_false');
+        }
+        TenantModel::updateRejectMockLocation($tenantId, $rejectMock);
+    }
+
+    if (isset($input['require_local_biometric'])) {
+        $requireBio = filter_var($input['require_local_biometric'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        if ($requireBio === null) {
+            Response::fail('require_local_biometric must be true or false', 422, 'require_local_biometric_true_false');
+        }
+        TenantModel::updateRequireLocalBiometric($tenantId, $requireBio);
+    }
+
+    // Company-wide face-recognition settings for the face_selfie method.
+    if (array_key_exists('face_match_threshold', $input)
+        || array_key_exists('face_liveness_required', $input)
+        || array_key_exists('face_enforce_mode', $input)) {
+        $threshold = array_key_exists('face_match_threshold', $input)
+            ? (float) $input['face_match_threshold']
+            : (float) ($tenant['face_match_threshold'] ?? FaceMatchService::DEFAULT_THRESHOLD);
+        // Below 0.3 the match is meaningless; above 0.95 nobody ever passes.
+        if ($threshold < 0.3 || $threshold > 0.95) {
+            Response::fail('face_match_threshold must be between 0.3 and 0.95', 422, 'face_match_threshold_range');
+        }
+
+        $liveness = array_key_exists('face_liveness_required', $input)
+            ? filter_var($input['face_liveness_required'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+            : (bool) ($tenant['face_liveness_required'] ?? true);
+        if ($liveness === null) {
+            Response::fail('face_liveness_required must be true or false', 422, 'face_liveness_required_bool');
+        }
+
+        $enforceMode = array_key_exists('face_enforce_mode', $input)
+            ? (string) $input['face_enforce_mode']
+            : ($tenant['face_enforce_mode'] ?? 'log_only');
+        if (!in_array($enforceMode, ['log_only', 'enforce'], true)) {
+            Response::fail('face_enforce_mode must be log_only or enforce', 422, 'face_enforce_mode_invalid');
+        }
+
+        TenantModel::updateFaceSettings($tenantId, $threshold, $liveness, $enforceMode);
     }
 
     // Company-wide GPS geofence (default for branches without their own center).

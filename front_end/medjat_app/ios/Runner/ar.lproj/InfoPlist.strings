@@ -1,6 +1,7 @@
 /* أوصاف أذونات الاستخدام — العربية */
-"NSCameraUsageDescription" = "نحتاج إلى الكاميرا لمسح رمز الانضمام QR وتصوير مستنداتك المطلوبة.";
+"NSCameraUsageDescription" = "نحتاج إلى الكاميرا لمسح رمز الانضمام QR، والتقاط سيلفي الحضور، وتصوير مستنداتك المطلوبة.";
 "NSPhotoLibraryUsageDescription" = "نحتاج إلى الوصول للصور لاختيار مستنداتك المطلوبة.";
 "NSPhotoLibraryAddUsageDescription" = "نحتاج إلى حفظ المستندات والملفات في معرض الصور.";
+"NSFaceIDUsageDescription" = "يؤكد Face ID أنك أنت من يسجّل حضورك، حتى لا يسجّل زميل الحضور نيابةً عنك.";
 "NSLocationWhenInUseUsageDescription" = "يُستخدم موقعك لتحديد نقطة الفرع ونطاق تسجيل الحضور بالـ GPS.";
 "NSLocationAlwaysAndWhenInUseUsageDescription" = "يُستخدم موقعك لتحديد نقطة الفرع ونطاق تسجيل الحضور بالـ GPS.";

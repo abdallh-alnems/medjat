@@ -16,12 +16,13 @@ import '../../../core/constant/theme/app_colors.dart';
 class NativeAdWidget extends StatefulWidget {
   const NativeAdWidget({
     super.key,
-    this.templateType = TemplateType.medium,
+    this.templateType = TemplateType.small,
     this.reloadTrigger,
     this.margin = EdgeInsets.zero,
   });
 
-  /// Native template size — `medium` (richer, ~320dp) or `small` (~90dp).
+  /// Native template size — `small` (~90dp), the size used app-wide, or
+  /// `medium` (~330dp).
   final TemplateType templateType;
 
   /// Optional stream that, on each event, requests a fresh ad. Used when the

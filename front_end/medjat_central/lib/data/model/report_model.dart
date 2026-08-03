@@ -79,6 +79,114 @@ class AttendanceReportSummary {
       );
 }
 
+/// One employee's overtime / lateness totals over the selected period.
+class OvertimeLateRow {
+  final int employeeId;
+  final String employeeName;
+  final String? jobTitle;
+  final String? branchName;
+  final int overtimeMinutes;
+  final int overtimeDays;
+  final int lateMinutes;
+  final int lateDays;
+  final int worstLateMinutes;
+  final int workedMinutes;
+  final int daysPresent;
+
+  OvertimeLateRow({
+    required this.employeeId,
+    required this.employeeName,
+    this.jobTitle,
+    this.branchName,
+    this.overtimeMinutes = 0,
+    this.overtimeDays = 0,
+    this.lateMinutes = 0,
+    this.lateDays = 0,
+    this.worstLateMinutes = 0,
+    this.workedMinutes = 0,
+    this.daysPresent = 0,
+  });
+
+  factory OvertimeLateRow.fromJson(Map<String, dynamic> json) =>
+      OvertimeLateRow(
+        employeeId: _parseInt(json['employee_id']),
+        employeeName: json['employee_name'] as String? ?? '',
+        jobTitle: json['job_title'] as String?,
+        branchName: json['branch_name'] as String?,
+        overtimeMinutes: _parseInt(json['overtime_minutes']),
+        overtimeDays: _parseInt(json['overtime_days']),
+        lateMinutes: _parseInt(json['late_minutes']),
+        lateDays: _parseInt(json['late_days']),
+        worstLateMinutes: _parseInt(json['worst_late_minutes']),
+        workedMinutes: _parseInt(json['worked_minutes']),
+        daysPresent: _parseInt(json['days_present']),
+      );
+
+  /// Average lateness across the days the employee actually arrived late.
+  int get avgLateMinutes => lateDays == 0 ? 0 : lateMinutes ~/ lateDays;
+}
+
+/// Company-wide overtime / lateness totals for the same period.
+class OvertimeLateSummary {
+  final int totalOvertimeMinutes;
+  final int totalLateMinutes;
+  final int overtimeDays;
+  final int lateDays;
+  final int employeesWithOvertime;
+  final int employeesLate;
+
+  OvertimeLateSummary({
+    this.totalOvertimeMinutes = 0,
+    this.totalLateMinutes = 0,
+    this.overtimeDays = 0,
+    this.lateDays = 0,
+    this.employeesWithOvertime = 0,
+    this.employeesLate = 0,
+  });
+
+  factory OvertimeLateSummary.fromJson(Map<String, dynamic> json) =>
+      OvertimeLateSummary(
+        totalOvertimeMinutes: _parseInt(json['total_overtime_minutes']),
+        totalLateMinutes: _parseInt(json['total_late_minutes']),
+        overtimeDays: _parseInt(json['overtime_days']),
+        lateDays: _parseInt(json['late_days']),
+        employeesWithOvertime: _parseInt(json['employees_with_overtime']),
+        employeesLate: _parseInt(json['employees_late']),
+      );
+}
+
+/// A single day behind an employee's totals (the row drill-down).
+class OvertimeLateDay {
+  final String date;
+  final String? checkInTime;
+  final String? checkOutTime;
+  final int lateMinutes;
+  final int overtimeMinutes;
+  final int workedMinutes;
+  final String? notes;
+
+  OvertimeLateDay({
+    required this.date,
+    this.checkInTime,
+    this.checkOutTime,
+    this.lateMinutes = 0,
+    this.overtimeMinutes = 0,
+    this.workedMinutes = 0,
+    this.notes,
+  });
+
+  factory OvertimeLateDay.fromJson(Map<String, dynamic> json) =>
+      OvertimeLateDay(
+        date: json['date'] as String? ?? '',
+        checkInTime: json['check_in_time'] as String?,
+        checkOutTime: json['check_out_time'] as String?,
+        lateMinutes: _parseInt(json['late_minutes']),
+        overtimeMinutes: _parseInt(json['overtime_minutes']),
+        workedMinutes: _parseInt(json['worked_minutes']),
+        notes: json['notes'] as String?,
+      );
+}
+
 class PayrollReportRow {
   final int id;
   final int employeeId;

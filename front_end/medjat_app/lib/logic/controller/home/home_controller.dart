@@ -250,6 +250,15 @@ class HomeController extends GetxController {
     if (method == 'gps_only') {
       if (!await _ensureLocationPermission()) return;
       unawaited(Get.toNamed<void>(AppRoutes.gpsCheckIn));
+    } else if (method == 'wifi_gps') {
+      // Same confirmation screen as gps_only — the WiFi check is an extra
+      // server-side constraint, not a different flow for the employee.
+      if (!await _ensureLocationPermission()) return;
+      unawaited(Get.toNamed<void>(AppRoutes.gpsCheckIn, arguments: 'wifi_gps'));
+    } else if (method == 'face_selfie') {
+      if (!await _ensureCameraPermission()) return;
+      if (!await _ensureLocationPermission()) return;
+      unawaited(Get.toNamed<void>(AppRoutes.faceCheckIn));
     } else {
       if (!await _ensureCameraPermission()) return;
       if (!await _ensureLocationPermission()) return;

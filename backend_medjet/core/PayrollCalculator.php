@@ -229,19 +229,27 @@ final class PayrollCalculator {
                 if ($mode === 'amount' && $value !== null) {
                     $amount = round((float) $value, 2);
                     $desc = "خصم غياب مخصص يوم {$att['date']}";
+                    $labelKey = 'payline_absence_custom';
+                    $labelParams = ['date' => $att['date']];
                 } elseif ($mode === 'days' && $value !== null) {
                     $amount = round($dailyRate * (float) $value, 2);
                     $desc = "غياب {$value} يوم ({$att['date']})";
+                    $labelKey = 'payline_absence_days';
+                    $labelParams = ['days' => (string) $value, 'date' => $att['date']];
                 } else {
                     $multiplier = self::getRuleValue($rules, 'absence_multiplier', 1.5);
                     $amount = round($dailyRate * $multiplier, 2);
                     $desc = "غياب يوم {$att['date']}";
+                    $labelKey = 'payline_absence_day';
+                    $labelParams = ['date' => $att['date']];
                 }
                 $deductions[] = [
                     'type' => 'absence',
                     'date' => $att['date'],
                     'amount' => $amount,
                     'description' => $desc,
+                    'label_key' => $labelKey,
+                    'label_params' => $labelParams,
                 ];
             }
 
@@ -256,6 +264,8 @@ final class PayrollCalculator {
                             'date' => $att['date'],
                             'amount' => round($dailyRate * $days, 2),
                             'description' => "تأخير {$att['late_minutes']} دقيقة",
+                            'label_key' => 'payline_late_minutes',
+                            'label_params' => ['minutes' => (string) $att['late_minutes']],
                         ];
                     }
                 } elseif ($lateType === 'proportional') {
@@ -267,6 +277,8 @@ final class PayrollCalculator {
                         'date' => $att['date'],
                         'amount' => round($deductionPerUnit * $units, 2),
                         'description' => "تأخير {$att['late_minutes']} دقيقة",
+                        'label_key' => 'payline_late_minutes',
+                        'label_params' => ['minutes' => (string) $att['late_minutes']],
                     ];
                 } else {
                     $fixedAmount = self::getRuleValue($rules, 'late_fixed_amount', 50);
@@ -275,6 +287,8 @@ final class PayrollCalculator {
                         'date' => $att['date'],
                         'amount' => round($fixedAmount, 2),
                         'description' => "تأخير يوم {$att['date']}",
+                        'label_key' => 'payline_late_day',
+                        'label_params' => ['date' => $att['date']],
                     ];
                 }
             }
@@ -300,6 +314,14 @@ final class PayrollCalculator {
                 'date' => $el['date'],
                 'amount' => $amount,
                 'description' => "{$label} {$minutes} دقيقة ({$el['date']})",
+                // `label` is the permission type as the company typed it, so it
+                // is passed through untranslated inside the localized sentence.
+                'label_key' => 'payline_permission_minutes',
+                'label_params' => [
+                    'label' => $label,
+                    'minutes' => (string) $minutes,
+                    'date' => $el['date'],
+                ],
             ];
         }
 
@@ -318,12 +340,17 @@ final class PayrollCalculator {
         // Loan / advance installments due this month are deducted automatically.
         $loanInstallments = LoanModel::dueInstallmentsForMonth($employeeId, $month, $tenantId);
         foreach ($loanInstallments as $inst) {
-            $label = $inst['loan_type'] === 'advance' ? 'سلفة' : 'قسط قرض';
+            $isAdvance = $inst['loan_type'] === 'advance';
+            $label = $isAdvance ? 'سلفة' : 'قسط قرض';
             $deductions[] = [
                 'type' => 'loan',
                 'date' => $month,
                 'amount' => (float) $inst['amount'],
                 'description' => "{$label} (قسط {$inst['seq']})",
+                'label_key' => $isAdvance
+                    ? 'payline_advance_installment'
+                    : 'payline_loan_installment',
+                'label_params' => ['seq' => (string) $inst['seq']],
             ];
         }
 
@@ -353,7 +380,8 @@ final class PayrollCalculator {
             if ($amount <= 0) {
                 continue;
             }
-            $desc = $mode === 'partial'
+            $isPartial = $mode === 'partial';
+            $desc = $isPartial
                 ? "إيقاف عن العمل ({$days} يوم) براتب جزئي"
                 : "إيقاف عن العمل ({$days} يوم) بدون راتب";
             $deductions[] = [
@@ -361,6 +389,10 @@ final class PayrollCalculator {
                 'date' => $spStart,
                 'amount' => $amount,
                 'description' => $desc,
+                'label_key' => $isPartial
+                    ? 'payline_suspension_partial'
+                    : 'payline_suspension_unpaid',
+                'label_params' => ['days' => (string) $days],
             ];
         }
 
@@ -385,6 +417,8 @@ final class PayrollCalculator {
                     'date' => $att['date'],
                     'amount' => round($hourlyRate * $overtimeMultiplier * $overtimeHours, 2),
                     'description' => "إضافي {$att['overtime_minutes']} دقيقة",
+                    'label_key' => 'payline_overtime_minutes',
+                    'label_params' => ['minutes' => (string) $att['overtime_minutes']],
                 ];
             }
         }
@@ -407,6 +441,9 @@ final class PayrollCalculator {
         // dedicated section.
         $allowances = AllowanceModel::getActiveForEmployeeMonth($employeeId, $month, $tenantId);
         foreach ($allowances as $a) {
+            // A company-typed label is shown as written; only the built-in
+            // allowance types get a translatable key.
+            $hasCustomLabel = trim((string) ($a['label'] ?? '')) !== '';
             $bonuses[] = [
                 'id' => (int) $a['id'],
                 'type' => 'allowance',
@@ -414,6 +451,10 @@ final class PayrollCalculator {
                 'date' => null,
                 'amount' => (float) $a['amount'],
                 'description' => AllowanceModel::displayLabel($a),
+                'label_key' => $hasCustomLabel
+                    ? null
+                    : 'payline_allowance_' . $a['type'],
+                'label_params' => [],
             ];
         }
 
@@ -427,6 +468,11 @@ final class PayrollCalculator {
                 'date' => null,
                 'amount' => $enc['amount'],
                 'description' => "تصفية رصيد إجازات {$enc['source_year']} ({$enc['days']} يوم)",
+                'label_key' => 'payline_leave_encashment',
+                'label_params' => [
+                    'year' => (string) $enc['source_year'],
+                    'days' => (string) $enc['days'],
+                ],
             ];
         }
 
@@ -472,6 +518,8 @@ final class PayrollCalculator {
                 'date' => null,
                 'amount' => $insuranceEmployee,
                 'description' => "تأمينات اجتماعية (حصة الموظف {$employeeRate}%)",
+                'label_key' => 'payline_social_insurance',
+                'label_params' => ['rate' => (string) $employeeRate],
             ];
 
             $statutory['insurance_employee'] = $insuranceEmployee;
@@ -503,6 +551,8 @@ final class PayrollCalculator {
                     'date' => null,
                     'amount' => $taxAmount,
                     'description' => "ضريبة دخل",
+                    'label_key' => 'payline_income_tax',
+                    'label_params' => [],
                 ];
             }
         }

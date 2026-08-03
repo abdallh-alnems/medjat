@@ -8,6 +8,7 @@ import {
   useSetCompanyGeofence,
   useUpdateBranchAttendanceConfig,
   useSetScopeMethodOverride,
+  useUpdateFaceSettings,
 } from "@/lib/hooks/use-settings";
 import { useAdmins } from "@/lib/hooks/use-managers";
 import { useEmployees } from "@/lib/hooks/use-employees";
@@ -20,6 +21,7 @@ import type {
   AttendanceEmployeeOverride,
 } from "@/lib/api/settings";
 import { LoadingState, ErrorState } from "@/components/ui/states";
+import { BranchNetworksDialog } from "@/components/settings/branch-networks-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,7 +44,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const METHODS: AttendanceMethod[] = ["qr_gps", "gps_only", "manual"];
+const METHODS: AttendanceMethod[] = [
+  "qr_gps",
+  "gps_only",
+  "face_selfie",
+  "wifi_gps",
+  "manual",
+];
 
 function methodLabels(
   t: (k: TKey) => string,
@@ -67,6 +75,7 @@ function Editor({ config }: { config: AttendanceMethodConfig }) {
 
   const methods = config.attendance_methods ?? [];
   const manualEnabled = methods.includes("manual");
+  const faceEnabled = methods.includes("face_selfie");
   const manualIds = config.manual_attendance_admin_ids ?? [];
 
   const saveTenant = (
@@ -76,6 +85,7 @@ function Editor({ config }: { config: AttendanceMethodConfig }) {
       attendance_methods: methods,
       manual_attendance_admin_ids: config.manual_attendance_admin_ids,
       allow_offline_attendance: config.allow_offline_attendance,
+      reject_mock_location: config.reject_mock_location,
       ...patch,
     });
 
@@ -174,6 +184,9 @@ function Editor({ config }: { config: AttendanceMethodConfig }) {
         </Card>
       )}
 
+      {/* ── Face recognition ── */}
+      {faceEnabled && <FaceSettingsCard config={config} />}
+
       {/* ── Allow offline ── */}
       <Card>
         <CardContent className="flex items-start justify-between gap-4 p-4">
@@ -193,6 +206,25 @@ function Editor({ config }: { config: AttendanceMethodConfig }) {
         </CardContent>
       </Card>
 
+      {/* ── Reject mocked GPS ── */}
+      <Card>
+        <CardContent className="flex items-start justify-between gap-4 p-4">
+          <div>
+            <p className="font-medium">{t("reject_mock_location")}</p>
+            <p className="text-body-md text-muted-foreground">
+              {t("reject_mock_location_hint")}
+            </p>
+          </div>
+          <Checkbox
+            checked={config.reject_mock_location}
+            disabled={updateConfig.isPending}
+            onCheckedChange={(v) =>
+              saveTenant({ reject_mock_location: Boolean(v) })
+            }
+          />
+        </CardContent>
+      </Card>
+
       {/* ── Company geofence ── */}
       <GeofenceCard config={config} save={setGeofence} />
 
@@ -205,6 +237,99 @@ function Editor({ config }: { config: AttendanceMethodConfig }) {
       {/* ── Employee overrides ── */}
       <EmployeeOverrides overrides={config.employee_overrides} />
     </div>
+  );
+}
+
+/**
+ * Company-wide face settings. Only rendered once face_selfie is enabled —
+ * these knobs are meaningless otherwise and would just add noise.
+ */
+function FaceSettingsCard({ config }: { config: AttendanceMethodConfig }) {
+  const { t } = useT();
+  const save = useUpdateFaceSettings();
+  const [threshold, setThreshold] = useState(config.face_match_threshold);
+
+  const enforcing = config.face_enforce_mode === "enforce";
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("face_settings")}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <p className="text-body-md text-muted-foreground">
+          {t("face_settings_hint")}
+        </p>
+
+        {/* Threshold */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <Label htmlFor="face-threshold">{t("face_match_threshold")}</Label>
+            <span className="font-mono text-body-md tabular-nums">
+              {threshold.toFixed(2)}
+            </span>
+          </div>
+          <input
+            id="face-threshold"
+            type="range"
+            min={0.3}
+            max={0.95}
+            step={0.01}
+            value={threshold}
+            disabled={save.isPending}
+            onChange={(e) => setThreshold(Number(e.target.value))}
+            onPointerUp={() => save.mutate({ face_match_threshold: threshold })}
+            onKeyUp={() => save.mutate({ face_match_threshold: threshold })}
+            className="w-full accent-[var(--brand)]"
+          />
+          <p className="text-xs text-muted-foreground">
+            {t("face_match_threshold_hint")}
+          </p>
+        </div>
+
+        {/* Liveness */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="font-medium">{t("face_liveness_required")}</p>
+            <p className="text-body-md text-muted-foreground">
+              {t("face_liveness_hint")}
+            </p>
+          </div>
+          <Checkbox
+            checked={config.face_liveness_required}
+            disabled={save.isPending}
+            onCheckedChange={(v) =>
+              save.mutate({ face_liveness_required: Boolean(v) })
+            }
+          />
+        </div>
+
+        {/* Enforcement mode */}
+        <div className="space-y-2">
+          <Label>{t("face_enforce_mode")}</Label>
+          <Select
+            value={config.face_enforce_mode}
+            onValueChange={(v) =>
+              v &&
+              save.mutate({ face_enforce_mode: v as "log_only" | "enforce" })
+            }
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue>
+                {() =>
+                  enforcing ? t("face_mode_enforce") : t("face_mode_log_only")
+                }
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="log_only">{t("face_mode_log_only")}</SelectItem>
+              <SelectItem value="enforce">{t("face_mode_enforce")}</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">{t("face_mode_hint")}</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -360,12 +485,20 @@ function BranchOverrides({
   const [methods, setMethods] = useState<AttendanceMethod[] | null>(null);
   const [radius, setRadius] = useState("100");
   const [offline, setOffline] = useState(false);
+  const [faceThreshold, setFaceThreshold] = useState<string>("");
+  const [faceLiveness, setFaceLiveness] = useState<boolean | null>(null);
+  const [networksFor, setNetworksFor] = useState<AttendanceBranchOverride | null>(
+    null,
+  );
 
   const open = (b: AttendanceBranchOverride) => {
     setEditing(b);
     setMethods(b.attendance_methods);
     setRadius((b.gps_radius_meters ?? 100).toString());
     setOffline(false);
+    // Empty string / null mean "inherit the company value".
+    setFaceThreshold(b.face_match_threshold?.toString() ?? "");
+    setFaceLiveness(b.face_liveness_required);
   };
 
   return (
@@ -392,6 +525,22 @@ function BranchOverrides({
                 {b.attendance_methods && (
                   <Badge variant="secondary">{t("custom_methods")}</Badge>
                 )}
+                {b.wifi_mode && (
+                  <Badge
+                    variant={
+                      b.wifi_mode === "enforcing" ? "default" : "secondary"
+                    }
+                  >
+                    {t(`wifi_mode_${b.wifi_mode}` as never)}
+                  </Badge>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setNetworksFor(b)}
+                >
+                  {t("wifi_networks")}
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => open(b)}>
                   {t("edit_methods")}
                 </Button>
@@ -400,6 +549,12 @@ function BranchOverrides({
           ))
         )}
       </CardContent>
+
+      <BranchNetworksDialog
+        branch={networksFor}
+        open={networksFor != null}
+        onOpenChange={(o) => !o && setNetworksFor(null)}
+      />
 
       <Dialog
         open={editing != null}
@@ -426,6 +581,31 @@ function BranchOverrides({
               />
               {t("allow_offline_attendance")}
             </label>
+
+            {(methods ?? []).includes("face_selfie") && (
+              <div className="space-y-3 rounded-lg border p-3">
+                <p className="font-medium">{t("face_branch_override")}</p>
+                <div className="space-y-1.5">
+                  <Label>{t("face_match_threshold")}</Label>
+                  <Input
+                    type="number"
+                    min={0.3}
+                    max={0.95}
+                    step={0.01}
+                    placeholder={t("face_inherit_company")}
+                    value={faceThreshold}
+                    onChange={(e) => setFaceThreshold(e.target.value)}
+                  />
+                </div>
+                <label className="flex items-center gap-2 text-body-md">
+                  <Checkbox
+                    checked={faceLiveness ?? false}
+                    onCheckedChange={(v) => setFaceLiveness(v ? true : null)}
+                  />
+                  {t("face_liveness_required")}
+                </label>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <DialogClose render={<Button variant="outline" />}>
@@ -441,6 +621,9 @@ function BranchOverrides({
                     attendance_methods: methods,
                     gps_radius_meters: Number(radius) || 100,
                     allow_offline_attendance: offline,
+                    face_match_threshold:
+                      faceThreshold === "" ? null : Number(faceThreshold),
+                    face_liveness_required: faceLiveness,
                   },
                   { onSuccess: () => setEditing(null) },
                 )

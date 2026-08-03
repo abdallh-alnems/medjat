@@ -18,6 +18,50 @@ void main() {
   });
 
   group('CRUD', () {
+    group('buildUri', () {
+      test('keeps a query string baked into the URL', () {
+        // The AppGallery payslip bug: month and format were dropped, so the
+        // endpoint answered JSON for the current month instead of a PDF.
+        final uri = CRUD.buildUri(
+          'https://api.example.com/get_slip.php?month=2026-04&format=pdf',
+          null,
+        );
+
+        expect(uri.queryParameters['month'], '2026-04');
+        expect(uri.queryParameters['format'], 'pdf');
+      });
+
+      test('keeps the baked-in query when an empty map is passed', () {
+        final uri = CRUD.buildUri(
+          'https://api.example.com/get_slip.php?month=2026-04&format=pdf',
+          <String, dynamic>{},
+        );
+
+        expect(uri.queryParameters['month'], '2026-04');
+        expect(uri.queryParameters['format'], 'pdf');
+      });
+
+      test('merges explicit parameters on top of the baked-in ones', () {
+        final uri = CRUD.buildUri(
+          'https://api.example.com/list.php?month=2026-04',
+          {'id': 7, 'page': 2},
+        );
+
+        expect(uri.queryParameters['month'], '2026-04');
+        expect(uri.queryParameters['id'], '7');
+        expect(uri.queryParameters['page'], '2');
+      });
+
+      test('explicit parameters win over a baked-in duplicate', () {
+        final uri = CRUD.buildUri(
+          'https://api.example.com/list.php?month=2026-04',
+          {'month': '2026-05'},
+        );
+
+        expect(uri.queryParameters['month'], '2026-05');
+      });
+    });
+
     group('handleResponse', () {
       test('returns success on 200 with valid JSON', () {
         final response = fakeResponse(

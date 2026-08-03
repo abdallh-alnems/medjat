@@ -84,7 +84,15 @@ if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
         "{$empName} أرسل مستند \"{$docName}\" للمراجعة.",
         "{$empName} submitted the document \"{$docName}\" for review.",
         $employeeId,
-        ['action' => 'document_submitted', 'employee_document_id' => (string) $docId]
+        // The management app opens the submissions screen for one *document
+        // type*, so it needs required_document_id — the uploaded row id alone
+        // is not enough to open that screen.
+        [
+            'action' => 'document_submitted',
+            'employee_document_id' => (string) $docId,
+            'required_document_id' => (string) $documentTypeId,
+            'document_name' => $docName,
+        ]
     );
 
     Response::success(['document_id' => $docId, 'status' => 'uploaded']);

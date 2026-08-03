@@ -1,10 +1,10 @@
 # Medjat Admin — لوحة تحكم الـ Super Admin
 
-تطبيق **Flutter** للفريق الداخلي (Super Admin) في منصة **Medjat** لإدارة الحضور والرواتب (HR SaaS) الموجّهة لسوق مصر وشمال إفريقيا. يُدار من خلاله **كل عملاء المنصّة (Tenants)** والاشتراكات والخطط، إضافةً إلى الدعم الفني والتحكّم في حالة التطبيقات عن بُعد. الواجهة عربية بالكامل (RTL).
+تطبيق **Flutter** للفريق الداخلي (Super Admin) في منصة **Medjat** لإدارة الحضور والرواتب (HR SaaS) الموجّهة لسوق مصر وشمال إفريقيا. يُدار من خلاله **كل عملاء المنصّة (Tenants)**، إضافةً إلى الدعم الفني والتحكّم في حالة التطبيقات عن بُعد. الواجهة عربية بالكامل (RTL).
 
-> هذا أحد ثلاثة تطبيقات في المنصّة:
+> هذا أحد تطبيقات المنصّة:
 > - **medjat_admin** (هذا المشروع) — لوحة الـ Super Admin للفريق الداخلي.
-> - **medjat_central** — تطبيق الإدارة/الموارد البشرية للشركات العميلة.
+> - **medjat_central** (+ نسخة الويب `medjat_central_web`) — تطبيق الإدارة/الموارد البشرية للشركات العميلة.
 > - **medjat_app** — تطبيق الموظف.
 
 ---
@@ -13,15 +13,16 @@
 
 | الوحدة | الوصف |
 |--------|-------|
-| **لوحة المعلومات** (Dashboard) | مؤشرات عامة عن المنصّة: عدد الشركات، الاشتراكات النشطة، النمو والإيرادات. |
+| **لوحة المعلومات** (Dashboard) | مؤشرات عامة عن المنصّة: عدد الشركات، النشاط، والنمو. |
 | **الشركات** (Tenants) | عرض/إنشاء/تعديل/تعليق الشركات العميلة ومتابعة حالة كل شركة. |
-| **الاشتراكات** (Subscriptions) | إدارة اشتراكات الشركات: التفعيل، التجديد، الإلغاء، وتواريخ الانتهاء. |
-| **الخطط** (Plans) | تعريف خطط الأسعار والحدود (عدد الموظفين، المزايا المتاحة لكل خطة). |
 | **المستخدمون** (Users) | إدارة حسابات الـ Super Admin الداخليين. |
+| **حسابي** (Admin Account) | بيانات حساب المسؤول وكلمة المرور والجهاز النشط. |
 | **سجل التدقيق** (Audit) | استعراض عمليات التدقيق والأحداث الحسّاسة عبر المنصّة. |
 | **الدعم الفني** (Support) | صندوق وارد للتذاكر (Inbox) ومحادثة لكل تذكرة (Thread) مع الشركات. |
-| **التحكّم في التطبيق** (App Control) | التحكّم عن بُعد في حالة تطبيقات المنصّة عبر **Firebase Remote Config**: فرض التحديث الإجباري، تفعيل وضع الصيانة، وعرض/تعديل قيم التحكّم. |
+| **التحكّم في التطبيق** (App Control) | التحكّم عن بُعد في حالة تطبيقات المنصّة عبر **Firebase Remote Config**: فرض التحديث الإجباري، تفعيل وضع الصيانة، وعرض/تعديل قيم التحكّم (مع رسالة FCM للتأثير الفوري). |
 | **الإشعارات** (Notifications) | إرسال واستعراض الإشعارات، مع استقبال إشعارات الدعم عبر FCM. |
+
+> **ملاحظة:** جداول الاشتراكات والخطط أُزيلت من المخطّط (`2026_06_14_drop_subscriptions_plans.sql`)، ولا توجد شاشات لها في التطبيق حاليًا.
 
 > يعتمد التطبيق سياسة **جلسة واحدة نشطة لكل مسؤول** (single active session): أحدث جهاز يسجّل الدخول يُلغي ما عداه، عبر `active_device_id` وترويسة `X-Device-Id`.
 
@@ -43,17 +44,17 @@ lib/
 │   ├── services/     — connectivity, dark_light, push_notification, token storage
 │   └── shared/       — أزرار، حقول إدخال، layout، عناصر feedback مشتركة
 ├── data/
-│   ├── data_source/remote/   — نداء API لكل وحدة (tenant, subscription, plan, user,
+│   ├── data_source/remote/   — نداء API لكل وحدة (tenant, user, admin_account,
 │   │                            audit, support, app_control, dashboard, notification,
 │   │                            admin_auth, device)
 │   └── model/                — نماذج البيانات
 ├── logic/
 │   ├── bindings/     — حقن التبعيات (GetX)
-│   └── controller/   — متحكم لكل وحدة (tenant, subscription, plan, user, audit,
-│                       support, app_control, dashboard, notification, auth)
+│   └── controller/   — متحكم لكل وحدة (tenant, user, audit, support, app_control,
+│                       dashboard, notification, auth)
 └── view/
-    └── screen/       — splash, auth, dashboard, tenants, subscriptions, plans,
-                        users, audit, support, app_control, notifications
+    └── screen/       — splash, auth, dashboard, tenants, users, admin_account,
+                        audit, support, app_control, notifications
 ```
 
 **تدفّق البيانات:** `Screen → Controller → DataSource → CRUD (HTTP) → Backend PHP` والعكس، مع إدارة حالات التحميل/النجاح/الخطأ عبر `StatusRequest`.
@@ -77,7 +78,7 @@ lib/
 
 ## الباك إند
 
-REST API بلغة **PHP 8.x** في `backend_medjat/` — كل endpoint في ملف منفصل داخل `backend_medjat/app/`. تعتمد المصادقة على `AdminAuth` / `AdminBaseApi`، والقاعدة **MySQL 8** (محليًا عبر MAMP). كل عمليات الكتابة تستخدم **POST** (وليس PUT).
+REST API بلغة **PHP 8.x** في `backend_medjet/` — كل endpoint في ملف منفصل داخل `backend_medjet/app/<module>/` (وحدات المسؤول: `admin`، `admin_support`، `admin_app_control`). تعتمد المصادقة على `AdminAuth` / `AdminBaseApi`، والقاعدة **MySQL 8** (محليًا عبر MAMP؛ والخادم الحيّ Hetzner على `api.medjatapp.com/backend_medjet`). كل عمليات الكتابة تستخدم **POST** (وليس PUT).
 
 ---
 

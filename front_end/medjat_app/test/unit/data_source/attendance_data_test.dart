@@ -41,16 +41,20 @@ void main() {
       );
 
       expect(result['status'], StatusRequest.success);
+      // The device-integrity flags are always reported, defaulting to 0: the
+      // server decides what to do with them, the app only states what it saw.
       verify(() => mockCrud.postData(AppLinks.checkIn, {
             'branch_id': 5,
             'latitude': 24.7136,
             'longitude': 46.6753,
             'qr_code': 'QR123',
             'is_vpn': 0,
+            'is_mock_location': 0,
+            'is_rooted_device': 0,
           })).called(1);
     });
 
-    test('checkOut sends empty body', () async {
+    test('checkOut reports device integrity', () async {
       when(() => mockCrud.postData(any(), any())).thenAnswer((_) async => {
             'status': StatusRequest.success,
             'data': null,
@@ -59,7 +63,28 @@ void main() {
       final result = await attendanceData.checkOut();
 
       expect(result['status'], StatusRequest.success);
-      verify(() => mockCrud.postData(AppLinks.checkOut, {})).called(1);
+      verify(() => mockCrud.postData(AppLinks.checkOut, {
+            'is_mock_location': 0,
+          })).called(1);
+    });
+
+    test('checkOut forwards a mocked location and coordinates', () async {
+      when(() => mockCrud.postData(any(), any())).thenAnswer((_) async => {
+            'status': StatusRequest.success,
+            'data': null,
+          });
+
+      await attendanceData.checkOut(
+        isMockLocation: true,
+        latitude: 30.0444,
+        longitude: 31.2357,
+      );
+
+      verify(() => mockCrud.postData(AppLinks.checkOut, {
+            'is_mock_location': 1,
+            'latitude': 30.0444,
+            'longitude': 31.2357,
+          })).called(1);
     });
 
     test('syncOffline sends records list', () async {

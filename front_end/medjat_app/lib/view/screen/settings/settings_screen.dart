@@ -47,17 +47,19 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 24),
           _sectionTitle(context, 'appearance'.tr),
           const SizedBox(height: 8),
-          Obx(() => SwitchListTile(
-                title: Text('dark_mode'.tr),
-                secondary: Icon(
-                  themeService.isDark ? Icons.dark_mode : Icons.light_mode,
-                ),
-                value: themeService.isDark,
-                onChanged: (v) => themeService.toggleTheme(),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-              )),
+          Obx(
+            () => SwitchListTile(
+              title: Text('dark_mode'.tr),
+              secondary: Icon(
+                themeService.isDark ? Icons.dark_mode : Icons.light_mode,
+              ),
+              value: themeService.isDark,
+              onChanged: (v) => themeService.toggleTheme(),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+            ),
+          ),
           const SizedBox(height: 24),
           _sectionTitle(context, 'notification_prefs'.tr),
           const SizedBox(height: 8),
@@ -94,8 +96,10 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 8),
           ListTile(
             leading: Icon(Icons.logout, color: Colors.red.shade700),
-            title: Text('logout'.tr,
-                style: TextStyle(color: Colors.red.shade700)),
+            title: Text(
+              'logout'.tr,
+              style: TextStyle(color: Colors.red.shade700),
+            ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
@@ -114,8 +118,10 @@ class SettingsScreen extends StatelessWidget {
                         Get.back<void>();
                         Get.find<AuthController>().logout();
                       },
-                      child: Text('exit'.tr,
-                          style: TextStyle(color: Colors.red.shade700)),
+                      child: Text(
+                        'exit'.tr,
+                        style: TextStyle(color: Colors.red.shade700),
+                      ),
                     ),
                   ],
                 ),
@@ -125,9 +131,9 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'device_change_note'.tr,
-            style: AppTextStyles.xs(context).copyWith(
-              color: AppColors.textTertiary(context),
-            ),
+            style: AppTextStyles.xs(
+              context,
+            ).copyWith(color: AppColors.textTertiary(context)),
             textAlign: TextAlign.center,
           ),
         ],
@@ -164,43 +170,48 @@ class SettingsScreen extends StatelessWidget {
     final colors = AppColors.of(context);
 
     Get.bottomSheet<void>(
-      Container(
-        padding: const EdgeInsets.all(AppSpacing.s5),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(AppRadius.lg),
-          ),
+      // A Material — not a coloured Container — paints the sheet background.
+      // ListTile draws its selected tint and ink splashes onto the nearest
+      // Material ancestor, so a coloured box in between would cover them (and
+      // Flutter asserts about it in debug).
+      Material(
+        color: colors.surface,
+        clipBehavior: Clip.antiAlias,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppRadius.lg),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: AppSpacing.s4),
-              decoration: BoxDecoration(
-                color: colors.borderStrong,
-                borderRadius: BorderRadius.circular(AppRadius.full),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.s5),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: AppSpacing.s4),
+                decoration: BoxDecoration(
+                  color: colors.borderStrong,
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                ),
               ),
-            ),
-            Text('language'.tr, style: AppTextStyles.h3(context)),
-            const SizedBox(height: AppSpacing.s4),
-            _LanguageOption(
-              label: 'العربية',
-              code: 'ar',
-              localeSvc: localeSvc,
-              colors: colors,
-            ),
-            const SizedBox(height: AppSpacing.s2),
-            _LanguageOption(
-              label: 'English',
-              code: 'en',
-              localeSvc: localeSvc,
-              colors: colors,
-            ),
-            const SizedBox(height: AppSpacing.s4),
-          ],
+              Text('language'.tr, style: AppTextStyles.h3(context)),
+              const SizedBox(height: AppSpacing.s4),
+              _LanguageOption(
+                label: 'العربية',
+                code: 'ar',
+                localeSvc: localeSvc,
+                colors: colors,
+              ),
+              const SizedBox(height: AppSpacing.s2),
+              _LanguageOption(
+                label: 'English',
+                code: 'en',
+                localeSvc: localeSvc,
+                colors: colors,
+              ),
+              const SizedBox(height: AppSpacing.s4),
+            ],
+          ),
         ),
       ),
     );
@@ -230,7 +241,9 @@ class _LanguageOption extends StatelessWidget {
         ),
         tileColor: isSelected ? colors.brand.withValues(alpha: 0.08) : null,
         leading: Icon(
-          isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+          isSelected
+              ? Icons.radio_button_checked
+              : Icons.radio_button_unchecked,
           color: isSelected ? colors.brand : colors.textTertiary,
         ),
         title: Text(

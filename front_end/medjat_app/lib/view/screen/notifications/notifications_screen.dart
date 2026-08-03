@@ -59,8 +59,12 @@ class NotificationsScreen extends StatelessWidget {
           final notif = controller.notifications[index];
           final isUnread = notif['read_at'] == null;
           final createdAt = notif['created_at']?.toString() ?? '';
-          final title = notif['title_ar']?.toString() ?? notif['title']?.toString() ?? '';
-          final body = notif['body_ar']?.toString() ?? notif['body']?.toString() ?? '';
+          // The backend stores each notification twice — `title`/`body` in
+          // English and `title_ar`/`body_ar` in Arabic. Pick the pair that
+          // matches the language the user chose, and fall back to the other
+          // one when a row only has the single translation.
+          final title = _localized(notif, 'title');
+          final body = _localized(notif, 'body');
 
           return GestureDetector(
             onTap: () {
@@ -125,6 +129,18 @@ class NotificationsScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  /// Reads [field] from a notification row in the app's current language,
+  /// falling back to the other translation when one side is missing.
+  String _localized(Map<String, dynamic> notif, String field) {
+    final isArabic = Get.locale?.languageCode == 'ar';
+    final preferred = isArabic ? '${field}_ar' : field;
+    final other = isArabic ? field : '${field}_ar';
+
+    final value = notif[preferred]?.toString().trim() ?? '';
+    if (value.isNotEmpty) return value;
+    return notif[other]?.toString().trim() ?? '';
   }
 
   String _formatDate(String dateStr) {

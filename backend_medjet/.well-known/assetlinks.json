@@ -5,8 +5,8 @@
       "namespace": "android_app",
       "package_name": "com.khawarizmie.medjat",
       "sha256_cert_fingerprints": [
-        "REPLACE_WITH_RELEASE_SHA256_FINGERPRINT",
-        "REPLACE_WITH_UPLOAD_OR_DEBUG_SHA256_FINGERPRINT"
+        "80:58:3A:F6:04:A1:AF:A0:EA:9C:FF:2C:AD:07:A6:8B:6E:B6:B1:CB:FC:69:5F:5C:B7:1E:82:94:8E:40:7C:BF",
+        "3A:E3:39:7D:81:EE:2F:5C:4C:AF:07:F8:95:82:17:35:20:3C:1E:9E:8B:67:D0:F8:28:89:AF:7C:DC:59:FA:F5"
       ]
     }
   }

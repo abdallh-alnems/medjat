@@ -12,6 +12,7 @@ import {
   FileText,
   Tags,
   Boxes,
+  Upload,
 } from "lucide-react";
 import type { TKey } from "@/lib/i18n/ar";
 
@@ -24,6 +25,7 @@ const SECTIONS: { href: string; labelKey: TKey; icon: React.ElementType }[] = [
   { href: "/settings/required-documents", labelKey: "required_documents", icon: FileText },
   { href: "/settings/categories", labelKey: "categories", icon: Tags },
   { href: "/settings/assets", labelKey: "assets", icon: Boxes },
+  { href: "/settings/import-punches", labelKey: "import_punches", icon: Upload },
 ];
 
 export default function SettingsHub() {

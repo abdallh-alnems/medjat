@@ -139,9 +139,21 @@ class PayrollScreen extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () => controller.downloadPdf(),
-              icon: const Icon(Icons.download),
-              label: Text('download_pdf'.tr),
+              // Disabled while the PDF is being fetched so a slow connection
+              // can't be mistaken for a dead button and tapped repeatedly.
+              onPressed: controller.isDownloadingPdf
+                  ? null
+                  : () => controller.downloadPdf(),
+              icon: controller.isDownloadingPdf
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.picture_as_pdf_outlined),
+              label: Text(controller.isDownloadingPdf
+                  ? 'preparing_pdf'.tr
+                  : 'view_pdf'.tr),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
@@ -241,15 +253,41 @@ class PayrollScreen extends StatelessWidget {
     );
   }
 
-  /// One detailed line from the breakdown: the Arabic description from the
-  /// backend plus its signed amount.
+  /// One detailed line from the breakdown: its label plus the signed amount.
   Widget _detailRow(BuildContext context, Map<String, dynamic> line,
       Color color, String sign) {
-    final label = (line['description']?.toString().trim().isNotEmpty ?? false)
-        ? line['description'].toString()
-        : (line['type']?.toString() ?? '');
-    return _slipRow(context, label, '$sign ${_money(line['amount'])}',
+    return _slipRow(context, _lineLabel(line), '$sign ${_money(line['amount'])}',
         valueColor: color);
+  }
+
+  /// Label for a breakdown line, in the language the user picked.
+  ///
+  /// The backend ships a `label_key` (+ `label_params`) for every line it
+  /// composes itself, so those read as English or Arabic to match the app.
+  /// `description` is the fallback: it holds free text a manager typed (a
+  /// deduction reason, a custom allowance name) which must be shown as written,
+  /// and it is also all that slips approved before this change carry.
+  String _lineLabel(Map<String, dynamic> line) {
+    final key = line['label_key']?.toString() ?? '';
+    if (key.isNotEmpty) {
+      final raw = line['label_params'];
+      final params = raw is Map
+          ? raw.map((k, v) => MapEntry(k.toString(), v?.toString() ?? ''))
+          : <String, String>{};
+      final translated = params.isEmpty ? key.tr : key.trParams(params);
+      // GetX echoes the key back when a translation is missing — only trust a
+      // real hit, otherwise fall through to the server text.
+      if (translated != key) return translated;
+    }
+
+    final description = line['description']?.toString().trim() ?? '';
+    if (description.isNotEmpty) return description;
+
+    final type = line['type']?.toString() ?? '';
+    if (type.isEmpty) return '';
+    final typeKey = 'payline_$type';
+    final translatedType = typeKey.tr;
+    return translatedType == typeKey ? type : translatedType;
   }
 
   Widget _emptyRow(BuildContext context, String text) {

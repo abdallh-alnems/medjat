@@ -1,5 +1,11 @@
-import { apiGet, unwrapList } from "./client";
-import type { ReportData } from "@/lib/types";
+import { apiGet, asObject, unwrapList } from "./client";
+import type {
+  OvertimeLateDay,
+  OvertimeLateReport,
+  OvertimeLateRow,
+  OvertimeLateSummary,
+  ReportData,
+} from "@/lib/types";
 
 export interface ReportPeriod {
   from?: string;
@@ -7,6 +13,20 @@ export interface ReportPeriod {
   month?: string;
   year?: number;
   branch_id?: number;
+}
+
+/**
+ * The report endpoints read `start_date` / `end_date`; the UI carries the period
+ * as `from` / `to`. Translate here — sending `from`/`to` silently fell back to
+ * the backend default (first of the month → today) and ignored the picker.
+ */
+function periodParams(params: ReportPeriod): Record<string, unknown> {
+  const { from, to, ...rest } = params;
+  return {
+    ...rest,
+    ...(from ? { start_date: from } : {}),
+    ...(to ? { end_date: to } : {}),
+  };
 }
 
 /**
@@ -68,7 +88,7 @@ export async function getAttendanceReport(
 ): Promise<ReportData> {
   const raw = await apiGet<unknown>(
     "app/reports/attendance.php",
-    params as Record<string, unknown>,
+    periodParams(params),
   );
   return toReportData(raw, "attendance_report");
 }
@@ -76,10 +96,12 @@ export async function getAttendanceReport(
 export async function getPayrollReport(
   params: ReportPeriod,
 ): Promise<ReportData> {
-  const raw = await apiGet<unknown>(
-    "app/reports/payroll.php",
-    params as Record<string, unknown>,
-  );
+  // Payroll cycles are monthly: the endpoint takes `month`, not a free range,
+  // so the period picker's "from" decides which month is reported on.
+  const raw = await apiGet<unknown>("app/reports/payroll.php", {
+    branch_id: params.branch_id,
+    month: params.month ?? (params.from ? params.from.slice(0, 7) : undefined),
+  });
   return toReportData(raw, "payroll_report");
 }
 
@@ -98,7 +120,44 @@ export async function getLeavesReport(
 ): Promise<ReportData> {
   const raw = await apiGet<unknown>(
     "app/reports/leaves.php",
-    params as Record<string, unknown>,
+    periodParams(params),
   );
   return toReportData(raw, "leaves_report");
+}
+
+export interface OvertimeLateParams extends ReportPeriod {
+  /** Server-side ordering of the rows. */
+  sort?: "overtime" | "late" | "name";
+  /** Set to also fetch that employee's day-by-day breakdown under `days`. */
+  employee_id?: number;
+}
+
+/**
+ * Overtime & lateness: per-employee totals plus a company-wide summary. Unlike
+ * the other reports this keeps its typed shape (rather than being flattened to
+ * a generic table) because the page renders summary cards and a drill-down.
+ */
+export async function getOvertimeLateReport(
+  params: OvertimeLateParams,
+): Promise<OvertimeLateReport> {
+  const raw = await apiGet<unknown>(
+    "app/reports/overtime_late.php",
+    periodParams(params),
+  );
+  const obj = asObject(raw) ?? {};
+  const summary = asObject(obj.summary);
+  return {
+    start_date: typeof obj.start_date === "string" ? obj.start_date : "",
+    end_date: typeof obj.end_date === "string" ? obj.end_date : "",
+    items: unwrapList<OvertimeLateRow>(raw, ["items"]),
+    summary: (summary ?? {
+      total_overtime_minutes: 0,
+      total_late_minutes: 0,
+      overtime_days: 0,
+      late_days: 0,
+      employees_with_overtime: 0,
+      employees_late: 0,
+    }) as unknown as OvertimeLateSummary,
+    days: Array.isArray(obj.days) ? (obj.days as OvertimeLateDay[]) : undefined,
+  };
 }

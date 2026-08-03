@@ -17,6 +17,7 @@ abstract class AppRoutes {
   static const String reportPayroll = '/reports/payroll';
   static const String reportEmployees = '/reports/employees';
   static const String reportLeaves = '/reports/leaves';
+  static const String reportOvertimeLate = '/reports/overtime-late';
   static const String loans = '/loans';
   static const String bulkAdjustments = '/bulk-adjustments';
   static const String bulkAdjustmentCreate = '/bulk-adjustments/new';
@@ -24,6 +25,10 @@ abstract class AppRoutes {
   static const String auditLog = '/activity-log';
   static const String deductionRules = '/settings/deduction-rules';
   static const String attendanceMethod = '/settings/attendance-method';
+  static const String branchNetworks = '/settings/branch-networks';
+  static const String devices = '/settings/devices';
+  static const String deviceUsers = '/settings/devices/users';
+  static const String importPunches = '/settings/devices/import';
   static const String companySettings = '/settings/company';
   static const String leaveSettings = '/settings/leave';
   static const String leaveCarryoverPolicies =

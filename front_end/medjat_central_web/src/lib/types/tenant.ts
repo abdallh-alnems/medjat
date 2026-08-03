@@ -55,4 +55,9 @@ export interface Company {
   address?: string | null;
 }
 
-export type AttendanceMethod = "qr_gps" | "gps_only" | "manual";
+export type AttendanceMethod =
+  | "qr_gps"
+  | "gps_only"
+  | "face_selfie"
+  | "wifi_gps"
+  | "manual";

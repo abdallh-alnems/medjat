@@ -5,6 +5,7 @@ import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
 import '../../../core/services/location_service.dart';
+import '../../../core/services/network_service.dart';
 import '../../../logic/controller/attendance/attendance_controller.dart';
 import '../../../logic/controller/home/home_controller.dart';
 
@@ -23,6 +24,11 @@ class _GpsCheckInScreenState extends State<GpsCheckInScreen> {
   bool _loading = true;
   String? _error;
 
+  /// The screen doubles as the confirmation step for `wifi_gps`: same flow for
+  /// the employee, with the branch-network check added server-side.
+  bool get _isWifiMethod => Get.arguments == 'wifi_gps';
+  WifiInfo _wifi = WifiInfo.none;
+
   @override
   void initState() {
     super.initState();
@@ -37,6 +43,9 @@ class _GpsCheckInScreenState extends State<GpsCheckInScreen> {
     });
     try {
       final position = await LocationService().getCurrentPosition();
+      if (_isWifiMethod) {
+        _wifi = await NetworkService.current();
+      }
       final config = Get.find<HomeController>().attendanceConfig;
       double? distance;
       if (config.branchLat != null && config.branchLng != null) {
@@ -102,6 +111,18 @@ class _GpsCheckInScreenState extends State<GpsCheckInScreen> {
                 ),
               const SizedBox(height: AppSpacing.s5),
               _buildStatusCard(colors),
+              if (_isWifiMethod && !_loading) ...[
+                const SizedBox(height: AppSpacing.s3),
+                _InfoCard(
+                  colors: colors,
+                  icon: _wifi.isOnWifi ? Icons.wifi : Icons.wifi_off,
+                  color: _wifi.isOnWifi ? colors.brand : colors.error,
+                  text: _wifi.isOnWifi
+                      ? 'wifi_connected_to'
+                          .trParams({'name': _wifi.ssid ?? _wifi.bssid!})
+                      : 'wifi_not_on_any_network'.tr,
+                ),
+              ],
               const Spacer(),
               _buildConfirmButton(colors, isCheckOut),
               const SizedBox(height: AppSpacing.s4),
@@ -176,7 +197,11 @@ class _GpsCheckInScreenState extends State<GpsCheckInScreen> {
         return SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: disabled ? null : controller.processGpsCheck,
+            onPressed: disabled
+                ? null
+                : (_isWifiMethod
+                    ? controller.processWifiCheck
+                    : controller.processGpsCheck),
             style: ElevatedButton.styleFrom(
               backgroundColor: colors.brand,
               foregroundColor: Colors.white,

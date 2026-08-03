@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
@@ -32,11 +31,7 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   const SizedBox(height: AppSpacing.s4),
                   _buildAppBar(context, colors, controller),
-                  const TopNativeAd(
-                    tabIndex: 0,
-                    horizontalMargin: 0,
-                    templateType: TemplateType.small,
-                  ),
+                  const TopNativeAd(tabIndex: 0, horizontalMargin: 0),
                   const SizedBox(height: AppSpacing.s7),
                   _buildDate(context),
                   const SizedBox(height: AppSpacing.s6),

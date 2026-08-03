@@ -7,6 +7,12 @@ class AttendanceConfigModel {
   final List<String> methods;
   final int gpsRadiusMeters;
   final bool allowOffline;
+
+  /// Company opted into confirming self check-in/out with the phone's own
+  /// fingerprint/FaceID. The server enforces this either way; the flag only
+  /// lets the app prompt first instead of letting the employee do the work and
+  /// then be rejected.
+  final bool requireLocalBiometric;
   final double? branchLat;
   final double? branchLng;
 
@@ -16,6 +22,7 @@ class AttendanceConfigModel {
     this.methods = const ['qr_gps'],
     this.gpsRadiusMeters = 100,
     this.allowOffline = true,
+    this.requireLocalBiometric = false,
     this.branchLat,
     this.branchLng,
   });
@@ -23,10 +30,17 @@ class AttendanceConfigModel {
   bool get hasQrGps => methods.contains('qr_gps');
   bool get hasGpsOnly => methods.contains('gps_only');
   bool get hasManual => methods.contains('manual');
+  bool get hasFaceSelfie => methods.contains('face_selfie');
+  bool get hasWifiGps => methods.contains('wifi_gps');
 
   /// Methods the employee can act on directly from this app.
-  List<String> get selfMethods =>
-      methods.where((m) => m == 'qr_gps' || m == 'gps_only').toList();
+  List<String> get selfMethods => methods
+      .where((m) =>
+          m == 'qr_gps' ||
+          m == 'gps_only' ||
+          m == 'face_selfie' ||
+          m == 'wifi_gps')
+      .toList();
 
   /// True when the employee cannot self check-in (only manual enabled).
   bool get isSelfCheckDisabled => selfMethods.isEmpty;
@@ -58,6 +72,9 @@ class AttendanceConfigModel {
       allowOffline: json['allow_offline'] == true ||
           json['allow_offline'] == 1 ||
           json['allow_offline'] == '1',
+      requireLocalBiometric: json['require_local_biometric'] == true ||
+          json['require_local_biometric'] == 1 ||
+          json['require_local_biometric'] == '1',
       branchLat: _toDouble(json['branch_lat']),
       branchLng: _toDouble(json['branch_lng']),
     );

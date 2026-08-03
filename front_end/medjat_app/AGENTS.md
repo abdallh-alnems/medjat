@@ -1,11 +1,12 @@
 # Medjat App - Agent Guidelines
 
 ## Project Overview
-Flutter mobile application.
-- **Version**: 1.0.0+1
+Flutter mobile application — the Medjat **employee** app.
+- **Version**: 1.0.3+7
 - **SDK**: Flutter 3.11.1+
 - **State Management**: GetX
-- **Backend**: Firebase + Custom PHP API
+- **Backend**: Custom PHP API (`backend_medjet/`) + Firebase (messaging, remote config, crashlytics)
+- **Sign-in**: phone number + activation code (or a join code / link / QR) — no Google Sign-In here
 
 ## Architecture Pattern
 MVVM (Model-View-ViewModel) using GetX
@@ -34,10 +35,14 @@ lib/
 ## Key Technologies
 - **State Management**: GetX (`get: ^4.7.2`)
 - **Navigation**: GetX routing with `getPages`
-- **Firebase**: Core, Auth, Analytics, Crashlytics, Messaging, App Check, Remote Config
+- **Firebase**: Core, Analytics, Crashlytics, Messaging, App Check, Remote Config
+- **Attendance**: `mobile_scanner` (QR), `geolocator` (GPS), `network_info_plus` (WiFi BSSID),
+  `camera` + `google_mlkit_face_detection` + `tflite_flutter` (face selfie)
+- **Offline**: `Hive` queue + `connectivity_plus` auto-sync
 - **Localization**: Arabic (ar) default with `flutter_localizations`
 - **Responsive UI**: `flutter_screenutil`
-- **Design System**: Cairo font, custom themes in `core/constant/theme/`
+- **Design System**: IBM Plex Sans Arabic (Arabic) + Geist (Latin/numerals), custom themes in
+  `core/constant/theme/`
 
 ## Important Conventions
 
@@ -89,7 +94,7 @@ flutter clean && flutter pub get
 ## Testing
 - Test structure mirrors `lib/` structure under `test/`
 - Shared helpers: `test/helpers/` (FakeCrud, TestHarness, fixtures)
-- Unit tests: `test/logic/controller/` and `test/data/`
+- Unit tests: `test/unit/` (`controller/`, `core/`, `data_source/`, `models/`, `utils/`)
 - Widget tests: `test/view/screen/` and `test/view/widget/`
 - Integration wiring: `test/integration/`
 - Controllers accept optional constructor params for DI in tests
@@ -102,7 +107,8 @@ When building Flutter widgets or screens, apply intentional design thinking:
 Before coding, commit to a clear aesthetic: refined minimal, warm organic, bold editorial, luxury, etc. Every screen should feel purposefully designed, not generic.
 
 ### Flutter Design Principles
-- **Typography**: Use Cairo font (already configured). Apply scale contrast — large bold headers vs. light body text.
+- **Typography**: Use the configured families — IBM Plex Sans Arabic for Arabic, Geist for Latin and
+  numerals. Apply scale contrast — large bold headers vs. light body text.
 - **Color**: Use the app's theme system (`DarkLightService`). Dominant colors + sharp accent. Avoid flat evenly-distributed palettes.
 - **Spacing**: Generous and consistent via `flutter_screenutil` (`.w`, `.h`, `.sp`). Unexpected whitespace creates premium feel.
 - **Motion**: Add subtle animations (`AnimationController`, `AnimatedContainer`, Hero transitions) for high-impact moments — not scattered everywhere.

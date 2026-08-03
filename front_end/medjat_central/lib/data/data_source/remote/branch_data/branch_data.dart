@@ -46,6 +46,50 @@ class BranchData {
     });
   }
 
+  /// Networks seen at a branch during its learning window.
+  Future<Map<String, dynamic>> getBranchNetworks({
+    required int branchId,
+    int? days,
+  }) async {
+    return await _crud.postData(AppLinks.branchNetworkSightings, {
+      'branch_id': branchId,
+      'days': ?days,
+    });
+  }
+
+  /// Approves a set of networks and optionally switches the enforcement mode.
+  Future<Map<String, dynamic>> approveBranchNetworks({
+    required int branchId,
+    required List<Map<String, dynamic>> approve,
+    String? wifiMode,
+    String? wifiMatch,
+  }) async {
+    return await _crud.postData(AppLinks.branchApproveNetworks, {
+      'branch_id': branchId,
+      'approve': approve,
+      'wifi_mode': ?wifiMode,
+      'wifi_match': ?wifiMatch,
+    });
+  }
+
+  /// Captures the access point the admin is currently connected to. The
+  /// backend rejects it unless the admin's GPS puts them inside the branch.
+  Future<Map<String, dynamic>> captureBranchNetwork({
+    required int branchId,
+    required String bssid,
+    String? ssid,
+    required double latitude,
+    required double longitude,
+  }) async {
+    return await _crud.postData(AppLinks.branchCaptureNetwork, {
+      'branch_id': branchId,
+      'bssid': bssid,
+      'ssid': ?ssid,
+      'latitude': latitude,
+      'longitude': longitude,
+    });
+  }
+
   Future<Map<String, dynamic>> updateBranchAttendanceMethods({
     required int branchId,
     List<String>? methods,

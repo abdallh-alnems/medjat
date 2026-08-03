@@ -27,6 +27,11 @@ class CompanySettingsController extends GetxController {
   // an explicit company choice. Cleared once the user picks one manually.
   bool timezoneAutoDetected = false;
 
+  // Mirrors `tenants.timezone_is_explicit`: whether anyone ever actually chose
+  // this timezone. False means the company is still on the column default and
+  // a suggestion is welcome; true means leave it alone.
+  bool timezoneIsExplicit = false;
+
   // Company default attendance cycle start day (1-28). Branches may override.
   int cycleStartDay = 1;
 
@@ -93,13 +98,16 @@ class CompanySettingsController extends GetxController {
         nameController.text = (data['name'] as String?) ?? '';
         currency = (data['currency'] as String?)?.toUpperCase() ?? 'EGP';
         timezone = (data['timezone'] as String?) ?? 'Africa/Cairo';
+        timezoneIsExplicit = data['timezone_is_explicit'] as bool? ?? false;
         cycleStartDay = (data['cycle_start_day'] as num?)?.toInt() ?? 1;
         weekStartDay = (data['week_start_day'] as num?)?.toInt() ?? 6;
 
-        // Auto-detect from the device when the company is still on the system
-        // default ('Africa/Cairo' is the column default), so a fresh company
-        // gets its real timezone without manual setup.
-        if (timezone == 'Africa/Cairo') {
+        // Suggest the device's zone only for a company that never chose one.
+        // This used to test `timezone == 'Africa/Cairo'`, which cannot tell a
+        // deliberate choice from the column default — so an admin opening this
+        // screen abroad had the company's clock re-filled underneath them, and
+        // saving any other field on this form would persist it.
+        if (!timezoneIsExplicit) {
           final device = await _detectDeviceTimezone();
           if (device != null && device != timezone) {
             timezone = device;

@@ -48,6 +48,10 @@ class AttendanceMethodScreen extends StatelessWidget {
                         _TenantMethodCards(ctrl: ctrl),
                         const SizedBox(height: AppSpacing.s3),
                         _OfflineModeCard(ctrl: ctrl),
+                        const SizedBox(height: AppSpacing.s3),
+                        _RejectMockLocationCard(ctrl: ctrl),
+                        const SizedBox(height: AppSpacing.s3),
+                        _RequireLocalBiometricCard(ctrl: ctrl),
                       ],
                     ),
                   ),
@@ -102,6 +106,8 @@ String methodLabel(String m) {
       return 'method_gps_only'.tr;
     case 'manual':
       return 'method_manual_admin'.tr;
+    case 'device':
+      return 'method_device'.tr;
     default:
       return m;
   }
@@ -168,6 +174,12 @@ class _TenantMethodCards extends StatelessWidget {
             ],
             const SizedBox(height: AppSpacing.s2),
             _GpsOnlyMethodCard(ctrl: ctrl),
+            const SizedBox(height: AppSpacing.s2),
+            _WifiMethodCard(ctrl: ctrl),
+            const SizedBox(height: AppSpacing.s2),
+            _FaceMethodCard(ctrl: ctrl),
+            const SizedBox(height: AppSpacing.s2),
+            _DeviceMethodCard(ctrl: ctrl),
             const SizedBox(height: AppSpacing.s2),
             _ManualMethodCard(ctrl: ctrl),
           ],
@@ -968,7 +980,11 @@ class _BranchTile extends StatelessWidget {
                           ? 'QR'
                           : m == 'gps_only'
                               ? 'GPS'
-                              : 'manual'.tr.substring(0, 5);
+                              : m == 'face_selfie'
+                                  ? 'face_badge'.tr
+                                  : m == 'wifi_gps'
+                                      ? 'WiFi'
+                                      : 'manual'.tr.substring(0, 5);
                       return Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.s2,
@@ -1147,6 +1163,46 @@ class _BranchTile extends StatelessWidget {
                               } else {
                                 if (selectedMethods!.length > 1) {
                                   selectedMethods!.remove('gps_only');
+                                }
+                              }
+                            });
+                          },
+                  ),
+                  const SizedBox(height: AppSpacing.s2),
+                  _BranchMethodSwitch(
+                    label: 'method_wifi_gps'.tr,
+                    enabled: !inheritCompany &&
+                        (selectedMethods?.contains('wifi_gps') ?? false),
+                    onChanged: inheritCompany
+                        ? null
+                        : (v) {
+                            setState(() {
+                              selectedMethods ??= [];
+                              if (v) {
+                                selectedMethods!.add('wifi_gps');
+                              } else {
+                                if (selectedMethods!.length > 1) {
+                                  selectedMethods!.remove('wifi_gps');
+                                }
+                              }
+                            });
+                          },
+                  ),
+                  const SizedBox(height: AppSpacing.s2),
+                  _BranchMethodSwitch(
+                    label: 'method_face_selfie'.tr,
+                    enabled: !inheritCompany &&
+                        (selectedMethods?.contains('face_selfie') ?? false),
+                    onChanged: inheritCompany
+                        ? null
+                        : (v) {
+                            setState(() {
+                              selectedMethods ??= [];
+                              if (v) {
+                                selectedMethods!.add('face_selfie');
+                              } else {
+                                if (selectedMethods!.length > 1) {
+                                  selectedMethods!.remove('face_selfie');
                                 }
                               }
                             });
@@ -1438,6 +1494,151 @@ class _BranchMethodSwitch extends StatelessWidget {
   }
 }
 
+/// Company-wide switch for rejecting check-ins from a spoofed GPS location.
+/// Deliberately opt-in: the flag is reported by the device, and iOS never
+/// reports it at all, so a company should turn this on knowing what it covers.
+class _RejectMockLocationCard extends StatelessWidget {
+  final AttendanceMethodController ctrl;
+  const _RejectMockLocationCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<AttendanceMethodController>(
+      builder: (_) {
+        final colors = AppColors.of(context);
+        final enabled = ctrl.rejectMockLocation;
+
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.s3),
+          decoration: BoxDecoration(
+            color: enabled ? colors.brandSubtle : colors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: enabled ? colors.brand : colors.borderHairline,
+              width: enabled ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.wrong_location_outlined,
+                  size: 22,
+                  color: enabled ? colors.brand : colors.textSecondary),
+              const SizedBox(width: AppSpacing.s3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'reject_mock_location'.tr,
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: enabled ? colors.brand : colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'reject_mock_location_hint'.tr,
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 11,
+                        color: colors.textTertiary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: enabled,
+                onChanged: (v) async {
+                  final ok = await ctrl.toggleRejectMockLocation(v);
+                  _showResultSnackbar(ok);
+                },
+                activeThumbColor: colors.brand,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Requires the phone's own fingerprint/FaceID at the moment of the tap, which
+/// is what stops a colleague checking in on a handset that is already signed
+/// in. It proves the tapper can unlock this phone, not who they are — the
+/// method that proves identity against an enrolled template is face_selfie.
+class _RequireLocalBiometricCard extends StatelessWidget {
+  final AttendanceMethodController ctrl;
+  const _RequireLocalBiometricCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<AttendanceMethodController>(
+      builder: (_) {
+        final colors = AppColors.of(context);
+        final enabled = ctrl.requireLocalBiometric;
+
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.s3),
+          decoration: BoxDecoration(
+            color: enabled ? colors.brandSubtle : colors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: enabled ? colors.brand : colors.borderHairline,
+              width: enabled ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.fingerprint,
+                  size: 22,
+                  color: enabled ? colors.brand : colors.textSecondary),
+              const SizedBox(width: AppSpacing.s3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'require_local_biometric'.tr,
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: enabled ? colors.brand : colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'require_local_biometric_hint'.tr,
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 11,
+                        color: colors.textTertiary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: enabled,
+                onChanged: (v) async {
+                  final ok = await ctrl.toggleRequireLocalBiometric(v);
+                  _showResultSnackbar(ok);
+                },
+                activeThumbColor: colors.brand,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _OfflineModeCard extends StatelessWidget {
   final AttendanceMethodController ctrl;
   const _OfflineModeCard({required this.ctrl});
@@ -1589,6 +1790,587 @@ class _GpsOnlyMethodCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Selfie + face-recognition method, with its settings folded in so the
+/// threshold and liveness switches only appear once the method is on.
+/// Branch WiFi method. Unlike the other methods there is nothing to configure
+/// company-wide — every access point belongs to a specific branch — so the card
+/// leads into the per-branch approval screen instead.
+class _WifiMethodCard extends StatelessWidget {
+  final AttendanceMethodController ctrl;
+  const _WifiMethodCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<AttendanceMethodController>(
+      builder: (_) {
+        final enabled = ctrl.tenantMethods.contains('wifi_gps');
+        final colors = AppColors.of(context);
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.s3),
+          decoration: BoxDecoration(
+            color: enabled ? colors.brandSubtle : colors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: enabled ? colors.brand : colors.borderHairline,
+              width: enabled ? 1.5 : 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.wifi,
+                      size: 22,
+                      color: enabled ? colors.brand : colors.textSecondary),
+                  const SizedBox(width: AppSpacing.s3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'method_wifi_gps'.tr,
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: enabled ? colors.brand : colors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'method_wifi_gps_desc'.tr,
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 11,
+                            color: colors.textTertiary,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: enabled,
+                    onChanged: (v) async {
+                      if (!v && ctrl.tenantMethods.length <= 1) {
+                        Get.snackbar(
+                          'error'.tr,
+                          'at_least_one_method_required'.tr,
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
+                        return;
+                      }
+                      final ok = await ctrl.toggleTenantMethod('wifi_gps', v);
+                      _showResultSnackbar(ok);
+                    },
+                    activeThumbColor: colors.brand,
+                  ),
+                ],
+              ),
+              if (enabled) ...[
+                const SizedBox(height: AppSpacing.s3),
+                _BranchNetworksPicker(ctrl: ctrl),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Fingerprint / face terminals.
+///
+/// Unlike the other methods this one is not something the employee app does —
+/// enabling it only tells the app to stop offering self check-in where the
+/// device is the way in. The devices themselves are managed on their own
+/// screen, which is where the real work (linking User IDs) happens.
+class _DeviceMethodCard extends StatelessWidget {
+  final AttendanceMethodController ctrl;
+  const _DeviceMethodCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<AttendanceMethodController>(
+      builder: (_) {
+        final enabled = ctrl.tenantMethods.contains('device');
+        final colors = AppColors.of(context);
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.s3),
+          decoration: BoxDecoration(
+            color: enabled ? colors.brandSubtle : colors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: enabled ? colors.brand : colors.borderHairline,
+              width: enabled ? 1.5 : 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.fingerprint,
+                      size: 22,
+                      color: enabled ? colors.brand : colors.textSecondary),
+                  const SizedBox(width: AppSpacing.s3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'method_device'.tr,
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: enabled ? colors.brand : colors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'method_device_desc'.tr,
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 11,
+                            color: colors.textTertiary,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: enabled,
+                    onChanged: (v) async {
+                      if (!v && ctrl.tenantMethods.length <= 1) {
+                        Get.snackbar(
+                          'error'.tr,
+                          'at_least_one_method_required'.tr,
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
+                        return;
+                      }
+                      final ok = await ctrl.toggleTenantMethod('device', v);
+                      _showResultSnackbar(ok);
+                    },
+                    activeThumbColor: colors.brand,
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              InkWell(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                onTap: () => Get.toNamed<void>(AppRoutes.devices),
+                child: Container(
+                  padding: const EdgeInsets.all(AppSpacing.s3),
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(color: colors.borderHairline),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.devices_other,
+                          size: 18, color: colors.textSecondary),
+                      const SizedBox(width: AppSpacing.s3),
+                      Expanded(
+                        child: Text(
+                          'devices'.tr,
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      Icon(Icons.chevron_left,
+                          size: 18, color: colors.textTertiary),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Each branch has its own access points, so this lists the branches and opens
+/// the approval screen for whichever one the admin taps.
+class _BranchNetworksPicker extends StatelessWidget {
+  final AttendanceMethodController ctrl;
+  const _BranchNetworksPicker({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
+    if (ctrl.branches.isEmpty) {
+      return Text(
+        'no_branches'.tr,
+        style: TextStyle(
+          fontFamily: 'IBM Plex Sans Arabic',
+          fontSize: 12,
+          color: colors.textTertiary,
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        for (final branch in ctrl.branches)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              onTap: () => Get.toNamed<void>(
+                AppRoutes.branchNetworks,
+                arguments: {
+                  'branch_id': branch.id,
+                  'branch_name': branch.name,
+                },
+              )?.then((_) => ctrl.load()),
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.s3),
+                decoration: BoxDecoration(
+                  color: colors.surface,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: colors.borderHairline),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.router_outlined,
+                        size: 18, color: colors.textSecondary),
+                    const SizedBox(width: AppSpacing.s3),
+                    Expanded(
+                      child: Text(
+                        branch.name,
+                        style: TextStyle(
+                          fontFamily: 'IBM Plex Sans Arabic',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      'wifi_networks'.tr,
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 11,
+                        color: colors.brand,
+                      ),
+                    ),
+                    Icon(Icons.chevron_left,
+                        size: 18, color: colors.textTertiary),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _FaceMethodCard extends StatelessWidget {
+  final AttendanceMethodController ctrl;
+  const _FaceMethodCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<AttendanceMethodController>(
+      builder: (_) {
+        final enabled = ctrl.tenantMethods.contains('face_selfie');
+        final colors = AppColors.of(context);
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.s3),
+          decoration: BoxDecoration(
+            color: enabled ? colors.brandSubtle : colors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: enabled ? colors.brand : colors.borderHairline,
+              width: enabled ? 1.5 : 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.face_retouching_natural_outlined,
+                      size: 22,
+                      color: enabled ? colors.brand : colors.textSecondary),
+                  const SizedBox(width: AppSpacing.s3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'method_face_selfie'.tr,
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: enabled ? colors.brand : colors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'method_face_selfie_desc'.tr,
+                          style: TextStyle(
+                            fontFamily: 'IBM Plex Sans Arabic',
+                            fontSize: 11,
+                            color: colors.textTertiary,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: enabled,
+                    onChanged: (v) async {
+                      if (!v && ctrl.tenantMethods.length <= 1) {
+                        Get.snackbar(
+                          'error'.tr,
+                          'at_least_one_method_required'.tr,
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
+                        return;
+                      }
+                      final ok =
+                          await ctrl.toggleTenantMethod('face_selfie', v);
+                      _showResultSnackbar(ok);
+                    },
+                    activeThumbColor: colors.brand,
+                  ),
+                ],
+              ),
+              if (enabled) ...[
+                const SizedBox(height: AppSpacing.s3),
+                _FaceSettingsPanel(ctrl: ctrl),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _FaceSettingsPanel extends StatefulWidget {
+  final AttendanceMethodController ctrl;
+  const _FaceSettingsPanel({required this.ctrl});
+
+  @override
+  State<_FaceSettingsPanel> createState() => _FaceSettingsPanelState();
+}
+
+class _FaceSettingsPanelState extends State<_FaceSettingsPanel> {
+  late double _threshold = widget.ctrl.faceThreshold;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final ctrl = widget.ctrl;
+    final enforcing = ctrl.faceEnforceMode == 'enforce';
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s3),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Match threshold ──
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'face_match_threshold'.tr,
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
+                ),
+              ),
+              Text(
+                _threshold.toStringAsFixed(2),
+                style: TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: colors.brand,
+                ),
+              ),
+            ],
+          ),
+          Slider(
+            value: _threshold,
+            min: 0.3,
+            max: 0.95,
+            divisions: 65,
+            activeColor: colors.brand,
+            onChanged: (v) => setState(() => _threshold = v),
+            onChangeEnd: (v) async {
+              final ok = await ctrl.saveFaceSettings(matchThreshold: v);
+              if (!ok) setState(() => _threshold = ctrl.faceThreshold);
+              _showResultSnackbar(ok);
+            },
+          ),
+          Text(
+            'face_match_threshold_hint'.tr,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 11,
+              color: colors.textTertiary,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s3),
+
+          // ── Liveness ──
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'face_liveness_required'.tr,
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: colors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'face_liveness_hint'.tr,
+                      style: TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        fontSize: 11,
+                        color: colors.textTertiary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: ctrl.faceLivenessRequired,
+                activeThumbColor: colors.brand,
+                onChanged: (v) async =>
+                    _showResultSnackbar(await ctrl.saveFaceSettings(
+                  livenessRequired: v,
+                )),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s3),
+
+          // ── Enforcement mode ──
+          Text(
+            'face_enforce_mode'.tr,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: colors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.s2),
+          Row(
+            children: [
+              Expanded(
+                child: _ModeChip(
+                  label: 'face_mode_log_only'.tr,
+                  selected: !enforcing,
+                  onTap: () async => _showResultSnackbar(
+                      await ctrl.saveFaceSettings(enforceMode: 'log_only')),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.s2),
+              Expanded(
+                child: _ModeChip(
+                  label: 'face_mode_enforce'.tr,
+                  selected: enforcing,
+                  onTap: () async => _showResultSnackbar(
+                      await ctrl.saveFaceSettings(enforceMode: 'enforce')),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s2),
+          Text(
+            'face_mode_hint'.tr,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 11,
+              color: colors.textTertiary,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModeChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  const _ModeChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.s3),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? colors.brandSubtle : colors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(
+            color: selected ? colors.brand : colors.borderHairline,
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'IBM Plex Sans Arabic',
+            fontSize: 12,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            color: selected ? colors.brand : colors.textSecondary,
+          ),
+        ),
+      ),
     );
   }
 }

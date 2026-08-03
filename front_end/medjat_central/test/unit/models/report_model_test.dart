@@ -160,4 +160,87 @@ void main() {
       expect(row.status, 'approved');
     });
   });
+
+  group('OvertimeLateRow', () {
+    test('بيانات كاملة', () {
+      final row = OvertimeLateRow.fromJson({
+        'employee_id': 4,
+        'employee_name': 'أحمد',
+        'job_title': 'محاسب',
+        'branch_name': 'الفرع الرئيسي',
+        // MySQL SUM() comes back as a string over JSON.
+        'overtime_minutes': '210',
+        'overtime_days': 2,
+        'late_minutes': '55',
+        'late_days': 2,
+        'worst_late_minutes': 35,
+        'worked_minutes': '1170',
+        'days_present': 4,
+      });
+
+      expect(row.employeeId, 4);
+      expect(row.employeeName, 'أحمد');
+      expect(row.overtimeMinutes, 210);
+      expect(row.overtimeDays, 2);
+      expect(row.lateMinutes, 55);
+      expect(row.lateDays, 2);
+      expect(row.worstLateMinutes, 35);
+      expect(row.avgLateMinutes, 27);
+    });
+
+    test('بيانات ناقصة — لا قسمة على صفر', () {
+      final row = OvertimeLateRow.fromJson({});
+
+      expect(row.employeeId, 0);
+      expect(row.employeeName, '');
+      expect(row.overtimeMinutes, 0);
+      expect(row.lateDays, 0);
+      expect(row.avgLateMinutes, 0);
+    });
+  });
+
+  group('OvertimeLateSummary', () {
+    test('بيانات كاملة', () {
+      final summary = OvertimeLateSummary.fromJson({
+        'total_overtime_minutes': '210',
+        'total_late_minutes': '55',
+        'overtime_days': 2,
+        'late_days': 2,
+        'employees_with_overtime': 1,
+        'employees_late': 1,
+      });
+
+      expect(summary.totalOvertimeMinutes, 210);
+      expect(summary.totalLateMinutes, 55);
+      expect(summary.overtimeDays, 2);
+      expect(summary.employeesLate, 1);
+    });
+
+    test('بيانات ناقصة', () {
+      final summary = OvertimeLateSummary.fromJson({});
+
+      expect(summary.totalOvertimeMinutes, 0);
+      expect(summary.employeesWithOvertime, 0);
+    });
+  });
+
+  group('OvertimeLateDay', () {
+    test('يوم فيه تأخير وإضافي', () {
+      final day = OvertimeLateDay.fromJson({
+        'date': '2026-06-25',
+        'check_in_time': '09:20:00',
+        'check_out_time': '18:30:00',
+        'late_minutes': 20,
+        'overtime_minutes': 30,
+        'worked_minutes': 550,
+        'notes': null,
+      });
+
+      expect(day.date, '2026-06-25');
+      expect(day.checkInTime, '09:20:00');
+      expect(day.lateMinutes, 20);
+      expect(day.overtimeMinutes, 30);
+      expect(day.notes, isNull);
+    });
+  });
 }

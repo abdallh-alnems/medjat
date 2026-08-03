@@ -6,6 +6,7 @@ import {
   getPayrollReport,
   getEmployeesReport,
   getLeavesReport,
+  getOvertimeLateReport,
 } from "@/lib/api/reports";
 import {
   getExpiringSoon,
@@ -59,6 +60,62 @@ describe("reports contract", () => {
       http.get(`${API}/app/reports/leaves.php`, () => HttpResponse.error()),
     );
     await expect(getLeavesReport({})).rejects.toBeDefined();
+  });
+
+  it("overtime & lateness report: success", async () => {
+    let sentUrl = "";
+    server.use(
+      http.get(`${API}/app/reports/overtime_late.php`, ({ request }) => {
+        sentUrl = request.url;
+        return HttpResponse.json({
+          start_date: "2026-06-01",
+          end_date: "2026-06-30",
+          items: [
+            {
+              employee_id: 5,
+              employee_name: "أحمد",
+              overtime_minutes: 150,
+              overtime_days: 2,
+              late_minutes: 35,
+              late_days: 1,
+              worst_late_minutes: 35,
+              worked_minutes: 900,
+              days_present: 3,
+            },
+          ],
+          summary: {
+            total_overtime_minutes: 150,
+            total_late_minutes: 35,
+            overtime_days: 2,
+            late_days: 1,
+            employees_with_overtime: 1,
+            employees_late: 1,
+          },
+        });
+      }),
+    );
+    const res = await getOvertimeLateReport({
+      from: "2026-06-01",
+      to: "2026-06-30",
+      sort: "late",
+    });
+    expect(res.items).toHaveLength(1);
+    expect(res.summary.total_overtime_minutes).toBe(150);
+    // The UI's from/to must reach the backend as start_date/end_date.
+    expect(sentUrl).toContain("start_date=2026-06-01");
+    expect(sentUrl).toContain("end_date=2026-06-30");
+    expect(sentUrl).toContain("sort=late");
+  });
+
+  it("overtime & lateness report: 4xx yields an empty, zeroed report", async () => {
+    server.use(
+      http.get(`${API}/app/reports/overtime_late.php`, () =>
+        HttpResponse.json({ message: "denied" }, { status: 403 }),
+      ),
+    );
+    const res = await getOvertimeLateReport({ from: "2026-06-01", to: "2026-06-30" });
+    expect(res.items).toHaveLength(0);
+    expect(res.summary.total_late_minutes).toBe(0);
   });
 
   it("document expiring soon: success", async () => {

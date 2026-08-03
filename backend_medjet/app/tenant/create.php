@@ -38,17 +38,82 @@ if ($companyName === '') {
     Response::fail('Company name is required', 422, 'company_name_required');
 }
 
+// Locale settings are chosen during onboarding so the company never runs on a
+// guessed default. All four stay optional: the app builds already in the stores
+// send only company_name, and those companies must keep working — they simply
+// fall back to the column defaults, exactly as before.
+$timezone = null;
+if (isset($input['timezone'])) {
+    $timezone = trim((string) $input['timezone']);
+    if (!in_array($timezone, timezone_identifiers_list(), true)) {
+        Response::fail('Invalid timezone identifier', 422, 'invalid_timezone_identifier');
+    }
+}
+
+$currency = null;
+if (isset($input['currency'])) {
+    $currency = strtoupper(trim((string) $input['currency']));
+    if (!preg_match('/^[A-Z]{3}$/', $currency)) {
+        Response::fail('currency must be a 3-letter ISO code (e.g. EGP)', 422, 'currency_3_letter_iso_code');
+    }
+}
+
+$cycleStartDay = null;
+if (isset($input['cycle_start_day'])) {
+    $cycleStartDay = (int) $input['cycle_start_day'];
+    if ($cycleStartDay < 1 || $cycleStartDay > 28) {
+        Response::fail('cycle_start_day must be between 1 and 28', 422, 'cycle_start_day_between_1');
+    }
+}
+
+$weekStartDay = null;
+if (isset($input['week_start_day'])) {
+    $weekStartDay = (int) $input['week_start_day'];
+    if ($weekStartDay < 1 || $weekStartDay > 7) {
+        Response::fail('week_start_day must be between 1 (Mon) and 7 (Sun)', 422, 'week_start_day_between_1');
+    }
+}
+
 $pdo = db();
 try {
     $pdo->beginTransaction();
 
+    // Only the columns the admin actually supplied are written, so anything
+    // omitted keeps its schema default instead of being overwritten with a
+    // guess. `timezone_is_explicit` is what later tells the settings screen not
+    // to re-suggest a timezone over a deliberate choice.
+    $columns = ['name', 'is_active', 'email_verified_at'];
+    $placeholders = ['?', '1', 'NOW()'];
+    $values = [$companyName];
+
+    if ($timezone !== null) {
+        $columns[] = 'timezone';
+        $placeholders[] = '?';
+        $values[] = $timezone;
+        $columns[] = 'timezone_is_explicit';
+        $placeholders[] = '1';
+    }
+    if ($currency !== null) {
+        $columns[] = 'currency';
+        $placeholders[] = '?';
+        $values[] = $currency;
+    }
+    if ($cycleStartDay !== null) {
+        $columns[] = 'cycle_start_day';
+        $placeholders[] = '?';
+        $values[] = $cycleStartDay;
+    }
+    if ($weekStartDay !== null) {
+        $columns[] = 'week_start_day';
+        $placeholders[] = '?';
+        $values[] = $weekStartDay;
+    }
+
     $stmt = $pdo->prepare(
-        "INSERT INTO tenants (name, is_active, email_verified_at)
-         VALUES (?, 1, NOW())"
+        'INSERT INTO tenants (' . implode(', ', $columns) . ')
+         VALUES (' . implode(', ', $placeholders) . ')'
     );
-    $stmt->execute([
-        $companyName,
-    ]);
+    $stmt->execute($values);
     $tenantId = (int) $pdo->lastInsertId();
 
     $stmt = $pdo->prepare(
@@ -74,7 +139,7 @@ try {
 }
 
 $tenant = Database::fetchOne(
-    "SELECT id, name, currency, timezone FROM tenants WHERE id = ? LIMIT 1",
+    "SELECT id, name, currency, timezone, cycle_start_day, week_start_day FROM tenants WHERE id = ? LIMIT 1",
     [$tenantId]
 );
 
@@ -85,6 +150,8 @@ Response::success([
         'name' => $tenant['name'],
         'currency' => $tenant['currency'],
         'timezone' => $tenant['timezone'],
+        'cycle_start_day' => (int) $tenant['cycle_start_day'],
+        'week_start_day' => (int) $tenant['week_start_day'],
     ],
     'user' => [
         'id' => (int) $admin['id'],

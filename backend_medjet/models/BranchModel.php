@@ -107,6 +107,26 @@ final class BranchModel {
         Database::execute($sql, $params);
     }
 
+    /**
+     * Per-branch face overrides. NULL on either value means "inherit the
+     * company setting" — a factory floor may need a looser threshold than a
+     * well-lit office, but most branches should just inherit.
+     */
+    public static function updateFaceSettings(int $id, int $tenantId, ?float $threshold, ?bool $livenessRequired): void {
+        Database::execute(
+            "UPDATE branches SET face_match_threshold = ?, face_liveness_required = ? WHERE id = ? AND tenant_id = ?",
+            [$threshold, $livenessRequired !== null ? (int) $livenessRequired : null, $id, $tenantId]
+        );
+    }
+
+    /** Per-branch WiFi enforcement mode + what counts as a match. */
+    public static function updateWifiSettings(int $id, int $tenantId, ?string $mode, string $match): void {
+        Database::execute(
+            "UPDATE branches SET wifi_mode = ?, wifi_match = ? WHERE id = ? AND tenant_id = ?",
+            [$mode, $match, $id, $tenantId]
+        );
+    }
+
     public static function effectiveAllowOffline(int $branchId, int $tenantId): bool {
         $branch = self::findById($branchId, $tenantId);
         if ($branch && $branch['allow_offline_attendance'] !== null) {

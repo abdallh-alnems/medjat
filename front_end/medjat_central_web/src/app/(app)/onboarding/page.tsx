@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,7 +16,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  CURRENCIES,
+  WEEKDAYS,
+  currencyForZone,
+  detectTimezone,
+  supportedZones,
+  weekStartForZone,
+} from "@/lib/locale-defaults";
 import { useT } from "@/lib/i18n/use-t";
 import { createCompany, joinCompany, acceptInvitation } from "@/lib/api/tenant";
 import { useTenantStore } from "@/lib/stores/tenant-store";
@@ -41,6 +56,8 @@ const createSchema = z.object({
 });
 const joinSchema = z.object({ code: z.string().min(4) });
 
+const CYCLE_DAYS = Array.from({ length: 28 }, (_, i) => i + 1);
+
 function OnboardingInner() {
   const router = useRouter();
   const { t } = useT();
@@ -57,6 +74,21 @@ function OnboardingInner() {
     resolver: zodResolver(createSchema),
     defaultValues: { name: "", phone: "" },
   });
+
+  // Locale settings are captured here rather than left to the column defaults:
+  // attendance is stamped on the company's clock, so a company that never picks
+  // a timezone silently records every check-in against the wrong one. Seeded
+  // from the browser so the common case is one glance, not four decisions.
+  const [detectedZone] = useState(detectTimezone);
+  const zones = useMemo(() => supportedZones(detectedZone), [detectedZone]);
+  const [timezone, setTimezone] = useState(detectedZone);
+  const [currency, setCurrency] = useState<string>(() =>
+    currencyForZone(detectedZone),
+  );
+  const [cycleStartDay, setCycleStartDay] = useState(1);
+  const [weekStartDay, setWeekStartDay] = useState(() =>
+    weekStartForZone(detectedZone),
+  );
   const joinForm = useForm<z.infer<typeof joinSchema>>({
     resolver: zodResolver(joinSchema),
     defaultValues: { code: initialCode },
@@ -92,7 +124,12 @@ function OnboardingInner() {
   async function onCreate(data: z.infer<typeof createSchema>) {
     setBusy(true);
     try {
-      const res = await createCompany(data.name);
+      const res = await createCompany(data.name, {
+        timezone,
+        currency,
+        cycle_start_day: cycleStartDay,
+        week_start_day: weekStartDay,
+      });
       if (res.tenant?.id) {
         finishOnboarding(res.tenant.id, res.tenant.name);
       } else {
@@ -198,6 +235,109 @@ function OnboardingInner() {
                   <Label htmlFor="phone">{t("phone")}</Label>
                   <Input id="phone" {...createForm.register("phone")} />
                 </div>
+
+                <div className="space-y-3 rounded-lg border p-3">
+                  <p className="text-label-sm text-muted-foreground">
+                    {t("onboarding_locale_hint")}
+                  </p>
+
+                  <div className="space-y-1.5">
+                    <Label>{t("timezone_label")}</Label>
+                    <Select
+                      value={timezone}
+                      onValueChange={(v) => {
+                        const zone = (v as string) || "Africa/Cairo";
+                        setTimezone(zone);
+                        setCurrency(currencyForZone(zone));
+                        setWeekStartDay(weekStartForZone(zone));
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue>
+                          {(v) => ((v as string) || "").replace(/_/g, " ")}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="max-h-72">
+                        {zones.map((z) => (
+                          <SelectItem key={z} value={z}>
+                            {z.replace(/_/g, " ")}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>{t("currency_label")}</Label>
+                      <Select
+                        value={currency}
+                        onValueChange={(v) => setCurrency((v as string) || "EGP")}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue>{(v) => (v as string) || "EGP"}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CURRENCIES.map((c) => (
+                            <SelectItem key={c} value={c}>
+                              {c}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label>{t("cycle_start_day_label")}</Label>
+                      <Select
+                        value={String(cycleStartDay)}
+                        onValueChange={(v) =>
+                          setCycleStartDay(Number(v as string) || 1)
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue>{(v) => (v as string) || "1"}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent className="max-h-72">
+                          {CYCLE_DAYS.map((d) => (
+                            <SelectItem key={d} value={String(d)}>
+                              {d}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label>{t("week_start_day_label")}</Label>
+                    <Select
+                      value={String(weekStartDay)}
+                      onValueChange={(v) =>
+                        setWeekStartDay(Number(v as string) || 6)
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue>
+                          {(v) =>
+                            t(
+                              WEEKDAYS.find((d) => String(d.value) === v)?.key ??
+                                "weekday_sat",
+                            )
+                          }
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {WEEKDAYS.map((d) => (
+                          <SelectItem key={d.value} value={String(d.value)}>
+                            {t(d.key)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
                 <Button type="submit" className="w-full" disabled={busy}>
                   {busy && <Loader2 className="h-4 w-4 animate-spin" />}
                   {t("create_company")}

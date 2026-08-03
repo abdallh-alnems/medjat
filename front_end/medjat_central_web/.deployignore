@@ -1,0 +1,33 @@
+# Paths never pushed to the live server by deploy-web.sh.
+#
+# Three kinds of entry live here:
+#   1. Server-owned: must survive an rsync --delete. `.env.local` holds
+#      SECURITY_KEY / SECURITY_USER and the Firebase config, is written by hand
+#      on the server, and exists nowhere in this repo — losing it takes the
+#      whole site down.
+#   2. Built or installed on the server: pushing a local copy is at best wasted
+#      transfer and at worst a mismatched binary (node_modules is built against
+#      the server's Node and libc, not the Mac's).
+#   3. Local-only, and actively harmful in a public docroot: the dev HTTPS
+#      certificate includes its private key.
+
+# --- server-owned: never overwrite, never delete ---
+# The glob matters: step 2 of deploy-web.sh writes .env.local.bak-<date> next to
+# it, and a bare `.env.local` entry would let --delete remove the backup in the
+# very next step.
+.env.local*
+node_modules/
+.next/
+
+# --- local-only ---
+.git/
+.deployignore
+deploy-web.sh
+.vercel/
+certificates/
+tsconfig.tsbuildinfo
+.DS_Store
+playwright-report/
+test-results/
+coverage/
+*.log

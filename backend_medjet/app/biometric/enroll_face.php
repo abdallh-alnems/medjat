@@ -21,19 +21,24 @@ $qualityScore = (float) ($input['quality_score'] ?? 0);
 
 Validator::required($embedding, 'embedding');
 
-$photoUrl = null;
-if ($imageBase64) {
-    $uploadDir = __DIR__ . '/../../uploads/faces/';
-    if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
-    $fileName = 'face_' . $tenantId . '_' . $employeeId . '_' . time() . '.jpg';
-    $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $imageBase64));
-    if ($imageData) {
-        file_put_contents($uploadDir . $fileName, $imageData);
-        $photoUrl = 'uploads/faces/' . $fileName;
-    }
+// A malformed vector would be stored happily and then fail every single
+// check-in with an opaque error, so it is rejected at the door.
+$vector = FaceMatchService::parseEmbedding($embedding);
+if ($vector === null) {
+    Response::fail('embedding must be a numeric vector of 128, 192 or 512 finite values', 422, 'invalid_embedding');
 }
 
-BiometricModel::enrollFace($employeeId, $tenantId, is_array($embedding) ? json_encode($embedding) : $embedding, $photoUrl, $qualityScore);
+$photoUrl = BiometricEnrollment::storeReferencePhoto($imageBase64, $tenantId, $employeeId);
+
+BiometricModel::enrollFace(
+    $employeeId,
+    $tenantId,
+    json_encode($vector),
+    $photoUrl,
+    $qualityScore,
+    $input['model_version'] ?? FaceMatchService::MODEL_VERSION,
+    count($vector)
+);
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'biometric.enroll_face', 'employee', $employeeId);
 

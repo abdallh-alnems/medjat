@@ -74,11 +74,63 @@ final class TenantModel {
         );
     }
 
+    /**
+     * Company-wide face-recognition settings (the defaults every branch
+     * inherits when it has no override of its own).
+     */
+    public static function updateFaceSettings(int $id, float $threshold, bool $livenessRequired, string $enforceMode): void {
+        Database::execute(
+            "UPDATE tenants SET face_match_threshold = ?, face_liveness_required = ?, face_enforce_mode = ? WHERE id = ?",
+            [$threshold, (int) $livenessRequired, $enforceMode, $id]
+        );
+    }
+
     public static function updateAllowOffline(int $id, bool $allow): void {
         Database::execute(
             "UPDATE tenants SET allow_offline_attendance = ? WHERE id = ?",
             [(int) $allow, $id]
         );
+    }
+
+    public static function updateRejectMockLocation(int $id, bool $reject): void {
+        Database::execute(
+            "UPDATE tenants SET reject_mock_location = ? WHERE id = ?",
+            [(int) $reject, $id]
+        );
+    }
+
+    public static function updateRequireLocalBiometric(int $id, bool $require): void {
+        Database::execute(
+            "UPDATE tenants SET require_local_biometric = ? WHERE id = ?",
+            [(int) $require, $id]
+        );
+    }
+
+    /**
+     * Whether this company rejects check-ins from a device reporting a mocked
+     * GPS location. Off by default, so a company that never opted in keeps the
+     * previous behaviour.
+     */
+    public static function rejectsMockLocation(int $id): bool {
+        $row = Database::fetchOne(
+            "SELECT reject_mock_location FROM tenants WHERE id = ? LIMIT 1",
+            [$id]
+        );
+        return $row !== null && (int) $row['reject_mock_location'] === 1;
+    }
+
+    /**
+     * Whether self check-in/out must be confirmed with the phone's own
+     * fingerprint/FaceID. Opt-in per company; see
+     * migrations/2026_07_31_local_biometric_gate.sql for what it does and does
+     * not prove.
+     */
+    public static function requiresLocalBiometric(int $id): bool {
+        $row = Database::fetchOne(
+            "SELECT require_local_biometric FROM tenants WHERE id = ? LIMIT 1",
+            [$id]
+        );
+        return $row !== null && (int) $row['require_local_biometric'] === 1;
     }
 
     /** Company-wide GPS geofence center + radius (the default for all branches). */

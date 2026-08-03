@@ -9,11 +9,13 @@ import {
   Users,
   CalendarDays,
   FileText,
+  Timer,
 } from "lucide-react";
 import type { TKey } from "@/lib/i18n/ar";
 
 const REPORTS: { href: string; labelKey: TKey; icon: React.ElementType }[] = [
   { href: "/reports/attendance", labelKey: "attendance_report", icon: CalendarCheck },
+  { href: "/reports/overtime", labelKey: "overtime_late_report", icon: Timer },
   { href: "/reports/payroll", labelKey: "payroll_report", icon: Wallet },
   { href: "/reports/employees", labelKey: "employees_report", icon: Users },
   { href: "/reports/leaves", labelKey: "leaves_report", icon: CalendarDays },

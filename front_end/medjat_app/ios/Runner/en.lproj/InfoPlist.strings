@@ -1,6 +1,7 @@
 /* Permission usage descriptions — English */
-"NSCameraUsageDescription" = "Medjat needs camera access to scan your join QR code and photograph your required documents.";
+"NSCameraUsageDescription" = "Medjat needs camera access to scan your join QR code, take your attendance selfie, and photograph your required documents.";
 "NSPhotoLibraryUsageDescription" = "Medjat needs access to your photos to attach your required documents.";
 "NSPhotoLibraryAddUsageDescription" = "Medjat needs permission to save documents and files to your photo library.";
+"NSFaceIDUsageDescription" = "Face ID confirms it is you recording your own attendance, so a colleague cannot check in on your behalf.";
 "NSLocationWhenInUseUsageDescription" = "Your location is used to verify your branch location and the GPS check-in radius when recording attendance.";
 "NSLocationAlwaysAndWhenInUseUsageDescription" = "Your location is used to verify your branch location and the GPS check-in radius when recording attendance.";

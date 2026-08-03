@@ -19,6 +19,26 @@ class ReportData {
         queryParameters: params);
   }
 
+  /// Overtime / lateness totals for a period. Passing [employeeId] also brings
+  /// back that employee's day-by-day breakdown under `days`.
+  Future<Map<String, dynamic>> getOvertimeLateReport({
+    required String startDate,
+    required String endDate,
+    int? branchId,
+    int? employeeId,
+    String sort = 'overtime',
+  }) async {
+    final params = <String, dynamic>{
+      'start_date': startDate,
+      'end_date': endDate,
+      'sort': sort,
+    };
+    if (branchId != null) params['branch_id'] = branchId;
+    if (employeeId != null) params['employee_id'] = employeeId;
+    return await _crud.getData(AppLinks.reportOvertimeLate,
+        queryParameters: params);
+  }
+
   Future<Map<String, dynamic>> getPayrollReport({
     required String month,
     int? branchId,

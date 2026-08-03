@@ -124,8 +124,13 @@ class PushNotificationService {
       Get.toNamed<void>(AppRoutes.assets);
       return;
     }
-    if (data.containsKey('employee_document_id')) {
-      Get.toNamed<void>(AppRoutes.requiredDocumentSubmissions);
+    // The submissions screen is scoped to one document *type*, so it can only
+    // be opened when the payload carries required_document_id. Without it we
+    // fall back to the document-types list rather than opening a screen that
+    // would immediately fail its request.
+    if (data.containsKey('required_document_id') ||
+        data.containsKey('employee_document_id')) {
+      _navigateToDocumentSubmissions(data);
       return;
     }
     if (data.containsKey('payroll_id')) {
@@ -158,7 +163,7 @@ class PushNotificationService {
       case 'document_approved':
       case 'document_rejected':
       case 'document_removed':
-        Get.toNamed<void>(AppRoutes.requiredDocumentSubmissions);
+        _navigateToDocumentSubmissions(data);
         break;
       case 'payroll':
       case 'payroll_approved':
@@ -171,6 +176,25 @@ class PushNotificationService {
         Get.toNamed<void>(AppRoutes.notifications);
         break;
     }
+  }
+
+  /// Opens the submissions screen for the document type the notification is
+  /// about. Older payloads carry no required_document_id, so those land on the
+  /// document-types list instead of a screen that cannot load.
+  static void _navigateToDocumentSubmissions(Map<String, dynamic> data) {
+    final requiredId =
+        int.tryParse(data['required_document_id']?.toString() ?? '') ?? 0;
+    if (requiredId <= 0) {
+      Get.toNamed<void>(AppRoutes.requiredDocuments);
+      return;
+    }
+    Get.toNamed<void>(
+      AppRoutes.requiredDocumentSubmissions,
+      arguments: {
+        'required_document_id': requiredId,
+        'document_name': data['document_name']?.toString() ?? '',
+      },
+    );
   }
 
   static void _navigateToSupportChat(int ticketId) {

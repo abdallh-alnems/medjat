@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/constant/theme/theme.dart';
+import '../../../core/services/locale_defaults.dart';
 import '../../../core/services/token_storage_service.dart';
 import '../../../data/data_source/remote/tenant_data/tenant_data.dart';
 import '../../../data/model/user_model.dart';
@@ -73,44 +74,132 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final formKey = GlobalKey<FormState>();
     final nameCtrl = TextEditingController();
 
+    // Captured here rather than left to the backend defaults: attendance is
+    // stamped on the company's clock, so a company that never picks a timezone
+    // records every check-in against a guess. Seeded from the device so the
+    // usual case is a glance, not four decisions.
+    final detectedZone = await LocaleDefaults.detectTimezone();
+    final zoneOptions = <String>{
+      detectedZone,
+      ...LocaleDefaults.commonTimezones,
+    }.toList();
+
+    var timezone = detectedZone;
+    var currency = LocaleDefaults.currencyForZone(detectedZone);
+    var cycleStartDay = 1;
+    var weekStartDay = LocaleDefaults.weekStartForZone(detectedZone);
+
+    if (!mounted) return;
+
     final submitted = await Get.bottomSheet<bool>(
-      Padding(
-        padding: EdgeInsets.only(
-          left: AppSpacing.s5,
-          right: AppSpacing.s5,
-          top: AppSpacing.s5,
-          bottom:
-              MediaQuery.of(Get.context!).viewInsets.bottom + AppSpacing.s5,
-        ),
-        child: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('create_your_company'.tr,
-                  style:
-                      const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: AppSpacing.s4),
-              TextFormField(
-                controller: nameCtrl,
-                decoration: InputDecoration(labelText: 'company_name'.tr),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'required'.tr : null,
+      StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            left: AppSpacing.s5,
+            right: AppSpacing.s5,
+            top: AppSpacing.s5,
+            bottom:
+                MediaQuery.of(Get.context!).viewInsets.bottom + AppSpacing.s5,
+          ),
+          child: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('create_your_company'.tr,
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: AppSpacing.s4),
+                  TextFormField(
+                    controller: nameCtrl,
+                    decoration: InputDecoration(labelText: 'company_name'.tr),
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? 'required'.tr : null,
+                  ),
+                  const SizedBox(height: AppSpacing.s4),
+                  Text('onboarding_locale_hint'.tr,
+                      style: TextStyle(
+                          fontSize: 12,
+                          height: 1.4,
+                          color: Theme.of(context).hintColor)),
+                  const SizedBox(height: AppSpacing.s3),
+                  DropdownButtonFormField<String>(
+                    initialValue: timezone,
+                    isExpanded: true,
+                    decoration:
+                        InputDecoration(labelText: 'timezone_label'.tr),
+                    items: [
+                      for (final z in zoneOptions)
+                        DropdownMenuItem(
+                            value: z, child: Text(z.replaceAll('_', ' '))),
+                    ],
+                    onChanged: (v) {
+                      if (v == null) return;
+                      setSheetState(() {
+                        timezone = v;
+                        currency = LocaleDefaults.currencyForZone(v);
+                        weekStartDay = LocaleDefaults.weekStartForZone(v);
+                      });
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.s3),
+                  DropdownButtonFormField<String>(
+                    initialValue: currency,
+                    isExpanded: true,
+                    decoration:
+                        InputDecoration(labelText: 'currency_label'.tr),
+                    items: [
+                      for (final c in LocaleDefaults.currencies)
+                        DropdownMenuItem(value: c, child: Text(c)),
+                    ],
+                    onChanged: (v) =>
+                        setSheetState(() => currency = v ?? currency),
+                  ),
+                  const SizedBox(height: AppSpacing.s3),
+                  DropdownButtonFormField<int>(
+                    initialValue: cycleStartDay,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                        labelText: 'cycle_start_day_label'.tr),
+                    items: [
+                      for (var d = 1; d <= 28; d++)
+                        DropdownMenuItem(value: d, child: Text('$d')),
+                    ],
+                    onChanged: (v) =>
+                        setSheetState(() => cycleStartDay = v ?? cycleStartDay),
+                  ),
+                  const SizedBox(height: AppSpacing.s3),
+                  DropdownButtonFormField<int>(
+                    initialValue: weekStartDay,
+                    isExpanded: true,
+                    decoration:
+                        InputDecoration(labelText: 'week_start_day_label'.tr),
+                    items: [
+                      for (final e in LocaleDefaults.weekdays.entries)
+                        DropdownMenuItem(
+                            value: e.key, child: Text(e.value.tr)),
+                    ],
+                    onChanged: (v) =>
+                        setSheetState(() => weekStartDay = v ?? weekStartDay),
+                  ),
+                  const SizedBox(height: AppSpacing.s5),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (formKey.currentState!.validate()) {
+                        Get.back(result: true);
+                      }
+                    },
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.s2),
+                      child: Text('create'.tr),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.s5),
-              ElevatedButton(
-                onPressed: () {
-                  if (formKey.currentState!.validate()) {
-                    Get.back(result: true);
-                  }
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.s2),
-                  child: Text('create'.tr),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -132,6 +221,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final resp = await _tenantData.createCompany(
       firebaseToken: token,
       companyName: nameCtrl.text.trim(),
+      timezone: timezone,
+      currency: currency,
+      cycleStartDay: cycleStartDay,
+      weekStartDay: weekStartDay,
     );
     if (!mounted) return;
     setState(() => _loading = false);

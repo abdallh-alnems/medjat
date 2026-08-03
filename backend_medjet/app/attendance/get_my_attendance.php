@@ -22,6 +22,10 @@ if ($branchId > 0) {
             'methods' => AttendanceMethodResolver::resolveForEmployee($employee, $tenantId),
             'gps_radius_meters' => (int) $geo['radius'],
             'allow_offline' => BranchModel::effectiveAllowOffline($branchId, $tenantId),
+            // The app needs this to know whether to raise the device-biometric
+            // prompt before submitting. The server enforces it regardless; this
+            // only stops the employee being rejected after doing the work.
+            'require_local_biometric' => TenantModel::requiresLocalBiometric($tenantId),
             'branch_lat' => $geo['lat'],
             'branch_lng' => $geo['lng'],
         ];

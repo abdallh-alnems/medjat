@@ -8,5 +8,11 @@
 	<array>
 		<string>https://medjatapp.com</string>
 	</array>
+	<!-- Access WiFi Information: lets the app read the connected access point's
+	     BSSID for the wifi_gps attendance method. iOS also requires location
+	     authorisation to return a real value, which the app already holds for
+	     the GPS geofence. -->
+	<key>com.apple.developer.networking.wifi-info</key>
+	<true/>
 </dict>
 </plist>

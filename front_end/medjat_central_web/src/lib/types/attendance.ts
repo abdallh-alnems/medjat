@@ -40,6 +40,49 @@ interface BaseAttendanceOverride {
   method: AttendanceMethod;
 }
 
+/** One employee's overtime / lateness totals over a period. */
+export interface OvertimeLateRow {
+  employee_id: number;
+  employee_name: string;
+  job_title?: string | null;
+  branch_name?: string | null;
+  overtime_minutes: number;
+  overtime_days: number;
+  late_minutes: number;
+  late_days: number;
+  worst_late_minutes: number;
+  worked_minutes: number;
+  days_present: number;
+}
+
+export interface OvertimeLateSummary {
+  total_overtime_minutes: number;
+  total_late_minutes: number;
+  overtime_days: number;
+  late_days: number;
+  employees_with_overtime: number;
+  employees_late: number;
+}
+
+/** A single day behind an employee's totals (row drill-down). */
+export interface OvertimeLateDay {
+  date: string;
+  check_in_time?: string | null;
+  check_out_time?: string | null;
+  late_minutes: number;
+  overtime_minutes: number;
+  worked_minutes: number;
+  notes?: string | null;
+}
+
+export interface OvertimeLateReport {
+  start_date: string;
+  end_date: string;
+  items: OvertimeLateRow[];
+  summary: OvertimeLateSummary;
+  days?: OvertimeLateDay[];
+}
+
 export interface LiveAttendance {
   employee_id: number;
   employee_name: string;

@@ -17,7 +17,7 @@ if (!$branch) {
     Response::notFound('Branch');
 }
 
-$allowedMethods = ['qr_gps', 'gps_only', 'manual'];
+$allowedMethods = AttendanceMethodResolver::ALLOWED;
 $attendanceMethods = $input['attendance_methods'] ?? null;
 
 if ($attendanceMethods !== null) {
@@ -54,6 +54,29 @@ if (array_key_exists('allow_offline_attendance', $input)) {
 }
 
 BranchModel::updateAttendanceMethods($branchId, $tenantId, $attendanceMethods, $gpsRadiusMeters, $allowOffline);
+
+// Per-branch face overrides. Omit the keys to leave them untouched; send null
+// to go back to inheriting the company settings.
+if (array_key_exists('face_match_threshold', $input)
+    || array_key_exists('face_liveness_required', $input)) {
+    $faceThreshold = $input['face_match_threshold'] ?? null;
+    if ($faceThreshold !== null) {
+        $faceThreshold = (float) $faceThreshold;
+        if ($faceThreshold < 0.3 || $faceThreshold > 0.95) {
+            Response::fail('face_match_threshold must be between 0.3 and 0.95', 422, 'face_match_threshold_range');
+        }
+    }
+
+    $faceLiveness = null;
+    if (($input['face_liveness_required'] ?? null) !== null) {
+        $faceLiveness = filter_var($input['face_liveness_required'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        if ($faceLiveness === null) {
+            Response::fail('face_liveness_required must be true, false, or null', 422, 'face_liveness_required_bool');
+        }
+    }
+
+    BranchModel::updateFaceSettings($branchId, $tenantId, $faceThreshold, $faceLiveness);
+}
 
 AuditLogModel::log($tenantId, $auth['admin_id'], 'branch.update_attendance_method', 'branch', $branchId);
 

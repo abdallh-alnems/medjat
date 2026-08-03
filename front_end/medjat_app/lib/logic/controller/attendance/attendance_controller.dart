@@ -8,8 +8,11 @@ import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/services/connectivity_service.dart';
 import '../../../core/services/device_integrity_service.dart';
+import '../../../core/services/local_biometric_service.dart';
 import '../../../core/services/location_service.dart';
+import '../../../core/services/network_service.dart';
 import '../../../data/data_source/remote/attendance_data/attendance_data.dart';
+import '../../../data/model/face_proof_model.dart';
 import '../../../data/model/today_status_model.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
 import '../home/home_controller.dart';
@@ -27,7 +30,19 @@ class AttendanceController extends GetxController {
   /// method from the (absent) QR code and validates the branch configuration.
   Future<void> processGpsCheck() => _process();
 
-  Future<void> _process({String? qrCode}) async {
+  /// Selfie check-in / check-out. The proof carries the on-device embedding
+  /// plus the server's single-use nonce; the server does the matching.
+  Future<void> processFaceCheck(FaceProof proof) => _process(faceProof: proof);
+
+  /// WiFi check-in: the employee must be on one of the branch's approved
+  /// access points, on top of the usual geofence check.
+  Future<void> processWifiCheck() => _process(wifiMethod: true);
+
+  Future<void> _process({
+    String? qrCode,
+    FaceProof? faceProof,
+    bool wifiMethod = false,
+  }) async {
     if (isProcessing) return;
     isProcessing = true;
     status = StatusRequest.loading;
@@ -70,15 +85,61 @@ class AttendanceController extends GetxController {
         return;
       }
 
+      // --- device-biometric gate ---
+      // Runs after the integrity checks so a device that is going to be blocked
+      // anyway never raises a prompt, and before the online/offline split so a
+      // queued offline punch is gated at capture time too. The server enforces
+      // this independently; failing here only saves the employee from doing the
+      // whole check-in and being refused at the end.
+      var localBiometric = false;
+      if (homeController.attendanceConfig.requireLocalBiometric) {
+        final gate = await LocalBiometricService.authenticate(
+          'local_biometric_reason'.tr,
+        );
+        localBiometric = gate.passed;
+        if (!gate.passed) {
+          errorMessage = gate.outcome == LocalBiometricOutcome.unavailable
+              ? 'local_biometric_unavailable'.tr
+              : 'local_biometric_failed'.tr;
+          status = StatusRequest.failure;
+          unawaited(_attendanceData.reportSecurityBlock(
+            branchId: homeController.todayStatus?.branchId ?? _getBranchId() ?? 0,
+            reason: 'no_local_biometric',
+            latitude: position.latitude,
+            longitude: position.longitude,
+          ));
+          isProcessing = false;
+          update();
+          return;
+        }
+      }
+
       final isCheckOut =
           homeController.attendanceStatus == AttendanceStatus.checkedIn;
 
       final isOnline = await ConnectivityService.checkOnline();
 
+      // Read the WiFi network on every online check-in, not just the wifi_gps
+      // method: this is what populates a branch's access-point list during its
+      // learning phase, before anyone switches enforcement on.
+      final wifi = await NetworkService.current();
+
       if (isOnline) {
-        await _processOnline(qrCode, position, isCheckOut, isVpn: integrity.isVpn);
+        await _processOnline(qrCode, position, isCheckOut,
+            isVpn: integrity.isVpn,
+            isMockLocation: integrity.isMockLocation,
+            faceProof: faceProof,
+            wifi: wifi,
+            wifiMethod: wifiMethod,
+            localBiometric: localBiometric);
+      } else if (faceProof != null) {
+        // Face verification is server-side by design, so it cannot be queued
+        // offline — the device has nothing to verify against.
+        errorMessage = 'face_requires_connection'.tr;
+        status = StatusRequest.failure;
       } else {
-        await _processOffline(qrCode, position, isCheckOut, isVpn: integrity.isVpn);
+        await _processOffline(qrCode, position, isCheckOut,
+            isVpn: integrity.isVpn, isMockLocation: integrity.isMockLocation);
       }
     } catch (e) {
       errorMessage = 'error_try_again'.tr;
@@ -90,11 +151,28 @@ class AttendanceController extends GetxController {
   }
 
   Future<void> _processOnline(
-      String? qrCode, Position position, bool isCheckOut, {bool isVpn = false}) async {
+      String? qrCode, Position position, bool isCheckOut,
+      {bool isVpn = false,
+      bool isMockLocation = false,
+      FaceProof? faceProof,
+      WifiInfo? wifi,
+      bool wifiMethod = false,
+      bool localBiometric = false}) async {
     final homeController = Get.find<HomeController>();
 
+    // The integrity flags are reported even though this app already refuses to
+    // reach here with a mocked location: that refusal runs on the employee's
+    // own device, so the server has to be able to make the call itself.
     final response = isCheckOut
-        ? await _attendanceData.checkOut()
+        ? await _attendanceData.checkOut(
+            faceProof: faceProof,
+            wifi: wifi,
+            wifiMethod: wifiMethod,
+            isMockLocation: isMockLocation,
+            latitude: position.latitude,
+            longitude: position.longitude,
+            localBiometric: localBiometric,
+          )
         : await _attendanceData.checkIn(
             branchId: homeController.todayStatus?.branchId ??
                 _getBranchId() ??
@@ -103,6 +181,11 @@ class AttendanceController extends GetxController {
             longitude: position.longitude,
             qrCode: qrCode,
             isVpn: isVpn,
+            isMockLocation: isMockLocation,
+            faceProof: faceProof,
+            wifi: wifi,
+            wifiMethod: wifiMethod,
+            localBiometric: localBiometric,
           );
 
     final responseStatus = response['status'];
@@ -117,7 +200,8 @@ class AttendanceController extends GetxController {
       _goHomeWithSuccess(isCheckOut: isCheckOut);
       return;
     } else if (responseStatus == StatusRequest.offline) {
-      await _processOffline(qrCode, position, isCheckOut, isVpn: isVpn);
+      await _processOffline(qrCode, position, isCheckOut,
+          isVpn: isVpn, isMockLocation: isMockLocation);
     } else {
       final statusCode = response['statusCode'];
       if (statusCode == 409) {
@@ -135,7 +219,8 @@ class AttendanceController extends GetxController {
   }
 
   Future<void> _processOffline(
-      String? qrCode, Position position, bool isCheckOut, {bool isVpn = false}) async {
+      String? qrCode, Position position, bool isCheckOut,
+      {bool isVpn = false, bool isMockLocation = false}) async {
     final homeController = Get.find<HomeController>();
     final branch = homeController.todayStatus;
 
@@ -162,6 +247,7 @@ class AttendanceController extends GetxController {
       position: position,
       isCheckOut: isCheckOut,
       isVpn: isVpn,
+      isMockLocation: isMockLocation,
     );
 
     status = StatusRequest.success;
@@ -192,6 +278,7 @@ class AttendanceController extends GetxController {
     required Position position,
     required bool isCheckOut,
     bool isVpn = false,
+    bool isMockLocation = false,
   }) async {
     final box = await Hive.openBox<dynamic>('offline_attendance');
     final branchId = _getBranchId() ?? 0;
@@ -209,6 +296,10 @@ class AttendanceController extends GetxController {
       'captured_at': now.toIso8601String(),
       'qr_code': qrCode ?? '',
       'is_vpn': isVpn ? 1 : 0,
+      // Carried into the queue so sync_offline can reject a spoofed location on
+      // the server. Without it the backend's mock-location check was unreachable
+      // — the queued record simply never had the field.
+      'is_mock_location': isMockLocation ? 1 : 0,
       'check_in_latitude': position.latitude,
       'check_in_longitude': position.longitude,
       if (!isCheckOut) 'check_in_time': '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}',

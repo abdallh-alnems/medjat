@@ -5,11 +5,13 @@
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-8595701567488603~2330701747</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Medjat needs camera access to scan your join QR code and photograph your required documents.</string>
+	<string>Medjat needs camera access to scan your join QR code, take your attendance selfie, and photograph your required documents.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Medjat needs access to your photos to attach your required documents.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Medjat needs permission to save documents and files to your photo library.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Face ID confirms it is you recording your own attendance, so a colleague cannot check in on your behalf.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Your location is used to verify your branch location and the GPS check-in radius when recording attendance.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

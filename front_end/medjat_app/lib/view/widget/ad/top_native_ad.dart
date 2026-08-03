@@ -15,12 +15,17 @@ import 'native_ad_widget.dart';
 /// back-off, and reloads are throttled (handled inside [NativeAdWidget]).
 ///
 /// Renders nothing — and reserves no space — until an ad has loaded.
+///
+/// Every page gets the same ad: one size ([TemplateType.small]) and one width
+/// (screen inset by [AppSpacing.s4] on both sides), so moving between screens
+/// never changes how much room the ad takes. Do not override [templateType]
+/// per screen — that is what made the ad tower over some pages and hug others.
 class TopNativeAd extends StatelessWidget {
   const TopNativeAd({
     super.key,
     this.tabIndex,
     this.horizontalMargin = AppSpacing.s4,
-    this.templateType = TemplateType.medium,
+    this.templateType = TemplateType.small,
   });
 
   /// Index of the owning tab within [TabShell], or `null` for pushed routes.
@@ -30,7 +35,8 @@ class TopNativeAd extends StatelessWidget {
   /// its own horizontal padding, so the ad keeps a uniform width across pages.
   final double horizontalMargin;
 
-  /// Native template size — `medium` (richer, ~330dp) or `small` (~90dp).
+  /// Native template size. `small` (~90dp) is the app-wide standard; `medium`
+  /// (~330dp) exists only because the AdMob template API offers it.
   final TemplateType templateType;
 
   @override

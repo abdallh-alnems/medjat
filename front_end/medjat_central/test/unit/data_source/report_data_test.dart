@@ -78,5 +78,47 @@ void main() {
 
       verify(() => mockCrud.getData(any(), queryParameters: any(named: 'queryParameters'))).called(1);
     });
+
+    test('getOvertimeLateReport يرسل الفترة والترتيب', () async {
+      when(() => mockCrud.getData(any(), queryParameters: any(named: 'queryParameters')))
+          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
+
+      await reportData.getOvertimeLateReport(
+        startDate: '2025-01-01',
+        endDate: '2025-01-31',
+        sort: 'late',
+      );
+
+      final captured = verify(() => mockCrud.getData(any(),
+              queryParameters: captureAny(named: 'queryParameters')))
+          .captured
+          .single as Map<String, dynamic>;
+      expect(captured['start_date'], '2025-01-01');
+      expect(captured['end_date'], '2025-01-31');
+      expect(captured['sort'], 'late');
+      // No filters selected — neither key should be sent at all.
+      expect(captured.containsKey('branch_id'), isFalse);
+      expect(captured.containsKey('employee_id'), isFalse);
+    });
+
+    test('getOvertimeLateReport يمرر الفرع والموظف', () async {
+      when(() => mockCrud.getData(any(), queryParameters: any(named: 'queryParameters')))
+          .thenAnswer((_) async => {'status': StatusRequest.success, 'data': null});
+
+      await reportData.getOvertimeLateReport(
+        startDate: '2025-01-01',
+        endDate: '2025-01-31',
+        branchId: 3,
+        employeeId: 7,
+      );
+
+      final captured = verify(() => mockCrud.getData(any(),
+              queryParameters: captureAny(named: 'queryParameters')))
+          .captured
+          .single as Map<String, dynamic>;
+      expect(captured['branch_id'], 3);
+      expect(captured['employee_id'], 7);
+      expect(captured['sort'], 'overtime');
+    });
   });
 }

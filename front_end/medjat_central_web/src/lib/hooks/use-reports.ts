@@ -6,6 +6,8 @@ import {
   getPayrollReport,
   getEmployeesReport,
   getLeavesReport,
+  getOvertimeLateReport,
+  type OvertimeLateParams,
   type ReportPeriod,
 } from "@/lib/api/reports";
 import {
@@ -40,6 +42,24 @@ export function useLeavesReport(params: ReportPeriod) {
   return useQuery({
     queryKey: ["reports", "leaves", params],
     queryFn: () => getLeavesReport(params),
+  });
+}
+
+export function useOvertimeLateReport(params: OvertimeLateParams) {
+  return useQuery({
+    queryKey: ["reports", "overtime-late", params],
+    queryFn: () => getOvertimeLateReport(params),
+  });
+}
+
+/** The day-by-day rows behind one employee's totals (row drill-down). */
+export function useOvertimeLateDays(
+  params: OvertimeLateParams & { employee_id?: number },
+) {
+  return useQuery({
+    queryKey: ["reports", "overtime-late", "days", params],
+    queryFn: () => getOvertimeLateReport(params),
+    enabled: !!params.employee_id,
   });
 }
 

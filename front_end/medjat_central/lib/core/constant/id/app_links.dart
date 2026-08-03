@@ -118,6 +118,12 @@ class AppLinks {
 
   static String get branchCreate => '$base/app/branches/create.php';
   static String get branchUpdate => '$base/app/branches/update.php';
+  static String get branchNetworkSightings =>
+      '$base/app/branches/network_sightings.php';
+  static String get branchApproveNetworks =>
+      '$base/app/branches/approve_networks.php';
+  static String get branchCaptureNetwork =>
+      '$base/app/branches/capture_network.php';
   static String get branchUpdateAttendanceMethod =>
       '$base/app/branches/update_attendance_method.php';
   static String get setAttendanceMethodOverride =>
@@ -134,6 +140,22 @@ class AppLinks {
       '$base/app/attendance/set_day_status.php';
   static String get attendanceUpdateNote =>
       '$base/app/attendance/update_note.php';
+
+  // ── Biometric devices (fingerprint / face terminals) ────
+  static String get devices => '$base/app/devices/list.php';
+  static String get deviceRegister => '$base/app/devices/register.php';
+  static String get deviceUpdate => '$base/app/devices/update.php';
+  static String get deviceDelete => '$base/app/devices/delete.php';
+  static String get deviceCommand => '$base/app/devices/command.php';
+  static String get deviceLinkUser => '$base/app/devices/link_user.php';
+  static String get deviceImportPunches => '$base/app/devices/import_punches.php';
+  static String deviceUsers(int deviceId, {String? filter}) =>
+      '$base/app/devices/users.php?device_id=$deviceId'
+      '${filter != null ? '&filter=$filter' : ''}';
+  static String devicePunches({int? deviceId, String? state, int limit = 100}) =>
+      '$base/app/devices/punches.php?limit=$limit'
+      '${deviceId != null ? '&device_id=$deviceId' : ''}'
+      '${state != null ? '&state=$state' : ''}';
 
   // ── Payroll ────────────────────────────────────────────
   static String get payroll => '$base/app/payroll/list_slips.php';
@@ -281,6 +303,8 @@ class AppLinks {
   static String get reportPayroll => '$base/app/reports/payroll.php';
   static String get reportEmployees => '$base/app/reports/employees.php';
   static String get reportLeaves => '$base/app/reports/leaves.php';
+  static String get reportOvertimeLate =>
+      '$base/app/reports/overtime_late.php';
   static String get reportExportWord => '$base/app/reports/export_word.php';
 
   // ── Activity log ──────────

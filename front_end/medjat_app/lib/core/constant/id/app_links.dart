@@ -58,4 +58,9 @@ class AppLinks {
       '$base/app/auth/notification_prefs.php';
   static String get attendanceSecurityLog =>
       '$base/app/attendance/security_log.php';
+
+  // Face check-in (face_selfie)
+  static String get faceChallenge => '$base/app/attendance/face_challenge.php';
+  static String get faceEnrollSelf => '$base/app/biometric/enroll_self.php';
+  static String get faceMyStatus => '$base/app/biometric/my_status.php';
 }
