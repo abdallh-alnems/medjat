@@ -17,6 +17,12 @@ class AttendanceMethodController extends GetxController {
   Set<String> tenantMethods = {'qr_gps', 'manual'};
   List<int>? manualAdminIds;
   bool allowOffline = true;
+  bool rejectMockLocation = false;
+  bool requireLocalBiometric = false;
+  // Face-recognition settings for the face_selfie method.
+  double faceThreshold = 0.45;
+  bool faceLivenessRequired = true;
+  String faceEnforceMode = 'log_only';
   double? companyLat;
   double? companyLng;
   int companyRadius = 100;
@@ -27,7 +33,14 @@ class AttendanceMethodController extends GetxController {
   List<CategoryMethodOverride> categories = [];
   List<EmployeeMethodOverride> employeeOverrides = [];
 
-  static const allMethods = ['qr_gps', 'gps_only', 'manual'];
+  static const allMethods = [
+    'qr_gps',
+    'gps_only',
+    'face_selfie',
+    'wifi_gps',
+    'device',
+    'manual',
+  ];
 
   int get branchOverrideCount =>
       branches.where((b) => b.attendanceMethods != null).length;
@@ -74,6 +87,16 @@ class AttendanceMethodController extends GetxController {
         } else {
           allowOffline = true;
         }
+        // Opt-in, so anything the backend doesn't send reads as off.
+        rejectMockLocation = data['reject_mock_location'] as bool? ?? false;
+        requireLocalBiometric =
+            data['require_local_biometric'] as bool? ?? false;
+        faceThreshold =
+            (data['face_match_threshold'] as num?)?.toDouble() ?? 0.45;
+        faceLivenessRequired =
+            data['face_liveness_required'] as bool? ?? true;
+        faceEnforceMode =
+            data['face_enforce_mode'] as String? ?? 'log_only';
         companyLat = (data['gps_latitude'] as num?)?.toDouble();
         companyLng = (data['gps_longitude'] as num?)?.toDouble();
         companyRadius = (data['gps_radius_meters'] as num?)?.toInt() ?? 100;
@@ -133,6 +156,38 @@ class AttendanceMethodController extends GetxController {
     return false;
   }
 
+  /// Saves one or more face settings, rolling back the local value when the
+  /// request fails so the UI never shows a setting the server didn't accept.
+  Future<bool> saveFaceSettings({
+    double? matchThreshold,
+    bool? livenessRequired,
+    String? enforceMode,
+  }) async {
+    final prevThreshold = faceThreshold;
+    final prevLiveness = faceLivenessRequired;
+    final prevMode = faceEnforceMode;
+
+    if (matchThreshold != null) faceThreshold = matchThreshold;
+    if (livenessRequired != null) faceLivenessRequired = livenessRequired;
+    if (enforceMode != null) faceEnforceMode = enforceMode;
+    update();
+
+    final response = await _companySettingsData.updateFaceSettings(
+      matchThreshold: matchThreshold,
+      livenessRequired: livenessRequired,
+      enforceMode: enforceMode,
+    );
+    if (response['status'] == StatusRequest.success) {
+      return true;
+    }
+
+    faceThreshold = prevThreshold;
+    faceLivenessRequired = prevLiveness;
+    faceEnforceMode = prevMode;
+    update();
+    return false;
+  }
+
   Future<bool> toggleAllowOffline(bool enabled) async {
     final previous = allowOffline;
     allowOffline = enabled;
@@ -147,6 +202,44 @@ class AttendanceMethodController extends GetxController {
       return true;
     }
     allowOffline = previous;
+    update();
+    return false;
+  }
+
+  Future<bool> toggleRejectMockLocation(bool enabled) async {
+    final previous = rejectMockLocation;
+    rejectMockLocation = enabled;
+    update();
+
+    final response = await _companySettingsData.updateAttendanceConfig(
+      methods: tenantMethods.toList(),
+      manualAdminIds: manualAdminIds,
+      allowOfflineAttendance: allowOffline,
+      rejectMockLocation: enabled,
+    );
+    if (response['status'] == StatusRequest.success) {
+      return true;
+    }
+    rejectMockLocation = previous;
+    update();
+    return false;
+  }
+
+  Future<bool> toggleRequireLocalBiometric(bool enabled) async {
+    final previous = requireLocalBiometric;
+    requireLocalBiometric = enabled;
+    update();
+
+    final response = await _companySettingsData.updateAttendanceConfig(
+      methods: tenantMethods.toList(),
+      manualAdminIds: manualAdminIds,
+      allowOfflineAttendance: allowOffline,
+      requireLocalBiometric: enabled,
+    );
+    if (response['status'] == StatusRequest.success) {
+      return true;
+    }
+    requireLocalBiometric = previous;
     update();
     return false;
   }

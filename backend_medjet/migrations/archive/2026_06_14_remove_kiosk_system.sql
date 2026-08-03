@@ -1,6 +1,28 @@
 -- Migration: remove the attendance kiosk / station system entirely
 -- Date: 2026-06-14
 --
+-- ⚠️ ONLY HALF OF THIS WAS EVER APPLIED TO PRODUCTION — verified 2026-08-02.
+--
+--   step 1 (DROP TABLE)  : APPLIED — attendance_stations, station_recognition_logs
+--                          and kiosk_pins are gone from the live database.
+--   step 2 (ALTER branches): NOT APPLIED — all six `branches.station_*` columns
+--                          are still present live, and therefore still present in
+--                          the generated schema.sql.
+--
+-- DO NOT "finish the job" by dropping those columns. The kiosk is being rebuilt
+-- (see attendance-methods-vs-competitors.md: a shared branch device is the single
+-- biggest gap against every competitor). Those columns plus `attendance.station_id`,
+-- `attendance.recognition_confidence` and the `station_*` values in
+-- `attendance.recognition_method` are the parts of that system that survived, and
+-- they are already live — which makes rebuilding materially cheaper than starting
+-- from nothing. Treat them as reserved, not as leftovers.
+--
+-- One caveat for whoever rebuilds: `station_methods` is
+-- enum('face_only','fingerprint_only','both_available'), and the fingerprint
+-- options assume hardware a tablet does not have. Revisit that enum then.
+--
+-- This file lives in archive/ and must never be run. See CLAUDE.md.
+--
 -- Drops the kiosk-only tables and the per-branch station configuration columns.
 -- Historical attendance records are PRESERVED: the `attendance` table keeps its
 -- `station_id`, `recognition_method`, and `recognition_confidence` columns (and
