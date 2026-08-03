@@ -67,6 +67,6 @@ final class Response {
         if ($retryAfter > 0) {
             header("Retry-After: {$retryAfter}");
         }
-        self::fail('Rate limit exceeded. Try again later.', 429);
+        self::fail(I18n::t('rate_limited'), 429);
     }
 }

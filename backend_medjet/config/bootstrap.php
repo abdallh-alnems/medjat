@@ -5,6 +5,13 @@ if (defined('MEDJAT_BOOTSTRAPPED')) {
 }
 
 require_once __DIR__ . '/env.php';
+
+// PHP defaults to UTC while MySQL runs in the server's local zone, so any code
+// mixing date() with NOW() disagrees by hours. Anchor PHP to the zone most
+// tenants live in; per-tenant work resolves its own zone through TenantClock,
+// and this only decides what a caller that never asks for one gets.
+date_default_timezone_set(getenv('APP_TIMEZONE') ?: 'Africa/Cairo');
+
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/cors.php';
 require_once __DIR__ . '/firebase.php';
@@ -24,6 +31,7 @@ require_once __DIR__ . '/../core/PayrollCalculator.php';
 require_once __DIR__ . '/../core/PayrollCache.php';
 require_once __DIR__ . '/../core/PayslipPdfService.php';
 require_once __DIR__ . '/../core/GpsService.php';
+require_once __DIR__ . '/../core/TenantClock.php';
 require_once __DIR__ . '/../core/I18n.php';
 require_once __DIR__ . '/../core/NotificationService.php';
 require_once __DIR__ . '/../core/RemoteConfigService.php';
@@ -82,6 +90,27 @@ require_once __DIR__ . '/../core/payroll_export/PayrollExporterRegistry.php';
 require_once __DIR__ . '/../models/EmployeeSettlementModel.php';
 require_once __DIR__ . '/../core/SettlementCalculator.php';
 require_once __DIR__ . '/../core/AttendanceMethodResolver.php';
+require_once __DIR__ . '/../models/FaceChallengeModel.php';
+require_once __DIR__ . '/../models/FaceVerificationLogModel.php';
+require_once __DIR__ . '/../core/FaceMatchService.php';
+require_once __DIR__ . '/../core/BiometricEnrollment.php';
+require_once __DIR__ . '/../models/BranchNetworkModel.php';
+require_once __DIR__ . '/../core/NetworkVerifier.php';
+require_once __DIR__ . '/../models/AttendanceDeviceModel.php';
+require_once __DIR__ . '/../models/DeviceUserModel.php';
+require_once __DIR__ . '/../models/DevicePunchModel.php';
+require_once __DIR__ . '/../models/DeviceCommandModel.php';
+require_once __DIR__ . '/../core/ZktecoAdms.php';
+require_once __DIR__ . '/../core/DevicePunchIngestor.php';
+require_once __DIR__ . '/../core/PunchCsvParser.php';
+
+// Browser attendance channel (specs/004-web-attendance-checkin).
+require_once __DIR__ . '/../models/EmployeeWebCredentialModel.php';
+require_once __DIR__ . '/../core/EmployeeAccountProvisioner.php';
+require_once __DIR__ . '/../core/WebAccessPolicy.php';
+require_once __DIR__ . '/../core/WebSessionService.php';
+require_once __DIR__ . '/../core/PunchPhotoService.php';
+require_once __DIR__ . '/../core/SharedDeviceDetector.php';
 
 setCorsHeaders();
 
@@ -94,6 +123,13 @@ setCorsHeaders();
     $user = (string) getenv('SECURITY_USER');
     $key  = (string) getenv('SECURITY_KEY');
     if ($user === '' || $key === '' || PHP_SAPI === 'cli') {
+        return;
+    }
+
+    // Attendance terminals (device/iclock.php) cannot send the app secret —
+    // the firmware has no field for it. They authenticate by serial number
+    // instead, and an unclaimed serial can do nothing but say hello.
+    if (defined('MEDJAT_DEVICE_ENDPOINT')) {
         return;
     }
 

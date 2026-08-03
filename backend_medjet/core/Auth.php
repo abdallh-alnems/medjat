@@ -115,6 +115,12 @@ final class Auth {
             'tenant_id'   => (int) $activeToken['tenant_id'],
             'branch_id'   => (int) ($employee['branch_id'] ?? 0),
             'admin_id'    => $employee['admin_id'] ? (int) $employee['admin_id'] : null,
+            // The channel this request arrived on. Endpoints derive the recorded
+            // attendance origin from here and never from the request body — a
+            // body field could be forged to make a browser punch look like an
+            // app punch, laundering it past a channel restriction.
+            'platform'    => $activeToken['platform'] ?? null,
+            'device_id'   => $activeToken['device_id'] ?? null,
             'input'       => $input,
         ];
     }

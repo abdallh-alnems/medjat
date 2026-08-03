@@ -23,7 +23,11 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
     $existing = ActivationCodeModel::findActive($employeeId);
-    $activeToken = EmployeeAuthTokenModel::findActiveForEmployee($employeeId);
+    // Scoped to the phone platforms: this block reports which *device* the
+    // employee is bound to (`device_bound`, `device_model`), and a browser
+    // session is neither. Leaving it unscoped would let a web session answer a
+    // question the admin is asking about the employee's phone.
+    $activeToken = EmployeeAuthTokenModel::findActiveForEmployee($employeeId, ['android', 'ios']);
 
     Response::success([
         'activation_code' => $existing['code'] ?? null,

@@ -18,9 +18,13 @@ final class AttendanceModel {
         return $employee;
     }
 
-    public static function checkIn(int $employeeId, int $branchId, int $tenantId, string $method, ?string $checkInTime = null, ?float $lat = null, ?float $lng = null, bool $isVpn = false): int {
-        $today = date('Y-m-d');
-        $time = $checkInTime ?? date('H:i:s');
+    public static function checkIn(int $employeeId, int $branchId, int $tenantId, string $method, ?string $checkInTime = null, ?float $lat = null, ?float $lng = null, bool $isVpn = false, ?string $recognitionMethod = null, ?float $recognitionConfidence = null): int {
+        // Stamped in the tenant's timezone, which is what every read path (and
+        // the shift times we compare against below) already uses. A bare date()
+        // here would record UTC and no arrival would ever count as late.
+        $now = TenantClock::now($tenantId);
+        $today = $now->format('Y-m-d');
+        $time = $checkInTime ?? $now->format('H:i:s');
 
         $existing = Database::fetchOne(
             "SELECT id, check_in_time FROM attendance WHERE employee_id = ? AND date = ? AND tenant_id = ? LIMIT 1",
@@ -44,25 +48,62 @@ final class AttendanceModel {
             Database::execute(
                 "UPDATE attendance
                  SET branch_id = ?, check_in_time = ?, check_in_method = ?, late_minutes = ?,
-                     status = 'present', check_in_latitude = ?, check_in_longitude = ?, is_vpn = ?
+                     status = 'present', check_in_latitude = ?, check_in_longitude = ?, is_vpn = ?,
+                     recognition_method = ?, recognition_confidence = ?
                  WHERE id = ?",
-                [$branchId, $time, $method, (int) $lateMinutes, $lat, $lng, $isVpn ? 1 : 0, $existing['id']]
+                [$branchId, $time, $method, (int) $lateMinutes, $lat, $lng, $isVpn ? 1 : 0, $recognitionMethod, $recognitionConfidence, $existing['id']]
             );
             return (int) $existing['id'];
         }
 
         Database::execute(
-            "INSERT INTO attendance (tenant_id, branch_id, employee_id, date, check_in_time, check_in_method, late_minutes, status, check_in_latitude, check_in_longitude, is_vpn)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'present', ?, ?, ?)",
-            [$tenantId, $branchId, $employeeId, $today, $time, $method, (int) $lateMinutes, $lat, $lng, $isVpn ? 1 : 0]
+            "INSERT INTO attendance (tenant_id, branch_id, employee_id, date, check_in_time, check_in_method, late_minutes, status, check_in_latitude, check_in_longitude, is_vpn, recognition_method, recognition_confidence)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'present', ?, ?, ?, ?, ?)",
+            [$tenantId, $branchId, $employeeId, $today, $time, $method, (int) $lateMinutes, $lat, $lng, $isVpn ? 1 : 0, $recognitionMethod, $recognitionConfidence]
         );
 
         return (int) Database::lastInsertId();
     }
 
+    /**
+     * Stamps which channel a punch came from, and the evidence captured with it.
+     *
+     * Kept separate from checkIn()/checkOut() rather than widening their
+     * signatures: checkIn() already takes ten positional arguments and is on the
+     * path every employee in the field uses from the app. Adding two more
+     * would make an already-fragile call site worse for the sake of a column
+     * only one channel writes.
+     *
+     * @param string $which 'check_in' or 'check_out'
+     * @param string $origin 'app' or 'web'
+     */
+    public static function recordChannel(
+        int $tenantId,
+        int $employeeId,
+        string $date,
+        string $which,
+        string $origin,
+        ?string $photoPath = null
+    ): void {
+        if (!in_array($which, ['check_in', 'check_out'], true)) {
+            return;
+        }
+
+        Database::execute(
+            "UPDATE attendance
+             SET {$which}_origin = ?, {$which}_photo = COALESCE(?, {$which}_photo)
+             WHERE tenant_id = ? AND employee_id = ? AND date = ?",
+            [$origin, $photoPath, $tenantId, $employeeId, $date]
+        );
+    }
+
     public static function checkOut(int $employeeId, int $tenantId, ?string $checkOutTime = null): void {
-        $today = date('Y-m-d');
-        $time = $checkOutTime ?? date('H:i:s');
+        // Same tenant clock as checkIn: the row this looks up was keyed on the
+        // tenant's date, and the overtime maths below compares against shift
+        // times expressed in that same zone.
+        $now = TenantClock::now($tenantId);
+        $today = $now->format('Y-m-d');
+        $time = $checkOutTime ?? $now->format('H:i:s');
 
         $record = Database::fetchOne(
             "SELECT id, check_in_time, branch_id FROM attendance WHERE employee_id = ? AND date = ? AND tenant_id = ? LIMIT 1",
@@ -1097,5 +1138,298 @@ final class AttendanceModel {
             'total_leave' => 0,
             'employees_with_records' => 0,
         ];
+    }
+
+    // ------------------------------------------------------------------
+    // Overtime / lateness report
+    // ------------------------------------------------------------------
+    //
+    // Both minute counters are written by the check-in / check-out path (see
+    // checkIn/checkOut above) against the employee's shift, so the report only
+    // has to aggregate them. Only `present` days carry minutes — an absence or
+    // a leave day has none — so every query below is scoped to that status.
+    //
+    // `early_leave_minutes` exists in the table but nothing ever writes it, so
+    // it is deliberately left out rather than shown as a permanent zero.
+
+    /**
+     * Per-employee overtime and lateness totals for a period.
+     *
+     * Employees with neither overtime nor lateness are dropped (HAVING): the
+     * page exists to surface who is running over and who arrives late, and a
+     * list padded with zero rows buries exactly that.
+     */
+    public static function getOvertimeLateReport(
+        int $tenantId,
+        string $startDate,
+        string $endDate,
+        ?int $branchId = null,
+        string $sort = 'overtime'
+    ): array {
+        // Whitelisted — never interpolate a client-supplied sort into SQL.
+        $orderBy = match ($sort) {
+            'late' => 'late_minutes DESC, overtime_minutes DESC',
+            'name' => 'e.name ASC',
+            default => 'overtime_minutes DESC, late_minutes DESC',
+        };
+
+        $sql = "SELECT
+                    e.id as employee_id,
+                    e.name as employee_name,
+                    e.job_title,
+                    b.name as branch_name,
+                    COALESCE(SUM(a.overtime_minutes), 0) as overtime_minutes,
+                    COUNT(CASE WHEN a.overtime_minutes > 0 THEN 1 END) as overtime_days,
+                    COALESCE(SUM(a.late_minutes), 0) as late_minutes,
+                    COUNT(CASE WHEN a.late_minutes > 0 THEN 1 END) as late_days,
+                    COALESCE(MAX(a.late_minutes), 0) as worst_late_minutes,
+                    COALESCE(SUM(a.worked_minutes), 0) as worked_minutes,
+                    COUNT(a.id) as days_present
+                FROM employees e
+                LEFT JOIN branches b ON b.id = e.branch_id
+                JOIN attendance a ON a.employee_id = e.id
+                    AND a.date BETWEEN ? AND ?
+                    AND a.status = 'present'
+                WHERE e.tenant_id = ? AND e.status != 'terminated'";
+        $params = [$startDate, $endDate, $tenantId];
+        if ($branchId !== null) {
+            $sql .= " AND e.branch_id = ?";
+            $params[] = $branchId;
+        }
+        $sql .= " GROUP BY e.id
+                  HAVING overtime_minutes > 0 OR late_minutes > 0
+                  ORDER BY {$orderBy}";
+        return Database::fetchAll($sql, $params);
+    }
+
+    /** Company-wide overtime / lateness totals for the same period + filter. */
+    public static function getOvertimeLateSummary(
+        int $tenantId,
+        string $startDate,
+        string $endDate,
+        ?int $branchId = null
+    ): array {
+        $sql = "SELECT
+                    COALESCE(SUM(a.overtime_minutes), 0) as total_overtime_minutes,
+                    COALESCE(SUM(a.late_minutes), 0) as total_late_minutes,
+                    COUNT(CASE WHEN a.overtime_minutes > 0 THEN 1 END) as overtime_days,
+                    COUNT(CASE WHEN a.late_minutes > 0 THEN 1 END) as late_days,
+                    COUNT(DISTINCT CASE WHEN a.overtime_minutes > 0 THEN a.employee_id END) as employees_with_overtime,
+                    COUNT(DISTINCT CASE WHEN a.late_minutes > 0 THEN a.employee_id END) as employees_late
+                FROM attendance a
+                JOIN employees e ON e.id = a.employee_id
+                WHERE a.tenant_id = ?
+                  AND a.date BETWEEN ? AND ?
+                  AND a.status = 'present'
+                  AND e.status != 'terminated'";
+        $params = [$tenantId, $startDate, $endDate];
+        if ($branchId !== null) {
+            $sql .= " AND e.branch_id = ?";
+            $params[] = $branchId;
+        }
+        $row = Database::fetchOne($sql, $params);
+        return $row ?: [
+            'total_overtime_minutes' => 0,
+            'total_late_minutes' => 0,
+            'overtime_days' => 0,
+            'late_days' => 0,
+            'employees_with_overtime' => 0,
+            'employees_late' => 0,
+        ];
+    }
+
+    /**
+     * Day-by-day overtime / lateness for one employee — the drill-down behind a
+     * row of the report. Only days that actually carry minutes are returned.
+     */
+    public static function getOvertimeLateDaily(
+        int $tenantId,
+        int $employeeId,
+        string $startDate,
+        string $endDate
+    ): array {
+        return Database::fetchAll(
+            "SELECT a.date, a.check_in_time, a.check_out_time,
+                    a.late_minutes, a.overtime_minutes, a.worked_minutes, a.notes
+             FROM attendance a
+             WHERE a.tenant_id = ?
+               AND a.employee_id = ?
+               AND a.date BETWEEN ? AND ?
+               AND a.status = 'present'
+               AND (a.late_minutes > 0 OR a.overtime_minutes > 0)
+             ORDER BY a.date DESC
+             LIMIT 366",
+            [$tenantId, $employeeId, $startDate, $endDate]
+        );
+    }
+
+    // ------------------------------------------------------------------
+    // Biometric device punches
+    // ------------------------------------------------------------------
+    //
+    // These deliberately do NOT call Response::fail. A terminal delivers its
+    // punches in batches and deletes its local copy once we answer OK; a
+    // Response::fail in the middle of a batch would exit the request, lose the
+    // remaining punches, and make the device retry the same batch forever.
+    // Every outcome here is a return value.
+
+    /**
+     * Applies a device punch as the day's check-in.
+     *
+     * An earlier punch wins over one already recorded: terminals buffer and
+     * re-send out of order after a power cut, and the earliest tap of the day
+     * is the one that actually happened at the door.
+     */
+    public static function deviceCheckIn(
+        int $employeeId,
+        int $branchId,
+        int $tenantId,
+        string $date,
+        string $time,
+        ?string $recognitionMethod = null
+    ): array {
+        $existing = Database::fetchOne(
+            "SELECT id, check_in_time, check_out_time FROM attendance
+             WHERE employee_id = ? AND date = ? AND tenant_id = ? LIMIT 1",
+            [$employeeId, $date, $tenantId]
+        );
+
+        if ($existing && !empty($existing['check_in_time'])
+            && strtotime($existing['check_in_time']) <= strtotime($time)) {
+            return [
+                'attendance_id' => (int) $existing['id'],
+                'changed' => false,
+                'note' => 'Later than the recorded check-in',
+            ];
+        }
+
+        $employee = EmployeeModel::findById($employeeId, $tenantId);
+        $employee = self::withScheduledShift($employee, $tenantId, $date);
+        $expectedStart = $employee['shift_start'] ?? $employee['work_start_time'] ?? '09:00:00';
+        $lateMinutes = (int) max(0, (strtotime($time) - strtotime($expectedStart)) / 60);
+
+        if ($existing) {
+            Database::execute(
+                "UPDATE attendance
+                 SET branch_id = ?, check_in_time = ?, check_in_method = 'device',
+                     late_minutes = ?, status = 'present', recognition_method = ?
+                 WHERE id = ?",
+                [$branchId, $time, $lateMinutes, $recognitionMethod, $existing['id']]
+            );
+            $attendanceId = (int) $existing['id'];
+        } else {
+            Database::execute(
+                "INSERT INTO attendance
+                    (tenant_id, branch_id, employee_id, date, check_in_time, check_in_method,
+                     late_minutes, status, recognition_method)
+                 VALUES (?, ?, ?, ?, ?, 'device', ?, 'present', ?)",
+                [$tenantId, $branchId, $employeeId, $date, $time, $lateMinutes, $recognitionMethod]
+            );
+            $attendanceId = (int) Database::lastInsertId();
+        }
+
+        if (!empty($existing['check_out_time'])) {
+            self::recomputeWorkedMinutes($attendanceId, $employeeId, $tenantId, $date);
+        }
+
+        return ['attendance_id' => $attendanceId, 'changed' => true, 'note' => null];
+    }
+
+    /**
+     * Applies a device punch as the day's check-out. The LAST tap wins, which
+     * is what "he left, came back for his bag, left again" should record.
+     */
+    public static function deviceCheckOut(
+        int $employeeId,
+        int $tenantId,
+        string $date,
+        string $time,
+        ?int $attendanceId = null
+    ): array {
+        $existing = $attendanceId !== null
+            ? Database::fetchOne(
+                "SELECT id, check_in_time, check_out_time FROM attendance
+                 WHERE id = ? AND tenant_id = ? LIMIT 1",
+                [$attendanceId, $tenantId]
+            )
+            : Database::fetchOne(
+                "SELECT id, check_in_time, check_out_time FROM attendance
+                 WHERE employee_id = ? AND date = ? AND tenant_id = ? LIMIT 1",
+                [$employeeId, $date, $tenantId]
+            );
+
+        if (!$existing) {
+            return ['attendance_id' => null, 'changed' => false, 'note' => 'No open attendance row'];
+        }
+
+        if (!empty($existing['check_out_time'])
+            && strtotime($existing['check_out_time']) >= strtotime($time)) {
+            return [
+                'attendance_id' => (int) $existing['id'],
+                'changed' => false,
+                'note' => 'Earlier than the recorded check-out',
+            ];
+        }
+
+        Database::execute(
+            "UPDATE attendance SET check_out_time = ?, check_out_method = 'device' WHERE id = ?",
+            [$time, $existing['id']]
+        );
+
+        self::recomputeWorkedMinutes((int) $existing['id'], $employeeId, $tenantId, $date);
+
+        return ['attendance_id' => (int) $existing['id'], 'changed' => true, 'note' => null];
+    }
+
+    /**
+     * Recomputes worked/overtime/late from whatever times the row now holds.
+     * Needed because device punches arrive one at a time and in any order, so
+     * the totals cannot be computed at check-out the way the app path does.
+     */
+    public static function recomputeWorkedMinutes(int $attendanceId, int $employeeId, int $tenantId, string $date): void {
+        $row = Database::fetchOne(
+            "SELECT check_in_time, check_out_time FROM attendance WHERE id = ? LIMIT 1",
+            [$attendanceId]
+        );
+        if (!$row || empty($row['check_in_time']) || empty($row['check_out_time'])) {
+            return;
+        }
+
+        $employee = EmployeeModel::findById($employeeId, $tenantId);
+        $employee = self::withScheduledShift($employee, $tenantId, $date);
+        $workStart = $employee['shift_start'] ?? $employee['work_start_time'] ?? '09:00:00';
+        $workEnd = $employee['shift_end'] ?? $employee['work_end_time'] ?? '17:00:00';
+
+        $in = strtotime($row['check_in_time']);
+        $out = strtotime($row['check_out_time']);
+        // A check-out earlier in the clock than the check-in means the shift
+        // crossed midnight; the punch belongs to the next calendar day.
+        if ($out < $in) {
+            $out += 86400;
+        }
+
+        $worked = (int) max(0, ($out - $in) / 60);
+        $late = (int) max(0, ($in - strtotime($workStart)) / 60);
+        $overtime = (int) max(0, ($out - strtotime($workEnd)) / 60);
+
+        Database::execute(
+            "UPDATE attendance SET worked_minutes = ?, overtime_minutes = ?, late_minutes = ? WHERE id = ?",
+            [$worked, $overtime, $late, $attendanceId]
+        );
+    }
+
+    /**
+     * The most recent day whose check-in has no matching check-out, used to
+     * catch a night shift: someone who clocked in at 22:00 yesterday and taps
+     * at 06:00 today is leaving, not arriving.
+     */
+    public static function findOpenShiftRow(int $employeeId, int $tenantId, string $beforeDate): ?array {
+        return Database::fetchOne(
+            "SELECT id, date, check_in_time FROM attendance
+             WHERE employee_id = ? AND tenant_id = ? AND date < ?
+               AND check_in_time IS NOT NULL AND check_out_time IS NULL
+             ORDER BY date DESC LIMIT 1",
+            [$employeeId, $tenantId, $beforeDate]
+        );
     }
 }

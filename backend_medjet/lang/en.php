@@ -6,7 +6,7 @@ return [
     'check_in_success' => 'Check-in successful',
     'check_out_success' => 'Check-out successful',
     'already_checked_in' => 'Already checked in today',
-    'gps_out_of_range' => 'You are outside the branch area',
+    'gps_out_of_range' => 'You are outside your branch area. Move closer and try again.',
     'invalid_qr' => 'Invalid QR code for this branch',
     'employee_not_found' => 'Employee not found',
     'branch_not_found' => 'Branch not found',
@@ -24,4 +24,47 @@ return [
     'profile_updated' => 'Profile updated',
     'offline_synced' => 'Offline data synced',
     'force_update' => 'Please update the app to continue',
+
+    // Face check-in (face_selfie)
+    'face_not_enrolled' => 'Your face is not enrolled yet — please enrol it first',
+    'face_already_enrolled' => 'Your face is already enrolled; contact HR to re-enrol',
+    'face_reenroll_required' => 'Face re-enrollment is required after the system update',
+    'face_challenge_expired' => 'This verification attempt expired, please try again',
+    'face_liveness_failed' => 'We could not confirm you are in front of the camera, try again',
+    'face_not_recognized' => 'We did not recognise your face, try again in better light',
+    'face_capture_failed' => 'Face capture failed, please try again',
+    'face_quality_too_low' => 'Image quality is too low — try better light and hold still',
+    'face_required_for_checkout' => 'Check-out requires face verification',
+
+    // WiFi check-in (wifi_gps)
+    'wifi_not_connected' => 'You must be connected to the branch WiFi to check in',
+    'wifi_wrong_network' => 'You are connected to a network that is not approved for this branch',
+    'wifi_capture_outside_branch' => 'You must be inside the branch area to capture its network',
+
+    // Device integrity
+    'mock_location_rejected' => 'Your device is reporting a fake location. Turn off any location-spoofing app and try again.',
+    'local_biometric_required' => 'Your company requires you to confirm your identity with your device fingerprint or face unlock before recording attendance.',
+
+    // Generic
+    'rate_limited' => 'Too many attempts. Please wait a moment and try again.',
+    'missing_fields' => 'Please fill in all the required fields.',
+    'account_suspended' => 'This account has been suspended. Contact your HR administrator.',
+    'generic_error' => 'Something went wrong. Please try again.',
+
+    // Browser attendance
+    'web_attendance_not_allowed' => 'Your company does not allow recording attendance from a browser. Please use the Medjat app.',
+    'web_pin_reject_length' => 'The PIN must be exactly 6 digits.',
+    'web_pin_reject_repeated' => 'A PIN of one repeated digit is too easy to guess. Choose another.',
+    'web_pin_reject_sequence' => 'Consecutive digits like 123456 are the first thing an attacker tries. Choose another.',
+    'web_pin_reject_pattern' => 'A repeating pattern like 121212 is too easy to guess. Choose another.',
+    'web_pin_reject_common' => 'This is one of the most commonly used PINs. Choose another.',
+    'web_pin_reject_phone' => 'Do not use digits from your phone number — it is how you sign in, so anyone who knows it could guess your PIN.',
+    'web_pin_invalid_format' => 'The PIN must be 6 digits and must not be a simple sequence or a repeated digit.',
+    'web_invalid_credentials' => 'The phone number or PIN is incorrect.',
+    'web_pin_locked' => 'Too many incorrect attempts. Ask your HR administrator to reset your PIN.',
+    'web_not_activated' => 'You have not set a PIN yet. Use the activation code from your employer to set one.',
+    'web_already_activated' => 'You already have a PIN. Sign in with it, or ask your administrator to reset it.',
+    'web_photo_required' => 'Your company requires a photo when recording attendance from a browser. Allow camera access and try again.',
+    'web_photo_invalid' => 'We could not read that photo. Try again.',
+    'web_pin_reset_done' => 'The PIN has been reset. Give the employee the new activation code.',
 ];

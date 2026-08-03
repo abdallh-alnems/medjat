@@ -2,7 +2,12 @@
 
 final class GpsService {
     private const EARTH_RADIUS_KM = 6371;
-    private const DEFAULT_GPS_RADIUS = 100;
+    /**
+     * Public so callers that need to *report* the effective radius (the browser
+     * attendance page draws it) use the same number this service enforces,
+     * rather than each copying a literal that would silently diverge.
+     */
+    public const DEFAULT_GPS_RADIUS = 100;
 
     public static function distanceBetween(
         float $lat1, float $lon1,
@@ -80,7 +85,10 @@ final class GpsService {
         if ($distance > $allowedRadius) {
             return [
                 'valid' => false,
-                'message' => 'You are outside the branch area',
+                // User-facing, so it goes through I18n — this text reaches an
+                // Arabic-first audience and shipped in English until a browser
+                // test put it on screen.
+                'message' => I18n::t('gps_out_of_range'),
                 'distance' => round($distance, 1),
                 'allowed_radius' => $allowedRadius,
             ];
