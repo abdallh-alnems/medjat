@@ -41,6 +41,7 @@ require_once __DIR__ . '/../core/AuthEmail.php';
 require_once __DIR__ . '/../core/LoginAlertService.php';
 require_once __DIR__ . '/../core/EmployeeActivationAlert.php';
 require_once __DIR__ . '/../core/ManagerAlert.php';
+require_once __DIR__ . '/../core/ManagerInviteMailer.php';
 require_once __DIR__ . '/../core/ApprovalEngine.php';
 require_once __DIR__ . '/../core/ApprovalDispatcher.php';
 
@@ -68,6 +69,9 @@ require_once __DIR__ . '/../models/ActivationCodeModel.php';
 require_once __DIR__ . '/../models/EmployeeAuthTokenModel.php';
 require_once __DIR__ . '/../models/ManagerInvitationModel.php';
 require_once __DIR__ . '/../models/BiometricModel.php';
+require_once __DIR__ . '/../models/KioskStationModel.php';
+require_once __DIR__ . '/../models/KioskTokenModel.php';
+require_once __DIR__ . '/../models/StationRecognitionLogModel.php';
 require_once __DIR__ . '/../models/EmployeeCategoryModel.php';
 require_once __DIR__ . '/../models/PayrollStatutoryModel.php';
 require_once __DIR__ . '/../models/LoanModel.php';

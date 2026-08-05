@@ -16,6 +16,13 @@ export const PERMISSION_CODES = [
   "add_managers",
   "manage_company_settings",
   "manage_support",
+
+  // Branch kiosk. Three rather than one, mirroring PermissionMiddleware
+  // exactly: pairing hardware, running the kiosk day to day, and looking at
+  // stored captures of colleagues are not the same privilege.
+  "kiosk_devices",
+  "kiosk_access",
+  "kiosk_evidence",
 ] as const;
 
 export type PermissionCode = (typeof PERMISSION_CODES)[number];
@@ -32,15 +39,22 @@ export const ROLE_DEFAULTS: Record<AdminRole, "*" | PermissionCode[]> = {
     "manage_payroll",
     "manage_leaves",
     "manage_assets",
+    "kiosk_devices",
+    "kiosk_access",
+    "kiosk_evidence",
   ],
+  // Runs the kiosk daily, but does not own the fleet: pairing and unpairing
+  // tablets is a decision about hardware, not about a shift.
   branch_manager: [
     "manage_employees",
     "manage_attendance",
     "manage_documents",
     "view_reports",
     "manage_assets",
+    "kiosk_access",
+    "kiosk_evidence",
   ],
-  attendance: ["manage_attendance"],
+  attendance: ["manage_attendance", "kiosk_access"],
   viewer: ["view_reports"],
 };
 

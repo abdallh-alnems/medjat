@@ -12,6 +12,12 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
+  # Face pipeline + the MobileFaceNet model, shared with the kiosk app.
+  # The server matches embeddings from both products against one stored vector
+  # per employee, so extraction must be identical — hence one copy, not two.
+  medjat_shared:
+    path: ../packages/medjat_shared
+
   cupertino_icons: ^1.0.8
 
   get: ^4.7.2
@@ -97,7 +103,8 @@ flutter:
     - assets/fonts/
     - assets/images/
     - assets/lottie/
-    - assets/models/
+    # assets/models/ moved to the medjat_shared package. Listing it here too
+    # would bundle a second 5 MB copy of the model into this APK.
 
   fonts:
     - family: IBM Plex Sans Arabic

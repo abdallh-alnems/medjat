@@ -112,6 +112,35 @@ class UserModel {
       isGeneralManager || permissions.contains('manage_company_settings');
   bool get canAddManagers =>
       isGeneralManager || permissions.contains('add_managers');
+
+  // ── Branch kiosk ────────────────────────────────────────────────────────
+  // Three permissions rather than one, mirroring the backend exactly. They are
+  // separated because the actions carry different weight: pairing hardware is
+  // infrastructure, generating an access code is a daily task, and a stored
+  // capture is somebody else's biometric data.
+  //
+  // These gates MUST match what each endpoint enforces. When they drift, the
+  // API answers 403 and the app shows a bare "an error occurred" with nothing
+  // pointing at the real cause.
+
+  /// Pair and revoke tablets.
+  bool get canManageKioskDevices =>
+      isGeneralManager || isHR || permissions.contains('kiosk_devices');
+
+  /// Generate the access code that opens a kiosk's settings, and enrol faces
+  /// there. A branch manager runs the kiosk daily but does not own the fleet.
+  bool get canAccessKiosk =>
+      isGeneralManager ||
+      isHR ||
+      isManager ||
+      permissions.contains('kiosk_access');
+
+  /// View stored captures. Deliberately not implied by attendance access.
+  bool get canViewKioskEvidence =>
+      isGeneralManager ||
+      isHR ||
+      isManager ||
+      permissions.contains('kiosk_evidence');
   bool get canManageLeaves =>
       isGeneralManager || isHR || permissions.contains('manage_leaves');
   bool get canManageAssets =>

@@ -1,6 +1,6 @@
 # Medjat Development Guidelines
 
-Last updated: 2026-08-02
+Last updated: 2026-08-03
 
 **Medjat** is a multi-tenant HR SaaS (attendance, shifts, leaves, payroll, documents) for the
 Egypt / North-Africa market. UIs are **Arabic-first (RTL)**; medjat_app, medjat_central and the web
@@ -168,6 +168,8 @@ Feature specs live in `specs/` (spec-kit): `001-rebuild-employee-app`, `002-admi
 ## Active Technologies
 - PHP 8.4 local (MAMP) / 8.5 live · TypeScript 5, React 19, Next.js 16 (App Router) + Existing `core/` services — `Auth`, `GpsService`, `NetworkVerifier`, `TenantClock`, `RateLimiter`, `Validator`, `Response`, `BiometricEnrollment` (photo-storage pattern). Web: TanStack Query, Zustand, React Hook Form + Zod, Tailwind, shadcn/Base UI, axios. (004-web-attendance-checkin)
 - MySQL 8.4 (live) — additive migrations only; images to `backend_medjet/uploads/` (004-web-attendance-checkin)
+- PHP 8.4 local (MAMP) / 8.5 live · Dart 3.11 / Flutter (GetX, MVVM) · TypeScript 5, React 19, Next.js 16 for the management web surface + Existing `core/` services — `Auth`, `FaceMatchService`, `BiometricEnrollment`, `GpsService`, `TenantClock`, `PermissionMiddleware`, `TenantMiddleware`, `RateLimiter`, `RemoteConfigService`, `I18n`, `Response`. Kiosk app: `camera`, `google_mlkit_face_detection`, `tflite_flutter` (all already in `medjat_app/pubspec.yaml`), `assets/models/mobilefacenet.tflite` (5.2 MB, BSD-3, already in the repo) (005-branch-kiosk)
+- MySQL 8.4 (live) — four additive migrations, no drops or narrowing. Captures to `backend_medjet/uploads/kiosk/`, purged on a schedule (005-branch-kiosk)
 
 ## Recent Changes
 - 004-web-attendance-checkin: Added PHP 8.4 local (MAMP) / 8.5 live · TypeScript 5, React 19, Next.js 16 (App Router) + Existing `core/` services — `Auth`, `GpsService`, `NetworkVerifier`, `TenantClock`, `RateLimiter`, `Validator`, `Response`, `BiometricEnrollment` (photo-storage pattern). Web: TanStack Query, Zustand, React Hook Form + Zod, Tailwind, shadcn/Base UI, axios.

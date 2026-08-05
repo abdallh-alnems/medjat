@@ -19,7 +19,12 @@ final class AttendanceMethodResolver {
     // told to stop offering self check-in. Neither is a self-service method:
     // the device path authorises itself by serial number + User ID link, and
     // never consults this resolver.
-    public const ALLOWED = ['qr_gps', 'gps_only', 'face_selfie', 'wifi_gps', 'device', 'manual'];
+    // 'kiosk' is a shared branch tablet. Like 'device' it is not a self-service
+    // method — the employee holds no credential and the tablet authorises
+    // itself with a branch-scoped token — but unlike 'device' it DOES consult
+    // this resolver, so that a company can put its factory floor on the kiosk
+    // while office staff stay on gps_only.
+    public const ALLOWED = ['qr_gps', 'gps_only', 'face_selfie', 'wifi_gps', 'device', 'manual', 'kiosk'];
 
     public static function resolveForEmployee(array $employee, int $tenantId): array {
         // 1) employee override

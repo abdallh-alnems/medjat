@@ -108,10 +108,33 @@ String methodLabel(String m) {
       return 'method_manual_admin'.tr;
     case 'device':
       return 'method_device'.tr;
+    case 'face_selfie':
+      return 'method_face_selfie'.tr;
+    case 'wifi_gps':
+      return 'method_wifi_gps'.tr;
+    case 'kiosk':
+      return 'method_kiosk'.tr;
     default:
       return m;
   }
 }
+
+/// Short badge text for a method chip.
+///
+/// Previously a nested conditional whose final `else` returned
+/// `'manual'.tr.substring(0, 5)` — which labelled **every** unrecognised
+/// method as a truncated "manual", already wrong for `device`, and would throw
+/// a RangeError outright if a translation were shorter than five characters.
+String methodBadge(String m) => switch (m) {
+      'qr_gps' => 'QR',
+      'gps_only' => 'GPS',
+      'face_selfie' => 'face_badge'.tr,
+      'wifi_gps' => 'WiFi',
+      'device' => 'method_device'.tr,
+      'kiosk' => 'method_kiosk'.tr,
+      'manual' => 'method_manual_admin'.tr,
+      _ => m,
+    };
 
 String _methodsSummary(Iterable<String> methods) =>
     methods.map(methodLabel).join(' · ');
@@ -180,6 +203,8 @@ class _TenantMethodCards extends StatelessWidget {
             _FaceMethodCard(ctrl: ctrl),
             const SizedBox(height: AppSpacing.s2),
             _DeviceMethodCard(ctrl: ctrl),
+            const SizedBox(height: AppSpacing.s3),
+            _KioskMethodCard(ctrl: ctrl),
             const SizedBox(height: AppSpacing.s2),
             _ManualMethodCard(ctrl: ctrl),
           ],
@@ -976,15 +1001,7 @@ class _BranchTile extends StatelessWidget {
                   runSpacing: AppSpacing.s1,
                   children: [
                     ...methods.map((m) {
-                      final label = m == 'qr_gps'
-                          ? 'QR'
-                          : m == 'gps_only'
-                              ? 'GPS'
-                              : m == 'face_selfie'
-                                  ? 'face_badge'.tr
-                                  : m == 'wifi_gps'
-                                      ? 'WiFi'
-                                      : 'manual'.tr.substring(0, 5);
+                      final label = methodBadge(m);
                       return Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.s2,
@@ -3309,6 +3326,119 @@ class _EmployeePickerSheetState extends State<_EmployeePickerSheet> {
           const SizedBox(height: AppSpacing.s2),
         ],
       ),
+    );
+  }
+}
+
+
+/// The branch kiosk method, and the route into managing the tablets.
+///
+/// Sits beside the fingerprint-terminal card because both answer the same
+/// question — "how do employees without the app clock in?" — but they are not
+/// the same thing: a terminal is third-party hardware pushing punches at us,
+/// while a kiosk is our own app authenticating as a branch.
+class _KioskMethodCard extends StatelessWidget {
+  final AttendanceMethodController ctrl;
+  const _KioskMethodCard({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<AttendanceMethodController>(
+      builder: (_) {
+        final enabled = ctrl.tenantMethods.contains('kiosk');
+        final colors = AppColors.of(context);
+
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.s3),
+          decoration: BoxDecoration(
+            color: enabled ? colors.brandSubtle : colors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: enabled ? colors.brand : colors.borderHairline,
+              width: enabled ? 1.5 : 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.tablet_android,
+                      size: 22,
+                      color: enabled ? colors.brand : colors.textSecondary),
+                  const SizedBox(width: AppSpacing.s3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('method_kiosk'.tr,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: colors.textPrimary,
+                            )),
+                        const SizedBox(height: 2),
+                        Text('method_kiosk_desc'.tr,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colors.textSecondary,
+                            )),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: enabled,
+                    onChanged: (v) async {
+                      if (!v && ctrl.tenantMethods.length <= 1) {
+                        Get.snackbar(
+                          'error'.tr,
+                          'at_least_one_method_required'.tr,
+                          snackPosition: SnackPosition.BOTTOM,
+                        );
+                        return;
+                      }
+                      final ok = await ctrl.toggleTenantMethod('kiosk', v);
+                      _showResultSnackbar(ok);
+                    },
+                    activeThumbColor: colors.brand,
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              // Always reachable, even with the method switched off: a tablet
+              // has to be paired and its people enrolled BEFORE the method is
+              // turned on, or the first morning is a queue of refusals.
+              InkWell(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                onTap: () => Get.toNamed<void>(AppRoutes.kiosks),
+                child: Container(
+                  padding: const EdgeInsets.all(AppSpacing.s3),
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(color: colors.borderHairline),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.tablet_android,
+                          size: 18, color: colors.textSecondary),
+                      const SizedBox(width: AppSpacing.s3),
+                      Expanded(
+                        child: Text('kiosks'.tr,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colors.textPrimary,
+                            )),
+                      ),
+                      Icon(Icons.chevron_right,
+                          size: 18, color: colors.textSecondary),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

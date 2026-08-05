@@ -6,7 +6,7 @@ import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
-import '../../../core/services/face_liveness.dart';
+import 'package:medjat_shared/medjat_shared.dart';
 import '../../../data/model/face_proof_model.dart';
 import '../../../logic/controller/attendance/attendance_controller.dart';
 import '../../../logic/controller/attendance/face_controller.dart';

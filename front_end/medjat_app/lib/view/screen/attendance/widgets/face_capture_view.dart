@@ -9,8 +9,7 @@ import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
 import '../../../../core/constant/theme/app_colors.dart';
 import '../../../../core/constant/theme/app_spacing.dart';
-import '../../../../core/services/face_embedder.dart';
-import '../../../../core/services/face_liveness.dart';
+import 'package:medjat_shared/medjat_shared.dart';
 
 /// What a completed capture produces.
 class FaceCaptureResult {

@@ -25,6 +25,7 @@ import '../../../data/model/suspension_model.dart';
 import '../../../data/model/performance_review_model.dart';
 import '../../../data/model/attendance_model.dart';
 import '../../../data/model/financial_summary_model.dart';
+import 'widgets/employee_kiosk_card.dart';
 
 class EmployeeDetailScreen extends StatelessWidget {
   const EmployeeDetailScreen({super.key});
@@ -331,6 +332,17 @@ class _OverviewTab extends StatelessWidget {
             const SizedBox(height: AppSpacing.s4),
           ],
           _InfoCard(ctrl: ctrl),
+          if (ctrl.employee != null &&
+              ctrl.employee!.status != 'terminated') ...[
+            const SizedBox(height: AppSpacing.s4),
+            EmployeeKioskCard(
+              employeeId: ctrl.employee!.id,
+              faceEnrolledAt: ctrl.employee!.faceEnrolledAt,
+              enrolledStationName: ctrl.employee!.faceEnrolledStationName,
+              hasKioskCode: ctrl.employee!.hasKioskCode,
+              canManage: ctrl.canManageEmployees,
+            ),
+          ],
           const SizedBox(height: AppSpacing.s7),
         ],
       ),

@@ -38,6 +38,9 @@ $result = EmployeeModel::getByTenant(
 
 foreach ($result['items'] as &$emp) {
     $emp['category_ids'] = EmployeeCategoryModel::getEmployeeCategoryIds((int) $emp['id'], $tenantId);
+    // Removes face_embedding and kiosk_pin_hash, which `SELECT e.*` would
+    // otherwise send to every client that opens the employee list.
+    $emp = EmployeeModel::scrubForClient($emp);
 }
 unset($emp);
 

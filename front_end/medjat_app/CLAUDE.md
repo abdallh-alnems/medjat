@@ -76,7 +76,13 @@ flutter clean && flutter pub get
 
 ## ملاحظات
 
-- `assets/models/mobilefacenet.tflite` **غير موجود في المستودع** (راجع `assets/models/README.md`).
-  بدونه تفشل `FaceEmbedder.load()` وتظهر رسالة `face_unavailable` — وهذا مقصود: الفشل ظاهر ولا
-  يُقبَل الحضور صامتًا.
+- **بصمة الوجه انتقلت إلى حزمة مشتركة.** `FaceEmbedder` و`LivenessDetector` وملف الموديل
+  `mobilefacenet.tflite` صاروا في `front_end/packages/medjat_shared/`، ويستوردهم التطبيق عبر
+  `package:medjat_shared/medjat_shared.dart`. السبب: تطبيق الكيوسك يرسل embeddings إلى نفس
+  العمود (`employees.face_embedding`)، فلو وُجدت نسختان من كود الاستخراج وتباعدتا، يتوقف
+  التطابق **بصمت** دون خطأ في أي مكان.
+  - الموديل يُحمَّل من `packages/medjat_shared/assets/models/mobilefacenet.tflite`؛ المسار
+    المجرّد لا يعمل لأن الأصل يملكه package.
+  - عند تعديل الحزمة شغّل `flutter pub get` في **كلا** التطبيقين — مسار path لا يُعاد حلّه تلقائيًا.
+  - إن فشل التحميل تظهر `face_unavailable` — وهذا مقصود: الفشل ظاهر ولا يُقبَل الحضور صامتًا.
 - `SCREENSHOT_MODE` (dart-define) يخفي الإعلانات لالتقاط صور المتجر.

@@ -67,4 +67,36 @@ return [
     'web_photo_required' => 'Your company requires a photo when recording attendance from a browser. Allow camera access and try again.',
     'web_photo_invalid' => 'We could not read that photo. Try again.',
     'web_pin_reset_done' => 'The PIN has been reset. Give the employee the new activation code.',
+
+    // Branch kiosk — shown on a tablet bolted to a wall, read by a worker in a
+    // queue from one to three metres away. No error codes, no jargon: every
+    // string says what to do next.
+    'kiosk_token_invalid' => 'This device is no longer linked to the branch. Ask your administrator to pair it again.',
+    'kiosk_update_required' => 'To the administrator: this tablet needs a kiosk app update before it can record attendance.',
+    'kiosk_maintenance' => 'The system is briefly under maintenance. Attendance will resume by itself.',
+    'kiosk_offline' => 'There is no internet connection, so attendance cannot be recorded right now. Ask your supervisor to record it manually.',
+
+    // Identification outcomes
+    'kiosk_no_match' => 'We did not recognise you. Try again, or use your personal code.',
+    'kiosk_ambiguous' => 'The image was not clear enough to be sure who you are. Step a little closer and try again, or use your personal code.',
+    'kiosk_not_enrolled' => 'Your face is not enrolled yet. Ask your supervisor to enrol it.',
+    'kiosk_out_of_branch' => 'You are not assigned to this branch.',
+    'kiosk_wrong_method' => 'Your attendance method is not the kiosk. Use the Medjat app.',
+    'kiosk_liveness_failed' => 'Look straight at the camera and follow the prompt.',
+    'kiosk_spoofing_suspected' => 'We could not confirm a live person in front of the camera. Try again.',
+    'kiosk_too_soon' => 'We already recorded you a moment ago.',
+    'kiosk_out_of_range' => 'This tablet is outside the branch area. Tell your administrator.',
+    'kiosk_quality_low' => 'The image is not clear. Improve the lighting and try again.',
+
+    // Personal code
+    'kiosk_code_invalid' => 'That code is not correct.',
+    'kiosk_code_disabled' => 'The personal code is not enabled at this branch.',
+    'kiosk_code_throttled' => 'Too many incorrect attempts. Wait a moment and try again.',
+
+    // Pairing and the administration area
+    'kiosk_pair_code_spent' => 'That code is invalid or has already been used. Ask for a new one.',
+    'kiosk_pair_branch_disabled' => 'The kiosk is not enabled for this branch. Turn it on in the branch settings first.',
+    'kiosk_admin_session_expired' => 'The administration session has ended. Enter a new access code.',
+    'kiosk_enroll_replaced' => 'This employee is already enrolled. Confirm replacement to record a new face.',
+    'kiosk_enroll_done' => 'Enrolled.',
 ];

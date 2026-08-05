@@ -17,6 +17,7 @@ $counts = [
     'compliance_expiry' => 0,
     'employment_ending' => 0,
     'employment_terminated' => 0,
+    'kiosk_offline' => 0,
 ];
 
 $tenants = Database::fetchAll(
@@ -33,6 +34,7 @@ foreach ($tenants as $tenant) {
     _checkDocumentExpiry($tenantId, $counts);
     _checkComplianceExpiry($tenantId, $counts);
     _checkEmploymentEnd($tenantId, $today, $counts);
+    _checkKioskOffline($tenantId, $counts);
 }
 
 header('Content-Type: application/json');
@@ -312,5 +314,67 @@ function _checkEmploymentEnd(int $tenantId, string $today, array &$counts): void
             );
         }
         $counts['employment_terminated']++;
+    }
+}
+
+/**
+ * A branch kiosk that has gone dark.
+ *
+ * This matters more than an ordinary device-offline notice. A kiosk cannot
+ * record attendance without the server, and the people who depend on it are
+ * precisely the ones with no phone to fall back to — so a tablet that died at
+ * 6 a.m. means an entire shift has no way to clock in, and nobody finds out
+ * until the complaints start. Telling a supervisor early is the difference
+ * between a few manual entries and a day of reconstructed timesheets.
+ *
+ * Deliberately quiet about kiosks that were never seen at all: a station row is
+ * created at pairing with last_seen_at set, so NULL means something is wrong
+ * with the pairing rather than with the tablet, and that is a different alert.
+ */
+function _checkKioskOffline(int $tenantId, array &$counts): void
+{
+    $stale = Database::fetchAll(
+        "SELECT s.id, s.name, s.branch_id, s.last_seen_at, b.name AS branch_name
+           FROM attendance_stations s
+           JOIN branches b ON b.id = s.branch_id
+          WHERE s.tenant_id = ?
+            AND s.status = 'active'
+            AND s.last_seen_at IS NOT NULL
+            AND s.last_seen_at < DATE_SUB(NOW(), INTERVAL 60 MINUTE)",
+        [$tenantId]
+    );
+
+    foreach ($stale as $station) {
+        $stationName = $station['name'] ?: 'كيوسك';
+        $branchName  = $station['branch_name'];
+        $lastSeen    = $station['last_seen_at'];
+
+        $recipients = SmartAlertService::recipientsForBranch(
+            $tenantId,
+            (int) $station['branch_id'],
+            'manage_attendance'
+        );
+
+        foreach ($recipients as $rid) {
+            SmartAlertService::dispatch(
+                $rid,
+                'kiosk_offline',
+                'attendance',
+                'كيوسك خارج الخدمة',
+                "جهاز {$stationName} في فرع {$branchName} لم يتصل منذ {$lastSeen}. لا يمكن تسجيل الحضور من هذا الجهاز — سجّل الحضور يدويًا حتى يعود.",
+                'Kiosk offline',
+                "{$stationName} at {$branchName} has not reported since {$lastSeen}. Attendance cannot be recorded there — record it manually until it returns.",
+                [
+                    'station_id'   => (int) $station['id'],
+                    'branch_id'    => (int) $station['branch_id'],
+                    'last_seen_at' => $lastSeen,
+                ],
+                // Deduplicated per station per hour: an outage that lasts a day
+                // should not produce a notification every time this cron runs.
+                "kioskoffline:{$station['id']}:" . date('Y-m-d-H', strtotime($lastSeen))
+            );
+        }
+
+        $counts['kiosk_offline']++;
     }
 }

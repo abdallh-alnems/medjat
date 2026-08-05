@@ -14,9 +14,12 @@ import 'package:tflite_flutter/tflite_flutter.dart';
 /// the match decision is never made here, because a patched build could simply
 /// claim success. See core/FaceMatchService.php on the backend.
 ///
-/// The model is a MobileFaceNet-style TFLite graph at
-/// `assets/models/mobilefacenet.tflite`, taking a 112x112 RGB image and
-/// emitting a 192-float embedding.
+/// The model is a MobileFaceNet-style TFLite graph shipped inside this package,
+/// taking a 112x112 RGB image and emitting a 192-float embedding.
+///
+/// It lives here rather than in either app on purpose: the employee app and the
+/// kiosk must extract embeddings the same way, because the server compares both
+/// against one stored vector per employee. Two copies of this file would drift.
 class FaceEmbedder {
   FaceEmbedder._();
 
@@ -27,7 +30,11 @@ class FaceEmbedder {
   /// enrollment and is checked at verification time.
   static const String modelVersion = 'mobilefacenet_v1';
 
-  static const String _modelAsset = 'assets/models/mobilefacenet.tflite';
+  /// Assets owned by a package are addressed as `packages/<name>/<path>` from
+  /// every app that depends on it. Dropping the prefix loads nothing and
+  /// surfaces as "face check-in unavailable".
+  static const String _modelAsset =
+      'packages/medjat_shared/assets/models/mobilefacenet.tflite';
   static const int _inputSize = 112;
   static const int _embeddingSize = 192;
 

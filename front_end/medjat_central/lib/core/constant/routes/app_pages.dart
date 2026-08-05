@@ -118,12 +118,17 @@ import '../../../logic/controller/report/overtime_late_report_controller.dart';
 import '../../../logic/controller/branch/branch_controller.dart';
 import '../../../core/shared/layout/tab_shell.dart';
 import '../../../view/screen/devices/devices_screen.dart';
+import '../../../view/screen/kiosk/kiosk_activity_screen.dart';
+import '../../../view/screen/kiosk/kiosks_screen.dart';
 import '../../../view/screen/devices/device_users_screen.dart';
 import '../../../view/screen/devices/import_punches_screen.dart';
 import '../../../logic/controller/devices/devices_controller.dart';
+import '../../../logic/controller/kiosk/kiosk_activity_controller.dart';
+import '../../../logic/controller/kiosk/kiosk_controller.dart';
 import '../../../logic/controller/devices/device_users_controller.dart';
 import '../../../logic/controller/devices/import_punches_controller.dart';
 import '../../../data/data_source/remote/device_data/device_data.dart';
+import '../../../data/data_source/remote/kiosk_data/kiosk_data.dart';
 import '../../middleware/auth_middleware.dart';
 
 class AppBindings extends Bindings {
@@ -441,6 +446,31 @@ List<GetPage<dynamic>> getPages = [
       Get.lazyPut<DeviceData>(() => DeviceData());
       Get.lazyPut<BranchData>(() => BranchData());
       Get.lazyPut<DevicesController>(() => DevicesController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.kiosks,
+    page: () => const KiosksScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<KioskData>(() => KioskData());
+      Get.lazyPut<BranchData>(() => BranchData());
+      Get.lazyPut<KioskFleetController>(() => KioskFleetController());
+    }),
+    middlewares: [AuthMiddleware()],
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.kioskActivity,
+    page: () => const KioskActivityScreen(),
+    binding: BindingsBuilder<void>(() {
+      Get.lazyPut<KioskData>(() => KioskData());
+      Get.lazyPut<KioskActivityController>(
+        () => KioskActivityController(branchId: Get.arguments as int?),
+      );
     }),
     middlewares: [AuthMiddleware()],
     transition: Transition.fadeIn,

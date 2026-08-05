@@ -27,6 +27,8 @@ abstract class AppRoutes {
   static const String attendanceMethod = '/settings/attendance-method';
   static const String branchNetworks = '/settings/branch-networks';
   static const String devices = '/settings/devices';
+  static const String kiosks = '/settings/kiosks';
+  static const String kioskActivity = '/settings/kiosks/activity';
   static const String deviceUsers = '/settings/devices/users';
   static const String importPunches = '/settings/devices/import';
   static const String companySettings = '/settings/company';

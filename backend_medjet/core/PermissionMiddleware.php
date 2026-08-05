@@ -22,13 +22,33 @@ final class PermissionMiddleware {
         'manage_engagement',
         'manage_schedule',
         'manage_approvals',
+
+        // Were already granted in ROLE_DEFAULTS below but missing from this
+        // list, so they could not be assigned through role management. Declared
+        // here to close that gap.
+        'biometric_enroll',
+        'biometric_delete',
+
+        // Branch kiosk. Three permissions rather than one, because the actions
+        // carry very different weight: pairing is infrastructure, generating an
+        // access code is a daily task for a branch manager, and evidence is
+        // other people's biometric data. Collapsed into one, anybody who could
+        // enrol a face could also unpair the fleet and browse their colleagues'
+        // photographs.
+        'kiosk_devices',   // pair and revoke tablets
+        'kiosk_access',    // generate the access code; enrol faces at the kiosk
+        'kiosk_evidence',  // view stored captures
     ];
 
     private const ROLE_DEFAULTS = [
         'general_manager' => '*',
-        'hr' => ['manage_employees', 'manage_deduction_rules', 'manage_attendance', 'view_reports', 'view_analytics', 'manage_documents', 'manage_payroll', 'manage_leaves', 'manage_assets', 'manage_recruitment', 'manage_performance', 'manage_engagement', 'manage_schedule', 'manage_approvals', 'biometric_enroll', 'biometric_delete'],
-        'branch_manager' => ['manage_employees', 'manage_attendance', 'manage_documents', 'view_reports', 'view_analytics', 'manage_assets', 'manage_recruitment', 'manage_performance', 'manage_engagement', 'manage_schedule', 'biometric_enroll'],
-        'attendance' => ['manage_attendance', 'biometric_enroll'],
+        'hr' => ['manage_employees', 'manage_deduction_rules', 'manage_attendance', 'view_reports', 'view_analytics', 'manage_documents', 'manage_payroll', 'manage_leaves', 'manage_assets', 'manage_recruitment', 'manage_performance', 'manage_engagement', 'manage_schedule', 'manage_approvals', 'biometric_enroll', 'biometric_delete', 'kiosk_devices', 'kiosk_access', 'kiosk_evidence'],
+        // A branch manager runs the kiosk daily but does not pair or unpair
+        // hardware — that is a decision about the fleet, not about a shift.
+        'branch_manager' => ['manage_employees', 'manage_attendance', 'manage_documents', 'view_reports', 'view_analytics', 'manage_assets', 'manage_recruitment', 'manage_performance', 'manage_engagement', 'manage_schedule', 'biometric_enroll', 'kiosk_access', 'kiosk_evidence'],
+        // An attendance clerk enrols faces but has no business browsing stored
+        // captures of colleagues.
+        'attendance' => ['manage_attendance', 'biometric_enroll', 'kiosk_access'],
         'viewer' => ['view_reports', 'view_analytics'],
         'employee' => [],
     ];

@@ -14,6 +14,14 @@ vendor/
 logs/
 *.log
 
+# --- runtime cache: server-owned, and local values are actively wrong ---
+# The cache holds whatever the LOCAL machine last computed. Shipping it would
+# overwrite production's state with a developer's — and for the Remote Config
+# version gate that is worse than stale: MAMP usually cannot reach Firebase, so
+# the local entry is the fail-open fallback {"min_version":"0.0.0"}, which would
+# switch the gate off in production for as long as the entry lives.
+cache_system/cache_storage/*.cache
+
 # --- local-only: must not land in a public docroot ---
 .claude/
 .DS_Store

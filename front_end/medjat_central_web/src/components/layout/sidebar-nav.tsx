@@ -12,6 +12,7 @@ import {
   CalendarDays,
   Coffee,
   Building2,
+  Tablet,
   Clock,
   CalendarRange,
   FileBarChart,
@@ -70,6 +71,7 @@ const GROUPS: NavGroup[] = [
       { href: "/branches", labelKey: "nav_branches", icon: Building2, permission: "manage_company_settings" },
       { href: "/shifts", labelKey: "nav_shifts", icon: Clock, permission: "manage_company_settings" },
       { href: "/shifts/schedule", labelKey: "nav_schedule", icon: CalendarRange, permission: "manage_company_settings" },
+      { href: "/kiosks", labelKey: "nav_kiosks", icon: Tablet, permission: "kiosk_access" },
     ],
   },
   {

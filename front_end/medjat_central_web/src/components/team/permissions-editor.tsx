@@ -39,6 +39,9 @@ const PERM_LABEL: Record<PermissionCode, TKey> = {
   add_managers: "perm_add_managers",
   manage_company_settings: "perm_manage_company_settings",
   manage_support: "perm_manage_support",
+  kiosk_devices: "perm_kiosk_devices",
+  kiosk_access: "perm_kiosk_access",
+  kiosk_evidence: "perm_kiosk_evidence",
 };
 
 interface Props {

@@ -25,6 +25,7 @@ const ROUTE_PERMISSIONS: { match: string; permission: PermissionCode }[] = [
   { match: "/branches", permission: "manage_company_settings" },
   { match: "/shifts", permission: "manage_company_settings" },
   { match: "/settings", permission: "manage_company_settings" },
+  { match: "/kiosks", permission: "kiosk_access" },
   { match: "/team", permission: "add_managers" },
   { match: "/activity-log", permission: "manage_company_settings" },
 ];

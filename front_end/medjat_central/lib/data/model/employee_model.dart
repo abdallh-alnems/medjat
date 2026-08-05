@@ -24,6 +24,13 @@ class EmployeeModel {
   final String? activationCode;
   final String? activationExpiresAt;
   final String biometricEnrollmentStatus;
+
+  /// Kiosk facts, derived server-side. The raw embedding and code hash are
+  /// deliberately never sent — only whether they exist.
+  final bool faceEnrolled;
+  final String? faceEnrolledAt;
+  final String? faceEnrolledStationName;
+  final bool hasKioskCode;
   final String? bankName;
   final String? bankAccountNumber;
   final String? bankIban;
@@ -67,6 +74,10 @@ class EmployeeModel {
     this.activationCode,
     this.activationExpiresAt,
     this.biometricEnrollmentStatus = 'not_enrolled',
+    this.faceEnrolled = false,
+    this.faceEnrolledAt,
+    this.faceEnrolledStationName,
+    this.hasKioskCode = false,
     this.bankName,
     this.bankAccountNumber,
     this.bankIban,
@@ -146,6 +157,10 @@ class EmployeeModel {
       activationCode: json['activation_code'] as String?,
       activationExpiresAt: json['activation_expires_at'] as String?,
       biometricEnrollmentStatus: (json['biometric_enrollment_status'] as String?) ?? 'not_enrolled',
+      faceEnrolled: json['face_enrolled'] == true || json['face_enrolled'] == 1,
+      faceEnrolledAt: json['face_enrolled_at'] as String?,
+      faceEnrolledStationName: json['face_enrolled_station_name'] as String?,
+      hasKioskCode: json['has_kiosk_code'] == true || json['has_kiosk_code'] == 1,
       bankName: json['bank_name'] as String?,
       bankAccountNumber: json['bank_account_number'] as String?,
       bankIban: json['bank_iban'] as String?,

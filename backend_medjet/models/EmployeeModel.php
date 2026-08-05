@@ -49,6 +49,48 @@ final class EmployeeModel {
         'health_insurance' => [null, 'health_insurance_expiry'],
     ];
 
+    /**
+     * Columns that must never reach a client.
+     *
+     * The queries below select `e.*` for convenience, which means every column
+     * added to the employees table is exposed by default. Two are actively
+     * dangerous:
+     *
+     *   face_embedding  the raw biometric template the server matches against.
+     *                   No client needs it — a phone extracts its own — and
+     *                   handing it out gives away precisely what an
+     *                   impersonation attempt would otherwise have to produce.
+     *   kiosk_pin_hash  the hash of a six-digit fallback code. Six digits is a
+     *                   one-million space, which is a short offline search.
+     *
+     * Both are replaced with booleans, because every caller that reads them
+     * only ever asks whether they are set.
+     */
+    private const CLIENT_HIDDEN_COLUMNS = ['face_embedding', 'kiosk_pin_hash'];
+
+    /**
+     * Strips credentials from an employee row (or a list of them) before it is
+     * returned over the API.
+     *
+     * Applied at the response boundary rather than inside the queries, so
+     * server-side callers that legitimately need the real values keep working.
+     */
+    public static function scrubForClient(array $row): array {
+        $row['face_enrolled'] = !empty($row['face_embedding']);
+        $row['has_kiosk_code'] = !empty($row['kiosk_pin_hash']);
+
+        foreach (self::CLIENT_HIDDEN_COLUMNS as $column) {
+            unset($row[$column]);
+        }
+
+        return $row;
+    }
+
+    /** @param array<int, array> $rows */
+    public static function scrubListForClient(array $rows): array {
+        return array_map([self::class, 'scrubForClient'], $rows);
+    }
+
     public static function findById(int $id, int $tenantId): ?array {
         return Database::fetchOne(
             "SELECT e.*, s.start_time AS shift_start, s.end_time AS shift_end,

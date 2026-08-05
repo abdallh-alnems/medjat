@@ -157,6 +157,21 @@ class AppLinks {
       '${deviceId != null ? '&device_id=$deviceId' : ''}'
       '${state != null ? '&state=$state' : ''}';
 
+  // ── Branch kiosk (shared tablet) ────────────────────────
+  // Distinct from the biometric terminals above: a kiosk is a tablet running
+  // our own app, authenticating as a BRANCH rather than reporting punches as a
+  // piece of third-party hardware.
+  static String get kioskList => '$base/app/kiosk/list.php';
+  static String get kioskCreatePairingCode =>
+      '$base/app/kiosk/create_pairing_code.php';
+  static String get kioskCreateAccessCode =>
+      '$base/app/kiosk/create_access_code.php';
+  static String get kioskRevoke => '$base/app/kiosk/revoke.php';
+  static String get kioskSetPin => '$base/app/kiosk/set_pin.php';
+  static String get kioskRecognitionLogs =>
+      '$base/app/kiosk/recognition_logs.php';
+  static String get kioskCapture => '$base/app/kiosk/capture.php';
+
   // ── Payroll ────────────────────────────────────────────
   static String get payroll => '$base/app/payroll/list_slips.php';
   static String get payrollLive => '$base/app/payroll/live.php';
