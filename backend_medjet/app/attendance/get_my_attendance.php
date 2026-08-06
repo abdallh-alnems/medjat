@@ -32,6 +32,21 @@ if ($branchId > 0) {
     }
 }
 
+// Whether to offer the crew screen at all. Answered here, on a call the home
+// screen already makes, rather than by having every employee hit crew_list.php
+// on launch to be told they supervise nobody — which is true of almost all of
+// them. Derived from whether anyone points at this employee, so it cannot
+// disagree with what crew_list.php will return.
+//
+// Only added when there IS a config, so a branchless employee keeps getting a
+// null here instead of a half-populated object. That also lines up with what
+// crew_check_in.php does: no branch means no geofence to verify against, so it
+// refuses anyway — offering the button would be a dead end.
+if ($attendanceConfig !== null) {
+    $attendanceConfig['is_crew_supervisor'] =
+        CrewModel::isSupervisor((int) $employee['id'], $tenantId);
+}
+
 // The employee's expected attendance time for today, as configured by
 // management. A rotating schedule cell (if published) overrides the default
 // shift; a cell with no shift means an explicit rest day.

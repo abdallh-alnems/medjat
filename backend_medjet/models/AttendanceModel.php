@@ -139,6 +139,162 @@ final class AttendanceModel {
         }
     }
 
+    /**
+     * Records arrival for a whole crew in one pass.
+     *
+     * Deliberately NOT a loop over checkIn(). That method answers a duplicate
+     * with Response::fail(), which ends the request — acceptable for one person
+     * tapping a button, ruinous here: a foreman marking thirty labourers whose
+     * third name already has a row would abort the batch and lose the other
+     * twenty-seven, having written some of them. A batch has to survive its
+     * individual failures and report them.
+     *
+     * Every row is stamped with the supervisor, so "who said this person was
+     * here" is answerable from the attendance row itself.
+     *
+     * @param int[] $employeeIds Already authorised by the caller.
+     * @return array{recorded: int[], skipped: array<int, string>}
+     */
+    public static function crewCheckIn(
+        array $employeeIds,
+        int $branchId,
+        int $tenantId,
+        int $supervisorId,
+        ?float $lat,
+        ?float $lng,
+        ?string $photoPath
+    ): array {
+        $now = TenantClock::now($tenantId);
+        $today = $now->format('Y-m-d');
+        $time = $now->format('H:i:s');
+
+        $recorded = [];
+        $skipped = [];
+
+        foreach ($employeeIds as $rawId) {
+            $employeeId = (int) $rawId;
+
+            $existing = Database::fetchOne(
+                "SELECT id, check_in_time FROM attendance
+                 WHERE employee_id = ? AND date = ? AND tenant_id = ? LIMIT 1",
+                [$employeeId, $today, $tenantId]
+            );
+
+            // A row with no check_in_time is a placeholder (markAbsentSmart
+            // writes one once a shift ends). That converts into a real arrival;
+            // only a row that already has a time is a genuine duplicate.
+            if ($existing && !empty($existing['check_in_time'])) {
+                $skipped[$employeeId] = 'already_checked_in';
+                continue;
+            }
+
+            $employee = EmployeeModel::findById($employeeId, $tenantId);
+            if (!$employee) {
+                $skipped[$employeeId] = 'not_found';
+                continue;
+            }
+
+            $employee = self::withScheduledShift($employee, $tenantId, $today);
+            $expectedStart = $employee['shift_start'] ?? $employee['work_start_time'] ?? '09:00:00';
+            $lateMinutes = max(0, (strtotime($time) - strtotime($expectedStart)) / 60);
+
+            if ($existing) {
+                Database::execute(
+                    "UPDATE attendance
+                     SET branch_id = ?, check_in_time = ?, check_in_method = 'crew_gps',
+                         late_minutes = ?, status = 'present',
+                         check_in_latitude = ?, check_in_longitude = ?,
+                         recorded_by_employee_id = ?, crew_photo = COALESCE(?, crew_photo)
+                     WHERE id = ?",
+                    [$branchId, $time, (int) $lateMinutes, $lat, $lng, $supervisorId, $photoPath, $existing['id']]
+                );
+            } else {
+                Database::execute(
+                    "INSERT INTO attendance
+                        (tenant_id, branch_id, employee_id, date, check_in_time, check_in_method,
+                         late_minutes, status, check_in_latitude, check_in_longitude,
+                         recorded_by_employee_id, crew_photo)
+                     VALUES (?, ?, ?, ?, ?, 'crew_gps', ?, 'present', ?, ?, ?, ?)",
+                    [$tenantId, $branchId, $employeeId, $today, $time, (int) $lateMinutes, $lat, $lng, $supervisorId, $photoPath]
+                );
+            }
+
+            $recorded[] = $employeeId;
+        }
+
+        return ['recorded' => $recorded, 'skipped' => $skipped];
+    }
+
+    /**
+     * Closes the day for a crew. Same batch-survives-failures rule as above:
+     * checkOut() ends the request when somebody has no open day, which here
+     * would be one absent labourer costing the other twenty-nine their
+     * check-out.
+     *
+     * @param int[] $employeeIds Already authorised by the caller.
+     * @return array{recorded: int[], skipped: array<int, string>}
+     */
+    public static function crewCheckOut(
+        array $employeeIds,
+        int $tenantId,
+        int $supervisorId,
+        ?string $photoPath
+    ): array {
+        $now = TenantClock::now($tenantId);
+        $today = $now->format('Y-m-d');
+        $time = $now->format('H:i:s');
+
+        $recorded = [];
+        $skipped = [];
+
+        foreach ($employeeIds as $rawId) {
+            $employeeId = (int) $rawId;
+
+            $record = Database::fetchOne(
+                "SELECT id, check_in_time, check_out_time FROM attendance
+                 WHERE employee_id = ? AND date = ? AND tenant_id = ? LIMIT 1",
+                [$employeeId, $today, $tenantId]
+            );
+
+            if (!$record || empty($record['check_in_time'])) {
+                $skipped[$employeeId] = 'not_checked_in';
+                continue;
+            }
+            if (!empty($record['check_out_time'])) {
+                $skipped[$employeeId] = 'already_checked_out';
+                continue;
+            }
+
+            $employee = EmployeeModel::findById($employeeId, $tenantId);
+            if (!$employee) {
+                $skipped[$employeeId] = 'not_found';
+                continue;
+            }
+
+            $employee = self::withScheduledShift($employee, $tenantId, $today);
+            $workEnd = $employee['shift_end'] ?? $employee['work_end_time'] ?? '17:00:00';
+
+            $checkIn = strtotime($record['check_in_time']);
+            $checkOut = strtotime($time);
+            $workedMinutes = max(0, ($checkOut - $checkIn) / 60);
+            $overtimeMinutes = max(0, ($checkOut - strtotime($workEnd)) / 60);
+
+            Database::execute(
+                "UPDATE attendance
+                 SET check_out_time = ?, check_out_method = 'crew_gps',
+                     worked_minutes = ?, overtime_minutes = ?,
+                     recorded_by_employee_id = COALESCE(recorded_by_employee_id, ?),
+                     crew_photo = COALESCE(?, crew_photo)
+                 WHERE id = ?",
+                [$time, (int) $workedMinutes, (int) $overtimeMinutes, $supervisorId, $photoPath, $record['id']]
+            );
+
+            $recorded[] = $employeeId;
+        }
+
+        return ['recorded' => $recorded, 'skipped' => $skipped];
+    }
+
     public static function manualCheckIn(int $employeeId, int $branchId, int $tenantId, string $date, string $checkInTime, string $checkOutTime, int $recordedBy): int {
         $employee = EmployeeModel::findById($employeeId, $tenantId);
         $employee = self::withScheduledShift($employee, $tenantId, $date);

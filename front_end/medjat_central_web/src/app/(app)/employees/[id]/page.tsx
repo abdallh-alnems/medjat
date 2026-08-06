@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ActivationCard } from "@/components/employee/activation-card";
+import { CrewSupervisorCard } from "@/components/employee/crew-supervisor-card";
 import { FinancialAdjustments } from "@/components/employee/financial-adjustments";
 import { addWarning, deleteWarning, listWarnings } from "@/lib/api/warnings";
 import {
@@ -171,6 +172,11 @@ export default function EmployeeDetailPage({
               />
             </CardContent>
           </Card>
+
+          <CrewSupervisorCard
+            employee={employee}
+            canEdit={can("manage_employees")}
+          />
 
           {employee.leave_balance && (
             <Card>

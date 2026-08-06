@@ -118,6 +118,21 @@ const Map<String, String> en = {
   'photo_capture_failed': 'Could not take the photo. Try again.',
   'photo_too_large': 'That photo is too large. Try again.',
   'photo_requires_connection': 'Photo check-in needs an internet connection',
+
+  // Crew attendance — read by a supervisor standing on a site in the sun, so
+  // every string is short and says what happens next.
+  'crew_title': 'My crew',
+  'crew_empty': 'Nobody is in your crew. If there should be, contact your HR administrator.',
+  'crew_selected_count': '@count of @total selected',
+  'crew_select_all': 'Select all',
+  'crew_record_check_in': 'Record arrival for @count',
+  'crew_record_check_out': 'Record departure for @count',
+  'crew_state_not_in': 'Not in',
+  'crew_state_done': 'Day done',
+  'crew_last_result': '@recorded recorded · @skipped skipped',
+  'crew_photo_will_be_asked': "You'll be asked for a group photo",
+  'crew_photo_needed': 'A group photo is needed to record this.',
+  'refresh': 'Refresh',
   'face_check_in_title': 'Face check-in',
   'face_check_out_title': 'Face check-out',
   'face_verifying': 'Verifying your face...',

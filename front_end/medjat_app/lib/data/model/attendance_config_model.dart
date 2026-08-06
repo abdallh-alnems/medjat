@@ -13,6 +13,12 @@ class AttendanceConfigModel {
   /// lets the app prompt first instead of letting the employee do the work and
   /// then be rejected.
   final bool requireLocalBiometric;
+
+  /// This employee supervises at least one other person, so the crew screen is
+  /// worth offering. Derived on the server from who points at them — there is
+  /// no supervisor flag to fall out of step with the crew list.
+  final bool isCrewSupervisor;
+
   final double? branchLat;
   final double? branchLng;
 
@@ -23,6 +29,7 @@ class AttendanceConfigModel {
     this.gpsRadiusMeters = 100,
     this.allowOffline = true,
     this.requireLocalBiometric = false,
+    this.isCrewSupervisor = false,
     this.branchLat,
     this.branchLng,
   });
@@ -87,6 +94,11 @@ class AttendanceConfigModel {
       requireLocalBiometric: json['require_local_biometric'] == true ||
           json['require_local_biometric'] == 1 ||
           json['require_local_biometric'] == '1',
+      // Absent on builds talking to an older server, which reads as "not a
+      // supervisor" — the screen stays hidden rather than appearing empty.
+      isCrewSupervisor: json['is_crew_supervisor'] == true ||
+          json['is_crew_supervisor'] == 1 ||
+          json['is_crew_supervisor'] == '1',
       branchLat: _toDouble(json['branch_lat']),
       branchLng: _toDouble(json['branch_lng']),
     );

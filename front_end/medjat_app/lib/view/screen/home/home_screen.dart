@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../core/constant/routes/app_routes.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
@@ -51,6 +52,13 @@ class HomeScreen extends StatelessWidget {
                     icon: controller.attendanceButtonIcon,
                     onTap: controller.startAttendanceFlow,
                   ),
+                  // Only for the few employees who supervise somebody. The flag
+                  // rides on the attendance config this screen already loads,
+                  // so nobody pays a request to discover they have no crew.
+                  if (controller.attendanceConfig.isCrewSupervisor) ...[
+                    const SizedBox(height: AppSpacing.s5),
+                    _buildCrewEntry(context, colors),
+                  ],
                   const SizedBox(height: AppSpacing.s7),
                   _buildBranchInfo(context, colors, controller),
                   if (controller.isOffline) ...[
@@ -64,6 +72,44 @@ class HomeScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  /// Entry to the crew screen, for a supervisor recording the people on site
+  /// with them. Kept below their own attendance button on purpose: the
+  /// supervisor is an employee first and records their own day like everyone
+  /// else, and this is the extra thing they can also do.
+  Widget _buildCrewEntry(BuildContext context, AppColorScheme colors) {
+    return Material(
+      color: colors.surface,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        side: BorderSide(color: colors.borderHairline),
+      ),
+      child: InkWell(
+        onTap: () => Get.toNamed<void>(AppRoutes.crew),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.s3),
+          child: Row(
+            children: [
+              Icon(Icons.groups_outlined, size: 22, color: colors.brand),
+              const SizedBox(width: AppSpacing.s3),
+              Expanded(
+                child: Text(
+                  'crew_title'.tr,
+                  style: const TextStyle(
+                    fontFamily: AppTextStyles.arabicFamily,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_left, size: 20, color: colors.textTertiary),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

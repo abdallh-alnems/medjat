@@ -22,6 +22,10 @@ class AppLinks {
   static String get checkOut => '$base/app/attendance/check_out.php';
   static String get attendanceSync =>
       '$base/app/attendance/sync_offline.php';
+
+  // Crew attendance: a supervisor records for the people on site with them.
+  static String get crewList => '$base/app/attendance/crew_list.php';
+  static String get crewCheckIn => '$base/app/attendance/crew_check_in.php';
   static String attendanceMonth(String month) =>
       '$base/app/attendance/get_my_attendance.php?month=$month';
 

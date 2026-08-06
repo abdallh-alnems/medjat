@@ -29,6 +29,7 @@ import '../../../view/screen/attendance/scan_qr_screen.dart';
 import '../../../view/screen/attendance/gps_check_in_screen.dart';
 import '../../../view/screen/attendance/face_check_in_screen.dart';
 import '../../../view/screen/attendance/photo_check_in_screen.dart';
+import '../../../view/screen/attendance/crew_screen.dart';
 import '../../../view/screen/attendance/face_enroll_screen.dart';
 import '../../../view/screen/attendance/attendance_success_screen.dart';
 import '../../../view/screen/profile/my_profile_screen.dart';
@@ -145,6 +146,13 @@ List<GetPage<dynamic>> getPages = [
   GetPage(
     name: AppRoutes.photoCheckIn,
     page: () => const PhotoCheckInScreen(),
+    binding: AttendanceBinding(),
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.crew,
+    page: () => const CrewScreen(),
     binding: AttendanceBinding(),
     transition: Transition.fadeIn,
     transitionDuration: AppMotion.transition,

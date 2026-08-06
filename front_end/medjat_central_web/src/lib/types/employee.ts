@@ -17,6 +17,12 @@ export interface Employee {
   job_title?: string | null;
   identity_number?: string | null;
   attendance_method?: AttendanceMethod | null;
+  /**
+   * The supervisor permitted to record this person's attendance on site.
+   * NULL means nobody — which is also how "is not in any crew" is expressed;
+   * there is no separate flag that could disagree with it.
+   */
+  crew_supervisor_id?: number | null;
   photo_url?: string | null;
   annual_leave_days?: number | null;
   /** Attached by getEmployeeProfile from the detail envelope. */

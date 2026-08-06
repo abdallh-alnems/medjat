@@ -53,6 +53,19 @@ return [
     'qr_replayed' => 'That code has already been used. Scan the code on the branch screen yourself.',
     'photo_required' => 'Your company requires a photo when recording attendance. Allow camera access and try again.',
 
+    // Crew attendance — read by a supervisor standing on a site, so each
+    // message says what to do now.
+    'crew_not_your_member' => 'One or more of those people are not in your crew. Refresh the list and try again.',
+    'crew_method_disabled' => 'Crew attendance is not enabled for you. Contact your HR administrator.',
+    'crew_supervisor_no_branch' => 'Your account is not linked to a branch, so your location cannot be checked. Contact your administrator.',
+    'crew_photo_required' => 'Your company requires a group photo with crew attendance. Allow camera access and try again.',
+    'crew_check_in_done' => 'Crew attendance recorded.',
+    'crew_check_out_done' => 'Crew check-out recorded.',
+    'crew_supervisor_set' => 'Supervisor assigned.',
+    'crew_supervisor_cleared' => 'Supervisor removed.',
+    'crew_supervisor_terminated' => 'A terminated employee cannot be a supervisor.',
+    'crew_supervisor_cycle' => 'That would create a supervision loop (each supervising the other). Choose a different supervisor.',
+
     // Generic
     'rate_limited' => 'Too many attempts. Please wait a moment and try again.',
     'missing_fields' => 'Please fill in all the required fields.',

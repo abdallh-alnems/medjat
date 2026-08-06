@@ -28,7 +28,14 @@ final class AttendanceMethodResolver {
     // it and no punch is ever accepted or rejected because of it. It exists so a
     // company that wants a deterrent does not have to take on the biometric
     // obligations of face_selfie (law 14/2025) to get one.
-    public const ALLOWED = ['qr_gps', 'gps_only', 'face_selfie', 'photo_gps', 'wifi_gps', 'device', 'manual', 'kiosk'];
+    // 'crew_gps' is recorded BY a supervisor FOR the people on site with them.
+    // Like 'manual' it is not self-service — the person it is recorded for holds
+    // no credential and may own no phone, which is the entire point — but unlike
+    // 'manual' it is captured in the field with coordinates, a photograph and
+    // the name of the colleague who recorded it. It is resolved for the
+    // SUPERVISOR: having crew_gps means "may record for my crew", not "may be
+    // recorded".
+    public const ALLOWED = ['qr_gps', 'gps_only', 'face_selfie', 'photo_gps', 'wifi_gps', 'crew_gps', 'device', 'manual', 'kiosk'];
 
     /**
      * Methods an employee can use to record their own attendance from a phone or

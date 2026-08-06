@@ -623,6 +623,12 @@ export const en: Dictionary = {
     "Only ever seen from outside the branch area — most likely an employee's home router. Do not approve.",
   face_selfie: "Selfie + face recognition",
   photo_gps: "Photo + location",
+  crew_supervisor: "Site supervisor",
+  crew_supervisor_hint:
+    "The chosen supervisor can record this employee's arrival and departure from "
+    + "the site in the employee app, with a location, a photo and their own name on "
+    + "every record. Leave empty if this employee records their own attendance.",
+  crew_supervisor_none: "No supervisor",
   rotating_qr: "Rotating code on a branch screen",
   rotating_qr_hint:
     "Instead of a fixed printed code, a screen at the branch door shows a code "

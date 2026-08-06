@@ -96,6 +96,22 @@ export function updateEmployee(id: number, data: Partial<Employee>) {
   return apiPost<Employee>("app/employees/update.php", { id, ...data });
 }
 
+/**
+ * Assign (or clear, with null) the supervisor allowed to record this employee's
+ * attendance on site.
+ *
+ * Its own endpoint rather than a field on updateEmployee: this is the control
+ * that grants the only employee-credential exception in the backend, so it
+ * carries its own permission check, its own supervision-loop guard and its own
+ * audit entry.
+ */
+export function setCrewSupervisor(employeeId: number, supervisorId: number | null) {
+  return apiPost<{ message: string }>("app/employees/set_crew_supervisor.php", {
+    employee_id: employeeId,
+    supervisor_id: supervisorId,
+  });
+}
+
 export function deleteEmployee(id: number) {
   return apiPost<{ status?: string }>("app/employees/delete.php", { id });
 }
