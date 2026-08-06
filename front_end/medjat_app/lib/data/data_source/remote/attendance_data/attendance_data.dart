@@ -19,6 +19,7 @@ class AttendanceData {
     WifiInfo? wifi,
     bool wifiMethod = false,
     bool localBiometric = false,
+    String? photoBase64,
   }) async {
     final data = <String, dynamic>{
       'branch_id': branchId,
@@ -41,6 +42,14 @@ class AttendanceData {
     if (wifiMethod) {
       data['method'] = 'wifi_gps';
     }
+    // photo_gps. Set after the face branch on purpose: if a build ever sent
+    // both, the face proof is the stronger claim and must win — declaring
+    // photo_gps while carrying an embedding would tell the server to skip the
+    // match it was about to make.
+    if (photoBase64 != null && faceProof == null) {
+      data['method'] = 'photo_gps';
+      data['photo_base64'] = photoBase64;
+    }
     // Always reported when known: during a branch's learning phase these are
     // what build its list of access points, even on other methods.
     if (wifi != null && wifi.isOnWifi) {
@@ -58,6 +67,7 @@ class AttendanceData {
     double? latitude,
     double? longitude,
     bool localBiometric = false,
+    String? photoBase64,
   }) async {
     // Reported on check-out too: a company that rejects spoofed locations must
     // reject them at both ends, or leaving early from home stays possible.
@@ -75,6 +85,11 @@ class AttendanceData {
     }
     if (wifiMethod) {
       data['method'] = 'wifi_gps';
+    }
+    // Same precedence as check-in: a face proof outranks a bare photo.
+    if (photoBase64 != null && faceProof == null) {
+      data['method'] = 'photo_gps';
+      data['photo_base64'] = photoBase64;
     }
     if (wifi != null && wifi.isOnWifi) {
       data['wifi_bssid'] = wifi.bssid;

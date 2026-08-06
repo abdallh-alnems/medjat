@@ -59,5 +59,6 @@ export type AttendanceMethod =
   | "qr_gps"
   | "gps_only"
   | "face_selfie"
+  | "photo_gps"
   | "wifi_gps"
   | "manual";

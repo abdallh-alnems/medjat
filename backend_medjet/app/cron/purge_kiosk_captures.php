@@ -92,10 +92,32 @@ for ($pass = 0; $pass < 20; $pass++) {
     }
 }
 
+// Spent rotating QR challenges, cleaned up on the same nightly pass.
+//
+// This one is about volume, not privacy: a challenge row holds a random string
+// and a timestamp. But a branch display asks for a code every 30 seconds all day,
+// so one screen writes roughly 2,900 rows a day and ten screens close to a
+// million a year, plus a use row per employee per punch. Without this the tables
+// grow without bound to hold codes that stopped being valid ninety seconds after
+// they were minted.
+//
+// branch_qr_uses goes with its parent via ON DELETE CASCADE, so deleting the
+// challenge is the whole job. The day of slack the model keeps means a disputed
+// punch from this morning can still be traced back to the code that produced it.
+$qrPurged = 0;
+try {
+    $qrPurged = BranchQrChallengeModel::purgeExpired();
+} catch (Throwable $e) {
+    // Never let housekeeping fail the capture purge above it — that one deletes
+    // biometric material and is the reason this job runs at all.
+    error_log('purge_kiosk_captures: QR challenge purge failed: ' . $e->getMessage());
+}
+
 header('Content-Type: application/json');
 echo json_encode([
     'status'  => 'ok',
     'deleted' => $deleted,
     'already_missing' => $missing,
     'failed'  => $failed,
+    'qr_challenges_purged' => $qrPurged,
 ], JSON_UNESCAPED_UNICODE);

@@ -119,6 +119,21 @@ final class BranchModel {
         );
     }
 
+    /**
+     * Switch this branch between the printed QR code and a rotating one.
+     *
+     * Per branch rather than per company because turning it on has a physical
+     * prerequisite — a screen at that door. A company with ten branches and one
+     * spare tablet has to be able to run rotating codes where the tablet is
+     * without locking the other nine out.
+     */
+    public static function updateRotatingQr(int $id, int $tenantId, bool $enabled): void {
+        Database::execute(
+            "UPDATE branches SET rotating_qr_enabled = ? WHERE id = ? AND tenant_id = ?",
+            [(int) $enabled, $id, $tenantId]
+        );
+    }
+
     /** Per-branch WiFi enforcement mode + what counts as a match. */
     public static function updateWifiSettings(int $id, int $tenantId, ?string $mode, string $match): void {
         Database::execute(

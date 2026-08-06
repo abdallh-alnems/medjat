@@ -7,6 +7,7 @@ abstract class AppRoutes {
   static const String scanQr = '/scan-qr';
   static const String gpsCheckIn = '/gps-check-in';
   static const String faceCheckIn = '/face-check-in';
+  static const String photoCheckIn = '/photo-check-in';
   static const String faceEnroll = '/face-enroll';
   static const String joinScan = '/join-scan';
   static const String attendanceSuccess = '/attendance-success';

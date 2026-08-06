@@ -44,10 +44,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// A display list, not a whitelist: toggleMethod edits whatever the server sent,
+// so a method absent here is hidden but never stripped from the company's
+// configuration. 'device' and 'kiosk' are omitted deliberately — neither is a
+// self-service method and both are configured from their own screens.
 const METHODS: AttendanceMethod[] = [
   "qr_gps",
   "gps_only",
   "face_selfie",
+  "photo_gps",
   "wifi_gps",
   "manual",
 ];

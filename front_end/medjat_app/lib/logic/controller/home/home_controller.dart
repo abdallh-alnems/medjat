@@ -259,6 +259,13 @@ class HomeController extends GetxController {
       if (!await _ensureCameraPermission()) return;
       if (!await _ensureLocationPermission()) return;
       unawaited(Get.toNamed<void>(AppRoutes.faceCheckIn));
+    } else if (method == 'photo_gps') {
+      // Same two permissions as the selfie, for a different reason: the photo
+      // is kept as evidence rather than matched, but it still travels with a
+      // location the server verifies.
+      if (!await _ensureCameraPermission()) return;
+      if (!await _ensureLocationPermission()) return;
+      unawaited(Get.toNamed<void>(AppRoutes.photoCheckIn));
     } else {
       if (!await _ensureCameraPermission()) return;
       if (!await _ensureLocationPermission()) return;

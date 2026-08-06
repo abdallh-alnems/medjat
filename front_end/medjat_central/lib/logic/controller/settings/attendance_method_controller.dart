@@ -33,13 +33,26 @@ class AttendanceMethodController extends GetxController {
   List<CategoryMethodOverride> categories = [];
   List<EmployeeMethodOverride> employeeOverrides = [];
 
+  /// Must mirror `AttendanceMethodResolver::ALLOWED` on the backend.
+  ///
+  /// This is not a display list — nothing iterates it to build the UI. It is the
+  /// filter applied to whatever the server sends, and the filtered result is
+  /// what [toggleTenantMethod] posts straight back. So a method missing here is
+  /// not merely hidden: opening this screen and flipping any switch silently
+  /// strips it from the company's configuration.
+  ///
+  /// `kiosk` was missing until 2026-08-06 for exactly that reason — it was added
+  /// to the backend with the branch-kiosk feature and never added here, so any
+  /// company running kiosks would have lost them on the next toggle.
   static const allMethods = [
     'qr_gps',
     'gps_only',
     'face_selfie',
+    'photo_gps',
     'wifi_gps',
     'device',
     'manual',
+    'kiosk',
   ];
 
   int get branchOverrideCount =>

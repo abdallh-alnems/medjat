@@ -45,6 +45,14 @@ return [
     'mock_location_rejected' => 'Your device is reporting a fake location. Turn off any location-spoofing app and try again.',
     'local_biometric_required' => 'Your company requires you to confirm your identity with your device fingerprint or face unlock before recording attendance.',
 
+    // Rotating branch QR. The employee is standing in front of the screen, so
+    // each message says what to do now rather than explaining that a code
+    // "expired" — which is usually not their mistake.
+    'qr_rotating_required' => 'Scan the code shown on the branch screen to record your attendance.',
+    'qr_expired' => 'That code is no longer valid. Scan the code on the screen now.',
+    'qr_replayed' => 'That code has already been used. Scan the code on the branch screen yourself.',
+    'photo_required' => 'Your company requires a photo when recording attendance. Allow camera access and try again.',
+
     // Generic
     'rate_limited' => 'Too many attempts. Please wait a moment and try again.',
     'missing_fields' => 'Please fill in all the required fields.',

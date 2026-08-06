@@ -70,9 +70,10 @@ if (TenantModel::requiresLocalBiometric($tenantId)
 // self-service method the employee has, a check-out that doesn't carry a selfie
 // is rejected outright, otherwise sending an empty body would bypass the face.
 $methods = AttendanceMethodResolver::resolveForEmployee($employee, $tenantId);
+$requestedMethod = $input['method'] ?? null;
 $faceIsOnlySelfMethod = in_array('face_selfie', $methods, true)
     && !array_intersect(['qr_gps', 'gps_only'], $methods);
-$declaredFace = ($input['method'] ?? null) === 'face_selfie';
+$declaredFace = $requestedMethod === 'face_selfie';
 
 if ($declaredFace || $faceIsOnlySelfMethod) {
     if (!$declaredFace) {
@@ -115,13 +116,67 @@ if (in_array('wifi_gps', $methods, true) && ($input['method'] ?? null) === 'wifi
     }
 }
 
+// Rotating QR check-out. Verifying only the arrival would leave the control
+// half enforced in exactly the way the face and WiFi paths above guard against:
+// a colleague holding a forwarded screenshot could still close someone's day.
+$branchIdForQr = (int) ($employee['branch_id'] ?? 0);
+$branchForQr = $branchIdForQr > 0 ? BranchModel::findById($branchIdForQr, $tenantId) : null;
+
+if ($branchForQr !== null
+    && $requestedMethod === 'qr_gps'
+    && BranchQrChallengeModel::isEnabledForBranch($branchForQr)) {
+    $qrCode = $input['qr_code'] ?? null;
+    if (!is_string($qrCode) || $qrCode === '') {
+        Response::fail(I18n::t('qr_rotating_required'), 400, 'QR_REQUIRED');
+    }
+
+    // 'check_out' is a separate claim from 'check_in': arriving and leaving
+    // inside one ninety-second window is unusual but legitimate, and refusing
+    // it would mean a short errand costs the employee their day.
+    $claim = BranchQrChallengeModel::consume(
+        $qrCode,
+        $tenantId,
+        $branchIdForQr,
+        (int) $employee['id'],
+        'check_out'
+    );
+
+    if (!$claim['ok']) {
+        AttendanceSecurityModel::log(
+            $tenantId,
+            (int) $employee['id'],
+            $branchIdForQr,
+            $claim['reason'],
+            'blocked',
+            isset($input['latitude']) ? (float) $input['latitude'] : null,
+            isset($input['longitude']) ? (float) $input['longitude'] : null
+        );
+        Response::fail(I18n::t($claim['reason']), 403, strtoupper($claim['reason']));
+    }
+}
+
 // Same rule as check-in: capture the evidence before writing the punch, so a
 // company that asked for a photo never gets attendance recorded without one.
+//
+// The "only method" clause mirrors the face path above. Without it an employee
+// whose sole self-service method is photo_gps could close their day by sending
+// an empty body, and the company would find half its evidence missing.
+$photoIsOnlySelfMethod = in_array('photo_gps', $methods, true)
+    && !array_intersect(['qr_gps', 'gps_only', 'wifi_gps', 'face_selfie'], $methods);
+
 $punchPhoto = null;
-if ($isWeb && WebAccessPolicy::photoRequired($tenantId)) {
+$photoRequired = $requestedMethod === 'photo_gps'
+    || $photoIsOnlySelfMethod
+    || ($isWeb && WebAccessPolicy::photoRequired($tenantId));
+
+if ($photoRequired) {
     $punchPhoto = PunchPhotoService::store($input['photo_base64'] ?? null, $tenantId, (int) $employee['id']);
     if ($punchPhoto === null) {
-        Response::fail(I18n::t('web_photo_required'), 422, 'PHOTO_REQUIRED');
+        Response::fail(
+            I18n::t($isWeb ? 'web_photo_required' : 'photo_required'),
+            422,
+            'PHOTO_REQUIRED'
+        );
     }
 }
 

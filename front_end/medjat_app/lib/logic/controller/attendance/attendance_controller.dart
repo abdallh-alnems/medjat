@@ -38,10 +38,20 @@ class AttendanceController extends GetxController {
   /// access points, on top of the usual geofence check.
   Future<void> processWifiCheck() => _process(wifiMethod: true);
 
+  /// Photo check-in: a capture kept as evidence, with no face matching.
+  ///
+  /// The image is not a weaker [processFaceCheck] — nothing here is scored and
+  /// nobody is rejected by it. It exists so a company that will not take on the
+  /// biometric obligations of face_selfie still has something that says who
+  /// pressed the button.
+  Future<void> processPhotoCheck(String photoBase64) =>
+      _process(photoBase64: photoBase64);
+
   Future<void> _process({
     String? qrCode,
     FaceProof? faceProof,
     bool wifiMethod = false,
+    String? photoBase64,
   }) async {
     if (isProcessing) return;
     isProcessing = true;
@@ -131,11 +141,19 @@ class AttendanceController extends GetxController {
             faceProof: faceProof,
             wifi: wifi,
             wifiMethod: wifiMethod,
-            localBiometric: localBiometric);
+            localBiometric: localBiometric,
+            photoBase64: photoBase64);
       } else if (faceProof != null) {
         // Face verification is server-side by design, so it cannot be queued
         // offline — the device has nothing to verify against.
         errorMessage = 'face_requires_connection'.tr;
+        status = StatusRequest.failure;
+      } else if (photoBase64 != null) {
+        // The offline queue has nowhere to put an image: _saveOfflineRecord
+        // stores coordinates and flags only, so queueing this would sync a
+        // punch with the evidence silently dropped — the exact failure the
+        // server refuses on the online path. Say so instead.
+        errorMessage = 'photo_requires_connection'.tr;
         status = StatusRequest.failure;
       } else {
         await _processOffline(qrCode, position, isCheckOut,
@@ -157,7 +175,8 @@ class AttendanceController extends GetxController {
       FaceProof? faceProof,
       WifiInfo? wifi,
       bool wifiMethod = false,
-      bool localBiometric = false}) async {
+      bool localBiometric = false,
+      String? photoBase64}) async {
     final homeController = Get.find<HomeController>();
 
     // The integrity flags are reported even though this app already refuses to
@@ -172,6 +191,7 @@ class AttendanceController extends GetxController {
             latitude: position.latitude,
             longitude: position.longitude,
             localBiometric: localBiometric,
+            photoBase64: photoBase64,
           )
         : await _attendanceData.checkIn(
             branchId: homeController.todayStatus?.branchId ??
@@ -186,6 +206,7 @@ class AttendanceController extends GetxController {
             wifi: wifi,
             wifiMethod: wifiMethod,
             localBiometric: localBiometric,
+            photoBase64: photoBase64,
           );
 
     final responseStatus = response['status'];

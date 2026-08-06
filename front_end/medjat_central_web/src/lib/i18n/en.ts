@@ -622,6 +622,18 @@ export const en: Dictionary = {
   wifi_outside_hint:
     "Only ever seen from outside the branch area — most likely an employee's home router. Do not approve.",
   face_selfie: "Selfie + face recognition",
+  photo_gps: "Photo + location",
+  rotating_qr: "Rotating code on a branch screen",
+  rotating_qr_hint:
+    "Instead of a fixed printed code, a screen at the branch door shows a code "
+    + "that changes every half minute. A code photographed and sent to a colleague "
+    + "has expired before it arrives.",
+  rotating_qr_no_branches:
+    "No branch has the rotating code enabled. Turn it on in that branch's attendance method settings first.",
+  rotating_qr_pick_branch: "Choose the branch whose screen this is",
+  rotating_qr_alt: "Rotating attendance code",
+  rotating_qr_instruction: "Scan this code in the Medjat app to record your attendance",
+  rotating_qr_stale: "Display has stopped — tell an administrator",
   face_settings: "Face recognition settings",
   face_settings_hint: "Applied to every branch unless the branch sets its own.",
   face_match_threshold: "Match threshold",

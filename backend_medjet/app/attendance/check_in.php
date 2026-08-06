@@ -44,7 +44,7 @@ $methods = AttendanceMethodResolver::resolveForEmployee($employee, $tenantId);
 
 // Older app builds don't send `method` — infer it from the QR as before.
 $requestedMethod = $input['method'] ?? ($qrCode ? 'qr_gps' : 'gps_only');
-if (!in_array($requestedMethod, ['qr_gps', 'gps_only', 'face_selfie', 'wifi_gps'], true)) {
+if (!in_array($requestedMethod, AttendanceMethodResolver::SELF_SERVICE, true)) {
     Response::fail('Unsupported check-in method', 422, 'METHOD_NOT_ALLOWED');
 }
 
@@ -77,7 +77,24 @@ if (TenantModel::requiresLocalBiometric($tenantId)
     Response::fail(I18n::t('local_biometric_required'), 403, 'LOCAL_BIOMETRIC_REQUIRED');
 }
 
-if ($qrCode && $branch['qr_code'] !== $qrCode) {
+// A branch on rotating codes does not accept its printed one, and vice versa.
+// Both paths stay because the flag is per branch: one branch can be on a screen
+// while the branch down the road is still on a laminated sheet.
+//
+// No app release is involved either way. The employee app forwards whatever the
+// camera read (scan_qr_screen -> processQrScan -> 'qr_code') and has never
+// interpreted the value, so builds already in the stores send a rotating code
+// exactly as they sent a printed one. The server decides which it expects.
+$rotatingQr = $requestedMethod === 'qr_gps'
+    && BranchQrChallengeModel::isEnabledForBranch($branch);
+
+if ($rotatingQr) {
+    // Say so before the geofence is evaluated: an employee who sent nothing to
+    // scan should be told to look at the screen, not told they are out of range.
+    if (!is_string($qrCode) || $qrCode === '') {
+        Response::fail(I18n::t('qr_rotating_required'), 400, 'QR_REQUIRED');
+    }
+} elseif ($qrCode && $branch['qr_code'] !== $qrCode) {
     Response::fail('Invalid QR code for this branch', 400, 'INVALID_QR');
 }
 
@@ -135,6 +152,35 @@ if ($requestedMethod === 'wifi_gps') {
     }
 }
 
+// Rotating QR is claimed after the geofence for the same reason the face check
+// is: spending a code writes a row, and an employee standing outside the radius
+// must not burn one they will need thirty seconds later when they walk in.
+if ($rotatingQr) {
+    $claim = BranchQrChallengeModel::consume(
+        (string) $qrCode,
+        $tenantId,
+        $branchId,
+        (int) $employee['id'],
+        'check_in'
+    );
+
+    if (!$claim['ok']) {
+        // A replay is a forwarded screenshot; an expiry is usually a slow scan.
+        // Both are recorded, because a run of expiries at one branch is how a
+        // dead display announces itself.
+        AttendanceSecurityModel::log(
+            $tenantId,
+            (int) $employee['id'],
+            $branchId,
+            $claim['reason'],
+            'blocked',
+            $latitude ?: null,
+            $longitude ?: null
+        );
+        Response::fail(I18n::t($claim['reason']), 403, strtoupper($claim['reason']));
+    }
+}
+
 // Face verification runs after GPS so an out-of-range employee never burns a
 // liveness challenge, and the cheap check rejects first.
 $faceScore = null;
@@ -166,11 +212,22 @@ if ($requestedMethod === 'face_selfie') {
 // rather than recording anyway matters: silently dropping the image would
 // remove a control the company deliberately switched on, and nobody would
 // notice until they went looking for a picture that was never taken.
+// Two independent reasons to hold an image, and they are not the same rule.
+// photo_gps is a method the company chose *because* it wants a photograph and
+// no biometric processing; the browser rule is a property of the weakest
+// channel. A company can be on both at once, so this is an OR, not a branch.
 $punchPhoto = null;
-if ($isWeb && WebAccessPolicy::photoRequired($tenantId)) {
+$photoRequired = $requestedMethod === 'photo_gps'
+    || ($isWeb && WebAccessPolicy::photoRequired($tenantId));
+
+if ($photoRequired) {
     $punchPhoto = PunchPhotoService::store($input['photo_base64'] ?? null, $tenantId, (int) $employee['id']);
     if ($punchPhoto === null) {
-        Response::fail(I18n::t('web_photo_required'), 422, 'PHOTO_REQUIRED');
+        Response::fail(
+            I18n::t($isWeb ? 'web_photo_required' : 'photo_required'),
+            422,
+            'PHOTO_REQUIRED'
+        );
     }
 }
 

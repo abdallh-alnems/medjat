@@ -78,6 +78,38 @@ if (array_key_exists('face_match_threshold', $input)
     BranchModel::updateFaceSettings($branchId, $tenantId, $faceThreshold, $faceLiveness);
 }
 
+// Rotating QR. Omit the key to leave it alone; this is a switch, not an
+// inherited setting, so there is no null-means-inherit case.
+//
+// Refusing to turn it on for a branch that is not on qr_gps is deliberate: the
+// flag does nothing there, and a switch that silently does nothing is worse
+// than one that explains itself. `$attendanceMethods` is the value just saved;
+// null means the branch inherits, so fall back to what it actually resolves to.
+if (array_key_exists('rotating_qr_enabled', $input)) {
+    $rotating = filter_var($input['rotating_qr_enabled'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+    if ($rotating === null) {
+        Response::fail('rotating_qr_enabled must be true or false', 422, 'rotating_qr_enabled_bool');
+    }
+
+    if ($rotating) {
+        $effective = $attendanceMethods;
+        if ($effective === null) {
+            $tenant = TenantModel::findById($tenantId);
+            $decoded = json_decode((string) ($tenant['attendance_methods'] ?? ''), true);
+            $effective = is_array($decoded) ? $decoded : ['qr_gps'];
+        }
+        if (!in_array('qr_gps', $effective, true)) {
+            Response::fail(
+                'Rotating QR only applies to the qr_gps method; enable qr_gps for this branch first.',
+                422,
+                'rotating_qr_requires_qr_gps'
+            );
+        }
+    }
+
+    BranchModel::updateRotatingQr($branchId, $tenantId, $rotating);
+}
+
 AuditLogModel::log($tenantId, $auth['admin_id'], 'branch.update_attendance_method', 'branch', $branchId);
 
 Response::success(['message' => 'Branch attendance methods updated']);

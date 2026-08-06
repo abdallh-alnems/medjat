@@ -101,6 +101,7 @@ require_once __DIR__ . '/../core/FaceMatchService.php';
 require_once __DIR__ . '/../core/BiometricEnrollment.php';
 require_once __DIR__ . '/../models/BranchNetworkModel.php';
 require_once __DIR__ . '/../core/NetworkVerifier.php';
+require_once __DIR__ . '/../models/BranchQrChallengeModel.php';
 require_once __DIR__ . '/../models/AttendanceDeviceModel.php';
 require_once __DIR__ . '/../models/DeviceUserModel.php';
 require_once __DIR__ . '/../models/DevicePunchModel.php';

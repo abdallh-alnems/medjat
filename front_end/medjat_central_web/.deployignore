@@ -19,6 +19,15 @@
 node_modules/
 .next/
 
+# Created by the build itself, not by this repo. deploy-web.sh runs
+# `npm ci` with HOME=$REMOTE_DIR, so npm's cache lands in .npm/ and Next.js
+# writes .config/nextjs-nodejs/ — both inside the deploy directory. Without
+# these entries every deploy has rsync --delete wipe the npm cache seconds
+# before `npm ci` needs it, turning a warm install into a full re-download of
+# the dependency tree each time.
+.npm/
+.config/
+
 # --- local-only ---
 .git/
 .deployignore

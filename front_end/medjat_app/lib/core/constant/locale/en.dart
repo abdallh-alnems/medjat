@@ -107,6 +107,17 @@ const Map<String, String> en = {
   // ── Face check-in (face_selfie) ──
   'method_face_selfie': 'Face check-in',
   'method_face_selfie_desc': 'Take a selfie so the system can recognise you.',
+  // photo_gps — read by an employee choosing a method. Promises no recognition:
+  // the photo is kept for review and rejects nobody.
+  'method_photo_gps': 'Photo + location',
+  'method_photo_gps_desc': 'Take a photo, saved with your attendance as proof.',
+  'photo_check_in_title': 'Photo check-in',
+  'photo_check_out_title': 'Photo check-out',
+  'photo_opening_camera': 'Opening the camera…',
+  'photo_sending': 'Sending the photo…',
+  'photo_capture_failed': 'Could not take the photo. Try again.',
+  'photo_too_large': 'That photo is too large. Try again.',
+  'photo_requires_connection': 'Photo check-in needs an internet connection',
   'face_check_in_title': 'Face check-in',
   'face_check_out_title': 'Face check-out',
   'face_verifying': 'Verifying your face...',

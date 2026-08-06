@@ -104,6 +104,17 @@ const Map<String, String> ar = {
   // ── Face check-in (face_selfie) ──
   'method_face_selfie': 'تحضير بالوجه',
   'method_face_selfie_desc': 'التقط سيلفي ليتعرّف النظام عليك.',
+  // photo_gps — تُقرأ من موظف يختار طريقة. لا تَعِد بتعرّف على الوجه: الصورة
+  // تُحفظ للمراجعة فقط ولا يُرفض بها أحد.
+  'method_photo_gps': 'صورة + الموقع',
+  'method_photo_gps_desc': 'التقط صورة تُحفظ مع حضورك كإثبات.',
+  'photo_check_in_title': 'تسجيل الحضور بصورة',
+  'photo_check_out_title': 'تسجيل الانصراف بصورة',
+  'photo_opening_camera': 'جارٍ فتح الكاميرا…',
+  'photo_sending': 'جارٍ إرسال الصورة…',
+  'photo_capture_failed': 'تعذّر التقاط الصورة. حاول مرة أخرى.',
+  'photo_too_large': 'الصورة كبيرة جدًا. حاول مرة أخرى.',
+  'photo_requires_connection': 'التسجيل بصورة يحتاج اتصالاً بالإنترنت',
   'face_check_in_title': 'تسجيل الحضور بالوجه',
   'face_check_out_title': 'تسجيل الانصراف بالوجه',
   'face_verifying': 'جاري التحقق من وجهك...',

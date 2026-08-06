@@ -868,6 +868,12 @@ const Map<String, String> en = {
   'method_face_selfie_desc':
       'Employee takes a selfie at check-in and the system matches it against their enrolled face.',
   'face_badge': 'Face',
+  'method_photo_gps': 'Photo + Location',
+  'method_photo_gps_desc':
+      'Employee takes a photo at check-in, kept as evidence for review only — no '
+      'face matching and no automatic rejection. For companies that do not want '
+      'to process biometric data.',
+  'photo_badge': 'Photo',
   'face_match_threshold': 'Match threshold',
   'face_match_threshold_hint':
       'Minimum similarity to accept a face. Higher is stricter and rejects more genuine employees.',

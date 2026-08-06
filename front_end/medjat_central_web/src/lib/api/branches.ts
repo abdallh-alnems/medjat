@@ -36,6 +36,35 @@ export function generateBranchQr(id: number) {
   return apiGet<{ qr_token: string }>("app/branches/generate_qr.php", { id });
 }
 
+/** Turn the rotating branch QR on or off for one branch. */
+export function setBranchRotatingQr(branchId: number, enabled: boolean) {
+  return apiPost<{ message: string }>(
+    "app/branches/update_attendance_method.php",
+    { branch_id: branchId, rotating_qr_enabled: enabled },
+  );
+}
+
+export type RotatingQrCode = {
+  nonce: string;
+  /** Seconds this code stays valid. Longer than `rotate_in`, so windows overlap. */
+  expires_in: number;
+  /** Seconds the display should wait before asking for the next code. */
+  rotate_in: number;
+  branch: string;
+};
+
+/**
+ * Mint the next rotating code for a branch display.
+ *
+ * POST, not GET: this writes a row. Every backend mutation in this codebase is
+ * POST (Auth::requirePost).
+ */
+export function fetchBranchRotatingQr(branchId: number) {
+  return apiPost<RotatingQrCode>("app/attendance/branch_qr_code.php", {
+    branch_id: branchId,
+  });
+}
+
 export async function listShifts(): Promise<Shift[]> {
   // Backend returns `{ items }`.
   const raw = await apiGet<unknown>("app/shifts/list.php");

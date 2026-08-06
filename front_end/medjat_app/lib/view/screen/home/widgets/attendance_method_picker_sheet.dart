@@ -67,18 +67,21 @@ class AttendanceMethodPickerSheet extends StatelessWidget {
                   'gps_only' => Icons.location_on_outlined,
                   'wifi_gps' => Icons.wifi,
                   'face_selfie' => Icons.face_retouching_natural_outlined,
+                  'photo_gps' => Icons.photo_camera_outlined,
                   _ => Icons.qr_code_scanner,
                 },
                 title: switch (method) {
                   'gps_only' => 'method_gps_only'.tr,
                   'wifi_gps' => 'method_wifi_gps'.tr,
                   'face_selfie' => 'method_face_selfie'.tr,
+                  'photo_gps' => 'method_photo_gps'.tr,
                   _ => 'method_qr_gps'.tr,
                 },
                 description: switch (method) {
                   'gps_only' => 'method_gps_only_desc'.tr,
                   'wifi_gps' => 'method_wifi_gps_desc'.tr,
                   'face_selfie' => 'method_face_selfie_desc'.tr,
+                  'photo_gps' => 'method_photo_gps_desc'.tr,
                   _ => 'method_qr_gps_desc'.tr,
                 },
                 onTap: () {

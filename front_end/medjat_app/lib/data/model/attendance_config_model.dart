@@ -33,12 +33,24 @@ class AttendanceConfigModel {
   bool get hasFaceSelfie => methods.contains('face_selfie');
   bool get hasWifiGps => methods.contains('wifi_gps');
 
+  /// Photo kept as evidence, with no face matching and no automatic decision.
+  ///
+  /// Deliberately not a weaker [hasFaceSelfie]: the two are different products.
+  /// face_selfie derives a biometric template and lets the server reject the
+  /// punch on a score; photo_gps derives nothing and rejects nobody, which is
+  /// exactly why a company wary of law 14/2025 can use it.
+  bool get hasPhotoGps => methods.contains('photo_gps');
+
   /// Methods the employee can act on directly from this app.
+  ///
+  /// Must mirror `AttendanceMethodResolver::SELF_SERVICE` on the backend: a
+  /// method missing here is one the server offers and the app never shows.
   List<String> get selfMethods => methods
       .where((m) =>
           m == 'qr_gps' ||
           m == 'gps_only' ||
           m == 'face_selfie' ||
+          m == 'photo_gps' ||
           m == 'wifi_gps')
       .toList();
 

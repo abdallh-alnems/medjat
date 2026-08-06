@@ -24,7 +24,22 @@ final class AttendanceMethodResolver {
     // itself with a branch-scoped token — but unlike 'device' it DOES consult
     // this resolver, so that a company can put its factory floor on the kiosk
     // while office staff stay on gps_only.
-    public const ALLOWED = ['qr_gps', 'gps_only', 'face_selfie', 'wifi_gps', 'device', 'manual', 'kiosk'];
+    // 'photo_gps' is GPS plus an image kept purely as evidence: nothing scores
+    // it and no punch is ever accepted or rejected because of it. It exists so a
+    // company that wants a deterrent does not have to take on the biometric
+    // obligations of face_selfie (law 14/2025) to get one.
+    public const ALLOWED = ['qr_gps', 'gps_only', 'face_selfie', 'photo_gps', 'wifi_gps', 'device', 'manual', 'kiosk'];
+
+    /**
+     * Methods an employee can use to record their own attendance from a phone or
+     * a browser, as opposed to ones recorded for them ('manual'), by a terminal
+     * ('device') or by a shared tablet ('kiosk').
+     *
+     * Extracted so check_in.php and check_out.php cannot drift apart: a method
+     * added to one and not the other is enforced on arrival and unenforced on
+     * departure, which is how a control ends up half-applied.
+     */
+    public const SELF_SERVICE = ['qr_gps', 'gps_only', 'face_selfie', 'photo_gps', 'wifi_gps'];
 
     public static function resolveForEmployee(array $employee, int $tenantId): array {
         // 1) employee override
