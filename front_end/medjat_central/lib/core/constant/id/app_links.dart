@@ -395,4 +395,8 @@ class AppLinks {
           : '$base/app/support/messages.php?ticket_id=$ticketId';
   static String get supportReply => '$base/app/support/reply.php';
   static String get supportClose => '$base/app/support/close.php';
+  // Attachments are not public files: they are fetched through this endpoint
+  // with the session's own credentials.
+  static String supportAttachment(int messageId) =>
+      '$base/app/support/attachment.php?message_id=$messageId';
 }

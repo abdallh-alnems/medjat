@@ -37,6 +37,18 @@ class AdminAuthData {
     return await _crud.getData(AppLinks.adminMe);
   }
 
+  /// Changing the password signs every other device out server-side, so no
+  /// local cleanup is needed here.
+  Future<Map<String, dynamic>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    return await _crud.postData(AppLinks.adminChangePassword, {
+      'current_password': currentPassword,
+      'new_password': newPassword,
+    });
+  }
+
   Future<Map<String, dynamic>> logout() async {
     final response = await _crud.postData(AppLinks.adminLogout, {});
     await TokenStorageService.clearAll();

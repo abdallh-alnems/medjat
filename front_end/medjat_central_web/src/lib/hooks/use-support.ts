@@ -36,8 +36,11 @@ export function useCreateTicket() {
 
 export function useReplyTicket() {
   return useToastMutation(
-    (args: { ticketId: number; body: string }) =>
-      replyTicket(args.ticketId, args.body),
+    (args: {
+      ticketId: number;
+      body: string;
+      attachment?: { base64: string; name: string };
+    }) => replyTicket(args.ticketId, args.body, args.attachment),
     { invalidate: [[...QK, "messages"] as const] },
   );
 }

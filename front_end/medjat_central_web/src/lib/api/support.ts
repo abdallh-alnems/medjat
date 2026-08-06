@@ -1,4 +1,4 @@
-import { apiGet, apiPost, unwrapList } from "./client";
+import { apiClient, apiGet, apiPost, unwrapList } from "./client";
 import type { SupportTicket, SupportMessage } from "@/lib/types";
 
 export async function listTickets(): Promise<SupportTicket[]> {
@@ -23,11 +23,38 @@ export async function listMessages(
   return unwrapList<SupportMessage>(raw, ["messages", "items", "data"]);
 }
 
-export function replyTicket(ticketId: number, body: string) {
+/**
+ * Reply to a ticket, optionally with a screenshot.
+ *
+ * The attachment travels base64-encoded in the JSON body (the backend derives
+ * its real type from the bytes and stores it outside any public directory), so
+ * no multipart transport is needed. A reply may be an attachment with no text.
+ */
+export function replyTicket(
+  ticketId: number,
+  body: string,
+  attachment?: { base64: string; name: string },
+) {
   return apiPost<SupportMessage>("app/support/reply.php", {
     ticket_id: ticketId,
     body,
+    ...(attachment
+      ? { attachment: attachment.base64, attachment_name: attachment.name }
+      : {}),
   });
+}
+
+/**
+ * Fetch an attachment as an object URL. Attachments are never public — the
+ * request carries the session credentials like any other API call — so an
+ * `<img src>` cannot load one directly.
+ */
+export async function fetchAttachment(messageId: number): Promise<string> {
+  const res = await apiClient.get<Blob>("app/support/attachment.php", {
+    params: { message_id: messageId },
+    responseType: "blob",
+  });
+  return URL.createObjectURL(res.data);
 }
 
 export function closeTicket(ticketId: number) {

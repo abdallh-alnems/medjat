@@ -119,19 +119,26 @@ final class SupportModel {
         string $senderType,
         ?int $senderAdminId,
         ?int $senderSuperAdminId,
-        string $body
+        string $body,
+        ?string $attachmentUrl = null,
+        ?string $attachmentName = null
     ): int {
         $db = Database::getInstance();
         $db->beginTransaction();
         try {
             Database::execute(
-                "INSERT INTO support_messages (ticket_id, sender_type, sender_admin_id, sender_super_admin_id, body)
-                 VALUES (?, ?, ?, ?, ?)",
-                [$ticketId, $senderType, $senderAdminId, $senderSuperAdminId, $body]
+                "INSERT INTO support_messages
+                 (ticket_id, sender_type, sender_admin_id, sender_super_admin_id, body, attachment_url, attachment_name)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [$ticketId, $senderType, $senderAdminId, $senderSuperAdminId, $body, $attachmentUrl, $attachmentName]
             );
             $messageId = (int) Database::lastInsertId();
 
-            $preview = mb_substr($body, 0, 255);
+            // An attachment-only message still needs something to show in the
+            // ticket list, or the thread looks empty from the outside.
+            $preview = $body !== ''
+                ? mb_substr($body, 0, 255)
+                : ('📎 ' . mb_substr((string) ($attachmentName ?? 'مرفق'), 0, 250));
 
             if ($senderType === 'user') {
                 Database::execute(

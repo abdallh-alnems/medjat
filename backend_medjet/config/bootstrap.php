@@ -42,6 +42,7 @@ require_once __DIR__ . '/../core/LoginAlertService.php';
 require_once __DIR__ . '/../core/EmployeeActivationAlert.php';
 require_once __DIR__ . '/../core/ManagerAlert.php';
 require_once __DIR__ . '/../core/ManagerInviteMailer.php';
+require_once __DIR__ . '/../core/SupportAttachment.php';
 require_once __DIR__ . '/../core/ApprovalEngine.php';
 require_once __DIR__ . '/../core/ApprovalDispatcher.php';
 

@@ -4,6 +4,7 @@ import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
   sendPasswordResetEmail,
+  signInWithCustomToken,
   signInWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
@@ -30,6 +31,18 @@ export async function signInEmail(email: string, password: string) {
 
 export async function signUpEmail(email: string, password: string) {
   return createUserWithEmailAndPassword(auth, email, password);
+}
+
+/**
+ * Support-desk diagnostic sign-in.
+ *
+ * The token is minted by admin/admins/impersonate.php (super admin only, with a
+ * stated reason, recorded in both our audit log and the company's own) and is
+ * exchanged here for a normal session. Firebase expires it after one hour and
+ * it cannot be renewed, so a forgotten tab dies on its own.
+ */
+export async function signInWithSupportToken(token: string) {
+  return signInWithCustomToken(auth, token);
 }
 
 // Popup-failure codes where a full-page redirect is the better fallback.

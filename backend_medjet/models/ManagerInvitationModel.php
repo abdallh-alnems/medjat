@@ -4,7 +4,10 @@ final class ManagerInvitationModel {
     private const CODE_LENGTH = 8;
     private const VALIDITY_HOURS = 72;
 
-    public static function create(int $tenantId, int $invitedBy, array $data): array {
+    // $invitedBy is nullable because the super-admin panel also creates
+    // invitations when it onboards a company, and a super admin has no row in
+    // `admins`. The column is already nullable with ON DELETE SET NULL.
+    public static function create(int $tenantId, ?int $invitedBy, array $data): array {
         $code = self::generateUniqueCode();
         $tokenHash = hash('sha256', $code);
         $expiresAt = date('Y-m-d H:i:s', strtotime('+' . self::VALIDITY_HOURS . ' hours'));

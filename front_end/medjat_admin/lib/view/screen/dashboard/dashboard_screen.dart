@@ -67,13 +67,20 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _buildQuickActions(BuildContext context, AppColorScheme colors) {
-    final isSuperAdmin = Get.find<AuthController>().admin?.role == 'superadmin';
+    final admin = Get.find<AuthController>().admin;
+    final isSuperAdmin = admin?.isSuperAdmin ?? false;
+    // Sending an announcement needs `admin` on the backend; a readonly account
+    // seeing the entry only earns a 403 that reads as "an error occurred".
+    final canWrite = admin?.canWrite ?? false;
     final actions = [
       _QuickAction(icon: Icons.business, label: 'الشركات', route: AppRoutes.tenants),
-      _QuickAction(icon: Icons.people, label: 'المستخدمين', route: AppRoutes.users),
+      _QuickAction(icon: Icons.people, label: 'مديرو الشركات', route: AppRoutes.users),
       _QuickAction(icon: Icons.history, label: 'سجل العمليات', route: AppRoutes.audit),
-      _QuickAction(icon: Icons.notifications, label: 'الإشعارات', route: AppRoutes.notifications),
-      _QuickAction(icon: Icons.headset_mic, label: 'الدعم الفني', route: AppRoutes.supportInbox),
+      if (canWrite)
+        _QuickAction(icon: Icons.notifications, label: 'الإشعارات', route: AppRoutes.notifications),
+      if (canWrite)
+        _QuickAction(icon: Icons.headset_mic, label: 'الدعم الفني', route: AppRoutes.supportInbox),
+      _QuickAction(icon: Icons.account_circle, label: 'حسابي', route: AppRoutes.account),
       if (isSuperAdmin)
         _QuickAction(icon: Icons.person_add_alt_1, label: 'إضافة مشرف', route: AppRoutes.addAdmin),
       if (isSuperAdmin)

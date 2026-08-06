@@ -22,10 +22,20 @@ class SupportData {
     return await _crud.getData(AppLinks.supportMessages, queryParameters: params);
   }
 
-  Future<Map<String, dynamic>> reply(int ticketId, String body) async {
+  /// [attachmentBase64] is a raw base64 image/PDF; the backend re-derives the
+  /// type from the bytes and stores it outside any public directory. A reply
+  /// may be an attachment with no text.
+  Future<Map<String, dynamic>> reply(
+    int ticketId,
+    String body, {
+    String? attachmentBase64,
+    String? attachmentName,
+  }) async {
     return await _crud.postData(AppLinks.supportReply, {
       'ticket_id': ticketId,
       'body': body,
+      'attachment': ?attachmentBase64,
+      'attachment_name': ?attachmentName,
     });
   }
 

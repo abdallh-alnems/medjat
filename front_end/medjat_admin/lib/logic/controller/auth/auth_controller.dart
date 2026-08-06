@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/routes/app_routes.dart';
@@ -7,6 +8,7 @@ import '../../../core/services/token_storage_service.dart';
 import '../../../core/services/push_notification_service.dart';
 import '../../../data/data_source/remote/admin_auth_data/admin_auth_data.dart';
 import '../../../data/model/admin_model.dart';
+import '../../../main.dart' show firebaseReady;
 
 class AuthController extends GetxController {
   final AdminAuthData _authData = Get.find<AdminAuthData>();
@@ -92,9 +94,15 @@ class AuthController extends GetxController {
   }
 
   void _initPushNotifications() {
+    // Without a Firebase app there is no messaging instance, and init() would
+    // reject asynchronously — outside this try, and straight into the global
+    // error handler. Check first rather than reporting a crash we caused.
+    if (!firebaseReady) return;
     try {
       final pushService = Get.find<PushNotificationService>();
-      pushService.init();
+      unawaited(pushService.init().catchError((Object e) {
+        debugPrint('Push init failed: $e');
+      }));
     } catch (_) {}
   }
 }

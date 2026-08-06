@@ -1,7 +1,9 @@
 <?php
 
 final class AdminAuth {
-    private const TOKEN_LIFETIME_HOURS = 12;
+    // Public because admin/auth/login.php's Firebase branch computes the same
+    // expiry itself; reading a private const from there is a fatal Error.
+    public const TOKEN_LIFETIME_HOURS = 12;
 
     public static function require(?string $minRole = null): array {
         $token = self::extractBearerToken();

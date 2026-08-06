@@ -17,17 +17,20 @@ import '../../../data/data_source/remote/device_data/device_data.dart';
 import '../../../logic/controller/auth/auth_controller.dart';
 import '../../../logic/controller/dashboard/dashboard_controller.dart';
 import '../../../logic/controller/tenant/tenant_controller.dart';
+import '../../../logic/controller/tenant/tenant_detail_controller.dart';
 import '../../../logic/controller/admin_account/admin_account_controller.dart';
 import '../../../logic/controller/notification/notification_controller.dart';
 import '../../../logic/controller/user/user_controller.dart';
 import '../../../logic/controller/audit/audit_controller.dart';
 import '../../../logic/controller/support/support_controller.dart';
 import '../../../logic/controller/app_control/app_control_controller.dart';
+import '../../../logic/controller/account/account_controller.dart';
 import '../../../core/services/push_notification_service.dart';
 import '../../../view/screen/splash/splash_screen.dart';
 import '../../../view/screen/auth/login_screen.dart';
 import '../../../view/screen/dashboard/dashboard_screen.dart';
 import '../../../view/screen/tenants/tenants_screen.dart';
+import '../../../view/screen/tenants/tenant_detail_screen.dart';
 import '../../../view/screen/users/users_screen.dart';
 import '../../../view/screen/admin_account/add_admin_screen.dart';
 import '../../../view/screen/audit/audit_screen.dart';
@@ -35,6 +38,7 @@ import '../../../view/screen/notifications/notifications_screen.dart';
 import '../../../view/screen/support/support_inbox_screen.dart';
 import '../../../view/screen/support/support_thread_screen.dart';
 import '../../../view/screen/app_control/app_control_screen.dart';
+import '../../../view/screen/account/account_screen.dart';
 
 class AppBindings extends Bindings {
   @override
@@ -105,6 +109,24 @@ class SupportBinding extends Bindings {
   }
 }
 
+/// The company screen is opened with its tenant id as the route argument, so
+/// the controller is constructed per company rather than reused.
+class TenantDetailBinding extends Bindings {
+  @override
+  void dependencies() {
+    Get.lazyPut<TenantData>(() => TenantData());
+    final tenantId = (Get.arguments as int?) ?? 0;
+    Get.create<TenantDetailController>(() => TenantDetailController(tenantId));
+  }
+}
+
+class AccountBinding extends Bindings {
+  @override
+  void dependencies() {
+    Get.lazyPut<AccountController>(() => AccountController());
+  }
+}
+
 class AppControlBinding extends Bindings {
   @override
   void dependencies() {
@@ -137,6 +159,13 @@ List<GetPage<dynamic>> getPages = [
     name: AppRoutes.tenants,
     page: () => const TenantsScreen(),
     binding: TenantsBinding(),
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.tenantDetail,
+    page: () => const TenantDetailScreen(),
+    binding: TenantDetailBinding(),
     transition: Transition.fadeIn,
     transitionDuration: AppMotion.transition,
   ),
@@ -179,6 +208,13 @@ List<GetPage<dynamic>> getPages = [
     name: AppRoutes.supportThread,
     page: () => const SupportThreadScreen(),
     binding: SupportBinding(),
+    transition: Transition.fadeIn,
+    transitionDuration: AppMotion.transition,
+  ),
+  GetPage(
+    name: AppRoutes.account,
+    page: () => const AccountScreen(),
+    binding: AccountBinding(),
     transition: Transition.fadeIn,
     transitionDuration: AppMotion.transition,
   ),

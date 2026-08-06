@@ -42,7 +42,12 @@ export interface SupportTicket {
 export interface SupportMessage {
   id: number;
   ticket_id: number;
-  sender: "user" | "support";
+  /** The backend column is `sender_type`; `sender` is kept for older payloads. */
+  sender?: "user" | "support";
+  sender_type?: "user" | "support" | "system";
   body: string;
   created_at: string;
+  /** Stored path; the file is fetched through the authenticated endpoint. */
+  attachment_url?: string | null;
+  attachment_name?: string | null;
 }

@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:get/get.dart';
 import '../../../core/class/status_request.dart';
 import '../../../data/data_source/remote/support_data/support_data.dart';
@@ -163,17 +166,62 @@ class SupportController extends GetxController {
     _lastMessageId = 0;
   }
 
+  /// A screenshot staged for the next reply, base64-encoded and ready to send.
+  final pendingAttachment = Rxn<String>();
+  final pendingAttachmentName = RxnString();
+
+  /// Attach a screenshot. The image is downscaled and re-compressed by the
+  /// picker before encoding — the backend caps attachments at 5 MB, and a
+  /// full-resolution phone photo of a screen is well past that for no gain.
+  Future<void> pickAttachment({bool fromCamera = false}) async {
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: fromCamera ? ImageSource.camera : ImageSource.gallery,
+        maxWidth: 1600,
+        imageQuality: 80,
+      );
+      if (picked == null) return;
+
+      final bytes = await File(picked.path).readAsBytes();
+      if (bytes.lengthInBytes > 5 * 1024 * 1024) {
+        Get.snackbar('كبير جدًا', 'الحد الأقصى للمرفق 5 ميجابايت',
+            snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+
+      pendingAttachment.value = base64Encode(bytes);
+      pendingAttachmentName.value = picked.name;
+      update();
+    } catch (e) {
+      Get.snackbar('خطأ', 'تعذّر اختيار الصورة', snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  void clearAttachment() {
+    pendingAttachment.value = null;
+    pendingAttachmentName.value = null;
+    update();
+  }
+
   Future<void> sendReply(int ticketId) async {
     final text = replyText.value.trim();
-    if (text.isEmpty || text.length > 5000) return;
+    final attachment = pendingAttachment.value;
+    // An attachment on its own is a complete reply; text alone is too.
+    if ((text.isEmpty && attachment == null) || text.length > 5000) return;
 
     replyStatus.value = StatusRequest.loading;
     update();
 
-    final response = await _supportData.reply(ticketId, text);
+    final response = await _supportData.reply(
+      ticketId,
+      text,
+      attachmentBase64: attachment,
+      attachmentName: pendingAttachmentName.value,
+    );
 
     if (response['status'] == StatusRequest.success) {
       replyText.value = '';
+      clearAttachment();
       replyStatus.value = StatusRequest.success;
       await openThread(ticketId);
     } else {

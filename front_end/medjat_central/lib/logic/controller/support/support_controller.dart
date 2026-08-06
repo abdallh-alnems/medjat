@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import '../../../core/class/status_request.dart';
@@ -161,11 +163,64 @@ class SupportController extends GetxController {
     return false;
   }
 
+  /// A screenshot staged for the next reply, base64-encoded and ready to send.
+  final pendingAttachment = Rxn<String>();
+  final pendingAttachmentName = RxnString();
+
+  /// Attach a screenshot or a short PDF. The backend caps attachments at 5 MB
+  /// and derives the real type from the bytes, so the extension here is only a
+  /// first filter.
+  Future<void> pickAttachment() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp', 'pdf'],
+        withData: true,
+      );
+      final file = result?.files.single;
+      final bytes = file?.bytes;
+      if (file == null || bytes == null) return;
+
+      if (bytes.lengthInBytes > 5 * 1024 * 1024) {
+        Get.snackbar('كبير جدًا', 'الحد الأقصى للمرفق 5 ميجابايت',
+            snackPosition: SnackPosition.BOTTOM);
+        return;
+      }
+
+      pendingAttachment.value = base64Encode(bytes);
+      pendingAttachmentName.value = file.name;
+    } catch (e) {
+      debugPrint('SupportController pickAttachment error: $e');
+      Get.snackbar('خطأ', 'تعذّر اختيار الملف', snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  void clearAttachment() {
+    pendingAttachment.value = null;
+    pendingAttachmentName.value = null;
+  }
+
+  /// Bytes of one message's attachment, fetched with auth headers.
+  Future<Uint8List?> attachmentBytes(int messageId) async {
+    final response = await _data.attachmentBytes(messageId);
+    if (response['status'] == StatusRequest.success) {
+      return response['bytes'] as Uint8List?;
+    }
+    return null;
+  }
+
   Future<bool> sendReply(String body) async {
     if (currentTicket.value == null) return false;
+    // An attachment on its own is a complete report.
+    if (body.trim().isEmpty && pendingAttachment.value == null) return false;
     isSending.value = true;
     try {
-      final response = await _data.reply(currentTicket.value!.id, body);
+      final response = await _data.reply(
+        currentTicket.value!.id,
+        body,
+        attachmentBase64: pendingAttachment.value,
+        attachmentName: pendingAttachmentName.value,
+      );
       if (response['status'] == StatusRequest.success) {
         final data = response['data'];
         if (data is Map<String, dynamic>) {
@@ -189,6 +244,7 @@ class SupportController extends GetxController {
             );
           }
         }
+        clearAttachment();
         await openTicket(currentTicket.value!.id);
         isSending.value = false;
         return true;

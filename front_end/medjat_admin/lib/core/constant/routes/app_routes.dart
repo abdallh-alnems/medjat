@@ -11,4 +11,5 @@ abstract class AppRoutes {
   static const String supportInbox = '/support-inbox';
   static const String supportThread = '/support-thread';
   static const String appControl = '/app-control';
+  static const String account = '/account';
 }

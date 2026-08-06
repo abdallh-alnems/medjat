@@ -97,89 +97,10 @@ AuditLogModel::log($tenantId, $auth['admin_id'], 'manager.invite', 'invitation',
 
 // Email the invitee automatically (code + how to join) *after* the response is
 // sent so the slow SMTP send never blocks the request. The code is still
-// returned for in-person / QR sharing.
+// returned for in-person / QR sharing. Shared with the super-admin panel, which
+// sends the identical message when it onboards a company.
 $tenantRow = Database::fetchOne("SELECT name FROM tenants WHERE id = ? LIMIT 1", [$tenantId]);
-$companyName = $tenantRow['name'] ?? '';
-$inviteCode = $result['code'];
-$inviteRole = $role;
-$inviteEmail = $email;
-$webBase = rtrim((string) (getenv('CENTRAL_WEB_URL') ?: ''), '/');
-
-// Public URL of the bridge landing page that opens the app (via its custom
-// scheme) and falls back to web/store. Derived from this request so it works on
-// whatever host the backend is served from.
-$scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
-$appPos = strpos($scriptName, '/app/');
-$backendRoot = $appPos !== false ? substr($scriptName, 0, $appPos) : '';
-$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-$host = $_SERVER['HTTP_HOST'] ?? 'api.medjatapp.com';
-$joinTeamUrl = $scheme . '://' . $host . $backendRoot
-    . '/join_team.php?code=' . rawurlencode($inviteCode);
-
-Background::defer(static function () use (
-    $inviteEmail, $inviteCode, $inviteRole, $companyName, $webBase, $joinTeamUrl
-) {
-    try {
-        $roleLabels = [
-            'general_manager' => 'مدير عام',
-            'hr' => 'موارد بشرية',
-            'branch_manager' => 'مدير فرع',
-            'attendance' => 'مسؤول حضور',
-            'viewer' => 'مشاهد',
-        ];
-        $roleLabel = $roleLabels[$inviteRole] ?? $inviteRole;
-        $safeCompany = htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8');
-        $safeRole = htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8');
-        $safeCode = htmlspecialchars($inviteCode, ENT_QUOTES, 'UTF-8');
-
-        $intro = $companyName !== ''
-            ? "تمت دعوتك للانضمام إلى فريق «{$safeCompany}» على Medjat بدور <strong>{$safeRole}</strong>."
-            : "تمت دعوتك للانضمام إلى فريق على Medjat بدور <strong>{$safeRole}</strong>.";
-
-        $safeJoin = htmlspecialchars($joinTeamUrl, ENT_QUOTES, 'UTF-8');
-        $linkBlock =
-            '<p style="text-align:center;margin:24px 0;">'
-            . '<a href="' . $safeJoin . '" style="display:inline-block;background:#2E7D6B;color:#fff;'
-            . 'text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:600;font-size:16px;">'
-            . 'فتح التطبيق والانضمام</a>'
-            . '</p>';
-        if ($webBase !== '') {
-            $webUrl = htmlspecialchars(
-                $webBase . '/onboarding?code=' . rawurlencode($inviteCode),
-                ENT_QUOTES,
-                'UTF-8'
-            );
-            $linkBlock .=
-                '<p style="text-align:center;margin:-8px 0 8px;">'
-                . '<a href="' . $webUrl . '" style="color:#2E7D6B;font-size:14px;">أو الفتح من المتصفح</a>'
-                . '</p>';
-        }
-
-        $html = '<!DOCTYPE html><html dir="rtl" lang="ar">'
-            . '<head><meta charset="UTF-8"></head>'
-            . '<body style="font-family:\'IBM Plex Sans Arabic\',Tahoma,Arial,sans-serif;direction:rtl;text-align:right;padding:24px;background:#f9f9f9;">'
-            . '<div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">'
-            . '<h2 style="color:#1a1a1a;margin:0 0 16px;">دعوة للانضمام إلى الفريق</h2>'
-            . '<p style="color:#444;font-size:15px;line-height:1.7;">' . $intro . '</p>'
-            . '<p style="color:#444;font-size:15px;line-height:1.7;">استخدم رمز الدعوة التالي:</p>'
-            . '<div style="text-align:center;margin:16px 0;">'
-            . '<span style="display:inline-block;border:2px solid #2E7D6B;border-radius:8px;padding:14px 28px;'
-            . 'font-size:28px;font-weight:700;letter-spacing:6px;color:#2E7D6B;">' . $safeCode . '</span>'
-            . '</div>'
-            . $linkBlock
-            . '<p style="color:#444;font-size:14px;line-height:1.8;">'
-            . 'افتح تطبيق Medjat للإدارة (أو الموقع)، ثم اختر «الانضمام إلى شركة» وأدخل هذا الرمز. '
-            . 'إن لم يكن لديك حساب بعد، أنشئ حسابًا بنفس هذا البريد الإلكتروني أولًا.'
-            . '</p>'
-            . '<hr style="border:none;border-top:1px solid #eee;margin:20px 0;">'
-            . '<p style="color:#888;font-size:13px;line-height:1.6;">هذا الرمز صالح لمدة 72 ساعة ويُستخدم مرة واحدة. إن لم تكن تتوقع هذه الدعوة، تجاهل هذه الرسالة.</p>'
-            . '</div></body></html>';
-
-        EmailService::send($inviteEmail, 'دعوة للانضمام إلى فريق على Medjat', $html);
-    } catch (\Throwable $e) {
-        error_log('Invite email failed: ' . $e->getMessage());
-    }
-});
+ManagerInviteMailer::queue($email, $result['code'], $role, $tenantRow['name'] ?? '');
 
 Response::success([
     'invitation_id' => $result['id'],

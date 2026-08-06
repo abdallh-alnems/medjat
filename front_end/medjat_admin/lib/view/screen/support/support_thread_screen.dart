@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/class/status_request.dart';
+import '../../../core/constant/id/app_links.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
+import '../../../core/services/token_storage_service.dart';
 import '../../../data/model/support_message_model.dart';
 import '../../../logic/controller/support/support_controller.dart';
 
@@ -152,60 +155,102 @@ class _SupportThreadScreenState extends State<SupportThreadScreen>
         border: Border(top: BorderSide(color: colors.borderHairline)),
       ),
       child: SafeArea(
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: TextField(
-                controller: _replyController,
-                maxLength: 5000,
-                maxLines: 3,
-                minLines: 1,
-                decoration: InputDecoration(
-                  hintText: 'اكتب ردك...',
-                  hintStyle: TextStyle(
-                    fontFamily: 'IBM Plex Sans Arabic',
-                    color: colors.textTertiary,
-                  ),
-                  counterText: '',
-                  filled: true,
-                  fillColor: colors.canvas,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    borderSide: BorderSide(color: colors.borderHairline),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    borderSide: BorderSide(color: colors.borderHairline),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    borderSide: BorderSide(color: colors.brand),
+            // A staged screenshot, shown before it is sent so it can be removed.
+            Obx(() {
+              if (controller.pendingAttachmentName.value == null) {
+                return const SizedBox.shrink();
+              }
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+                child: Row(
+                  children: [
+                    Icon(Icons.image_outlined, size: 16, color: colors.brand),
+                    const SizedBox(width: AppSpacing.s2),
+                    Expanded(
+                      child: Text(
+                        controller.pendingAttachmentName.value!,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Geist',
+                          fontSize: 12,
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: controller.clearAttachment,
+                      icon: const Icon(Icons.close, size: 18),
+                      visualDensity: VisualDensity.compact,
+                      tooltip: 'إزالة المرفق',
+                    ),
+                  ],
+                ),
+              );
+            }),
+            Row(
+              children: [
+                IconButton(
+                  onPressed: () => controller.pickAttachment(),
+                  icon: const Icon(Icons.attach_file),
+                  tooltip: 'إرفاق صورة',
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: _replyController,
+                    maxLength: 5000,
+                    maxLines: 3,
+                    minLines: 1,
+                    decoration: InputDecoration(
+                      hintText: 'اكتب ردك...',
+                      hintStyle: TextStyle(
+                        fontFamily: 'IBM Plex Sans Arabic',
+                        color: colors.textTertiary,
+                      ),
+                      counterText: '',
+                      filled: true,
+                      fillColor: colors.canvas,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        borderSide: BorderSide(color: colors.borderHairline),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        borderSide: BorderSide(color: colors.borderHairline),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        borderSide: BorderSide(color: colors.brand),
+                      ),
+                    ),
+                    onChanged: (v) => controller.replyText.value = v,
                   ),
                 ),
-                onChanged: (v) => controller.replyText.value = v,
-              ),
+                const SizedBox(width: AppSpacing.s2),
+                Obx(() => IconButton.filled(
+                      onPressed: controller.replyStatus.value == StatusRequest.loading
+                          ? null
+                          : () {
+                              final ticket = controller.currentTicket.value;
+                              if (ticket != null) {
+                                controller.sendReply(ticket.id);
+                                _replyController.clear();
+                              }
+                            },
+                      icon: controller.replyStatus.value == StatusRequest.loading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator.adaptive(
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.send),
+                    )),
+              ],
             ),
-            const SizedBox(width: AppSpacing.s2),
-            Obx(() => IconButton.filled(
-                  onPressed: controller.replyStatus.value == StatusRequest.loading
-                      ? null
-                      : () {
-                          final ticket = controller.currentTicket.value;
-                          if (ticket != null) {
-                            controller.sendReply(ticket.id);
-                            _replyController.clear();
-                          }
-                        },
-                  icon: controller.replyStatus.value == StatusRequest.loading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator.adaptive(
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Icon(Icons.send),
-                )),
           ],
         ),
       ),
@@ -257,10 +302,15 @@ class _MessageBubble extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              message.body,
-              style: AppTextStyles.body(context),
-            ),
+            if (message.body.isNotEmpty)
+              Text(
+                message.body,
+                style: AppTextStyles.body(context),
+              ),
+            if (message.hasAttachment) ...[
+              const SizedBox(height: AppSpacing.s2),
+              _Attachment(message: message),
+            ],
             const SizedBox(height: 4),
             Text(
               _formatTime(message.createdAt),
@@ -279,5 +329,96 @@ class _MessageBubble extends StatelessWidget {
     } catch (_) {
       return '';
     }
+  }
+}
+
+/// An attachment on a message.
+///
+/// Attachments are never served publicly — the file is fetched from
+/// app/admin_support/attachment.php with the admin bearer token, because a
+/// client's screenshot can contain payroll figures or staff faces. Images
+/// render inline; anything else (a PDF) gets a row that opens in the browser.
+class _Attachment extends StatelessWidget {
+  final SupportMessageModel message;
+
+  const _Attachment({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final colors = isLight ? AppColors.light : AppColors.dark;
+    final url = AppLinks.supportAttachment(message.id);
+
+    return FutureBuilder<String?>(
+      future: TokenStorageService.getToken(),
+      builder: (context, snapshot) {
+        final token = snapshot.data;
+        if (token == null) {
+          return const SizedBox.shrink();
+        }
+        final headers = {'Authorization': 'Bearer $token'};
+
+        if (!message.attachmentIsImage) {
+          return InkWell(
+            onTap: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.description_outlined, size: 18, color: colors.brand),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    message.attachmentName ?? 'مرفق',
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 12,
+                      color: colors.brand,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return GestureDetector(
+          onTap: () => _openFullScreen(context, url, headers),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            child: Image.network(
+              url,
+              headers: headers,
+              fit: BoxFit.cover,
+              height: 160,
+              errorBuilder: (context, error, stack) => Container(
+                height: 60,
+                alignment: Alignment.center,
+                color: colors.sunken,
+                child: Text(
+                  'تعذّر تحميل المرفق',
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 12,
+                    color: colors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _openFullScreen(BuildContext context, String url, Map<String, String> headers) {
+    Get.dialog<void>(
+      Dialog(
+        insetPadding: const EdgeInsets.all(AppSpacing.s3),
+        child: InteractiveViewer(
+          child: Image.network(url, headers: headers),
+        ),
+      ),
+    );
   }
 }

@@ -13,7 +13,12 @@ $ticketId = (int) ($input['ticket_id'] ?? 0);
 $body = trim($input['body'] ?? '');
 
 Validator::required($ticketId, 'ticket_id');
-Validator::required($body, 'body');
+// A screenshot on its own is a complete report, so the body may be empty when
+// something is attached — but a message with neither is not a message.
+$hasAttachment = !empty($input['attachment']);
+if ($body === '' && !$hasAttachment) {
+    Response::fail('اكتب رسالة أو أرفق ملفًا', 422, 'body_required');
+}
 Validator::maxLength($body, 5000, 'body');
 
 $ticket = SupportModel::findTicketById($ticketId, $tenantId);
@@ -27,12 +32,21 @@ if ($currentStatus === 'closed') {
     $currentStatus = 'pending_support';
 }
 
+$attachment = $hasAttachment
+    ? SupportAttachment::store($input['attachment'], $ticketId, $input['attachment_name'] ?? null)
+    : null;
+if ($hasAttachment && $attachment === null) {
+    Response::fail('تعذّر حفظ المرفق — يُقبل صورة أو PDF حتى 5 ميجابايت', 422, 'attachment_rejected');
+}
+
 $messageId = SupportModel::addMessage(
     $ticketId,
     'user',
     $auth['admin_id'],
     null,
-    $body
+    $body,
+    $attachment['path'] ?? null,
+    $attachment['name'] ?? null
 );
 
 $newStatus = SupportModel::getTicketStatus($ticketId);

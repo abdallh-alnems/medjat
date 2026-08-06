@@ -131,6 +131,60 @@ final class NotificationService {
         return $success ? count($tokens) : 0;
     }
 
+    /**
+     * Push to the employees of one company — the people using medjat_app, not
+     * the managers using medjat_central.
+     *
+     * Employee devices live in the same `admin_devices` table, reached through
+     * `employees.admin_id`, which is why sendToTenant() (which joins `admins`
+     * directly) never reaches a single employee. A platform announcement sent
+     * "to everyone" that silently stops at the managers is worse than no
+     * announcement at all, so the super-admin panel can now pick an audience.
+     */
+    public static function sendToTenantEmployees(int $tenantId, string $title, string $body, ?array $data = null): int {
+        $tokens = Database::fetchAll(
+            "SELECT ad.fcm_token FROM admin_devices ad
+             JOIN employees e ON e.admin_id = ad.admin_id
+             WHERE e.tenant_id = ? AND e.status = 'active' AND ad.is_active = 1",
+            [$tenantId]
+        );
+
+        if (empty($tokens)) {
+            return 0;
+        }
+
+        $success = self::sendMulticast(
+            array_column($tokens, 'fcm_token'),
+            $title,
+            $body,
+            $data
+        );
+
+        return $success ? count($tokens) : 0;
+    }
+
+    /** Every active employee on the platform, across all companies. */
+    public static function sendToAllEmployees(string $title, string $body, ?array $data = null): int {
+        $tokens = Database::fetchAll(
+            "SELECT ad.fcm_token FROM admin_devices ad
+             JOIN employees e ON e.admin_id = ad.admin_id
+             WHERE e.status = 'active' AND ad.is_active = 1"
+        );
+
+        if (empty($tokens)) {
+            return 0;
+        }
+
+        $success = self::sendMulticast(
+            array_column($tokens, 'fcm_token'),
+            $title,
+            $body,
+            $data
+        );
+
+        return $success ? count($tokens) : 0;
+    }
+
     public static function sendToBranch(int $branchId, int $tenantId, string $title, string $body, ?array $data = null): int {
         $tokens = Database::fetchAll(
             "SELECT ud.fcm_token FROM admin_devices ud

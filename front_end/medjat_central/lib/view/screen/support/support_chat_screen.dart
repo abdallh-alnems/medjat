@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../core/constant/theme/theme.dart';
@@ -176,8 +177,46 @@ class _SupportChatScreenState extends State<SupportChatScreen>
         color: colors.surface,
         border: Border(top: BorderSide(color: colors.borderHairline)),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
+          // A staged attachment, shown before sending so it can be removed.
+          Obx(() {
+            final name = controller.pendingAttachmentName.value;
+            if (name == null) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+              child: Row(
+                children: [
+                  Icon(Icons.attach_file, size: 16, color: colors.brand),
+                  const SizedBox(width: AppSpacing.s2),
+                  Expanded(
+                    child: Text(
+                      name,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Geist',
+                        fontSize: 12,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: controller.clearAttachment,
+                    icon: const Icon(Icons.close, size: 18),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ),
+            );
+          }),
+          Row(
+        children: [
+          IconButton(
+            onPressed: isClosed ? null : controller.pickAttachment,
+            icon: Icon(Icons.attach_file, color: colors.textSecondary),
+            tooltip: 'إرفاق ملف',
+          ),
           Expanded(
             child: TextField(
               controller: _replyCtrl,
@@ -219,6 +258,8 @@ class _SupportChatScreenState extends State<SupportChatScreen>
                       )
                     : Icon(Icons.send_rounded, color: colors.brand),
               )),
+            ],
+          ),
         ],
       ),
     );
@@ -226,7 +267,8 @@ class _SupportChatScreenState extends State<SupportChatScreen>
 
   Future<void> _send(SupportController controller) async {
     final text = _replyCtrl.text.trim();
-    if (text.isEmpty) return;
+    // An attachment on its own is a complete report.
+    if (text.isEmpty && controller.pendingAttachment.value == null) return;
     _replyCtrl.clear();
     await controller.sendReply(text);
     _scrollToBottom();
@@ -321,15 +363,20 @@ class _ChatBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              message.body,
-              style: TextStyle(
-                fontFamily: 'IBM Plex Sans Arabic',
-                fontSize: 14,
-                color: colors.textPrimary,
-                height: 1.4,
+            if (message.body.isNotEmpty)
+              Text(
+                message.body,
+                style: TextStyle(
+                  fontFamily: 'IBM Plex Sans Arabic',
+                  fontSize: 14,
+                  color: colors.textPrimary,
+                  height: 1.4,
+                ),
               ),
-            ),
+            if ((message.attachmentUrl ?? '').isNotEmpty) ...[
+              const SizedBox(height: AppSpacing.s2),
+              _AttachmentView(message: message, colors: colors),
+            ],
             const SizedBox(height: 4),
             Text(
               _formatTime(message.createdAt),
@@ -349,5 +396,96 @@ class _ChatBubble extends StatelessWidget {
   String _formatTime(DateTime? dt) {
     if (dt == null) return '';
     return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+
+/// One attachment on a message.
+///
+/// Attachments are not public files — the bytes are fetched through
+/// app/support/attachment.php with the session's own credentials, because a
+/// screenshot in a ticket can contain payroll figures or staff faces.
+class _AttachmentView extends StatelessWidget {
+  final SupportMessageModel message;
+  final AppColorScheme colors;
+
+  const _AttachmentView({required this.message, required this.colors});
+
+  bool get _isImage {
+    final path = (message.attachmentUrl ?? '').toLowerCase();
+    return path.endsWith('.jpg') ||
+        path.endsWith('.jpeg') ||
+        path.endsWith('.png') ||
+        path.endsWith('.gif') ||
+        path.endsWith('.webp');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = Get.find<SupportController>();
+
+    if (!_isImage) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.description_outlined, size: 16, color: colors.brand),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              message.attachmentName ?? 'مرفق',
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 12,
+                color: colors.brand,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return FutureBuilder<Uint8List?>(
+      future: controller.attachmentBytes(message.id),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const SizedBox(
+            height: 80,
+            width: 120,
+            child: Center(
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator.adaptive(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+        final bytes = snapshot.data;
+        if (bytes == null) {
+          return Text(
+            'تعذّر تحميل المرفق',
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 12,
+              color: colors.textTertiary,
+            ),
+          );
+        }
+        return GestureDetector(
+          onTap: () => showDialog<void>(
+            context: context,
+            builder: (_) => Dialog(
+              insetPadding: const EdgeInsets.all(AppSpacing.s3),
+              child: InteractiveViewer(child: Image.memory(bytes)),
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            child: Image.memory(bytes, height: 160, fit: BoxFit.cover),
+          ),
+        );
+      },
+    );
   }
 }
