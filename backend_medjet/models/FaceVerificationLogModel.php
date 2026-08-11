@@ -9,6 +9,43 @@
  * guessing. It is also the evidence when an employee disputes a rejection.
  */
 final class FaceVerificationLogModel {
+    /**
+     * Has this employee already sent these exact numbers?
+     *
+     * A genuine capture never repeats: lighting, head angle and distance all
+     * move between attempts, so two identical embeddings did not both come from
+     * a camera. One of them was replayed from storage.
+     *
+     * Not time-windowed on purpose. An embedding identical to one from six
+     * months ago is no less impossible than one from this morning, and the index
+     * on (tenant_id, employee_id, embedding_hash) makes the age irrelevant to
+     * the cost.
+     *
+     * Returns the id of the earlier attempt, so the security log can point at
+     * it, or null when this capture is new.
+     */
+    public static function findReplay(int $tenantId, int $employeeId, string $embeddingHash): ?int {
+        if ($embeddingHash === '') {
+            return null;
+        }
+
+        try {
+            $row = Database::fetchOne(
+                "SELECT id FROM face_verification_logs
+                 WHERE tenant_id = ? AND employee_id = ? AND embedding_hash = ?
+                 ORDER BY id LIMIT 1",
+                [$tenantId, $employeeId, $embeddingHash]
+            );
+            return $row !== null ? (int) $row['id'] : null;
+        } catch (Exception $e) {
+            // Never let this check break a check-in. A failure here means the
+            // detection is unavailable, not that the attempt is a replay —
+            // failing closed would lock out a whole company over a bad index.
+            error_log('Face replay lookup failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+
     /** Logging must never break a check-in, so failures are swallowed. */
     public static function log(array $row): void {
         try {
@@ -16,8 +53,9 @@ final class FaceVerificationLogModel {
                 "INSERT INTO face_verification_logs
                     (tenant_id, employee_id, branch_id, purpose, result, accepted,
                      match_score, threshold, liveness_passed, challenge,
-                     latitude, longitude, selfie_path, is_mock_location, is_rooted_device)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                     latitude, longitude, selfie_path, is_mock_location, is_rooted_device,
+                     embedding_hash)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [
                     $row['tenant_id'],
                     $row['employee_id'],
@@ -34,6 +72,7 @@ final class FaceVerificationLogModel {
                     $row['selfie_path'] ?? null,
                     !empty($row['is_mock_location']) ? 1 : 0,
                     !empty($row['is_rooted_device']) ? 1 : 0,
+                    $row['embedding_hash'] ?? null,
                 ]
             );
         } catch (Exception $e) {

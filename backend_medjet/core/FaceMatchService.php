@@ -145,6 +145,10 @@ final class FaceMatchService {
         $threshold = $settings['threshold'];
         $employeeId = (int) $employee['id'];
 
+        // Carries the current attempt's fingerprint into every log call without
+        // threading it through six signatures. Set once the embedding parses.
+        $embeddingHash = null;
+
         $log = static function (
             string $result,
             bool $accepted,
@@ -152,7 +156,7 @@ final class FaceMatchService {
             bool $livenessPassed,
             ?string $challenge,
             ?string $selfiePath
-        ) use ($tenantId, $employeeId, $branchId, $purpose, $threshold, $lat, $lng, $input): void {
+        ) use ($tenantId, $employeeId, $branchId, $purpose, $threshold, $lat, $lng, $input, &$embeddingHash): void {
             FaceVerificationLogModel::log([
                 'tenant_id' => $tenantId,
                 'employee_id' => $employeeId,
@@ -169,6 +173,7 @@ final class FaceMatchService {
                 'selfie_path' => $selfiePath,
                 'is_mock_location' => !empty($input['is_mock_location']),
                 'is_rooted_device' => !empty($input['is_rooted_device']),
+                'embedding_hash' => $embeddingHash,
             ]);
         };
 
@@ -238,6 +243,49 @@ final class FaceMatchService {
             ];
         }
 
+        // ── 5b) Has this employee sent these exact numbers before? ──
+        //
+        // The server never sees the image, so it cannot tell a camera capture
+        // from an array read out of storage. What it CAN tell is that a real
+        // face never produces the same numbers twice — lighting, head angle and
+        // distance all move — so an embedding identical to an earlier attempt
+        // was replayed, not captured.
+        //
+        // Runs before the score because the verdict does not depend on it: a
+        // replayed embedding scores exactly as well as it did the day it was
+        // captured, which is precisely why the score cannot catch this.
+        $embeddingHash = self::embeddingFingerprint($candidate);
+        $replayOf = FaceVerificationLogModel::findReplay($tenantId, $employeeId, $embeddingHash);
+
+        if ($replayOf !== null) {
+            $enforceReplay = self::replayEnforced($tenantId);
+
+            AttendanceSecurityModel::log(
+                $tenantId,
+                $employeeId,
+                $branchId,
+                'replayed_embedding',
+                $enforceReplay ? 'blocked' : 'flagged',
+                $lat,
+                $lng
+            );
+
+            if ($enforceReplay) {
+                $log('replayed_embedding', false, null, $livenessPassed, $challenge['challenge'], null);
+                return [
+                    'accepted' => false,
+                    'result' => 'replayed_embedding',
+                    'score' => null,
+                    'threshold' => $threshold,
+                    'message' => I18n::t('face_replay_detected'),
+                ];
+            }
+            // log_only: fall through and score normally. The row is still
+            // written with result 'replayed_embedding' below via $embeddingHash
+            // plus the security-log entry above, so the pattern is visible
+            // without anybody being accused of fraud on an untuned signal.
+        }
+
         // ── 6) The actual decision ──
         $score = self::similarity($candidate, $stored);
         $matched = $score >= $threshold;
@@ -268,6 +316,54 @@ final class FaceMatchService {
             'threshold' => $threshold,
             'message' => I18n::t('face_not_recognized'),
         ];
+    }
+
+    /**
+     * A one-way fingerprint of an embedding, used only to answer "are these the
+     * same numbers as last time".
+     *
+     * QUANTISED FIRST — but not for the reason it looks like.
+     *
+     * Rounding to four decimals does NOT defeat an attacker who adds noise.
+     * Measured: perturbing every component by 1e-6 changes the fingerprint,
+     * because with 192 components some of them inevitably sit near a rounding
+     * boundary and flip. Anyone deliberately jittering the array evades this
+     * check, and no amount of quantisation fixes that — a hash answers
+     * "identical", never "similar".
+     *
+     * What quantisation actually buys is REPRESENTATION STABILITY. The same
+     * capture reaches the server as a float, or as a string, or via a JSON round
+     * trip, and `0.1` printed at full precision is not always the same text.
+     * Without rounding, an honest replay could hash differently and slip past —
+     * a false negative, which is the failure that matters for a detector.
+     *
+     * `sprintf('%.4F')` rather than round()+implode: it is locale-independent
+     * (a decimal comma would silently change every hash) and gives -0.0 and 0.0
+     * the same text, which they should have.
+     *
+     * So the honest scope of this whole check: it catches a build that stores an
+     * embedding and posts it back verbatim, which is what a downloaded modified
+     * APK does. It does not catch someone editing float arrays. That one is
+     * App Check's job.
+     *
+     * The hash is not a secret and is not reversible — it exists so the server
+     * can detect repetition WITHOUT keeping another copy of the employee's face
+     * template on every attempt.
+     */
+    public static function embeddingFingerprint(array $embedding): string {
+        $parts = [];
+        foreach ($embedding as $value) {
+            $parts[] = sprintf('%.4F', (float) $value);
+        }
+        return hash('sha256', implode(',', $parts));
+    }
+
+    /** Whether this company rejects a replayed embedding or merely records it. */
+    private static function replayEnforced(int $tenantId): bool {
+        $tenant = TenantModel::findById($tenantId);
+        // Absent column or unset value reads as log_only: a brand-new signal
+        // must never start rejecting people by default.
+        return ($tenant['face_replay_mode'] ?? 'log_only') === 'enforce';
     }
 
     /**

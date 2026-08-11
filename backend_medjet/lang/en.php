@@ -51,6 +51,10 @@ return [
     'qr_rotating_required' => 'Scan the code shown on the branch screen to record your attendance.',
     'qr_expired' => 'That code is no longer valid. Scan the code on the screen now.',
     'qr_replayed' => 'That code has already been used. Scan the code on the branch screen yourself.',
+    // Not phrased as an accusation: most people who ever read this will be the
+    // victim of a modified build installed on their phone, or a case nobody
+    // anticipated. Say what to do now.
+    'face_replay_detected' => 'That attempt could not be accepted. Take the photo directly with the camera, and if it keeps happening contact your HR administrator.',
     'photo_required' => 'Your company requires a photo when recording attendance. Allow camera access and try again.',
 
     // Crew attendance — read by a supervisor standing on a site, so each
