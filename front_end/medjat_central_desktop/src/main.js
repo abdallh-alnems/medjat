@@ -87,10 +87,15 @@ function isAuthFlow(url) {
   }
 }
 
-function showOffline(code) {
+// Where "retry" should go back to: the page that failed, not the dashboard root, so a
+// dropped connection deep in the app does not cost the user their place.
+let retryTarget = APP_URL;
+
+function showOffline(code, failedUrl) {
   if (!mainWindow || mainWindow.isDestroyed()) return;
+  retryTarget = failedUrl && isInternal(failedUrl) ? failedUrl : APP_URL;
   mainWindow.loadFile(path.join(__dirname, 'offline.html'), {
-    query: { code: String(code ?? ''), url: APP_URL },
+    query: { code: String(code ?? '') },
   });
 }
 
@@ -174,14 +179,14 @@ function createWindow() {
   // ERR_ABORTED (-3) is a navigation the page itself replaced — not a failure.
   mainWindow.webContents.on(
     'did-fail-load',
-    (_event, errorCode, _desc, _validatedURL, isMainFrame) => {
+    (_event, errorCode, _desc, validatedURL, isMainFrame) => {
       if (!isMainFrame || errorCode === -3) return;
-      showOffline(errorCode);
+      showOffline(errorCode, validatedURL);
     },
   );
 
   mainWindow.webContents.on('render-process-gone', () => {
-    showOffline('render');
+    showOffline('render', mainWindow?.webContents.getURL());
   });
 
   mainWindow.loadURL(APP_URL);
@@ -275,7 +280,15 @@ function buildMenu() {
         {
           label: 'إعادة التحميل',
           accelerator: 'CmdOrCtrl+R',
-          click: () => mainWindow?.loadURL(APP_URL),
+          click: () => {
+            if (!mainWindow) return;
+            // Reloading the bundled offline page would just show it again.
+            if (mainWindow.webContents.getURL().startsWith('file://')) {
+              mainWindow.loadURL(retryTarget);
+            } else {
+              mainWindow.webContents.reload();
+            }
+          },
         },
         { role: 'forceReload', label: 'إعادة تحميل كاملة' },
         { type: 'separator' },
@@ -342,7 +355,7 @@ if (!app.requestSingleInstanceLock()) {
 // ---------------------------------------------------------------- bridge
 
 ipcMain.handle('app:retry', () => {
-  mainWindow?.loadURL(APP_URL);
+  mainWindow?.loadURL(retryTarget);
 });
 
 ipcMain.handle('app:info', () => ({
