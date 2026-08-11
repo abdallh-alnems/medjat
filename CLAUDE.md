@@ -4,8 +4,8 @@ Last updated: 2026-08-03
 
 **Medjat** is a multi-tenant HR SaaS (attendance, shifts, leaves, payroll, documents) for the
 Egypt / North-Africa market. UIs are **Arabic-first (RTL)**; medjat_app, medjat_central and the web
-app also ship English (medjat_admin is Arabic-only). One PHP backend serves three Flutter apps plus
-one Next.js web port.
+app also ship English (medjat_admin is Arabic-only). One PHP backend serves four Flutter apps, one
+Next.js web port, and a desktop shell that wraps that web port.
 
 ```
 Medjat/
@@ -14,7 +14,10 @@ Medjat/
 │   ├── medjat_app/          ← Employee app (Android/iOS) — attendance, payslips, requests
 │   ├── medjat_central/      ← Company HR/management app (Android/iOS)
 │   ├── medjat_central_web/  ← Next.js 16 web port of medjat_central (self-hosted)
+│   ├── medjat_central_desktop/ ← Electron shell over the web app → .dmg / .exe
+│   ├── medjat_kiosk/        ← Branch kiosk (Android tablet) — shared-device attendance
 │   ├── medjat_admin/        ← Internal super-admin panel (Android)
+│   ├── packages/            ← medjat_shared — code shared between the Flutter apps
 │   └── web_pages/           ← Static promo/landing + privacy, delete-account, support
 └── specs/                   ← spec-kit feature specs
 ```

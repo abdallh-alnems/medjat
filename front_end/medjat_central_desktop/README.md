@@ -1,0 +1,159 @@
+# medjat_central_desktop
+
+Desktop shell for **Medjat Central** — a real installable app (`.dmg` on macOS, `.exe`
+installer on Windows) whose window renders the live web app at `app.medjatapp.com`.
+
+## Why it is built this way
+
+The app has two halves, and they update differently:
+
+| | Lives in | Updates by |
+|---|---|---|
+| Every screen, feature and fix | `medjat_central_web` (the server) | `deploy-web.sh` — installed copies pick it up on next launch |
+| Window, menu, icon, native capabilities | this project (the user's machine) | shipping a new installer |
+
+So product work stays in the web app and reaches desktop users with no re-install. Only
+the shell — which is a window and a bridge, not a feature surface — needs redistributing,
+and only when a *new native capability* is added.
+
+The service worker in the web app is `network-first` for navigations and never caches
+`/api`, and Next.js hashes its bundle filenames, so a deployed change is not held back by
+a stale cache.
+
+## Running it
+
+```bash
+npm install
+npm start                 # against production (app.medjatapp.com)
+npm run dev               # against a local `npm run dev` on :3000
+MEDJAT_URL=… npm start    # against anything else
+```
+
+`npm install` alone is not enough on npm 12+: install scripts are blocked by default and
+Electron downloads its binary in `postinstall`. If `node_modules/electron/dist` is
+missing, run `npm install-scripts approve electron electron-winstaller`.
+
+## Building installers
+
+```bash
+npm run icons       # regenerates build/icon.{icns,ico,png} from the shared brand master
+npm run build:mac   # dist/Medjat Central-<version>-universal.dmg
+npm run build:win   # dist/Medjat Central Setup <version>.exe
+```
+
+The macOS target is a **universal** binary (Intel + Apple Silicon in one file).
+
+**Windows cannot be built from macOS as-is.** `electron-builder` needs Wine to assemble
+the NSIS installer:
+
+```bash
+brew install --cask wine-stable
+```
+
+A Windows machine or a GitHub Actions `windows-latest` runner is the more reliable route,
+and the only one that can produce a signed `.exe`.
+
+## Code signing
+
+`npm run build:mac` produces an **ad-hoc signed** app: it runs on the machine that built
+it, but Gatekeeper refuses it elsewhere (users would have to right-click → *Open*). Fine
+for internal testing, not for handing to client companies.
+
+### macOS — the real thing
+
+The keychain currently holds only *Apple Development* certificates, which cannot sign for
+distribution outside the App Store. A **Developer ID Application** certificate is included
+with the existing Apple Developer account at no extra cost:
+
+1. In the Apple developer portal, create a *Developer ID Application* certificate and
+   install it in the login keychain.
+2. Create an app-specific password for the Apple ID at appleid.apple.com (notarization
+   uploads the build to Apple, which needs one).
+3. Build:
+
+```bash
+export APPLE_IDENTITY="Developer ID Application: <name> (<TEAMID>)"
+export APPLE_TEAM_ID="<TEAMID>"
+export APPLE_ID="<apple-id-email>"
+export APPLE_APP_SPECIFIC_PASSWORD="xxxx-xxxx-xxxx-xxxx"
+npm run build:mac:signed
+```
+
+That script turns on the hardened runtime and notarizes. The ad-hoc `afterPack` step steps
+aside automatically when `APPLE_IDENTITY` is set. Notarization takes a few minutes — Apple
+processes the upload server-side.
+
+### Windows
+
+SmartScreen shows an "unrecognized app" warning and some antivirus products flag the
+installer until the `.exe` is signed. That needs a **paid** code-signing certificate
+(yearly, from a CA — OV certificates build reputation over time, EV ones start clean), and
+signing has to happen on Windows. Nothing in this repo can shortcut it.
+
+## Adding a native capability
+
+This is the point of having a shell at all — things the browser cannot do. The pattern is
+three small pieces:
+
+```js
+// src/main.js — the native work, in a full Node.js process
+ipcMain.handle('zk:read', async (_event, { ip, port = 4370 }) => {
+  // net.Socket / dgram — no browser sandbox here
+});
+```
+
+```js
+// src/preload.js — the only surface the page can see
+contextBridge.exposeInMainWorld('medjat', {
+  isDesktop: true,
+  readDevice: (options) => ipcRenderer.invoke('zk:read', options),
+});
+```
+
+```ts
+// medjat_central_web — feature-detected, so browsers are unaffected
+if (window.medjat?.isDesktop) {
+  const punches = await window.medjat.readDevice({ ip });
+}
+```
+
+The same deploy serves browser and desktop users; the desktop-only UI simply does not
+render in a browser. Note that the backend's current ZKTeco integration is **push only**
+(the terminal dials `device/iclock.php` on port 8090) — talking to a terminal directly
+over the LAN on port 4370 is a different protocol, needs the machine to be on the same
+network as the device, and varies by firmware.
+
+## Sign-in
+
+Firebase runs Google/Apple sign-in as a popup on `medjat.firebaseapp.com` and falls back
+to a full-page redirect. Both leave the app origin, so `AUTH_HOSTS` in `src/main.js` keeps
+those hosts inside the app — without that list the navigation guard hands the popup to the
+system browser and login can never complete.
+
+Google's OAuth endpoint was checked directly against this Electron build (40.x): it serves
+the normal account chooser and does **not** raise `disallowed_useragent`, so no user-agent
+spoofing is needed. If a future Chromium or Google policy change starts blocking it, the
+correct fix is running the OAuth flow in the system browser and returning the credential
+through a custom protocol — not faking the user agent, which the origin's Cloudflare bot
+rules would read as a mismatched client.
+
+Email/password sign-in is unaffected either way.
+
+## Known limits
+
+- **Requires internet.** Without it the window shows `src/offline.html` (Arabic, with a
+  retry button) instead of a browser error page.
+- **Geolocation** is unreliable in Electron — Chromium's provider needs a Google API key,
+  so `getCurrentPosition` may fail even when permission is granted. The web app already
+  degrades gracefully ("enter values manually"), but branch-location picking and web
+  check-in should be assumed not to work on desktop until this is wired to a native
+  provider.
+- **The shell does not self-update.** `electron-updater` can be added later; it needs a
+  signed build and somewhere to host the update feed.
+
+## Security posture
+
+`contextIsolation` and `sandbox` on, `nodeIntegration` off. Navigation is pinned to the
+app origin — any other link is handed to the system browser. Permission requests are
+allow-listed (clipboard, fullscreen, geolocation, media, notifications); everything else
+is refused.

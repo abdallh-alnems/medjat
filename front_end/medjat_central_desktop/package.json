@@ -1,0 +1,79 @@
+{
+  "name": "medjat_central_desktop",
+  "version": "1.0.0",
+  "description": "Medjat Central — desktop shell (macOS / Windows)",
+  "private": true,
+  "main": "src/main.js",
+  "author": "Khawarizmie",
+  "scripts": {
+    "start": "electron .",
+    "dev": "MEDJAT_URL=http://localhost:3000 electron .",
+    "icons": "node scripts/make-icons.js",
+    "pack": "electron-builder --dir",
+    "build:mac": "electron-builder --mac",
+    "build:mac:signed": "electron-builder --mac -c.mac.identity=\"$APPLE_IDENTITY\" -c.mac.hardenedRuntime=true -c.mac.notarize.teamId=\"$APPLE_TEAM_ID\"",
+    "build:win": "electron-builder --win",
+    "build": "electron-builder --mac --win"
+  },
+  "devDependencies": {
+    "electron": "^40.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.khawarizmie.medjat.desktop",
+    "productName": "Medjat Central",
+    "copyright": "Copyright © 2026 Khawarizmie",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "afterPack": "scripts/adhoc-sign.js",
+    "mac": {
+      "category": "public.app-category.business",
+      "icon": "build/icon.icns",
+      "identity": null,
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "extendInfo": {
+        "NSCameraUsageDescription": "يستخدم التطبيق الكاميرا لتسجيل الحضور بالصورة ومسح رمز QR.",
+        "NSLocationWhenInUseUsageDescription": "يستخدم التطبيق الموقع لتحديد مواقع الفروع وتسجيل الحضور."
+      }
+    },
+    "dmg": {
+      "title": "Medjat Central"
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Medjat Central"
+    }
+  },
+  "allowScripts": {
+    "electron@40.10.6": true,
+    "electron-winstaller@5.4.0": true
+  }
+}
