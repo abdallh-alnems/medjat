@@ -45,6 +45,18 @@ export async function signInWithSupportToken(token: string) {
   return signInWithCustomToken(auth, token);
 }
 
+/**
+ * Desktop sign-in.
+ *
+ * Electron reports no platform authenticator, so a Google account protected by a
+ * passkey cannot finish signing in inside the app window. The user signs in in
+ * their real browser instead, and the token minted by desktop_exchange.php
+ * carries that session back here.
+ */
+export async function signInWithDesktopToken(token: string) {
+  return signInWithCustomToken(auth, token);
+}
+
 // Popup-failure codes where a full-page redirect is the better fallback.
 const REDIRECT_FALLBACK_CODES = new Set([
   "auth/popup-blocked",

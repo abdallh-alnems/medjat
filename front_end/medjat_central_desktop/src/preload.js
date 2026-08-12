@@ -26,5 +26,8 @@ if (isTrustedPage) {
     isDesktop: true,
     retry: () => ipcRenderer.invoke('app:retry'),
     info: () => ipcRenderer.invoke('app:info'),
+    // Passkeys cannot be answered in this window; the real browser can, and
+    // returns the session over medjat://auth.
+    signInWithBrowser: () => ipcRenderer.invoke('auth:browser'),
   });
 }

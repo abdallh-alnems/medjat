@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,9 +26,11 @@ import {
   signInWithApple,
   consumeRedirectResult,
 } from "@/lib/firebase/auth";
+import { desktopAuthorize } from "@/lib/api/auth";
+import { isDesktopApp } from "@/lib/desktop";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Loader2, Apple } from "lucide-react";
+import { Loader2, Apple, ExternalLink } from "lucide-react";
 import { GoogleIcon } from "@/components/ui/brand-icons";
 
 const schema = z.object({
@@ -42,6 +44,50 @@ export default function LoginPage() {
   const { t } = useT();
   const { completeLogin } = useAuth();
   const [busy, setBusy] = useState<"email" | "google" | "apple" | null>(null);
+  const [handedOff, setHandedOff] = useState(false);
+
+  // Both values only exist in the browser. useSyncExternalStore reads them after
+  // hydration without a Suspense boundary (which useSearchParams would require)
+  // and without setting state from an effect.
+  const subscribe = () => () => {};
+
+  // Set when this page is the browser half of a desktop sign-in: the app opened
+  // us with ?desktop=<nonce> and is waiting on medjat:// for the result.
+  const desktopState = useSyncExternalStore(
+    subscribe,
+    () => new URLSearchParams(window.location.search).get("desktop"),
+    () => null,
+  );
+
+  const inDesktopApp = useSyncExternalStore(subscribe, isDesktopApp, () => false);
+
+  /**
+   * Finishes a successful sign-in.
+   *
+   * Normally that means going to the dashboard. In the browser half of the
+   * desktop flow it instead mints a single-use code and hands the session back
+   * to the app, which is where the user actually wants to end up.
+   */
+  async function finishLogin(afterSession?: () => void) {
+    await completeLogin();
+    afterSession?.();
+
+    if (desktopState) {
+      try {
+        const { code } = await desktopAuthorize(desktopState);
+        setHandedOff(true);
+        window.location.href =
+          `medjat://auth?code=${encodeURIComponent(code)}` +
+          `&state=${encodeURIComponent(desktopState)}`;
+        return;
+      } catch (err) {
+        console.error("Desktop handoff failed:", err);
+        toast.error("تعذّر إعادة تسجيل الدخول إلى التطبيق — أعد المحاولة من التطبيق.");
+      }
+    }
+
+    router.replace("/dashboard");
+  }
 
   const {
     register,
@@ -59,8 +105,7 @@ export default function LoginPage() {
       .then(async (user) => {
         if (!user || cancelled) return;
         setBusy("google");
-        await completeLogin();
-        router.replace("/dashboard");
+        await finishLogin();
       })
       .catch((err) => {
         console.error("OAuth redirect sign-in failed:", err);
@@ -78,9 +123,7 @@ export default function LoginPage() {
     setBusy("email");
     try {
       await signInEmail(data.email, data.password);
-      await completeLogin();
-      toast.success(t("welcome_back"));
-      router.replace("/dashboard");
+      await finishLogin(() => toast.success(t("welcome_back")));
     } catch (err) {
       const code = (err as { code?: string })?.code ?? "";
       const isCredential =
@@ -117,8 +160,7 @@ export default function LoginPage() {
     try {
       const cred = await signInWithGoogle();
       if (!cred) return; // redirect fallback started; the page will navigate away
-      await completeLogin();
-      router.replace("/dashboard");
+      await finishLogin();
     } catch (err) {
       console.error("Google sign-in failed:", err);
       const msg = oauthErrorMessage(err);
@@ -132,14 +174,28 @@ export default function LoginPage() {
     try {
       const cred = await signInWithApple();
       if (!cred) return; // redirect fallback started; the page will navigate away
-      await completeLogin();
-      router.replace("/dashboard");
+      await finishLogin();
     } catch (err) {
       console.error("Apple sign-in failed:", err);
       const msg = oauthErrorMessage(err);
       if (msg) toast.error(msg);
       setBusy(null);
     }
+  }
+
+  // Browser half of the desktop flow: the session has been handed back over
+  // medjat:// and this tab has nothing left to do.
+  if (handedOff) {
+    return (
+      <Card>
+        <CardHeader className="items-center text-center">
+          <CardTitle className="text-headline-md">تم تسجيل الدخول</CardTitle>
+          <CardDescription>
+            ارجع إلى تطبيق Medjat Central — يمكنك إغلاق هذه الصفحة.
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
   }
 
   return (
@@ -225,6 +281,27 @@ export default function LoginPage() {
           )}
           {t("continue_with_apple")}
         </Button>
+        {/*
+          Desktop only. Electron has no platform authenticator, so an account
+          protected by a passkey cannot finish signing in in this window — the
+          real browser can, and hands the session back over medjat://.
+        */}
+        {inDesktopApp && (
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => window.medjat?.signInWithBrowser?.()}
+              disabled={busy !== null}
+            >
+              <ExternalLink className="h-4 w-4" />
+              تسجيل الدخول عبر المتصفح
+            </Button>
+            <p className="text-center text-label-sm text-muted-foreground">
+              استخدم هذا الخيار إذا كان حسابك محمياً بمفتاح مرور (passkey).
+            </p>
+          </>
+        )}
         <p className="mt-2 text-center text-label-md text-muted-foreground">
           {t("no_account")}{" "}
           <Link href="/signup" className="text-brand hover:underline">

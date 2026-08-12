@@ -20,6 +20,7 @@ const {
 } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
+const crypto = require('node:crypto');
 
 const APP_URL = process.env.MEDJAT_URL || 'https://app.medjatapp.com';
 const APP_ORIGIN = new URL(APP_URL).origin;
@@ -41,6 +42,48 @@ const AUTH_HOSTS = [
 app.setName('Medjat Central');
 
 let mainWindow = null;
+
+// ---------------------------------------------------------------- browser sign-in
+
+/**
+ * Electron reports no platform authenticator, so a Google account protected by a
+ * passkey dead-ends in this window: Google offers the cross-device fallback and
+ * that needs integration Electron does not have either. Sign-in therefore runs in
+ * the user's real browser, which hands the session back over `medjat://auth`.
+ *
+ * The nonce below is what makes the returning link trustworthy — anything
+ * arriving on the protocol that does not carry the value this process just
+ * generated is ignored, so a stray or forged link cannot sign anyone in.
+ */
+let pendingAuthState = null;
+
+function startBrowserSignIn() {
+  pendingAuthState = crypto.randomBytes(24).toString('hex');
+  shell.openExternal(`${APP_URL}/login?desktop=${pendingAuthState}`);
+}
+
+function handleAuthLink(rawUrl) {
+  let url;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    return;
+  }
+  if (url.protocol !== 'medjat:' || url.hostname !== 'auth') return;
+
+  const code = url.searchParams.get('code');
+  const state = url.searchParams.get('state');
+  if (!code || !state || !pendingAuthState || state !== pendingAuthState) return;
+
+  pendingAuthState = null;
+
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.focus();
+  mainWindow.loadURL(
+    `${APP_URL}/desktop-auth?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`,
+  );
+}
 
 // ---------------------------------------------------------------- window state
 
@@ -194,6 +237,19 @@ function createWindow() {
 
 // ---------------------------------------------------------------- session
 
+/**
+ * Claims `medjat://` so the browser can hand a finished sign-in back to us. In
+ * development the executable is Electron itself, so the script path has to ride
+ * along or the OS launches a bare Electron with no app.
+ */
+function registerProtocol() {
+  if (process.defaultApp && process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient('medjat', process.execPath, [path.resolve(process.argv[1])]);
+  } else {
+    app.setAsDefaultProtocolClient('medjat');
+  }
+}
+
 function configureSession() {
   const ses = session.defaultSession;
 
@@ -331,13 +387,24 @@ function buildMenu() {
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', () => {
+  // Windows and Linux deliver the protocol URL as an argument to a second launch
+  // rather than through open-url.
+  app.on('second-instance', (_event, argv) => {
+    const link = argv.find((arg) => arg.startsWith('medjat://'));
+    if (link) handleAuthLink(link);
     if (!mainWindow) return;
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.focus();
   });
 
+  // macOS delivers it here, and may do so before the window exists.
+  app.on('open-url', (event, url) => {
+    event.preventDefault();
+    handleAuthLink(url);
+  });
+
   app.whenReady().then(() => {
+    registerProtocol();
     configureSession();
     buildMenu();
     createWindow();
@@ -356,6 +423,10 @@ if (!app.requestSingleInstanceLock()) {
 
 ipcMain.handle('app:retry', () => {
   mainWindow?.loadURL(retryTarget);
+});
+
+ipcMain.handle('auth:browser', () => {
+  startBrowserSignIn();
 });
 
 ipcMain.handle('app:info', () => ({

@@ -32,6 +32,14 @@
       "package.json"
     ],
     "afterPack": "scripts/adhoc-sign.js",
+    "protocols": [
+      {
+        "name": "Medjat Central sign-in",
+        "schemes": [
+          "medjat"
+        ]
+      }
+    ],
     "mac": {
       "category": "public.app-category.business",
       "icon": "build/icon.icns",
