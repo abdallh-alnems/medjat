@@ -21,6 +21,26 @@ export function logout() {
   return apiPost<{ status?: string }>("app/auth/logout.php");
 }
 
+/**
+ * Desktop sign-in, step 1 — called in the *browser* right after a successful
+ * login that carried a ?desktop=<state> parameter. Returns a single-use code to
+ * hand back to the desktop app over its medjat:// link.
+ */
+export function desktopAuthorize(state: string) {
+  return apiPost<{ code: string; expires_in_seconds: number }>(
+    "app/auth/desktop_authorize.php",
+    { state },
+  );
+}
+
+/**
+ * Desktop sign-in, step 2 — called inside the *app* window. Trades the code for
+ * a Firebase custom token. Unauthenticated by design: the code is the credential.
+ */
+export function desktopExchange(code: string, state: string) {
+  return apiPost<{ token: string }>("app/auth/desktop_exchange.php", { code, state });
+}
+
 export function sendVerification(email?: string) {
   return apiPost<{ status?: string }>("app/auth/send_verification.php", {
     email,
