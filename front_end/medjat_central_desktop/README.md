@@ -142,12 +142,34 @@ system browser and login can never complete.
 
 Google's OAuth endpoint was checked directly against this Electron build (40.x): it serves
 the normal account chooser and does **not** raise `disallowed_useragent`, so no user-agent
-spoofing is needed. If a future Chromium or Google policy change starts blocking it, the
-correct fix is running the OAuth flow in the system browser and returning the credential
-through a custom protocol — not faking the user agent, which the origin's Cloudflare bot
-rules would read as a mismatched client.
+spoofing is needed — faking it would only make the origin's Cloudflare bot rules see a
+mismatched client.
 
-Email/password sign-in is unaffected either way.
+### Passkeys need the real browser
+
+`PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()` returns **false** in
+Electron: there is no bridge to Touch ID or the iCloud keychain. A Google account protected
+by a passkey therefore cannot finish signing in in this window — Google offers its
+cross-device fallback, which needs integration Electron also lacks, and the flow dead-ends
+on "Something went wrong … Make sure Bluetooth is on".
+
+So the login page shows a **"تسجيل الدخول عبر المتصفح"** button when `window.medjat` is
+present:
+
+1. `auth:browser` generates a nonce and opens `${APP_URL}/login?desktop=<nonce>` in the
+   system browser.
+2. The user signs in there — passkeys work, because it is a real browser.
+3. The page calls `desktop_authorize.php` for a single-use code and redirects to
+   `medjat://auth?code=…&state=<nonce>`.
+4. `handleAuthLink` checks the nonce against the one this process generated (anything else
+   is ignored) and loads `${APP_URL}/desktop-auth?code=…`.
+5. That page calls `desktop_exchange.php`, which claims the code and mints a Firebase
+   custom token; `signInWithCustomToken` turns it into an ordinary session.
+
+The code is single-use, expires after two minutes, and is stored only as a hash.
+
+Email/password sign-in in the window is unaffected and remains the shorter path for anyone
+without a passkey.
 
 ## Known limits
 
