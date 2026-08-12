@@ -11,7 +11,7 @@
     "icons": "node scripts/make-icons.js",
     "pack": "electron-builder --dir",
     "build:mac": "electron-builder --mac",
-    "build:mac:signed": "electron-builder --mac -c.mac.identity=\"$APPLE_IDENTITY\" -c.mac.hardenedRuntime=true -c.mac.notarize.teamId=\"$APPLE_TEAM_ID\"",
+    "build:mac:signed": "electron-builder --mac -c.mac.identity=\"$APPLE_IDENTITY\" -c.mac.hardenedRuntime=true",
     "build:win": "electron-builder --win",
     "build": "electron-builder --mac --win"
   },
@@ -40,7 +40,8 @@
         {
           "target": "dmg",
           "arch": [
-            "universal"
+            "arm64",
+            "x64"
           ]
         }
       ],

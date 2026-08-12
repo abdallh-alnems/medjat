@@ -37,21 +37,17 @@ missing, run `npm install-scripts approve electron electron-winstaller`.
 
 ```bash
 npm run icons       # regenerates build/icon.{icns,ico,png} from the shared brand master
-npm run build:mac   # dist/Medjat Central-<version>-universal.dmg
+npm run build:mac   # dist/Medjat Central-<version>-arm64.dmg + …-1.0.0.dmg (Intel)
 npm run build:win   # dist/Medjat Central Setup <version>.exe
 ```
 
-The macOS target is a **universal** binary (Intel + Apple Silicon in one file).
+macOS builds **arm64 and x64 as separate DMGs**, not a universal binary: merging two
+~250 MB bundles and re-signing the result is the heaviest step in the build and is not
+worth the convenience of a single file on an 8 GB machine.
 
-**Windows cannot be built from macOS as-is.** `electron-builder` needs Wine to assemble
-the NSIS installer:
-
-```bash
-brew install --cask wine-stable
-```
-
-A Windows machine or a GitHub Actions `windows-latest` runner is the more reliable route,
-and the only one that can produce a signed `.exe`.
+The Windows NSIS installer builds fine **from macOS** — electron-builder carries its own
+NSIS and 7-zip, so Wine is not needed. What still requires Windows is *signing* the
+`.exe`; see below.
 
 ## Code signing
 
@@ -65,23 +61,37 @@ The keychain currently holds only *Apple Development* certificates, which cannot
 distribution outside the App Store. A **Developer ID Application** certificate is included
 with the existing Apple Developer account at no extra cost:
 
-1. In the Apple developer portal, create a *Developer ID Application* certificate and
-   install it in the login keychain.
-2. Create an app-specific password for the Apple ID at appleid.apple.com (notarization
-   uploads the build to Apple, which needs one).
+1. Create a *Developer ID Application* certificate (Xcode → Settings → Apple Accounts →
+   the account row → Manage Certificates… → `+`) so it lands in the login keychain.
+2. Create an app-specific password at appleid.apple.com — notarization uploads the build
+   to Apple, which needs one.
 3. Build:
 
 ```bash
-export APPLE_IDENTITY="Developer ID Application: <name> (<TEAMID>)"
-export APPLE_TEAM_ID="<TEAMID>"
+# Name and team only — electron-builder rejects the "Developer ID Application:"
+# prefix and picks the certificate type itself.
+export APPLE_IDENTITY="<name> (<TEAMID>)"
 export APPLE_ID="<apple-id-email>"
+export APPLE_TEAM_ID="<TEAMID>"
 export APPLE_APP_SPECIFIC_PASSWORD="xxxx-xxxx-xxxx-xxxx"
 npm run build:mac:signed
 ```
 
-That script turns on the hardened runtime and notarizes. The ad-hoc `afterPack` step steps
-aside automatically when `APPLE_IDENTITY` is set. Notarization takes a few minutes — Apple
+That turns on the hardened runtime and notarizes. The ad-hoc `afterPack` step stands aside
+automatically when `APPLE_IDENTITY` is set. Notarization takes a few minutes — Apple
 processes the upload server-side.
+
+Signing prompts once for the login keychain password; answer **Always Allow**, or the
+prompt returns for every file in the bundle.
+
+To keep the password out of the environment, `APPLE_KEYCHAIN_PROFILE` reads it from a
+stored profile instead — but `xcrun notarytool store-credentials` only completes the write
+from a real interactive Terminal. Run it there first, or stay with the env vars above:
+
+```bash
+xcrun notarytool store-credentials "medjat-notarize" \
+  --apple-id "<apple-id-email>" --team-id "<TEAMID>"
+```
 
 ### Windows
 

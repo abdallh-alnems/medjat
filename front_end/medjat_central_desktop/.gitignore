@@ -4,3 +4,4 @@ build/icon.icns
 build/icon.ico
 build/icon.png
 .DS_Store
+dist-win/
