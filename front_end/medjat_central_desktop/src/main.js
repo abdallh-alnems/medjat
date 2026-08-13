@@ -386,6 +386,14 @@ function buildMenu() {
 
 // ---------------------------------------------------------------- lifecycle
 
+// Registered before the single-instance check: macOS can deliver open-url to a
+// process that is about to lose the lock and quit, and a handler installed only
+// on the winning path would drop the sign-in link on the floor.
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  handleAuthLink(url);
+});
+
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
@@ -397,12 +405,6 @@ if (!app.requestSingleInstanceLock()) {
     if (!mainWindow) return;
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.focus();
-  });
-
-  // macOS delivers it here, and may do so before the window exists.
-  app.on('open-url', (event, url) => {
-    event.preventDefault();
-    handleAuthLink(url);
   });
 
   app.whenReady().then(() => {
