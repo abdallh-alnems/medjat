@@ -28,6 +28,6 @@ if (isTrustedPage) {
     info: () => ipcRenderer.invoke('app:info'),
     // Passkeys cannot be answered in this window; the real browser can, and
     // returns the session over medjat://auth.
-    signInWithBrowser: () => ipcRenderer.invoke('auth:browser'),
+    signInWithBrowser: (provider) => ipcRenderer.invoke('auth:browser', provider),
   });
 }

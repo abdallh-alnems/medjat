@@ -25,12 +25,14 @@ import {
   signInWithGoogle,
   signInWithApple,
   consumeRedirectResult,
+  startGoogleRedirect,
+  startAppleRedirect,
 } from "@/lib/firebase/auth";
 import { desktopAuthorize } from "@/lib/api/auth";
 import { isDesktopApp } from "@/lib/desktop";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Loader2, Apple, ExternalLink } from "lucide-react";
+import { Loader2, Apple } from "lucide-react";
 import { GoogleIcon } from "@/components/ui/brand-icons";
 
 const schema = z.object({
@@ -45,6 +47,7 @@ export default function LoginPage() {
   const { completeLogin } = useAuth();
   const [busy, setBusy] = useState<"email" | "google" | "apple" | null>(null);
   const [handedOff, setHandedOff] = useState(false);
+  const [waitingOnBrowser, setWaitingOnBrowser] = useState(false);
 
   // Both values only exist in the browser. useSyncExternalStore reads them after
   // hydration without a Suspense boundary (which useSearchParams would require)
@@ -98,12 +101,36 @@ export default function LoginPage() {
     defaultValues: { email: "", password: "" },
   });
 
+  /**
+   * Browser half of a desktop hand-off that already named a provider: start it
+   * immediately so the user is not asked to pick the same button twice.
+   *
+   * The sessionStorage guard matters — a cancelled sign-in returns here with no
+   * result, and without it we would bounce the user straight back out, forever.
+   */
+  async function autoStartProvider() {
+    const params = new URLSearchParams(window.location.search);
+    const provider = params.get("provider");
+    if (provider !== "google" && provider !== "apple") return;
+
+    const key = `desktop-oauth:${params.get("desktop") ?? ""}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+
+    setBusy(provider);
+    await (provider === "google" ? startGoogleRedirect() : startAppleRedirect());
+  }
+
   // Complete a pending Google/Apple redirect sign-in when returning to this page.
   useEffect(() => {
     let cancelled = false;
     consumeRedirectResult()
       .then(async (user) => {
-        if (!user || cancelled) return;
+        if (cancelled) return;
+        if (!user) {
+          await autoStartProvider();
+          return;
+        }
         setBusy("google");
         await finishLogin();
       })
@@ -155,7 +182,23 @@ export default function LoginPage() {
     return t("error_generic");
   }
 
+  /**
+   * In the desktop app, OAuth runs in the user's real browser.
+   *
+   * Electron has no platform authenticator, so an account protected by a passkey
+   * dead-ends in this window. Rather than offering that as a separate choice —
+   * which asks the user to understand a limitation that is not theirs — the
+   * ordinary provider buttons take the browser route whenever the shell is
+   * present, the same way Slack and VS Code sign in.
+   */
+  function handOffToBrowser(provider: "google" | "apple") {
+    setBusy(provider);
+    setWaitingOnBrowser(true);
+    window.medjat?.signInWithBrowser?.(provider);
+  }
+
   async function onGoogle() {
+    if (inDesktopApp) return handOffToBrowser("google");
     setBusy("google");
     try {
       const cred = await signInWithGoogle();
@@ -170,6 +213,7 @@ export default function LoginPage() {
   }
 
   async function onApple() {
+    if (inDesktopApp) return handOffToBrowser("apple");
     setBusy("apple");
     try {
       const cred = await signInWithApple();
@@ -281,26 +325,10 @@ export default function LoginPage() {
           )}
           {t("continue_with_apple")}
         </Button>
-        {/*
-          Desktop only. Electron has no platform authenticator, so an account
-          protected by a passkey cannot finish signing in in this window — the
-          real browser can, and hands the session back over medjat://.
-        */}
-        {inDesktopApp && (
-          <>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => window.medjat?.signInWithBrowser?.()}
-              disabled={busy !== null}
-            >
-              <ExternalLink className="h-4 w-4" />
-              تسجيل الدخول عبر المتصفح
-            </Button>
-            <p className="text-center text-label-sm text-muted-foreground">
-              استخدم هذا الخيار إذا كان حسابك محمياً بمفتاح مرور (passkey).
-            </p>
-          </>
+        {waitingOnBrowser && (
+          <p className="text-center text-label-sm text-muted-foreground">
+            أكمل تسجيل الدخول في المتصفح، وسيعود بك إلى التطبيق تلقائياً.
+          </p>
         )}
         <p className="mt-2 text-center text-label-md text-muted-foreground">
           {t("no_account")}{" "}

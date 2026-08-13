@@ -57,9 +57,11 @@ let mainWindow = null;
  */
 let pendingAuthState = null;
 
-function startBrowserSignIn() {
+function startBrowserSignIn(provider) {
   pendingAuthState = crypto.randomBytes(24).toString('hex');
-  shell.openExternal(`${APP_URL}/login?desktop=${pendingAuthState}`);
+  // Anything not on this list is dropped rather than passed through into a URL.
+  const hint = provider === 'google' || provider === 'apple' ? `&provider=${provider}` : '';
+  shell.openExternal(`${APP_URL}/login?desktop=${pendingAuthState}${hint}`);
 }
 
 function handleAuthLink(rawUrl) {
@@ -425,8 +427,8 @@ ipcMain.handle('app:retry', () => {
   mainWindow?.loadURL(retryTarget);
 });
 
-ipcMain.handle('auth:browser', () => {
-  startBrowserSignIn();
+ipcMain.handle('auth:browser', (_event, provider) => {
+  startBrowserSignIn(provider);
 });
 
 ipcMain.handle('app:info', () => ({
