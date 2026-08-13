@@ -1,7 +1,15 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Upload, FileText, X, CheckCircle2, AlertTriangle } from "lucide-react";
+import { useRef, useState, useSyncExternalStore } from "react";
+import {
+  Upload,
+  FileText,
+  X,
+  CheckCircle2,
+  AlertTriangle,
+  Router,
+  Loader2,
+} from "lucide-react";
 import { useT } from "@/lib/i18n/use-t";
 import { useBranches } from "@/lib/hooks/use-org";
 import {
@@ -11,6 +19,8 @@ import {
   type ImportPunchesResult,
 } from "@/lib/api/devices";
 import { LoadingState } from "@/components/ui/states";
+import { isDesktopApp } from "@/lib/desktop";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -44,6 +54,16 @@ export default function ImportPunchesPage() {
   const [result, setResult] = useState<ImportPunchesResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Reading a terminal over the LAN needs a socket, so it exists only in the
+  // desktop shell; in a browser this whole section never renders.
+  const inDesktopApp = useSyncExternalStore(
+    () => () => {},
+    isDesktopApp,
+    () => false,
+  );
+  const [deviceIp, setDeviceIp] = useState("");
+  const [deviceBusy, setDeviceBusy] = useState(false);
+
   function resetOutcome() {
     setPreview(null);
     setResult(null);
@@ -63,6 +83,37 @@ export default function ImportPunchesPage() {
     setCsvText(null);
     resetOutcome();
     if (inputRef.current) inputRef.current.value = "";
+  }
+
+  /**
+   * Pulls the attendance log off a terminal on this network and drops it into
+   * the same two-step flow a USB export goes through — the rows are described
+   * before anything is written, exactly as if a file had been chosen.
+   */
+  async function readFromDevice() {
+    if (!window.medjat?.readDevice) return;
+    setDeviceBusy(true);
+    resetOutcome();
+    try {
+      const res = await window.medjat.readDevice({ ip: deviceIp.trim() });
+      if (!res.ok) {
+        setError(res.error ?? t("error_generic"));
+        return;
+      }
+      if (res.rows.length === 0) {
+        setError("الجهاز رد لكن سجل الحضور فيه فارغ.");
+        return;
+      }
+      setCsvText(res.csv);
+      setFileName(
+        `${res.device.name || res.device.ip} — ${res.rows.length} سجل` +
+          (res.truncated ? " (أول 20000)" : ""),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("error_generic"));
+    } finally {
+      setDeviceBusy(false);
+    }
   }
 
   async function run(isPreview: boolean) {
@@ -176,6 +227,40 @@ export default function ImportPunchesPage() {
               </button>
             )}
           </div>
+
+          {inDesktopApp && (
+            <div className="space-y-2 border-t pt-4">
+              <Label>القراءة من جهاز على الشبكة المحلية</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={deviceIp}
+                  onChange={(e) => setDeviceIp(e.target.value)}
+                  placeholder="192.168.1.50"
+                  inputMode="decimal"
+                  dir="ltr"
+                  className="text-start"
+                  disabled={busy || deviceBusy}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={readFromDevice}
+                  disabled={!deviceIp.trim() || busy || deviceBusy}
+                >
+                  {deviceBusy ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Router className="h-4 w-4" />
+                  )}
+                  قراءة
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                يجب أن يكون هذا الجهاز على نفس شبكة جهاز البصمة. القراءة لا تمسح
+                سجل الجهاز، وتكرار الاستيراد آمن.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

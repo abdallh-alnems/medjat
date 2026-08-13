@@ -431,6 +431,21 @@ ipcMain.handle('auth:browser', () => {
   startBrowserSignIn();
 });
 
+/**
+ * Reads a fingerprint terminal on the local network — the capability a browser
+ * cannot have. Errors are returned rather than thrown so the page can show the
+ * device's own words ("connection refused", "timed out") instead of a generic
+ * failure; the operator is usually the only one who can act on them.
+ */
+ipcMain.handle('device:read', async (_event, options) => {
+  try {
+    const { readAttendance } = require('./device');
+    return { ok: true, ...(await readAttendance(options ?? {})) };
+  } catch (err) {
+    return { ok: false, error: err?.message ?? String(err) };
+  }
+});
+
 ipcMain.handle('app:info', () => ({
   version: app.getVersion(),
   electron: process.versions.electron,

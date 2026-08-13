@@ -29,5 +29,9 @@ if (isTrustedPage) {
     // Passkeys cannot be answered in this window; the real browser can, and
     // returns the session over medjat://auth.
     signInWithBrowser: () => ipcRenderer.invoke('auth:browser'),
+    // Reads a fingerprint terminal over the LAN. Resolves to
+    // { ok: false, error } rather than rejecting, so the page always has
+    // something to show the operator.
+    readDevice: (options) => ipcRenderer.invoke('device:read', options),
   });
 }

@@ -11,6 +11,29 @@ declare global {
       isDesktop?: boolean;
       /** Opens the system browser to sign in there, then returns over medjat://. */
       signInWithBrowser?: () => Promise<void>;
+      /**
+       * Reads the attendance log off a ZKTeco terminal on the local network.
+       * Resolves with `ok: false` rather than rejecting, so the caller always
+       * has the device's own error text to show.
+       */
+      readDevice?: (options: { ip: string; port?: number }) => Promise<
+        | {
+            ok: true;
+            device: {
+              ip: string;
+              port: number;
+              name: string | null;
+              serial: string | null;
+              firmware: string | null;
+              clock: string | null;
+            };
+            rows: { userId: string; at: string }[];
+            csv: string;
+            total: number;
+            truncated: boolean;
+          }
+        | { ok: false; error: string }
+      >;
       retry?: () => Promise<void>;
       info?: () => Promise<{
         version: string;
