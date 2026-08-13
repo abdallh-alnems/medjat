@@ -89,19 +89,6 @@ export async function signInWithGoogle() {
   return oauthSignIn(googleProvider);
 }
 
-/**
- * Redirect-only starts, used when the desktop app hands sign-in to the browser
- * with a provider already chosen. A popup opened on page load — rather than from
- * a click — is blocked by browsers, so the redirect is the honest way to do it.
- */
-export function startGoogleRedirect() {
-  return signInWithRedirect(auth, googleProvider);
-}
-
-export function startAppleRedirect() {
-  return signInWithRedirect(auth, appleProvider);
-}
-
 /** Apple sign-in (popup, redirect fallback). */
 export async function signInWithApple() {
   return oauthSignIn(appleProvider);

@@ -9,12 +9,8 @@ declare global {
   interface Window {
     medjat?: {
       isDesktop?: boolean;
-      /**
-       * Opens the system browser to sign in there, then returns over medjat://.
-       * Naming a provider starts it straight away rather than showing the
-       * login page again.
-       */
-      signInWithBrowser?: (provider?: "google" | "apple") => Promise<void>;
+      /** Opens the system browser to sign in there, then returns over medjat://. */
+      signInWithBrowser?: () => Promise<void>;
       retry?: () => Promise<void>;
       info?: () => Promise<{
         version: string;

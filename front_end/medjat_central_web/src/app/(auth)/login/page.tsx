@@ -25,8 +25,6 @@ import {
   signInWithGoogle,
   signInWithApple,
   consumeRedirectResult,
-  startGoogleRedirect,
-  startAppleRedirect,
 } from "@/lib/firebase/auth";
 import { desktopAuthorize } from "@/lib/api/auth";
 import { isDesktopApp } from "@/lib/desktop";
@@ -101,36 +99,12 @@ export default function LoginPage() {
     defaultValues: { email: "", password: "" },
   });
 
-  /**
-   * Browser half of a desktop hand-off that already named a provider: start it
-   * immediately so the user is not asked to pick the same button twice.
-   *
-   * The sessionStorage guard matters — a cancelled sign-in returns here with no
-   * result, and without it we would bounce the user straight back out, forever.
-   */
-  async function autoStartProvider() {
-    const params = new URLSearchParams(window.location.search);
-    const provider = params.get("provider");
-    if (provider !== "google" && provider !== "apple") return;
-
-    const key = `desktop-oauth:${params.get("desktop") ?? ""}`;
-    if (sessionStorage.getItem(key)) return;
-    sessionStorage.setItem(key, "1");
-
-    setBusy(provider);
-    await (provider === "google" ? startGoogleRedirect() : startAppleRedirect());
-  }
-
   // Complete a pending Google/Apple redirect sign-in when returning to this page.
   useEffect(() => {
     let cancelled = false;
     consumeRedirectResult()
       .then(async (user) => {
-        if (cancelled) return;
-        if (!user) {
-          await autoStartProvider();
-          return;
-        }
+        if (!user || cancelled) return;
         setBusy("google");
         await finishLogin();
       })
@@ -194,7 +168,7 @@ export default function LoginPage() {
   function handOffToBrowser(provider: "google" | "apple") {
     setBusy(provider);
     setWaitingOnBrowser(true);
-    window.medjat?.signInWithBrowser?.(provider);
+    window.medjat?.signInWithBrowser?.();
   }
 
   async function onGoogle() {
@@ -246,7 +220,11 @@ export default function LoginPage() {
     <Card>
       <CardHeader>
         <CardTitle className="text-headline-md">{t("login")}</CardTitle>
-        <CardDescription>{t("welcome_back")}</CardDescription>
+        <CardDescription>
+          {desktopState
+            ? "سجّل دخولك هنا لإكمال الدخول إلى تطبيق سطح المكتب."
+            : t("welcome_back")}
+        </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit(onEmailSubmit)}>
         <CardContent className="space-y-4">
