@@ -2,11 +2,18 @@
 
 import { useEffect } from "react";
 
+import { startInstallCapture } from "@/lib/pwa-install";
+
 /**
  * Registers the shell-only service worker (`/sw.js`) for offline support.
  * No Firebase messaging SW and no push in v1 (D9).
+ *
+ * Also captures the browser's install prompt. That has to happen here rather
+ * than on /install: the event fires once, early, on whatever page loaded first.
  */
 export function PwaProvider({ children }: { children: React.ReactNode }) {
+  useEffect(() => startInstallCapture(), []);
+
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
 

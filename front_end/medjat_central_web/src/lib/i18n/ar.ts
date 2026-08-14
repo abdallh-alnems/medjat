@@ -935,6 +935,67 @@ export const ar = {
   perm_kiosk_access: "فتح إعدادات الكيوسك وتسجيل الوجوه",
   perm_kiosk_evidence: "عرض صور محاولات التعرّف",
   nav_kiosks: "أجهزة الكيوسك",
+
+  // ── Install as an app (PWA) ──
+  install_title: "تثبيت التطبيق",
+  install_heading: "ثبّت Medjat Central على جهازك",
+  install_subheading:
+    "نفس اللوحة، تفتح من أيقونة على سطح المكتب في نافذة مستقلة — دون تنزيل أي ملف.",
+  install_action: "تثبيت التطبيق",
+  install_working: "جارٍ الفتح…",
+  install_installed_title: "تم التثبيت",
+  install_installed_body: "ستجد Medjat Central في قائمة ابدأ وعلى سطح المكتب.",
+  install_standalone_title: "أنت تستخدم النسخة المثبّتة",
+  install_standalone_body: "التطبيق مثبّت على هذا الجهاز بالفعل.",
+  install_dismissed: "أُلغي التثبيت. يمكنك المحاولة مرة أخرى في أي وقت.",
+  install_desktop_title: "أنت داخل تطبيق سطح المكتب",
+  install_desktop_body:
+    "هذه النسخة مثبّتة بالفعل ولا تحتاج إلى تثبيت من المتصفح.",
+  install_open_app: "فتح اللوحة",
+
+  install_why_title: "لماذا تثبّته؟",
+  install_why_icon_title: "أيقونة مستقلة",
+  install_why_icon_body:
+    "في قائمة ابدأ وعلى شريط المهام، دون البحث بين تبويبات المتصفح.",
+  install_why_window_title: "نافذة نظيفة",
+  install_why_window_body:
+    "دون شريط عنوان ولا تبويبات — مساحة أكبر للجداول والتقارير.",
+  install_why_safe_title: "دون تنزيل أي ملف",
+  install_why_safe_body:
+    "لا ملف تثبيت ولا تحذيرات أمان — التطبيق يفتح من الموقع مباشرة.",
+
+  install_steps_title: "خطوات التثبيت",
+  install_step_win_1:
+    "اضغط زر «تثبيت التطبيق» بالأعلى، أو أيقونة التثبيت في شريط العنوان.",
+  install_step_win_2: "اضغط «تثبيت» في النافذة التي تظهر.",
+  install_step_win_3: "ستجد الأيقونة على سطح المكتب وفي قائمة ابدأ.",
+  install_step_mac_safari_1: "من شريط القوائم اختر: ملف ← إضافة إلى Dock.",
+  install_step_mac_safari_2: "اضغط «إضافة» — ستظهر الأيقونة في الـ Dock.",
+  install_step_ios_1: "اضغط زر المشاركة في أسفل الشاشة.",
+  install_step_ios_2: "اختر «إضافة إلى الشاشة الرئيسية».",
+  install_step_ios_3: "اضغط «إضافة» في الأعلى.",
+  install_step_android_1: "افتح قائمة المتصفح (⋮).",
+  install_step_android_2:
+    "اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».",
+
+  install_unsupported_title: "هذا المتصفح لا يدعم التثبيت",
+  install_unsupported_body:
+    "افتح هذه الصفحة على Microsoft Edge أو Google Chrome لتثبيت التطبيق.",
+  install_unsupported_ios_body:
+    "افتح هذه الصفحة على Safari لتثبيت التطبيق على الآيفون أو الآيباد.",
+  install_copy_link: "نسخ رابط الصفحة",
+  install_link_copied: "تم نسخ الرابط",
+
+  install_other_title: "أنظمة ومتصفحات أخرى",
+  install_other_windows: "ويندوز — Edge أو Chrome",
+  install_other_macos_safari: "ماك — Safari",
+  install_other_macos_chrome: "ماك — Chrome أو Edge",
+  install_other_ios: "آيفون وآيباد — Safari",
+  install_other_android: "أندرويد — Chrome",
+
+  install_note_title: "ملاحظة",
+  install_note_body:
+    "التطبيق يحتاج اتصالاً بالإنترنت، ويتحدّث تلقائيًا مع كل إصدار جديد دون إعادة تثبيت.",
 };
 
 export type Dictionary = Record<string, string>;

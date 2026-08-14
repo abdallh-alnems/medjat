@@ -11,7 +11,8 @@
     "icons": "node scripts/make-icons.js",
     "pack": "electron-builder --dir",
     "build:mac": "electron-builder --mac",
-    "build:mac:signed": "electron-builder --mac -c.mac.identity=\"$APPLE_IDENTITY\" -c.mac.hardenedRuntime=true",
+    "build:mac:signed": "electron-builder --mac -c.mac.identity=\"$APPLE_IDENTITY\" -c.mac.hardenedRuntime=true && npm run sign:dmg",
+    "sign:dmg": "node scripts/sign-dmg.js",
     "build:win": "electron-builder --win",
     "build": "electron-builder --mac --win"
   },

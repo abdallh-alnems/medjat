@@ -81,6 +81,33 @@ That turns on the hardened runtime and notarizes. The ad-hoc `afterPack` step st
 automatically when `APPLE_IDENTITY` is set. Notarization takes a few minutes — Apple
 processes the upload server-side.
 
+#### The DMG needs signing too
+
+electron-builder handles the `.app` and stops there: `dmg.sign` defaults to false, and its
+notarization runs during `afterSign`, before the image is even created. An unsigned
+container does not matter over USB, but a download carries a quarantine flag and Gatekeeper
+assesses the **image** before anyone reaches the app inside — so a notarized app ends up
+behind a "cannot be verified" dialog on the one path clients actually use.
+
+`build:mac:signed` therefore chains `sign:dmg`, which signs, notarizes and staples each
+image, then verifies it the way a quarantined download is verified:
+
+```bash
+npm run sign:dmg              # skips images that already validate
+npm run sign:dmg -- --force   # re-sign regardless
+```
+
+It reads credentials from the notarytool keychain profile `medjat-notarize`
+(`NOTARY_PROFILE` overrides). A finished image reports:
+
+```
+spctl -a -t open --context context:primary-signature -vvv "dist/….dmg"
+  → accepted   source=Notarized Developer ID
+```
+
+`xcrun stapler validate` on the DMG is the other half — without a stapled ticket the check
+needs a live round-trip to Apple, so a client on a bad connection sees it fail.
+
 Signing prompts once for the login keychain password; answer **Always Allow**, or the
 prompt returns for every file in the bundle.
 

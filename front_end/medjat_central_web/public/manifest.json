@@ -24,5 +24,27 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "الحضور والانصراف",
+      "short_name": "الحضور",
+      "url": "/attendance"
+    },
+    {
+      "name": "الموظفون",
+      "short_name": "الموظفون",
+      "url": "/employees"
+    },
+    {
+      "name": "الرواتب",
+      "short_name": "الرواتب",
+      "url": "/payroll"
+    },
+    {
+      "name": "الإجازات",
+      "short_name": "الإجازات",
+      "url": "/leaves"
+    }
   ]
 }

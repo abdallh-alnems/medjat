@@ -941,4 +941,65 @@ export const en: Dictionary = {
   perm_kiosk_access: "Open kiosk settings and enrol faces",
   perm_kiosk_evidence: "View identification captures",
   nav_kiosks: "Kiosks",
+
+  // ── Install as an app (PWA) ──
+  install_title: "Install the app",
+  install_heading: "Install Medjat Central on your device",
+  install_subheading:
+    "The same panel, opening from a desktop icon in its own window — with no file to download.",
+  install_action: "Install the app",
+  install_working: "Opening…",
+  install_installed_title: "Installed",
+  install_installed_body:
+    "You will find Medjat Central in the Start menu and on your desktop.",
+  install_standalone_title: "You are using the installed app",
+  install_standalone_body: "It is already installed on this device.",
+  install_dismissed: "Install cancelled. You can try again at any time.",
+  install_desktop_title: "You are in the desktop app",
+  install_desktop_body:
+    "This copy is already installed and needs no browser install.",
+  install_open_app: "Open the panel",
+
+  install_why_title: "Why install it?",
+  install_why_icon_title: "Its own icon",
+  install_why_icon_body:
+    "In the Start menu and on the taskbar — no hunting through browser tabs.",
+  install_why_window_title: "A clean window",
+  install_why_window_body:
+    "No address bar, no tabs — more room for tables and reports.",
+  install_why_safe_title: "Nothing to download",
+  install_why_safe_body:
+    "No installer file and no security warnings — it opens straight from the site.",
+
+  install_steps_title: "How to install",
+  install_step_win_1:
+    "Press “Install the app” above, or the install icon in the address bar.",
+  install_step_win_2: "Press “Install” in the dialog that appears.",
+  install_step_win_3: "The icon lands on your desktop and in the Start menu.",
+  install_step_mac_safari_1: "In the menu bar choose: File → Add to Dock.",
+  install_step_mac_safari_2: "Press “Add” — the icon appears in the Dock.",
+  install_step_ios_1: "Tap the Share button at the bottom of the screen.",
+  install_step_ios_2: "Choose “Add to Home Screen”.",
+  install_step_ios_3: "Tap “Add” at the top.",
+  install_step_android_1: "Open the browser menu (⋮).",
+  install_step_android_2: "Choose “Install app” or “Add to Home screen”.",
+
+  install_unsupported_title: "This browser cannot install apps",
+  install_unsupported_body:
+    "Open this page in Microsoft Edge or Google Chrome to install the app.",
+  install_unsupported_ios_body:
+    "Open this page in Safari to install the app on iPhone or iPad.",
+  install_copy_link: "Copy this page's link",
+  install_link_copied: "Link copied",
+
+  install_other_title: "Other systems and browsers",
+  install_other_windows: "Windows — Edge or Chrome",
+  install_other_macos_safari: "Mac — Safari",
+  install_other_macos_chrome: "Mac — Chrome or Edge",
+  install_other_ios: "iPhone and iPad — Safari",
+  install_other_android: "Android — Chrome",
+
+  install_note_title: "Note",
+  install_note_body:
+    "The app needs an internet connection, and updates itself with every release — no re-install.",
 };
