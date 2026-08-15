@@ -15,6 +15,41 @@ final class BranchNetworkModel {
         );
     }
 
+    /**
+     * Branches with no approved IP network — the only network control a browser
+     * can be held to.
+     *
+     * A BSSID row does not count here however many the branch has: the browser
+     * cannot read the access point it is joined to, so a branch whose WiFi
+     * control is entirely BSSID-based has *no* network constraint on this
+     * channel even though its app attendance looks well guarded. The settings
+     * screen names these branches rather than showing a general caution, so an
+     * administrator can see exactly where the geofence is the only thing left.
+     *
+     * @return list<array{id:int,name:string}>
+     */
+    public static function branchesWithoutIpControl(int $tenantId): array {
+        $rows = Database::fetchAll(
+            "SELECT b.id, b.name
+             FROM branches b
+             WHERE b.tenant_id = ?
+               AND NOT EXISTS (
+                   SELECT 1 FROM branch_networks bn
+                   WHERE bn.tenant_id = b.tenant_id
+                     AND bn.branch_id = b.id
+                     AND bn.is_active = 1
+                     AND bn.kind IN ('ip_v4', 'ip_cidr')
+               )
+             ORDER BY b.name ASC",
+            [$tenantId]
+        );
+
+        return array_map(
+            static fn(array $r): array => ['id' => (int) $r['id'], 'name' => (string) $r['name']],
+            $rows
+        );
+    }
+
     public static function hasAnyApproved(int $branchId, int $tenantId): bool {
         $row = Database::fetchOne(
             "SELECT 1 AS ok FROM branch_networks

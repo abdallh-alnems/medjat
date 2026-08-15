@@ -5,6 +5,12 @@ plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    // Reads android/app/google-services.json (package com.khawarizmie.medjat.kiosk,
+    // registered in the `medjat` Firebase project).
+    id("com.google.gms.google-services")
+    // Uploads the mapping/symbol files so a crash on a wall-mounted tablet
+    // arrives readable rather than as an obfuscated frame.
+    id("com.google.firebase.crashlytics")
 }
 
 // Load upload-signing credentials from android/key.properties (not committed),

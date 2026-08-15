@@ -273,6 +273,12 @@ backend answers `426`/`503` after reading Remote Config itself. Putting the SDK
 on the device would add a `google-services.json` step and an FCM dependency to
 buy nothing the heartbeat does not already deliver.
 
+> **Superseded 2026-08-15** — see plan.md. The reasoning above holds for the
+> *gate*, and the gate is unchanged. What it missed is observability: a kiosk
+> crashes to a wall. Firebase is now on the tablet for Crashlytics first, with
+> Analytics, FCM and Remote Config alongside it, none of which decide anything
+> the server has not already answered.
+
 **Lockdown**: Android screen pinning (lock task), plus an optional HOME intent
 filter so a supervisor can make the kiosk the device's launcher. Deliberately
 **not** `DEVICE_ADMIN`, which attracts Play policy scrutiny for no gain here.

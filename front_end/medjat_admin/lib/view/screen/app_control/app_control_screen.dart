@@ -104,6 +104,8 @@ class _AppCard extends StatelessWidget {
         return Icons.business_center;
       case 'medjat_admin':
         return Icons.admin_panel_settings;
+      case 'medjat_kiosk':
+        return Icons.tablet_android;
       default:
         return Icons.phone_android;
     }

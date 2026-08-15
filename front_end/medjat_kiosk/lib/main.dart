@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 
+import 'core/services/kiosk_firebase.dart';
 import 'core/theme/kiosk_theme.dart';
 import 'logic/kiosk_controller.dart';
 import 'view/identify_screen.dart';
@@ -39,6 +42,21 @@ Future<void> main() async {
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
   runApp(const MedjatKioskApp());
+
+  // Firebase starts after the first frame and is never awaited. On a tablet
+  // without Google Play services these calls hang rather than throw, and a
+  // kiosk that shows a blank screen on a wall because a crash reporter could
+  // not reach Google is a far worse outcome than having no crash reports.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    unawaited(KioskFirebase.start(onRemoteSignal: () async {
+      // A maintenance switch was flipped, or Remote Config changed. Ask the
+      // server rather than deciding here — heartbeat is the only thing that
+      // takes this tablet in or out of service.
+      if (Get.isRegistered<KioskController>()) {
+        await Get.find<KioskController>().heartbeat();
+      }
+    }));
+  });
 }
 
 class MedjatKioskApp extends StatelessWidget {

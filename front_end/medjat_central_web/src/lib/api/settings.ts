@@ -109,7 +109,12 @@ export interface AttendanceCategoryOverride {
   color?: string | null;
   employee_count: number;
   attendance_methods: AttendanceMethod[] | null;
+  /** null = inherit the company browser switch, true = allowed, false = refused. */
+  web_attendance_allowed?: boolean | null;
 }
+
+/** What a browser cannot verify, however the company is configured elsewhere. */
+export type WebChannelLimitation = "wifi_bssid" | "mock_location" | "face_match";
 
 export interface AttendanceEmployeeOverride {
   id: number;
@@ -129,6 +134,12 @@ export interface AttendanceMethodConfig {
   face_match_threshold: number;
   face_liveness_required: boolean;
   face_enforce_mode: "log_only" | "enforce";
+  /** Browser attendance. Off until the company opts in. */
+  web_attendance_enabled: boolean;
+  web_attendance_photo_required: boolean;
+  web_channel_limitations: WebChannelLimitation[];
+  /** Branches with no approved IP network — no network control on this channel. */
+  branches_without_ip_networks: { id: number; name: string }[];
   branches: AttendanceBranchOverride[];
   categories: AttendanceCategoryOverride[];
   employee_overrides: AttendanceEmployeeOverride[];
@@ -156,6 +167,30 @@ export function updateFaceSettings(data: {
   face_enforce_mode?: "log_only" | "enforce";
 }) {
   return apiPost<{ message?: string }>("app/settings/company.php", data);
+}
+
+/**
+ * Browser attendance channel, company-wide.
+ *
+ * Enabling this opens the weakest verification surface in the product, so the
+ * backend audits every change on its own line (`tenant.web_attendance_settings`).
+ */
+export function updateWebAttendanceSettings(data: {
+  web_attendance_enabled?: boolean;
+  web_attendance_photo_required?: boolean;
+}) {
+  return apiPost<{ message?: string }>("app/settings/company.php", data);
+}
+
+/** Per-category exception. null = inherit the company switch. */
+export function updateCategoryWebAccess(data: {
+  id: number;
+  web_attendance_allowed: boolean | null;
+}) {
+  return apiPost<{ category_id: number; web_attendance_allowed: boolean | null }>(
+    "app/categories/update_web_access.php",
+    data,
+  );
 }
 
 /** Company-wide GPS geofence. Pass nulls to clear it. */

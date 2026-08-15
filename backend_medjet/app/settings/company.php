@@ -64,6 +64,11 @@ if ($method === 'GET') {
             'color' => $c['color'] ?? null,
             'employee_count' => (int) ($c['employee_count'] ?? 0),
             'attendance_methods' => $methods,
+            // NULL = inherit the company switch. Sent as null, not false, so the
+            // screen can show three states instead of guessing at two.
+            'web_attendance_allowed' => $c['web_attendance_allowed'] !== null
+                ? (bool) $c['web_attendance_allowed']
+                : null,
         ];
     }, EmployeeCategoryModel::listByTenant($tenantId, true));
 
@@ -102,6 +107,22 @@ if ($method === 'GET') {
         // False means nobody ever picked one, so the client may suggest the
         // device's zone. True means hands off.
         'timezone_is_explicit' => (bool) ($tenant['timezone_is_explicit'] ?? false),
+        // Browser attendance channel. Off for every company that has not opted
+        // in; the photo default is on so enabling the weakest channel keeps the
+        // one control that says anything about who pressed the button.
+        'web_attendance_enabled' => (bool) ($tenant['web_attendance_enabled'] ?? false),
+        'web_attendance_photo_required' => (bool) ($tenant['web_attendance_photo_required'] ?? true),
+        // What the browser cannot check, whatever the company has configured
+        // elsewhere. Codes rather than sentences so each client localizes them,
+        // and served from here so the disclosure cannot drift per client.
+        'web_channel_limitations' => [
+            'wifi_bssid',     // no access-point identity is available to a page
+            'mock_location',  // no spoofing signal is reported to a page
+            'face_match',     // the on-device face model does not run in a browser
+        ],
+        // Branches whose only network control is BSSID-based, i.e. no control at
+        // all on this channel — named so the warning is specific.
+        'branches_without_ip_networks' => BranchNetworkModel::branchesWithoutIpControl($tenantId),
         'branches' => $branchList,
         'categories' => $categoryList,
         'employee_overrides' => $employeeOverrides,
@@ -234,6 +255,49 @@ if ($method === 'PUT' || $method === 'POST') {
             Response::fail('require_local_biometric must be true or false', 422, 'require_local_biometric_true_false');
         }
         TenantModel::updateRequireLocalBiometric($tenantId, $requireBio);
+    }
+
+    // Browser attendance channel. Kept out of $updateData and audited on its own
+    // line: this is the switch that decides whether the weakest verification
+    // surface in the product is open, and "who turned it on, and when" is the
+    // first question anyone will ask about a disputed browser punch.
+    if (array_key_exists('web_attendance_enabled', $input)
+        || array_key_exists('web_attendance_photo_required', $input)) {
+        $webEnabled = array_key_exists('web_attendance_enabled', $input)
+            ? filter_var($input['web_attendance_enabled'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+            : (bool) ($tenant['web_attendance_enabled'] ?? false);
+        if ($webEnabled === null) {
+            Response::fail('web_attendance_enabled must be true or false', 422, 'web_attendance_enabled_bool');
+        }
+
+        $webPhoto = array_key_exists('web_attendance_photo_required', $input)
+            ? filter_var($input['web_attendance_photo_required'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+            : (bool) ($tenant['web_attendance_photo_required'] ?? true);
+        if ($webPhoto === null) {
+            Response::fail('web_attendance_photo_required must be true or false', 422, 'web_attendance_photo_required_bool');
+        }
+
+        $wasEnabled = (bool) ($tenant['web_attendance_enabled'] ?? false);
+        $wasPhoto = (bool) ($tenant['web_attendance_photo_required'] ?? true);
+
+        if ($webEnabled !== $wasEnabled || $webPhoto !== $wasPhoto) {
+            TenantModel::update($tenantId, [
+                'web_attendance_enabled' => $webEnabled ? 1 : 0,
+                'web_attendance_photo_required' => $webPhoto ? 1 : 0,
+            ]);
+
+            AuditLogModel::log(
+                $tenantId,
+                $auth['admin_id'],
+                'tenant.web_attendance_settings',
+                'tenant',
+                $tenantId,
+                [
+                    'enabled' => ['from' => $wasEnabled, 'to' => $webEnabled],
+                    'photo_required' => ['from' => $wasPhoto, 'to' => $webPhoto],
+                ]
+            );
+        }
     }
 
     // Company-wide face-recognition settings for the face_selfie method.

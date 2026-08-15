@@ -8,6 +8,7 @@ import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
 import '../../../data/model/branch_model.dart';
 import '../../../data/model/manager_invitation_model.dart';
+import '../../../data/model/attendance_override_model.dart';
 import '../../../data/data_source/remote/employee_data/employee_data.dart';
 import '../../widget/branch/branch_location_sheet.dart';
 import '../../../logic/controller/settings/attendance_method_controller.dart';
@@ -54,6 +55,15 @@ class AttendanceMethodScreen extends StatelessWidget {
                         _RequireLocalBiometricCard(ctrl: ctrl),
                       ],
                     ),
+                  ),
+                  const SizedBox(height: AppSpacing.s3),
+                  _CollapsibleSection(
+                    icon: Icons.public_outlined,
+                    title: 'web_attendance_section'.tr,
+                    subtitle: ctrl.webAttendanceEnabled
+                        ? 'web_channel_on'.tr
+                        : 'web_channel_off'.tr,
+                    child: _WebAttendanceSection(ctrl: ctrl),
                   ),
                   const SizedBox(height: AppSpacing.s3),
                   if (ctrl.branches.isNotEmpty)
@@ -3442,6 +3452,350 @@ class _KioskMethodCard extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// The company switch for browser attendance, with its honest disclosure.
+///
+/// The disclosure is not decoration. A browser cannot read the access point the
+/// device is joined to, receives no location-spoofing signal, and cannot run the
+/// face model, so switching this on lowers the verification standard for whoever
+/// it covers. An administrator should meet that fact next to the switch, not
+/// after a punch they cannot explain — which is also why the branches with no IP
+/// network are named individually rather than summarised as a warning.
+class _WebAttendanceSection extends StatelessWidget {
+  final AttendanceMethodController ctrl;
+  const _WebAttendanceSection({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return GetBuilder<AttendanceMethodController>(
+      builder: (_) {
+        final colors = AppColors.of(context);
+        final enabled = ctrl.webAttendanceEnabled;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _WebToggleCard(
+              icon: Icons.public_outlined,
+              title: 'web_attendance_enable'.tr,
+              hint: 'web_attendance_hint'.tr,
+              value: enabled,
+              onChanged: (v) async {
+                final ok = await ctrl.saveWebAttendanceSettings(enabled: v);
+                _showResultSnackbar(ok);
+              },
+            ),
+            if (enabled) ...[
+              const SizedBox(height: AppSpacing.s3),
+              _WebToggleCard(
+                icon: Icons.photo_camera_outlined,
+                title: 'web_attendance_photo'.tr,
+                hint: 'web_attendance_photo_hint'.tr,
+                value: ctrl.webPhotoRequired,
+                onChanged: (v) async {
+                  final ok =
+                      await ctrl.saveWebAttendanceSettings(photoRequired: v);
+                  _showResultSnackbar(ok);
+                },
+              ),
+              const SizedBox(height: AppSpacing.s3),
+              if (ctrl.webLimitations.isNotEmpty)
+                _WebNoticeCard(
+                  icon: Icons.info_outline,
+                  title: 'web_limitations_title'.tr,
+                  lines: ctrl.webLimitations
+                      .map((l) => 'web_limit_$l'.tr)
+                      .toList(),
+                ),
+              if (ctrl.branchesWithoutIpNetworks.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.s3),
+                _WebNoticeCard(
+                  icon: Icons.wifi_off_outlined,
+                  title: 'web_branches_no_ip'.tr,
+                  lines: [
+                    'web_branches_no_ip_hint'.tr,
+                    ctrl.branchesWithoutIpNetworks
+                        .map((b) => (b['name'] ?? '').toString())
+                        .where((n) => n.isNotEmpty)
+                        .join('، '),
+                  ],
+                ),
+              ],
+              const SizedBox(height: AppSpacing.s3),
+              _WebNoticeCard(
+                icon: Icons.link_outlined,
+                title: 'web_attendance_link'.tr,
+                lines: const ['https://app.medjatapp.com/me/login'],
+                footnote: 'web_attendance_link_hint'.tr,
+              ),
+              if (ctrl.categories.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.s3),
+                Text(
+                  'web_category_exceptions'.tr,
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'web_category_exceptions_hint'.tr,
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 11,
+                    color: colors.textTertiary,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.s2),
+                ...ctrl.categories.map(
+                  (c) => _CategoryWebAccessRow(ctrl: ctrl, category: c),
+                ),
+              ],
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _WebToggleCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String hint;
+  final bool value;
+  final Future<void> Function(bool) onChanged;
+
+  const _WebToggleCard({
+    required this.icon,
+    required this.title,
+    required this.hint,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.s3),
+      decoration: BoxDecoration(
+        color: value ? colors.brandSubtle : colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: value ? colors.brand : colors.borderHairline,
+          width: value ? 1.5 : 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon,
+              size: 22, color: value ? colors.brand : colors.textSecondary),
+          const SizedBox(width: AppSpacing.s3),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: value ? colors.brand : colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  hint,
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 11,
+                    color: colors.textTertiary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: (v) => onChanged(v),
+            activeThumbColor: colors.brand,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WebNoticeCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final List<String> lines;
+  final String? footnote;
+
+  const _WebNoticeCard({
+    required this.icon,
+    required this.title,
+    required this.lines,
+    this.footnote,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.s3),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: colors.textSecondary),
+              const SizedBox(width: AppSpacing.s2),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontFamily: 'IBM Plex Sans Arabic',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: colors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.s2),
+          ...lines.where((l) => l.isNotEmpty).map(
+                (l) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    l,
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 11,
+                      color: colors.textTertiary,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+          if (footnote != null)
+            Text(
+              footnote!,
+              style: TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 10,
+                color: colors.textTertiary,
+                height: 1.4,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Three states, never two: "inherit the company" is a real answer and is not
+/// the same as "refused" — collapsing them would silently harden every category
+/// the moment an administrator opened this screen.
+class _CategoryWebAccessRow extends StatelessWidget {
+  final AttendanceMethodController ctrl;
+  final CategoryMethodOverride category;
+
+  const _CategoryWebAccessRow({required this.ctrl, required this.category});
+
+  String _label(bool? v) => switch (v) {
+        true => 'web_access_allowed'.tr,
+        false => 'web_access_refused'.tr,
+        null => 'web_access_inherit'.tr,
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final value = category.webAttendanceAllowed;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.s2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              category.name,
+              style: TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 13,
+                color: colors.textPrimary,
+              ),
+            ),
+          ),
+          PopupMenuButton<String>(
+            onSelected: (choice) async {
+              final next = switch (choice) {
+                'allowed' => true,
+                'refused' => false,
+                _ => null,
+              };
+              final ok = await ctrl.setCategoryWebAccess(category.id, next);
+              _showResultSnackbar(ok);
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'inherit',
+                child: Text('web_access_inherit'.tr),
+              ),
+              PopupMenuItem(
+                value: 'allowed',
+                child: Text('web_access_allowed'.tr),
+              ),
+              PopupMenuItem(
+                value: 'refused',
+                child: Text('web_access_refused'.tr),
+              ),
+            ],
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.s3, vertical: AppSpacing.s2),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                border: Border.all(color: colors.borderHairline),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _label(value),
+                    style: TextStyle(
+                      fontFamily: 'IBM Plex Sans Arabic',
+                      fontSize: 12,
+                      color: value == false ? colors.textSecondary : colors.brand,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.arrow_drop_down, size: 18, color: colors.textTertiary),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

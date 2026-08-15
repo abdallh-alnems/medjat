@@ -12,7 +12,11 @@ $maintenance = $input['maintenance'] ?? null;
 
 Validator::required($app, 'app');
 
-$validApps = ['medjat_app', 'medjat_central'];
+// Every app RemoteConfigService knows about. The kiosk was left out while it
+// carried no Firebase SDK, which made its card in the admin panel — rendered
+// from get.php, which always listed three — answer 422 on save. It now
+// subscribes to maintenance_medjat_kiosk like the others.
+$validApps = ['medjat_app', 'medjat_central', 'medjat_kiosk'];
 Validator::enum($app, $validApps, 'app');
 
 if ($minVersion !== null && $minVersion !== '') {

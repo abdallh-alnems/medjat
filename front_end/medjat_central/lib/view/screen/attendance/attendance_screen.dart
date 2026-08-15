@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../../data/data_source/remote/attendance_data/attendance_data.dart';
 import '../../../core/class/handling_data_request.dart';
 import '../../../core/class/status_request.dart';
 import '../../../core/constant/theme/app_colors.dart';
@@ -1079,6 +1082,16 @@ class _AttendanceTile extends StatelessWidget {
                           color: colors.textTertiary,
                         ),
                       ),
+              ),
+            ],
+            // ── Browser-punch evidence (channel, photo, shared device) ──
+            if (record.checkInOrigin == 'web' ||
+                record.checkOutOrigin == 'web' ||
+                record.sharedDeviceFlag) ...[
+              const SizedBox(height: AppSpacing.s2),
+              Padding(
+                padding: const EdgeInsets.only(left: AppSpacing.s4),
+                child: _WebEvidenceRow(record: record),
               ),
             ],
             // ── Flags row (late/overtime) ──
@@ -2595,6 +2608,187 @@ class _NoteEditSheetState extends State<_NoteEditSheet> {
                   ),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Channel, evidence and the shared-device observation for a browser punch.
+///
+/// Every element here is information for a human, never a verdict. The photo is
+/// not scored against an enrolled face and the shared-device chip refused
+/// nothing: one browser recording attendance for two employees says a device was
+/// shared, not which of them lent what to whom, so both punches carry the mark
+/// and a manager decides. Presenting it as a rejection would claim a certainty
+/// the system does not have.
+class _WebEvidenceRow extends StatelessWidget {
+  final AttendanceRecordModel record;
+  const _WebEvidenceRow({required this.record});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+
+    return Wrap(
+      spacing: AppSpacing.s2,
+      runSpacing: AppSpacing.s2,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        if (record.checkInOrigin == 'web' || record.checkOutOrigin == 'web')
+          _EvidenceChip(
+            icon: Icons.public_outlined,
+            label: 'punch_from_web'.tr,
+            color: colors.textSecondary,
+          ),
+        if (record.sharedDeviceFlag)
+          Tooltip(
+            message: 'shared_device_flag_hint'.tr,
+            child: _EvidenceChip(
+              icon: Icons.devices_other_outlined,
+              label: 'shared_device_flag'.tr,
+              color: colors.warning,
+            ),
+          ),
+        if (record.hasCheckInPhoto)
+          _PunchPhotoChip(
+            attendanceId: record.id,
+            which: 'check_in',
+            label: 'check_in'.tr,
+          ),
+        if (record.hasCheckOutPhoto)
+          _PunchPhotoChip(
+            attendanceId: record.id,
+            which: 'check_out',
+            label: 'check_out'.tr,
+          ),
+      ],
+    );
+  }
+}
+
+class _EvidenceChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _EvidenceChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s2, vertical: 3),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: colors.borderHairline),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'IBM Plex Sans Arabic',
+              fontSize: 11,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PunchPhotoChip extends StatefulWidget {
+  final int attendanceId;
+  final String which;
+  final String label;
+
+  const _PunchPhotoChip({
+    required this.attendanceId,
+    required this.which,
+    required this.label,
+  });
+
+  @override
+  State<_PunchPhotoChip> createState() => _PunchPhotoChipState();
+}
+
+class _PunchPhotoChipState extends State<_PunchPhotoChip> {
+  bool _loading = false;
+
+  Future<void> _open() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+
+    final response = await Get.find<AttendanceData>().getPunchPhoto(
+      attendanceId: widget.attendanceId,
+      which: widget.which,
+    );
+
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    final bytes = response['bytes'];
+    if (response['status'] != StatusRequest.success || bytes is! Uint8List) {
+      Get.snackbar('error'.tr, 'punch_photo_failed'.tr,
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => Dialog(
+        insetPadding: const EdgeInsets.all(AppSpacing.s3),
+        child: InteractiveViewer(child: Image.memory(bytes)),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    return GestureDetector(
+      onTap: _open,
+      child: Container(
+        padding:
+            const EdgeInsets.symmetric(horizontal: AppSpacing.s2, vertical: 3),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(color: colors.borderHairline),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_loading)
+              SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.5,
+                  color: colors.brand,
+                ),
+              )
+            else
+              Icon(Icons.photo_camera_outlined, size: 12, color: colors.brand),
+            const SizedBox(width: 4),
+            Text(
+              '${'punch_photo'.tr} · ${widget.label}',
+              style: TextStyle(
+                fontFamily: 'IBM Plex Sans Arabic',
+                fontSize: 11,
+                color: colors.brand,
+              ),
             ),
           ],
         ),

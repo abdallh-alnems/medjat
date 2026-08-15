@@ -67,4 +67,17 @@ class AttendanceData {
     if (deductionValue != null) body['deduction_value'] = deductionValue;
     return await _crud.postData(AppLinks.attendanceSetDayStatus, body);
   }
+
+  /// The image captured at a browser punch, as raw bytes.
+  ///
+  /// Fetched on demand rather than with the day's list: a branch review would
+  /// otherwise download a photograph of every employee before anyone asked to
+  /// see one.
+  Future<Map<String, dynamic>> getPunchPhoto({
+    required int attendanceId,
+    required String which,
+  }) async {
+    return await _crud
+        .getBytes(AppLinks.attendancePunchPhoto(attendanceId, which));
+  }
 }

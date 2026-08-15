@@ -39,15 +39,30 @@ dependencies:
 
   cupertino_icons: ^1.0.8
 
+  # Firebase. Versions match medjat_app so one `flutter pub upgrade` moves the
+  # whole repo together.
+  #
+  # The server remains the only authority on whether this tablet may serve
+  # people: heartbeat still answers 401/426/503 and nothing below overrides it.
+  # What Firebase adds is (a) crash reports from a device nobody is watching,
+  # and (b) two ways to learn a switch was flipped without waiting up to two
+  # minutes for the next heartbeat.
+  firebase_core: ^3.8.0
+  # The whole point. A kiosk on a wall crashes to a supervisor who reports
+  # "the tablet stopped working" three days later, with no logs and no adb.
+  firebase_crashlytics: ^4.3.0
+  # Branch/station-level usage only — never anything identifying an employee.
+  firebase_analytics: ^11.4.0
+  # Data-only messages on `maintenance_medjat_kiosk`. No notification is ever
+  # shown: a kiosk must not carry a surface an employee can tap out of.
+  firebase_messaging: ^15.2.0
+  # Realtime config updates. The kiosk is permanently foregrounded, so
+  # onConfigUpdated is a live wire — it is used to re-ask the server at once,
+  # not to decide anything on the device.
+  firebase_remote_config: ^5.4.0
+
   # Deliberately ABSENT:
   #
-  #   firebase_*        The version gate and the maintenance switch are enforced
-  #                     server-side: the kiosk reports its version on every
-  #                     heartbeat and the backend answers 426/503 after reading
-  #                     Remote Config itself. Putting the SDK on the tablet
-  #                     would add a google-services.json step and an FCM
-  #                     dependency to buy nothing the heartbeat does not already
-  #                     deliver.
   #   hive              There is no offline queue. Identification requires the
   #                     server, so there is nothing to queue.
   #   google_mobile_ads A shared branch tablet shows nobody's personal content

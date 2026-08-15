@@ -24,10 +24,7 @@ class KioskTheme {
   static const double touchTarget = 72;
 
   static ThemeData light() {
-    final scheme = ColorScheme.fromSeed(
-      seedColor: brand,
-      brightness: Brightness.light,
-    );
+    final scheme = ColorScheme.fromSeed(seedColor: brand);
 
     return ThemeData(
       useMaterial3: true,

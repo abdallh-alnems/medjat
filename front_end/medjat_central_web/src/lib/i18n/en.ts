@@ -663,6 +663,36 @@ export const en: Dictionary = {
   reject_mock_location: "Reject fake locations",
   reject_mock_location_hint:
     "Block check-in and check-out from a device running a location-spoofing app. Android only — iOS does not expose this to apps.",
+  // ── Browser attendance ──
+  web_attendance: "Browser attendance",
+  web_attendance_enable: "Enable browser attendance",
+  web_attendance_hint:
+    "Employees record attendance from a browser instead of the app — for a broken phone, or someone at an office computer. Off for every company until you switch it on.",
+  web_attendance_photo: "Capture a photo at each punch",
+  web_attendance_photo_hint:
+    "In a browser this image is the only thing that says anything about who actually pressed the button. It is shown to a human reviewer and never used to accept or reject a punch.",
+  web_limitations_title: "What a browser cannot verify",
+  web_limit_wifi: "WiFi network — a page cannot see which router the device is on.",
+  web_limit_mock: "Location spoofing — no signal about it reaches a page.",
+  web_limit_face: "Face matching — the face model does not run in a browser.",
+  web_branches_no_ip: "Branches with no network control on this channel",
+  web_branches_no_ip_hint:
+    "These branches are protected by BSSIDs only, which a browser cannot read — the geofence is all that is left. Add an IP address to a branch for real network control here.",
+  web_attendance_link: "The link employees use",
+  web_attendance_link_hint:
+    "An employee activates once with their activation code and chooses a PIN, then signs in with that PIN afterwards.",
+  web_category_exceptions: "Job-category exceptions",
+  web_category_exceptions_hint:
+    "Leave everything on \"inherit\" and the channel is open to everyone. One category allowing it is enough for an employee in it.",
+  web_access_inherit: "Inherits company setting",
+  web_access_allowed: "Allowed",
+  web_access_refused: "Refused",
+  // ── Attendance review ──
+  punch_photo: "Punch photo",
+  punch_photo_web: "Browser punch",
+  shared_device: "Shared device",
+  shared_device_hint:
+    "More than one employee recorded attendance from this browser today. Information for review only — nothing was refused because of it.",
   company_geofence: "Company location range",
   geofence_hint: "Default location used by branches without their own center.",
   no_company_location: "No company location set.",

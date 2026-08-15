@@ -20,10 +20,12 @@ final class RemoteConfigService {
             'maintenance_key' => 'medjat_central_maintenance_enabled',
             'supports_maintenance' => true,
         ],
-        // The branch kiosk carries no Firebase SDK: it reports its version on
-        // every heartbeat and the server answers 426/503 by reading these
-        // parameters itself. That keeps a google-services.json and an FCM
-        // dependency off a wall-mounted tablet for no loss of control.
+        // The branch kiosk reports its version on every heartbeat and the
+        // server answers 426/503 by reading these parameters itself — that is
+        // still the only thing that takes a tablet out of service. The kiosk
+        // now also carries the Firebase SDK, but only to hear that these
+        // parameters changed (FCM topic + Remote Config realtime) and re-ask
+        // this server at once instead of waiting up to two minutes.
         //
         // One caveat when raising the minimum. The store apps can send a user
         // to a store; a directly-installed kiosk has nowhere to be sent, so

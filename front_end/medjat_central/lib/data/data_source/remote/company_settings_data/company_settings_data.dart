@@ -55,6 +55,31 @@ class CompanySettingsData {
     return await _crud.postData(AppLinks.companySettings, data);
   }
 
+  /// Company switch for browser attendance, plus whether a photo is captured at
+  /// each browser punch. The backend audits every change on its own line.
+  Future<Map<String, dynamic>> updateWebAttendanceSettings({
+    bool? enabled,
+    bool? photoRequired,
+  }) async {
+    final data = <String, dynamic>{};
+    if (enabled != null) data['web_attendance_enabled'] = enabled;
+    if (photoRequired != null) {
+      data['web_attendance_photo_required'] = photoRequired;
+    }
+    return await _crud.postData(AppLinks.companySettings, data);
+  }
+
+  /// Per-category exception. `allowed: null` restores "inherit the company".
+  Future<Map<String, dynamic>> updateCategoryWebAccess({
+    required int categoryId,
+    required bool? allowed,
+  }) async {
+    return await _crud.postData(AppLinks.categoryWebAccess, {
+      'id': categoryId,
+      'web_attendance_allowed': allowed,
+    });
+  }
+
   /// Set or clear (lat/lng null) the company-wide GPS geofence — the default
   /// center + radius applied to branches that don't set their own.
   Future<Map<String, dynamic>> setCompanyLocation({

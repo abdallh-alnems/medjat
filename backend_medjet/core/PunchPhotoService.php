@@ -70,4 +70,29 @@ final class PunchPhotoService {
             return null;
         }
     }
+
+    /**
+     * Absolute path for a stored relative path, or null if it points anywhere
+     * other than this service's own directory.
+     *
+     * The stored value comes back out of the database and is handed to the
+     * filesystem, so it is treated as untrusted on the way out as well as on the
+     * way in: a column that ever held '../../config/env.php' must not become a
+     * file read. Mirrors KioskCapture::absolutePathFor().
+     */
+    public static function absolutePathFor(string $relativePath): ?string {
+        if ($relativePath === ''
+            || !str_starts_with($relativePath, self::SUBDIR . '/')
+            || str_contains($relativePath, '..')) {
+            return null;
+        }
+
+        $base = realpath(__DIR__ . '/../uploads/' . self::SUBDIR);
+        $full = realpath(__DIR__ . '/../uploads/' . $relativePath);
+        if ($base === false || $full === false || !str_starts_with($full, $base . DIRECTORY_SEPARATOR)) {
+            return null;
+        }
+
+        return is_file($full) ? $full : null;
+    }
 }

@@ -134,6 +134,10 @@ class AppLinks {
   // ── Attendance ─────────────────────────────────────────
   static String get attendance =>
       '$base/app/attendance/get_branch_attendance.php';
+  /// Browser-punch evidence. Served only through this endpoint — the images sit
+  /// under uploads/, which the web server refuses outright.
+  static String attendancePunchPhoto(int attendanceId, String which) =>
+      '$base/app/attendance/punch_photo.php?attendance_id=$attendanceId&which=$which';
   static String get attendanceManual =>
       '$base/app/attendance/manual_check_in.php';
   static String get attendanceSetDayStatus =>
@@ -385,6 +389,10 @@ class AppLinks {
   static String get categoryUpdate => '$base/app/categories/update.php';
   static String get categoryDelete => '$base/app/categories/delete.php';
   static String get categoryAssign => '$base/app/categories/assign.php';
+  // Behind manage_company_settings, not manage_employees — it is an attendance
+  // decision taken at category grain, not a category edit.
+  static String get categoryWebAccess =>
+      '$base/app/categories/update_web_access.php';
 
   // ── Support ────────────────────────────────────────────
   static String get supportTickets => '$base/app/support/list.php';

@@ -78,7 +78,7 @@ class _PairingScreenState extends State<PairingScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Icon(Icons.tablet_android_rounded,
+                  const Icon(Icons.tablet_android_rounded,
                       size: 96, color: KioskTheme.brand),
                   const SizedBox(height: 32),
                   Text('ربط جهاز الكيوسك',

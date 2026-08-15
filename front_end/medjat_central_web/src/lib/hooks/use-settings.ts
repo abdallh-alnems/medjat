@@ -19,6 +19,8 @@ import {
   setCompanyGeofence,
   updateBranchAttendanceConfig,
   setScopeMethodOverride,
+  updateWebAttendanceSettings,
+  updateCategoryWebAccess,
   type CompanySettings,
   type LeaveSettings,
   type StatutoryPayroll,
@@ -99,6 +101,22 @@ export function useUpdateAttendanceConfig() {
 export function useUpdateFaceSettings() {
   return useToastMutation(
     (data: Parameters<typeof updateFaceSettings>[0]) => updateFaceSettings(data),
+    { invalidate: [AM_KEY] },
+  );
+}
+
+export function useUpdateWebAttendanceSettings() {
+  return useToastMutation(
+    (data: Parameters<typeof updateWebAttendanceSettings>[0]) =>
+      updateWebAttendanceSettings(data),
+    { invalidate: [AM_KEY] },
+  );
+}
+
+export function useUpdateCategoryWebAccess() {
+  return useToastMutation(
+    (data: Parameters<typeof updateCategoryWebAccess>[0]) =>
+      updateCategoryWebAccess(data),
     { invalidate: [AM_KEY] },
   );
 }

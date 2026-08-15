@@ -64,6 +64,23 @@ final class EmployeeCategoryModel {
         ) > 0;
     }
 
+    /**
+     * The browser-channel exception for a category: 1 allow, 0 refuse, null
+     * inherit the company switch.
+     *
+     * Deliberately not folded into the `$allowed` whitelist in update() above.
+     * That list is what an ordinary category edit may touch (`manage_employees`);
+     * this column is an attendance-security decision gated on
+     * `manage_company_settings`, and mixing them would let the weaker permission
+     * carry the stronger change in a general update body.
+     */
+    public static function setWebAccess(int $id, int $tenantId, ?int $value): bool {
+        return Database::execute(
+            "UPDATE employee_categories SET web_attendance_allowed = ? WHERE id = ? AND tenant_id = ?",
+            [$value, $id, $tenantId]
+        ) > 0;
+    }
+
     public static function isUsedByDocuments(int $categoryId, int $tenantId): bool {
         $row = Database::fetchOne(
             "SELECT COUNT(*) AS cnt FROM required_document_categories WHERE category_id = ? AND tenant_id = ?",

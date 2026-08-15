@@ -1,4 +1,4 @@
-import { apiGet, apiPost, unwrapList } from "./client";
+import { apiClient, apiGet, apiPost, unwrapList } from "./client";
 import type { AttendanceRecord } from "@/lib/types";
 
 export interface AttendanceParams {
@@ -14,7 +14,39 @@ export async function getBranchAttendance(
     "app/attendance/get_branch_attendance.php",
     params,
   );
-  return unwrapList<AttendanceRecord>(raw, ["records", "items", "data"]);
+  const rows = unwrapList<Record<string, unknown>>(raw, [
+    "records",
+    "items",
+    "data",
+  ]);
+
+  // The endpoint names these `check_in_time` / `check_out_time`; the rest of the
+  // app (and the manual-entry payload) speaks `check_in` / `check_out`. Without
+  // this the day table renders "—" in both columns for every employee, which is
+  // what it did until now — the row was there, the field name was not.
+  return rows.map((r) => ({
+    ...(r as unknown as AttendanceRecord),
+    check_in: (r.check_in ?? r.check_in_time ?? null) as string | null,
+    check_out: (r.check_out ?? r.check_out_time ?? null) as string | null,
+  }));
+}
+
+/**
+ * Fetch a browser-punch photo as an object URL.
+ *
+ * These images are not public: uploads/ is closed at the web server and this
+ * endpoint re-checks that the caller may review the employee, so an `<img src>`
+ * pointed at a path would fetch nothing. Same shape as support attachments.
+ */
+export async function fetchPunchPhoto(
+  attendanceId: number,
+  which: "check_in" | "check_out",
+): Promise<string> {
+  const res = await apiClient.get<Blob>("app/attendance/punch_photo.php", {
+    params: { attendance_id: attendanceId, which },
+    responseType: "blob",
+  });
+  return URL.createObjectURL(res.data);
 }
 
 export interface ManualCheckInData {

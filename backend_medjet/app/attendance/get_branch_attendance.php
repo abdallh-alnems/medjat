@@ -33,6 +33,21 @@ if ($date < $today) {
 
 $records = AttendanceModel::getByDate($tenantId, $date, $branchId);
 
+// The stored photo paths never leave the server. A client asks for the image by
+// attendance id through punch_photo.php, which re-checks permission; handing out
+// the path would invite exactly the direct-URL fetching that uploads/ is now
+// closed to.
+$records = array_map(static function (array $r): array {
+    $r['has_check_in_photo'] = !empty($r['check_in_photo']);
+    $r['has_check_out_photo'] = !empty($r['check_out_photo']);
+    unset($r['check_in_photo'], $r['check_out_photo']);
+    // Advisory, never a verdict: the flag says one browser recorded attendance
+    // for more than one employee today, which is information for a manager, not
+    // a rejection (spec FR-020).
+    $r['shared_device_flag'] = (bool) ($r['shared_device_flag'] ?? false);
+    return $r;
+}, $records);
+
 Response::success([
     'records' => $records,
     'date' => $date,

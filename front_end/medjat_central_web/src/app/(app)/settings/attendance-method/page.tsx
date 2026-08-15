@@ -22,6 +22,7 @@ import type {
 } from "@/lib/api/settings";
 import { LoadingState, ErrorState } from "@/components/ui/states";
 import { BranchNetworksDialog } from "@/components/settings/branch-networks-dialog";
+import { WebAttendanceCard } from "@/components/settings/web-attendance-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -229,6 +230,9 @@ function Editor({ config }: { config: AttendanceMethodConfig }) {
           />
         </CardContent>
       </Card>
+
+      {/* ── Browser attendance channel ── */}
+      <WebAttendanceCard config={config} />
 
       {/* ── Company geofence ── */}
       <GeofenceCard config={config} save={setGeofence} />

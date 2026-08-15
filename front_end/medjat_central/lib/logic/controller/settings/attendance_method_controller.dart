@@ -23,6 +23,12 @@ class AttendanceMethodController extends GetxController {
   double faceThreshold = 0.45;
   bool faceLivenessRequired = true;
   String faceEnforceMode = 'log_only';
+  // Browser attendance. Off unless the server says otherwise: a channel this
+  // weak must never be shown as on because a field was missing from a response.
+  bool webAttendanceEnabled = false;
+  bool webPhotoRequired = true;
+  List<String> webLimitations = const [];
+  List<Map<String, dynamic>> branchesWithoutIpNetworks = const [];
   double? companyLat;
   double? companyLng;
   int companyRadius = 100;
@@ -110,6 +116,19 @@ class AttendanceMethodController extends GetxController {
             data['face_liveness_required'] as bool? ?? true;
         faceEnforceMode =
             data['face_enforce_mode'] as String? ?? 'log_only';
+        webAttendanceEnabled =
+            data['web_attendance_enabled'] as bool? ?? false;
+        webPhotoRequired =
+            data['web_attendance_photo_required'] as bool? ?? true;
+        webLimitations = (data['web_channel_limitations'] as List<dynamic>?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            const [];
+        branchesWithoutIpNetworks =
+            (data['branches_without_ip_networks'] as List<dynamic>?)
+                    ?.map((e) => Map<String, dynamic>.from(e as Map))
+                    .toList() ??
+                const [];
         companyLat = (data['gps_latitude'] as num?)?.toDouble();
         companyLng = (data['gps_longitude'] as num?)?.toDouble();
         companyRadius = (data['gps_radius_meters'] as num?)?.toInt() ?? 100;
@@ -165,6 +184,58 @@ class AttendanceMethodController extends GetxController {
     } else {
       tenantMethods.remove(method);
     }
+    update();
+    return false;
+  }
+
+  /// Turns the browser channel on or off, or changes whether a photo is taken.
+  ///
+  /// Rolls back on failure like the face settings below: a switch that stays on
+  /// after the server refused it would tell the administrator the company is
+  /// open to browser attendance when it is not.
+  Future<bool> saveWebAttendanceSettings({
+    bool? enabled,
+    bool? photoRequired,
+  }) async {
+    final prevEnabled = webAttendanceEnabled;
+    final prevPhoto = webPhotoRequired;
+
+    if (enabled != null) webAttendanceEnabled = enabled;
+    if (photoRequired != null) webPhotoRequired = photoRequired;
+    update();
+
+    final response = await _companySettingsData.updateWebAttendanceSettings(
+      enabled: enabled,
+      photoRequired: photoRequired,
+    );
+    if (response['status'] == StatusRequest.success) {
+      return true;
+    }
+
+    webAttendanceEnabled = prevEnabled;
+    webPhotoRequired = prevPhoto;
+    update();
+    return false;
+  }
+
+  /// Per-category exception. `allowed: null` restores "inherit the company".
+  Future<bool> setCategoryWebAccess(int categoryId, bool? allowed) async {
+    final index = categories.indexWhere((c) => c.id == categoryId);
+    if (index < 0) return false;
+
+    final previous = categories[index].webAttendanceAllowed;
+    categories[index].webAttendanceAllowed = allowed;
+    update();
+
+    final response = await _companySettingsData.updateCategoryWebAccess(
+      categoryId: categoryId,
+      allowed: allowed,
+    );
+    if (response['status'] == StatusRequest.success) {
+      return true;
+    }
+
+    categories[index].webAttendanceAllowed = previous;
     update();
     return false;
   }

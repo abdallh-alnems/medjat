@@ -22,6 +22,7 @@ import { useT } from "@/lib/i18n/use-t";
 import { useSetDayStatus } from "@/lib/hooks/use-attendance";
 import { useToastMutation } from "@/lib/hooks/use-org";
 import { NoteDialog } from "./note-dialog";
+import { PunchPhotoButton } from "./punch-photo-dialog";
 import type { AttendanceRecord, AttendanceStatus } from "@/lib/types";
 import type { TKey } from "@/lib/i18n/ar";
 import { ATTENDANCE_STATUS_TONE } from "@/lib/constants/attendance";
@@ -103,13 +104,49 @@ export function AttendanceTable({
                 />
               </TableCell>
               <TableCell className="font-medium">
-                {r.employee_name ?? `${t("employee")} #${r.employee_id}`}
+                <span className="flex flex-wrap items-center gap-1">
+                  {r.employee_name ?? `${t("employee")} #${r.employee_id}`}
+                  {/* Advisory only — one browser, two employees. It is shown so a
+                      human can ask, never as a rejection (spec FR-020). */}
+                  {r.shared_device_flag && (
+                    <Badge variant="secondary" title={t("shared_device_hint")}>
+                      {t("shared_device")}
+                    </Badge>
+                  )}
+                </span>
               </TableCell>
               <TableCell>
                 <Badge variant={ATTENDANCE_STATUS_TONE[r.status]}>{t(r.status)}</Badge>
               </TableCell>
-              <TableCell>{r.check_in ?? "—"}</TableCell>
-              <TableCell>{r.check_out ?? "—"}</TableCell>
+              <TableCell>
+                <span className="flex items-center gap-1">
+                  {r.check_in ?? "—"}
+                  {r.check_in_origin === "web" && (
+                    <Badge variant="outline" title={t("punch_photo_web")}>
+                      {t("punch_photo_web")}
+                    </Badge>
+                  )}
+                  {r.has_check_in_photo && (
+                    <PunchPhotoButton
+                      attendanceId={r.id}
+                      which="check_in"
+                      label={t("check_in_time")}
+                    />
+                  )}
+                </span>
+              </TableCell>
+              <TableCell>
+                <span className="flex items-center gap-1">
+                  {r.check_out ?? "—"}
+                  {r.has_check_out_photo && (
+                    <PunchPhotoButton
+                      attendanceId={r.id}
+                      which="check_out"
+                      label={t("check_out_time")}
+                    />
+                  )}
+                </span>
+              </TableCell>
               <TableCell>
                 {r.late_minutes ? new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-GB").format(r.late_minutes) : "—"}
               </TableCell>

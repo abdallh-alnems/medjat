@@ -97,6 +97,26 @@ final class AttendanceModel {
         );
     }
 
+    /**
+     * True when the employee has already checked in today (tenant clock) and has
+     * not checked out yet.
+     *
+     * Used to let someone close a day they legitimately opened even after the
+     * company has withdrawn the channel underneath them. Anything else strands
+     * the day half-recorded and turns a policy change into a payroll dispute.
+     */
+    public static function hasOpenDay(int $employeeId, int $tenantId): bool {
+        $today = TenantClock::now($tenantId)->format('Y-m-d');
+        $row = Database::fetchOne(
+            "SELECT 1 AS ok FROM attendance
+             WHERE employee_id = ? AND tenant_id = ? AND date = ?
+               AND check_in_time IS NOT NULL AND check_out_time IS NULL
+             LIMIT 1",
+            [$employeeId, $tenantId, $today]
+        );
+        return $row !== null;
+    }
+
     public static function checkOut(int $employeeId, int $tenantId, ?string $checkOutTime = null): void {
         // Same tenant clock as checkIn: the row this looks up was keyed on the
         // tenant's date, and the overtime maths below compares against shift
@@ -605,6 +625,15 @@ final class AttendanceModel {
                     a.notes,
                     a.deduction_mode,
                     a.deduction_value,
+                    -- Channel and evidence for the review screen. The photo
+                    -- columns carry the stored path, which is never a URL a
+                    -- client can fetch: images come from punch_photo.php, which
+                    -- checks the caller may review this employee first.
+                    a.check_in_origin,
+                    a.check_out_origin,
+                    a.check_in_photo,
+                    a.check_out_photo,
+                    COALESCE(a.shared_device_flag, 0) AS shared_device_flag,
                     b.name AS branch_name,
                     COALESCE(ss.name, s.name) AS shift_name,
                     COALESCE(ss.start_time, s.start_time, e.work_start_time) AS shift_start,

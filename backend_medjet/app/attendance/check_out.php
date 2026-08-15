@@ -16,15 +16,29 @@ if ($isWeb) {
     WebSessionService::enforcePerEmployeeLimit($auth);
 
     // A company that disables the channel mid-shift must still let an employee
-    // close the day they already opened, so this permits check-out for anyone
-    // holding a live web session and only refuses if the policy says no.
+    // close the day they already opened (spec FR-025). Refusing here would leave
+    // an open row that only an administrator can fix, so a settings change would
+    // cost the employee their hours — the policy is applied to *new* days, and
+    // an already-open one is closed and flagged instead of blocked.
     $access = WebAccessPolicy::check($employee, $tenantId);
     if (!$access['allowed']) {
-        WebAccessPolicy::refuse(
+        if (!AttendanceModel::hasOpenDay((int) $employee['id'], $tenantId)) {
+            WebAccessPolicy::refuse(
+                $tenantId,
+                (int) $employee['id'],
+                $access['reason'],
+                isset($employee['branch_id']) ? (int) $employee['branch_id'] : null,
+                isset($input['latitude']) ? (float) $input['latitude'] : null,
+                isset($input['longitude']) ? (float) $input['longitude'] : null
+            );
+        }
+
+        AttendanceSecurityModel::log(
             $tenantId,
             (int) $employee['id'],
-            $access['reason'],
             isset($employee['branch_id']) ? (int) $employee['branch_id'] : null,
+            $access['reason'],
+            'flagged',
             isset($input['latitude']) ? (float) $input['latitude'] : null,
             isset($input['longitude']) ? (float) $input['longitude'] : null
         );

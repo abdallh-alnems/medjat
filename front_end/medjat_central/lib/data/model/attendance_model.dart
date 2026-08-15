@@ -19,6 +19,20 @@ class AttendanceRecordModel {
   final String deductionMode;
   final double? deductionValue;
 
+  /// Which channel recorded each half of the day ('app', 'web', 'device'…).
+  final String? checkInOrigin;
+  final String? checkOutOrigin;
+
+  /// Whether an image was captured. The path never leaves the server — the
+  /// image is fetched by attendance id from `attendance/punch_photo.php`, which
+  /// re-checks that the caller may review this employee.
+  final bool hasCheckInPhoto;
+  final bool hasCheckOutPhoto;
+
+  /// One browser recorded attendance for more than one employee today.
+  /// Advisory: both parties carry it and nothing was refused (spec FR-020).
+  final bool sharedDeviceFlag;
+
   AttendanceRecordModel({
     required this.id,
     required this.employeeId,
@@ -37,6 +51,11 @@ class AttendanceRecordModel {
     this.leaveType,
     this.deductionMode = 'auto',
     this.deductionValue,
+    this.checkInOrigin,
+    this.checkOutOrigin,
+    this.hasCheckInPhoto = false,
+    this.hasCheckOutPhoto = false,
+    this.sharedDeviceFlag = false,
   });
 
   factory AttendanceRecordModel.fromJson(Map<String, dynamic> json) {
@@ -59,6 +78,11 @@ class AttendanceRecordModel {
       leaveType: json['leave_type'] as String?,
       deductionMode: (json['deduction_mode'] as String?) ?? 'auto',
       deductionValue: (json['deduction_value'] as num?)?.toDouble(),
+      checkInOrigin: json['check_in_origin'] as String?,
+      checkOutOrigin: json['check_out_origin'] as String?,
+      hasCheckInPhoto: json['has_check_in_photo'] as bool? ?? false,
+      hasCheckOutPhoto: json['has_check_out_photo'] as bool? ?? false,
+      sharedDeviceFlag: json['shared_device_flag'] as bool? ?? false,
     );
   }
 

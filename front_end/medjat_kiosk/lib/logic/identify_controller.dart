@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:camera/camera.dart';
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:medjat_shared/medjat_shared.dart';
@@ -11,6 +10,7 @@ import 'package:medjat_shared/medjat_shared.dart';
 import '../core/api/kiosk_api.dart';
 import '../core/network/kiosk_crud.dart';
 import '../core/network/kiosk_result.dart';
+import '../core/services/kiosk_firebase.dart';
 import 'kiosk_controller.dart';
 
 /// Where the interaction currently is.
@@ -107,10 +107,12 @@ class IdentifyController extends GetxController {
 
       camera = controller;
       cameraReady.value = true;
-    } catch (e) {
+    } catch (e, s) {
       // A kiosk with no working camera is not broken — it falls back to the
       // personal code rather than presenting a dead screen (FR edge case).
-      debugPrint('camera init failed: $e');
+      // It is still reported: every employee at that branch is now typing a
+      // code, and nobody would think to mention it.
+      KioskFirebase.recordError(e, s, reason: 'camera init');
       cameraReady.value = false;
     }
   }
@@ -212,8 +214,8 @@ class IdentifyController extends GetxController {
       );
 
       _handleIdentifyResult(result);
-    } catch (e) {
-      debugPrint('capture failed: $e');
+    } catch (e, s) {
+      KioskFirebase.recordError(e, s, reason: 'capture');
       _fail('حدث خطأ أثناء التصوير. حاول مرة أخرى.', offerCode: true);
     }
   }
@@ -231,6 +233,14 @@ class IdentifyController extends GetxController {
 
     final data = result.data;
     final outcome = data['outcome'] as String?;
+
+    // The verdict only — never who it was. A branch whose `no_match` rate
+    // climbs has a threshold or a camera problem, and this is the only way to
+    // see it without reading anybody's attendance.
+    KioskFirebase.logEvent('kiosk_identify', {
+      'method': 'face',
+      'outcome': outcome ?? 'unknown',
+    });
 
     if (outcome != 'matched') {
       // A failed identification is a normal outcome, not an error: somebody
@@ -308,6 +318,7 @@ class IdentifyController extends GetxController {
       // The request may or may not have reached the server. Keep the payload —
       // with its original key — and retry when the connection returns, rather
       // than telling the employee it failed when it may well have succeeded.
+      KioskFirebase.log('punch left pending: ${result.status.name}');
       _fail('انقطع الاتصال أثناء التسجيل. سنعيد المحاولة تلقائيًا.');
       return;
     }
@@ -322,9 +333,21 @@ class IdentifyController extends GetxController {
     }
 
     if (!result.isSuccess) {
+      // Refused for a reason a retry will not change, after the employee was
+      // already identified and confirmed. Rare, and worth seeing.
+      KioskFirebase.recordError(
+        StateError('punch refused: ${result.messageKey ?? result.status.name}'),
+        StackTrace.current,
+        reason: 'punch',
+      );
       _fail('تعذّر تسجيل الحضور. حاول مرة أخرى.');
       return;
     }
+
+    KioskFirebase.logEvent('kiosk_punch', {
+      'direction': nextAction.value.isEmpty ? 'unknown' : nextAction.value,
+      'replayed': result.data['replayed'] == true ? 'yes' : 'no',
+    });
 
     phase.value = IdentifyPhase.done;
     _resetTimer?.cancel();
@@ -398,6 +421,12 @@ class IdentifyController extends GetxController {
     }
 
     final data = result.data;
+
+    KioskFirebase.logEvent('kiosk_identify', {
+      'method': 'code',
+      'outcome': (data['outcome'] as String?) ?? 'unknown',
+    });
+
     if (data['outcome'] != 'matched') {
       messageAr.value = _outcomeMessage(
         data['outcome'] as String?,

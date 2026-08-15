@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -9,6 +8,7 @@ import '../core/api/kiosk_api.dart';
 import '../core/kiosk_lock.dart';
 import '../core/network/kiosk_crud.dart';
 import '../core/network/kiosk_result.dart';
+import '../core/services/kiosk_firebase.dart';
 import '../core/storage/kiosk_token_store.dart';
 import 'identify_controller.dart';
 
@@ -62,6 +62,15 @@ class KioskController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+
+    // Every crash report from this tablet carries the state it was in. Reported
+    // from one place rather than at each assignment, so a state added later
+    // cannot be forgotten here.
+    ever(state, (KioskState s) {
+      KioskFirebase.setState(s.name);
+      KioskFirebase.log('state -> ${s.name}');
+    });
+
     bootstrap();
   }
 
@@ -77,6 +86,13 @@ class KioskController extends GetxController {
 
     final info = await PackageInfo.fromPlatform();
     _appVersion = info.version;
+
+    // Identifies the device, never a person. A fleet of identical tablets
+    // produces identical crash reports without it, and "which branch?" is the
+    // first question asked about every one of them.
+    KioskFirebase.setStation(
+      deviceId: await KioskTokenStore.getOrCreateDeviceId(),
+    );
 
     if (!await KioskTokenStore.hasToken()) {
       state.value = KioskState.unpaired;
@@ -103,9 +119,15 @@ class KioskController extends GetxController {
         final data = result.data;
         branchName.value = (data['branch']?['name'] ?? '') as String;
         stationName.value = (data['station']?['name'] ?? '') as String;
-        settings.value = Map<String, dynamic>.from(data['settings'] ?? {});
+        settings.value =
+            Map<String, dynamic>.from(data['settings'] as Map? ?? <String, dynamic>{});
         message.value = '';
         state.value = KioskState.ready;
+
+        KioskFirebase.setStation(
+          branchName: branchName.value,
+          stationName: stationName.value,
+        );
 
         // Pin once the tablet is genuinely in service. Doing it earlier would
         // trap a supervisor on the pairing screen of a device that turned out
@@ -145,8 +167,14 @@ class KioskController extends GetxController {
       default:
         // Anything else is treated as offline: from the point of view of the
         // person at the door, a server that answers nonsense and a server that
-        // does not answer are the same thing.
-        debugPrint('heartbeat failed: $result');
+        // does not answer are the same thing. It is still recorded as a handled
+        // error — the tablet coping with it silently is how a broken deploy
+        // stays invisible for a week.
+        KioskFirebase.recordError(
+          StateError('unexpected heartbeat status: ${result.status.name}'),
+          StackTrace.current,
+          reason: 'heartbeat',
+        );
         state.value = KioskState.offline;
     }
   }
@@ -188,6 +216,14 @@ class KioskController extends GetxController {
 
     branchName.value = (result.data['branch']?['name'] ?? '') as String;
     stationName.value = (result.data['station']?['name'] ?? '') as String;
+
+    // Pairing happens once per tablet, by a supervisor. Worth one event: it is
+    // the only way to see a branch installing a kiosk without asking them.
+    KioskFirebase.logEvent('kiosk_paired');
+    KioskFirebase.setStation(
+      branchName: branchName.value,
+      stationName: stationName.value,
+    );
 
     await heartbeat();
     _startHeartbeatTimer();

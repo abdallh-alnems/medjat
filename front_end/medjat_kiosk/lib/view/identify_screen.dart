@@ -89,7 +89,7 @@ class _Idle extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Spacer(),
-            Icon(Icons.face_retouching_natural,
+            const Icon(Icons.face_retouching_natural,
                 size: 160, color: KioskTheme.brand),
             const SizedBox(height: 48),
             Text('اضغط لتسجيل الحضور',

@@ -7,12 +7,18 @@ class CategoryMethodOverride {
   final int employeeCount;
   List<String>? methods;
 
+  /// Browser-attendance exception: null inherits the company switch, true
+  /// allows, false refuses. Three states, so this is a `bool?` and never a
+  /// `bool` defaulted to false — "inherit" and "refused" are different answers.
+  bool? webAttendanceAllowed;
+
   CategoryMethodOverride({
     required this.id,
     required this.name,
     this.color,
     this.employeeCount = 0,
     this.methods,
+    this.webAttendanceAllowed,
   });
 
   bool get hasOverride => methods != null;
@@ -26,6 +32,7 @@ class CategoryMethodOverride {
       methods: (json['attendance_methods'] as List<dynamic>?)
           ?.map((e) => e.toString())
           .toList(),
+      webAttendanceAllowed: json['web_attendance_allowed'] as bool?,
     );
   }
 }

@@ -89,7 +89,7 @@ shipped on its own.
 
 ### Verification
 
-- [ ] T032 [P] [US1] Vitest unit tests in `front_end/medjat_central_web/src/features/employee-attendance/__tests__/` — PIN validation, attendance state machine, device-id persistence
+- [X] T032 [P] [US1] Vitest unit tests in `front_end/medjat_central_web/src/features/employee-attendance/__tests__/` — PIN validation, attendance state machine, device-id persistence
 - [ ] T033 [US1] Playwright e2e in `front_end/medjat_central_web/e2e/employee-attendance.spec.ts` — activate → check in → check out → confirm the session is dead, with geolocation and camera mocked
 - [X] T034 [US1] Manually verify on a real device that a **denied** location permission behaves sanely on both Safari iOS and Chrome Android — denial behaviour differs between them and is not faithfully reproduced by Playwright
 
@@ -103,14 +103,15 @@ shipped on its own.
 
 **Independent test**: Toggle the setting on a company and confirm web check-in becomes available then unavailable to its employees, with no effect on any other company or on app check-in.
 
-- [ ] T035 [US2] Extend `backend_medjet/app/settings/company.php` — read and write `web_attendance_enabled` and `web_attendance_photo_required` behind `manage_company_settings`, and write an `AuditLogModel` entry on every change (FR-024)
-- [ ] T036 [US2] Add `web_channel_limitations` and `branches_without_ip_networks` to the `company.php` response — the second requires checking each branch for any `ip_v4`/`ip_cidr` row in `branch_networks`, so the UI can name the branches that have **no** network control on this channel
-- [ ] T037 [P] [US2] Create `backend_medjet/app/categories/update_web_access.php` — set `web_attendance_allowed` to true/false/null behind `manage_company_settings`
-- [ ] T038 [US2] Wire `WebAccessPolicy` (T015) into T016, T017, T019, T020 and T021 so a refusal returns `web_not_permitted` **and** writes that reason to `attendance_security_logs`
-- [ ] T039 [US2] Verify a company that has never touched the settings still refuses every web endpoint while its app attendance is untouched (SC-006) — this is the release-safety property, worth testing explicitly rather than assuming
-- [ ] T040 [US2] Build the settings UI in `front_end/medjat_central/lib/view/screen/settings/` — the two toggles, per-category access, and the honest disclosure of what the browser cannot verify (WiFi BSSID, mock-location, face) with the branch warning from T036
-- [ ] T041 [US2] Confirm the frontend menu/tab gate uses **exactly** `manage_company_settings` — a mismatch surfaces to the user as a bare "an error occurred", which is the hardest class of bug to diagnose from a support ticket
+- [X] T035 [US2] Extend `backend_medjet/app/settings/company.php` — read and write `web_attendance_enabled` and `web_attendance_photo_required` behind `manage_company_settings`, and write an `AuditLogModel` entry on every change (FR-024)
+- [X] T036 [US2] Add `web_channel_limitations` and `branches_without_ip_networks` to the `company.php` response — the second requires checking each branch for any `ip_v4`/`ip_cidr` row in `branch_networks`, so the UI can name the branches that have **no** network control on this channel
+- [X] T037 [P] [US2] Create `backend_medjet/app/categories/update_web_access.php` — set `web_attendance_allowed` to true/false/null behind `manage_company_settings`
+- [X] T038 [US2] Wire `WebAccessPolicy` (T015) into T016, T017, T019, T020 and T021 so a refusal returns `web_not_permitted` **and** writes that reason to `attendance_security_logs`
+- [X] T039 [US2] Verify a company that has never touched the settings still refuses every web endpoint while its app attendance is untouched (SC-006) — this is the release-safety property, worth testing explicitly rather than assuming
+- [X] T040 [US2] Build the settings UI in `front_end/medjat_central/lib/view/screen/settings/` — the two toggles, per-category access, and the honest disclosure of what the browser cannot verify (WiFi BSSID, mock-location, face) with the branch warning from T036
+- [X] T041 [US2] Confirm the frontend menu/tab gate uses **exactly** `manage_company_settings` — a mismatch surfaces to the user as a bare "an error occurred", which is the hardest class of bug to diagnose from a support ticket
 - [ ] T042 [US2] Verify an employee whose shift is open when the company disables the channel **can still close it**, while new check-ins are refused
+      *Implemented 2026-08-15*: `check_out.php` now permits the close when `AttendanceModel::hasOpenDay()` is true and logs it as `flagged` instead of `blocked`; the comment above it had described this behaviour while the code refused. Still needs the live check.
 
 **Checkpoint**: The channel is governable and safe to release, because it ships off.
 
@@ -122,12 +123,12 @@ shipped on its own.
 
 **Independent test**: Record web punches for two different employees from the same browser and device, then confirm both the captured images and the shared-device flag are visible to a manager reviewing attendance.
 
-- [ ] T043 [US3] Wire `SharedDeviceDetector` (T013) into T020 and T021 — when a second employee punches from the same `device_id` within the tenant working day, set `shared_device_flag` on **this punch and the other employee's punches too**; a flag that marked only the second party would read as an accusation of one side
-- [ ] T044 [US3] Write `web_shared_device` to `attendance_security_logs` on detection, and confirm it **never** rejects the punch (FR-020) — consistent with how `is_vpn` and the existing flags already behave
-- [ ] T045 [P] [US3] Expose `check_in_origin`, `check_out_origin`, `check_in_photo`, `check_out_photo` and `shared_device_flag` in the attendance read endpoints consumed by `medjat_central`
-- [ ] T046 [US3] Serve punch images only to callers permitted to review that employee's attendance — an unauthenticated path under `uploads/` would publish employees' photographs to anyone who guesses a filename
-- [ ] T047 [US3] Surface the image and the shared-device flag in the `medjat_central` attendance review screen
-- [ ] T048 [US3] Verify the flag is advisory in the UI — presented as information for a human decision, never as an automatic rejection
+- [X] T043 [US3] Wire `SharedDeviceDetector` (T013) into T020 and T021 — when a second employee punches from the same `device_id` within the tenant working day, set `shared_device_flag` on **this punch and the other employee's punches too**; a flag that marked only the second party would read as an accusation of one side
+- [X] T044 [US3] Write `web_shared_device` to `attendance_security_logs` on detection, and confirm it **never** rejects the punch (FR-020) — consistent with how `is_vpn` and the existing flags already behave
+- [X] T045 [P] [US3] Expose `check_in_origin`, `check_out_origin`, `check_in_photo`, `check_out_photo` and `shared_device_flag` in the attendance read endpoints consumed by `medjat_central`
+- [X] T046 [US3] Serve punch images only to callers permitted to review that employee's attendance — an unauthenticated path under `uploads/` would publish employees' photographs to anyone who guesses a filename
+- [X] T047 [US3] Surface the image and the shared-device flag in the `medjat_central` attendance review screen
+- [X] T048 [US3] Verify the flag is advisory in the UI — presented as information for a human decision, never as an automatic rejection
 
 **Checkpoint**: All three stories complete.
 
@@ -135,9 +136,9 @@ shipped on its own.
 
 ## Phase 6: Polish & Deployment
 
-- [ ] T049 [P] Run `flutter analyze lib` in `front_end/medjat_central` (bare `flutter analyze` reports phantom errors from FlutterFire examples under `build/`)
-- [ ] T050 [P] Run `npm run lint` and `npm test` in `front_end/medjat_central_web`
-- [ ] T051 [P] Lint every changed PHP file with the MAMP binary `/Applications/MAMP/bin/php/php8.4.15/bin/php -l`
+- [X] T049 [P] Run `flutter analyze lib` in `front_end/medjat_central` (bare `flutter analyze` reports phantom errors from FlutterFire examples under `build/`)
+- [X] T050 [P] Run `npm run lint` and `npm test` in `front_end/medjat_central_web`
+- [X] T051 [P] Lint every changed PHP file with the MAMP binary `/Applications/MAMP/bin/php/php8.4.15/bin/php -l`
 - [ ] T052 Work through the manual verification matrix in `quickstart.md` §6 — the cross-channel and clock-skew rows in particular, which no automated test covers
 - [ ] T053 Run `backend_medjet/check-drift.sh`, then `deploy.sh --dry-run`, then `deploy.sh`, then `check-drift.sh` again — it must come back clean
 - [ ] T054 Build and restart the front end separately — `deploy.sh` does **not** deploy it; it is the systemd unit `medjat-web.service` on Hetzner
