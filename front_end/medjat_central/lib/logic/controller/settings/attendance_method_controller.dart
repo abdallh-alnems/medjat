@@ -50,12 +50,20 @@ class AttendanceMethodController extends GetxController {
   /// `kiosk` was missing until 2026-08-06 for exactly that reason — it was added
   /// to the backend with the branch-kiosk feature and never added here, so any
   /// company running kiosks would have lost them on the next toggle.
+  /// `crew_gps` was missing for the same reason `kiosk` was, and would have cost
+  /// the same thing. It is not toggled from this screen — there is no switch for
+  /// it — but it must survive being loaded and saved.
+  ///
+  /// The real defence is below: every save that is not about the methods now
+  /// omits them entirely, so this list can never again decide what a company
+  /// keeps. Mirror AttendanceMethodResolver::ALLOWED anyway.
   static const allMethods = [
     'qr_gps',
     'gps_only',
     'face_selfie',
     'photo_gps',
     'wifi_gps',
+    'crew_gps',
     'device',
     'manual',
     'kiosk',
@@ -276,9 +284,10 @@ class AttendanceMethodController extends GetxController {
     final previous = allowOffline;
     allowOffline = enabled;
 
+    // Offline attendance only. Shipping the method list from a switch that has
+    // nothing to do with it is what deleted `kiosk` once and would have deleted
+    // `crew_gps` next.
     final response = await _companySettingsData.updateAttendanceConfig(
-      methods: tenantMethods.toList(),
-      manualAdminIds: manualAdminIds,
       allowOfflineAttendance: enabled,
     );
     if (response['status'] == StatusRequest.success) {
@@ -296,9 +305,6 @@ class AttendanceMethodController extends GetxController {
     update();
 
     final response = await _companySettingsData.updateAttendanceConfig(
-      methods: tenantMethods.toList(),
-      manualAdminIds: manualAdminIds,
-      allowOfflineAttendance: allowOffline,
       rejectMockLocation: enabled,
     );
     if (response['status'] == StatusRequest.success) {
@@ -315,9 +321,6 @@ class AttendanceMethodController extends GetxController {
     update();
 
     final response = await _companySettingsData.updateAttendanceConfig(
-      methods: tenantMethods.toList(),
-      manualAdminIds: manualAdminIds,
-      allowOfflineAttendance: allowOffline,
       requireLocalBiometric: enabled,
     );
     if (response['status'] == StatusRequest.success) {
@@ -332,11 +335,8 @@ class AttendanceMethodController extends GetxController {
     final previousIds = manualAdminIds;
     manualAdminIds = ids;
 
-    final response = await _companySettingsData.updateAttendanceConfig(
-      methods: tenantMethods.toList(),
-      manualAdminIds: ids,
-      allowOfflineAttendance: allowOffline,
-    );
+    // Its own endpoint call, so `null` — "any admin may" — survives the trip.
+    final response = await _companySettingsData.updateManualAdminIds(ids);
     if (response['status'] == StatusRequest.success) {
       update();
       return true;

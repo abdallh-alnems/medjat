@@ -623,6 +623,14 @@ export const en: Dictionary = {
     "Only ever seen from outside the branch area — most likely an employee's home router. Do not approve.",
   face_selfie: "Selfie + face recognition",
   photo_gps: "Photo + location",
+  crew_gps: "Supervisor records their crew",
+  device: "Biometric terminal",
+  kiosk: "Branch kiosk",
+  web_needs_gps_only: "Browser attendance will not work with these settings",
+  web_needs_gps_only_hint:
+    "The browser page cannot scan a QR code, read the network, or run the face "
+    + "model, so every punch from it counts as \"GPS only\". Enable GPS only to make "
+    + "it work, or turn browser attendance off.",
   crew_supervisor: "Site supervisor",
   crew_supervisor_hint:
     "The chosen supervisor can record this employee's arrival and departure from "
@@ -930,6 +938,9 @@ export const en: Dictionary = {
   emp_camera_needed: "Camera required",
   emp_camera_denied: "Your company requires a photo. Allow camera access and try again.",
   emp_photo_notice: "A photo of you will be taken and stored with this attendance record for your manager to review if needed.",
+  emp_blocked_gps_only:
+    "Your assigned attendance method cannot be used from a browser. Please check "
+    + "in from the Medjat app, or ask your HR administrator to enable \"GPS only\" for you.",
   emp_take_photo: "Take photo",
   emp_retake: "Retake",
   emp_submitting: "Recording…",

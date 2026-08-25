@@ -180,7 +180,19 @@ export default function EmployeeAttendancePage() {
   }
 
   const state = status?.state ?? "not_checked_in";
-  const canCheckIn = state === "not_checked_in";
+
+  // A check-in this employee's methods cannot produce. Withholding the button is
+  // the honest move: pressing it reaches the server, is refused, and comes back
+  // asking them to scan a QR code on a page that has no scanner. Left false while
+  // the status is still loading, so an unanswered request never reads as blocked.
+  const blocked = status ? !status.can_punch : false;
+
+  const canCheckIn = state === "not_checked_in" && !blocked;
+
+  // Check-out is NOT gated on it. Someone who checked in on their phone must
+  // always be able to close the day, and check_out.php has no method gate for
+  // exactly that reason — a control that can strand an employee clocked in is a
+  // payroll problem wearing a security badge.
   const canCheckOut = state === "checked_in";
 
   // Times come from the server, formatted for display only. The device clock is
@@ -228,6 +240,18 @@ export default function EmployeeAttendancePage() {
               </p>
             )}
           </div>
+        )}
+
+        {/* Only where it is actionable: someone already checked in needs the
+            check-out button below, not an explanation of why they cannot start
+            a day they have already started. */}
+        {blocked && state === "not_checked_in" && (
+          <p
+            role="alert"
+            className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm"
+          >
+            {t("emp_blocked_gps_only")}
+          </p>
         )}
 
         {notice && (

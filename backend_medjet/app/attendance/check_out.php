@@ -130,6 +130,30 @@ if (in_array('wifi_gps', $methods, true) && ($input['method'] ?? null) === 'wifi
     }
 }
 
+// Browser network check-out — same reasoning again. A control applied only on
+// arrival is a control an employee can walk away from, and "leave early from
+// anywhere, the network is only checked in the morning" is exactly the hole
+// this endpoint's face and WiFi paths already refuse to leave open.
+if ($isWeb) {
+    $webBranchId = (int) ($employee['branch_id'] ?? 0);
+    $webBranch = $webBranchId > 0 ? BranchModel::findById($webBranchId, $tenantId) : null;
+    if ($webBranch !== null) {
+        $webNetwork = NetworkVerifier::verifyBrowser($webBranch);
+        if (!$webNetwork['accepted']) {
+            AttendanceSecurityModel::log(
+                $tenantId,
+                (int) $employee['id'],
+                $webBranchId,
+                $webNetwork['reason'],
+                'blocked',
+                isset($input['latitude']) ? (float) $input['latitude'] : null,
+                isset($input['longitude']) ? (float) $input['longitude'] : null
+            );
+            Response::fail($webNetwork['message'], 403, 'WEB_WRONG_NETWORK');
+        }
+    }
+}
+
 // Rotating QR check-out. Verifying only the arrival would leave the control
 // half enforced in exactly the way the face and WiFi paths above guard against:
 // a colleague holding a forwarded screenshot could still close someone's day.

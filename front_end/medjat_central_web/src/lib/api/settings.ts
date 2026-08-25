@@ -140,6 +140,12 @@ export interface AttendanceMethodConfig {
   web_channel_limitations: WebChannelLimitation[];
   /** Branches with no approved IP network — no network control on this channel. */
   branches_without_ip_networks: { id: number; name: string }[];
+  /**
+   * True when the company default lacks `gps_only`, which makes the browser
+   * channel inoperable: the page sends no method, so every web punch resolves
+   * as gps_only and is refused.
+   */
+  web_requires_gps_only: boolean;
   branches: AttendanceBranchOverride[];
   categories: AttendanceCategoryOverride[];
   employee_overrides: AttendanceEmployeeOverride[];

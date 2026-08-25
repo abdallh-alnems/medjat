@@ -101,6 +101,19 @@ export function WebAttendanceCard({
               />
             </div>
 
+            {/* Placed above the limitations, because this one is not a caveat
+                about weaker verification — it means the channel does not work
+                at all. An administrator who reads the list below first would
+                come away thinking the feature is running. */}
+            {config.web_requires_gps_only && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3">
+                <p className="font-medium">{t("web_needs_gps_only")}</p>
+                <p className="mt-1 text-body-md text-muted-foreground">
+                  {t("web_needs_gps_only_hint")}
+                </p>
+              </div>
+            )}
+
             {limitations.length > 0 && (
               <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3">
                 <p className="font-medium">{t("web_limitations_title")}</p>

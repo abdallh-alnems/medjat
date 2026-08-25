@@ -2401,6 +2401,8 @@ const Map<String, String> en = {
   'kiosk_outage_windows': 'Kiosk outage windows',
   'copied': 'Copied',
   'method_kiosk': 'Branch kiosk',
+  'method_crew_gps': 'Supervisor records their crew',
+  'method_crew_gps_badge': 'Crew',
   'method_kiosk_desc': 'A shared tablet at the branch door — for employees without smartphones.',
   'kiosk_only_failures': 'Failures only',
   'kiosk_no_activity': 'No activity yet.',

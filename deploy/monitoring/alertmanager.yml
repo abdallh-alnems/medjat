@@ -1,0 +1,67 @@
+# Alertmanager for Medjat.
+#
+# Everything leaves through one webhook to a local sender (port 9099), which
+# decides which channels to use. Keeping the channel choice out of here means
+# swapping WhatsApp for Telegram — or adding a third — is one file, not a
+# reconfiguration of the alerting stack.
+
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: medjat-default
+  # Group by alert name so a burst about one thing is one message, and by
+  # severity so a critical is never delayed behind a warning.
+  group_by: ['alertname', 'severity']
+  # Wait a little before the first message: most blips resolve inside 30s and a
+  # message about something already fixed teaches you to ignore messages.
+  group_wait: 45s
+  group_interval: 5m
+  # While a problem persists, say so again every four hours. Long enough not to
+  # nag, short enough that something seen at midnight is not forgotten by noon.
+  repeat_interval: 4h
+
+  routes:
+    # The always-firing Watchdog. Routed on its own with a 24h repeat, which is
+    # what turns it into one daily "everything is fine" message.
+    - matchers:
+        - severity = "heartbeat"
+      receiver: medjat-heartbeat
+      group_wait: 0s
+      # Poked every 15 minutes on purpose. The sender enforces "once a day at
+      # HEARTBEAT_HOUR", so the pulse lands at a fixed clock time instead of
+      # drifting 24h from whenever Alertmanager last restarted.
+      repeat_interval: 15m
+      continue: false
+
+    - matchers:
+        - severity = "critical"
+      receiver: medjat-critical
+      group_wait: 30s
+      repeat_interval: 2h
+
+receivers:
+  - name: medjat-default
+    webhook_configs:
+      - url: 'http://127.0.0.1:9099/alert'
+        send_resolved: true
+
+  - name: medjat-critical
+    webhook_configs:
+      - url: 'http://127.0.0.1:9099/alert'
+        send_resolved: true
+
+  - name: medjat-heartbeat
+    webhook_configs:
+      - url: 'http://127.0.0.1:9099/alert'
+        send_resolved: false
+
+inhibit_rules:
+  # If the whole server is unreachable, do not also send the four service alerts
+  # that are simply consequences of it. One message that says the truth beats
+  # five that say pieces of it.
+  - source_matchers:
+      - alertname = "ApiDownAtOrigin"
+    target_matchers:
+      - severity = "warning"
+    equal: ['instance']

@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter analyze *)",
+      "Bash(flutter test *)",
+      "Bash(flutter --version)",
+      "Bash(flutter doctor *)",
+      "Bash(npm run lint)",
+      "Bash(npm test)",
+      "Bash(npm -v)",
+      "Bash(./check-drift.sh *)",
+      "Bash(backend_medjet/check-drift.sh *)",
+      "Bash(./deploy.sh --dry-run)",
+      "Bash(./deploy-web.sh --dry-run)",
+      "Bash(./migrate.sh --status)",
+      "Bash(/Applications/MAMP/bin/php/php8.4.15/bin/php -l *)",
+      "mcp__claude-in-chrome__read_page",
+      "mcp__claude-in-chrome__get_page_text",
+      "mcp__claude-in-chrome__tabs_context_mcp",
+      "mcp__claude-in-chrome__read_console_messages",
+      "mcp__claude-in-chrome__read_network_requests",
+      "mcp__plugin_firebase_firebase__firebase_list_apps",
+      "mcp__plugin_firebase_firebase__firebase_list_projects",
+      "mcp__plugin_firebase_firebase__firebase_get_project",
+      "mcp__plugin_firebase_firebase__firebase_get_sdk_config",
+      "mcp__plugin_firebase_firebase__remoteconfig_get_template",
+      "mcp__hostinger-api__DNS_getDNSRecordsV1",
+      "mcp__hostinger-api__domains_getDomainListV1",
+      "mcp__hostinger-api__VPS_getVirtualMachinesV1"
+    ]
+  }
+}

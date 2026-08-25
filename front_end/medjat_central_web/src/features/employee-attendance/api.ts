@@ -63,6 +63,14 @@ export interface WebStatus {
   } | null;
   photo_required: boolean;
   network_constraint: "ip" | "none";
+  /**
+   * False when this employee's attendance methods make a browser punch
+   * impossible. The page sends no `method`, so the server resolves every web
+   * punch as `gps_only`; without it the button is guaranteed to fail, and the
+   * refusal that comes back is worded for a phone that can scan a QR code.
+   */
+  can_punch: boolean;
+  blocked_reason: "gps_only_not_enabled" | null;
   server_time: string;
 }
 

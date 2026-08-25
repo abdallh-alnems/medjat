@@ -126,6 +126,8 @@ String methodLabel(String m) {
       return 'method_wifi_gps'.tr;
     case 'kiosk':
       return 'method_kiosk'.tr;
+    case 'crew_gps':
+      return 'method_crew_gps'.tr;
     default:
       return m;
   }
@@ -143,6 +145,7 @@ String methodBadge(String m) => switch (m) {
       'face_selfie' => 'face_badge'.tr,
       'photo_gps' => 'photo_badge'.tr,
       'wifi_gps' => 'WiFi',
+      'crew_gps' => 'method_crew_gps_badge'.tr,
       'device' => 'method_device'.tr,
       'kiosk' => 'method_kiosk'.tr,
       'manual' => 'method_manual_admin'.tr,

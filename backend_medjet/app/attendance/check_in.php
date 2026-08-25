@@ -152,6 +152,32 @@ if ($requestedMethod === 'wifi_gps') {
     }
 }
 
+// The browser channel's network control. spec 004 counts network restriction
+// among the compensating controls that make the weakest channel acceptable, and
+// web_status.php has been announcing it to the page since day one — but nothing
+// applied it here, because the only call to NetworkVerifier on this path is
+// gated on wifi_gps and a browser never sends that method. The control existed
+// on the screen and nowhere else.
+//
+// verifyBrowser(), not verify(): a page cannot report a BSSID, so the ordinary
+// path would refuse every web punch at an enforcing branch instead of
+// constraining it. See core/NetworkVerifier.php.
+if ($isWeb) {
+    $webNetwork = NetworkVerifier::verifyBrowser($branch);
+    if (!$webNetwork['accepted']) {
+        AttendanceSecurityModel::log(
+            $tenantId,
+            (int) $employee['id'],
+            $branchId,
+            $webNetwork['reason'],
+            'blocked',
+            $latitude ?: null,
+            $longitude ?: null
+        );
+        Response::fail($webNetwork['message'], 403, 'WEB_WRONG_NETWORK');
+    }
+}
+
 // Rotating QR is claimed after the geofence for the same reason the face check
 // is: spending a code writes a row, and an employee standing outside the radius
 // must not burn one they will need thirty seconds later when they walk in.

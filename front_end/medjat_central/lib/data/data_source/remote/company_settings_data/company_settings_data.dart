@@ -15,17 +15,33 @@ class CompanySettingsData {
     return await _crud.postData(AppLinks.companySettings, data);
   }
 
+  /// Every argument is optional and only what is passed is sent.
+  ///
+  /// `methods` used to be required, so all six callers shipped the full method
+  /// list on every save — including the five that change something else
+  /// entirely. Combined with the client-side filter that builds that list, any
+  /// method the app did not recognise was deleted from the company's
+  /// configuration by a switch that had nothing to do with it.
+  ///
+  /// Omitting it is not merely tidier, it reaches a different branch of the
+  /// endpoint: app/settings/company.php only touches `attendance_methods` when
+  /// the key is present, and re-reads the stored list from the database when it
+  /// is not. Send only what this particular save is actually changing.
   Future<Map<String, dynamic>> updateAttendanceConfig({
-    required List<String> methods,
+    List<String>? methods,
     List<int>? manualAdminIds,
     bool? allowOfflineAttendance,
     bool? rejectMockLocation,
     bool? requireLocalBiometric,
   }) async {
-    final data = <String, dynamic>{
-      'attendance_methods': methods,
-      'manual_attendance_admin_ids': manualAdminIds,
-    };
+    final data = <String, dynamic>{};
+    if (methods != null) {
+      data['attendance_methods'] = methods;
+      // Paired with the methods on purpose: the server clears the manual admin
+      // list when 'manual' is switched off, and it can only see that if both
+      // arrive together.
+      data['manual_attendance_admin_ids'] = manualAdminIds;
+    }
     if (allowOfflineAttendance != null) {
       data['allow_offline_attendance'] = allowOfflineAttendance;
     }
@@ -37,6 +53,19 @@ class CompanySettingsData {
     }
     // POST (not PUT): the backend uses POST and PUT is unreliable on the host.
     return await _crud.postData(AppLinks.companySettings, data);
+  }
+
+  /// Who may record manual attendance, on its own.
+  ///
+  /// Separate from [updateAttendanceConfig] because `null` here is a real value
+  /// — it means "no restriction, any admin may" — and an optional Dart argument
+  /// cannot tell that apart from "not passed". Sending the key explicitly, null
+  /// included, is the only way to express clearing the list without also having
+  /// to ship the method list to carry it.
+  Future<Map<String, dynamic>> updateManualAdminIds(List<int>? ids) async {
+    return await _crud.postData(AppLinks.companySettings, {
+      'manual_attendance_admin_ids': ids,
+    });
   }
 
   /// Company-wide face-recognition settings for the `face_selfie` method.

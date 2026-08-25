@@ -56,18 +56,23 @@ $branch = $branchId > 0 ? BranchModel::findById($branchId, $tenantId) : null;
 // the IP-shaped rows are reachable from this channel. A branch whose approved
 // networks are all BSSIDs therefore has *no* network control here, and the UI is
 // told so rather than being allowed to imply one exists.
-$networkConstraint = 'none';
-if ($branch) {
-    $hasIpRule = Database::fetchOne(
-        "SELECT 1 AS found
-         FROM branch_networks
-         WHERE branch_id = ? AND tenant_id = ? AND is_active = 1
-           AND kind IN ('ip_v4', 'ip_cidr')
-         LIMIT 1",
-        [$branchId, $tenantId]
-    );
-    $networkConstraint = $hasIpRule ? 'ip' : 'none';
-}
+//
+// Answered by the same helper the punch path calls, not by a second query
+// written here. The two used to disagree — this endpoint reported 'ip' off the
+// mere existence of a row while check_in.php applied nothing at all — and the
+// page spent that whole time claiming a control that was not there.
+$networkConstraint = $branch ? NetworkVerifier::browserConstraint($branch) : 'none';
+
+// Whether this employee can punch from a browser AT ALL, which is not the same
+// question as whether the channel is open to them.
+//
+// The page sends no `method`, so check_in.php resolves the punch as 'gps_only'.
+// An employee whose methods do not include it is refused at the moment they
+// press the button — and with a message picked for a phone that can scan, which
+// is the one thing this page cannot do. Better to say so up front than to hand
+// someone a button that is guaranteed to fail.
+$methods = AttendanceMethodResolver::resolveForEmployee($employee, $tenantId);
+$canPunch = in_array('gps_only', $methods, true);
 
 Response::success([
     'state' => $state,
@@ -84,6 +89,9 @@ Response::success([
     ] : null,
     'photo_required' => WebAccessPolicy::photoRequired($tenantId),
     'network_constraint' => $networkConstraint,
+    'can_punch' => $canPunch,
+    // A code, not a sentence, so each client localizes it. Null when it can.
+    'blocked_reason' => $canPunch ? null : 'gps_only_not_enabled',
     // Sent so the interface never renders the device's own clock. A browser's
     // clock is user-editable with no permission prompt at all, which makes it a
     // weaker input than anything the mobile app has to deal with.

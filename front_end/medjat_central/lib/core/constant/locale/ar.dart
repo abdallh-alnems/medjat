@@ -2375,6 +2375,8 @@ const Map<String, String> ar = {
   'kiosk_outage_windows': 'فترات انقطاع الكيوسك',
   'copied': 'تم النسخ',
   'method_kiosk': 'كيوسك الفرع',
+  'method_crew_gps': 'تسجيل المشرف لطاقمه',
+  'method_crew_gps_badge': 'طاقم',
   'method_kiosk_desc': 'تابلت مشترك على باب الفرع — للموظفين بدون هواتف ذكية.',
   'kiosk_only_failures': 'الفاشلة فقط',
   'kiosk_no_activity': 'لا يوجد نشاط بعد.',

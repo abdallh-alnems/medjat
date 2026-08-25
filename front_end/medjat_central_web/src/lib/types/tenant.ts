@@ -55,10 +55,19 @@ export interface Company {
   address?: string | null;
 }
 
+/**
+ * Mirrors AttendanceMethodResolver::ALLOWED. All nine are listed, including the
+ * ones no screen offers as a toggle: the server can return any of them, and a
+ * type that omits a value the API sends makes the label lookup silently wrong
+ * wherever a company is actually using it.
+ */
 export type AttendanceMethod =
   | "qr_gps"
   | "gps_only"
   | "face_selfie"
   | "photo_gps"
   | "wifi_gps"
-  | "manual";
+  | "crew_gps"
+  | "device"
+  | "manual"
+  | "kiosk";

@@ -123,6 +123,13 @@ if ($method === 'GET') {
         // Branches whose only network control is BSSID-based, i.e. no control at
         // all on this channel — named so the warning is specific.
         'branches_without_ip_networks' => BranchNetworkModel::branchesWithoutIpControl($tenantId),
+        // True when the company default would make the browser channel useless.
+        // The page sends no `method`, so a browser punch always resolves as
+        // 'gps_only'; without it every employee on the company default is
+        // refused the instant they press the button. Reported next to the switch
+        // because "I turned it on and nothing works" is otherwise a support
+        // ticket, and the cause is two screens away.
+        'web_requires_gps_only' => !in_array('gps_only', $tenantMethods, true),
         'branches' => $branchList,
         'categories' => $categoryList,
         'employee_overrides' => $employeeOverrides,
@@ -197,12 +204,23 @@ if ($method === 'PUT' || $method === 'POST') {
         }
 
         TenantModel::updateAttendanceMethods($tenantId, $methodsVal, $manualAdminIdsVal);
-    } elseif (isset($input['manual_attendance_admin_ids'])) {
+    // array_key_exists, not isset: null is a real value here — it means "no
+    // restriction, any admin may record manual attendance" — and isset() cannot
+    // see it, so clearing the list was only ever possible by also sending the
+    // whole method list along to carry it. That coupling is what let an
+    // unrelated save rewrite a company's methods.
+    } elseif (array_key_exists('manual_attendance_admin_ids', $input)) {
+        // Read through, never rewritten. This branch has no opinion about the
+        // methods and must not become a way to change them by omission.
         $currentMethods = json_decode($tenant['attendance_methods'] ?? '[]', true) ?: [];
-        if (!in_array('manual', $currentMethods, true)) {
+        $manualAdminIdsVal = $input['manual_attendance_admin_ids'];
+
+        // Only guard when a list is actually being set. Refusing to CLEAR a
+        // restriction because the method is off would leave a company unable to
+        // tidy up after disabling manual attendance.
+        if ($manualAdminIdsVal !== null && !in_array('manual', $currentMethods, true)) {
             Response::fail('Cannot set manual_attendance_admin_ids when manual method is not enabled', 422, 'cannot_set_manual_attendance_admin');
         }
-        $manualAdminIdsVal = $input['manual_attendance_admin_ids'];
         if ($manualAdminIdsVal !== null) {
             if (!is_array($manualAdminIdsVal)) {
                 Response::fail('manual_attendance_admin_ids must be an array or null', 422, 'manual_attendance_admin_ids_array');

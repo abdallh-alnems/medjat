@@ -49,12 +49,18 @@ import {
 // so a method absent here is hidden but never stripped from the company's
 // configuration. 'device' and 'kiosk' are omitted deliberately — neither is a
 // self-service method and both are configured from their own screens.
+//
+// 'crew_gps' is here because this is the only screen in the product that can set
+// it. It is not self-service either — a supervisor records it FOR their crew —
+// but it has no screen of its own, so leaving it out left it configurable
+// nowhere at all.
 const METHODS: AttendanceMethod[] = [
   "qr_gps",
   "gps_only",
   "face_selfie",
   "photo_gps",
   "wifi_gps",
+  "crew_gps",
   "manual",
 ];
 

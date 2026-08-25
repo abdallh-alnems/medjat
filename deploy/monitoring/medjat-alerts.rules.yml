@@ -1,0 +1,147 @@
+# Alert rules for Medjat.
+#
+# Deliberately few. An alert that fires when nothing is wrong teaches you to
+# ignore alerts, and an ignored alert is worse than none — you keep the noise
+# and lose the trust. Every rule here answers "would I want to be woken up?"
+#
+# severity: critical = employees cannot work right now, goes to every channel.
+#           warning  = it will hurt if ignored for days, Telegram only.
+
+groups:
+  - name: medjat-availability
+    rules:
+      # Through Cloudflare — what a real phone experiences.
+      - alert: ApiDown
+        expr: probe_success{job="blackbox-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "الـAPI لا يستجيب"
+          detail: "api.medjatapp.com لا يرد منذ دقيقتين — لا حضور ولا رواتب ولا أي عملية من أي تطبيق."
+
+      # Straight at nginx on the box. Comparing this with ApiDown separates
+      # "our server is broken" from "the path to it is broken" (Cloudflare,
+      # DNS, egress) — the first thing you need to know before touching
+      # anything at 3am.
+      - alert: ApiDownAtOrigin
+        expr: probe_success{job="blackbox-api-origin"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "الـAPI معطّل على السيرفر نفسه"
+          detail: "nginx على الجهاز لا يرد — المشكلة في السيرفر، ليست في Cloudflare أو الشبكة."
+
+      - alert: WebAppDown
+        expr: probe_success{job="blackbox-web"} == 0
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "تطبيق الويب لا يستجيب"
+          detail: "app.medjatapp.com لا يرد — لوحة الإدارة وحضور الموظفين من المتصفح متوقفان."
+
+      - alert: PromoSiteDown
+        expr: probe_success{job="blackbox-promo"} == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "الموقع الترويجي لا يستجيب"
+          detail: "medjatapp.com متوقف — العملاء الحاليون لا يتأثرون، لكن الزوار الجدد لا يرون شيئًا."
+
+  - name: medjat-services
+    rules:
+      # node_exporter reports a series per unit per state. The 'active' series
+      # dropping to 0 means the unit is not running, whatever the reason.
+      - alert: ServiceDown
+        expr: node_systemd_unit_state{state="active", name=~"mysql.service|nginx.service|php8.5-fpm.service|medjat-web.service"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "خدمة متوقفة: {{ $labels.name }}"
+          detail: "الخدمة {{ $labels.name }} ليست قيد التشغيل منذ دقيقتين."
+
+      # The alerting pipeline watching itself. Without it, a dead exporter looks
+      # exactly like a healthy system: silence.
+      - alert: MonitoringTargetDown
+        expr: up == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "هدف مراقبة لا يرد: {{ $labels.job }}"
+          detail: "Prometheus لا يستطيع قراءة {{ $labels.instance }} — الإنذارات المعتمدة عليه صامتة الآن."
+
+  - name: medjat-resources
+    rules:
+      - alert: DiskSpaceLow
+        expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} < 0.20
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "مساحة القرص أقل من 20%"
+          detail: "المتبقي {{ $value | humanizePercentage }} على /. الصور المرفوعة والنسخ الاحتياطية تزحف ببطء."
+
+      # At 7% MySQL starts refusing writes long before the disk is actually
+      # full, so this is the last quiet moment to act.
+      - alert: DiskSpaceCritical
+        expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} < 0.07
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "القرص ممتلئ تقريبًا"
+          detail: "المتبقي {{ $value | humanizePercentage }} — MySQL سيرفض الكتابة قريبًا وتضيع بصمات الحضور."
+
+      - alert: MemoryLow
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.10
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "الذاكرة المتاحة أقل من 10%"
+          detail: "الجهاز على وشك قتل عملية — عادةً MySQL أو Next.js، وكلاهما يوقف الخدمة."
+
+  - name: medjat-jobs
+    rules:
+      # Written by medjat-node-metrics.sh every five minutes from the newest
+      # file in /var/backups/medjat. A backup that silently stopped is only
+      # discovered on the day you need it.
+      - alert: BackupStale
+        expr: medjat_backup_age_seconds > 108000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "النسخة الاحتياطية لم تُؤخذ منذ أكثر من 30 ساعة"
+          detail: "آخر نسخة عمرها {{ $value | humanizeDuration }} — كرون 02:00 لم يعمل أو فشل."
+
+      # The site answering 200 says nothing about a single endpoint erroring for
+      # one company. This catches the failure nobody reports because the app
+      # just "doesn't work" for them.
+      - alert: HighServerErrorRate
+        expr: medjat_nginx_5xx_last5m > 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "أخطاء 500 كثيرة في الـAPI"
+          detail: "{{ $value }} خطأ خادم في آخر خمس دقائق — شيء ما يفشل دون أن يسقط الموقع."
+
+  - name: medjat-heartbeat
+    rules:
+      # Always firing, on purpose. Alertmanager routes it to the heartbeat
+      # receiver, which sends "everything is fine" once a day. It exists to
+      # answer the only question a silent alerting system cannot: is nothing
+      # wrong, or is nothing working?
+      - alert: Watchdog
+        expr: vector(1)
+        labels:
+          severity: heartbeat
+        annotations:
+          summary: "نبضة"
+          detail: "سلسلة المراقبة كاملة تعمل."

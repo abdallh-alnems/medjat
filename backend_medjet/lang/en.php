@@ -91,6 +91,10 @@ return [
     'web_already_activated' => 'You already have a PIN. Sign in with it, or ask your administrator to reset it.',
     'web_photo_required' => 'Your company requires a photo when recording attendance from a browser. Allow camera access and try again.',
     'web_photo_invalid' => 'We could not read that photo. Try again.',
+    // "Network", not "WiFi": the browser is matched on IP address, and the
+    // employee may be on mobile data rather than on any wireless network.
+    'web_wrong_network' => 'Attendance must be recorded from the branch network. You are on a network that is not approved.',
+    'web_needs_gps_only' => 'Browser attendance needs the "GPS only" method enabled for you. Ask your HR administrator, or use the Medjat app.',
     'web_pin_reset_done' => 'The PIN has been reset. Give the employee the new activation code.',
 
     // Branch kiosk — shown on a tablet bolted to a wall, read by a worker in a

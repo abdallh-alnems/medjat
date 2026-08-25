@@ -186,6 +186,85 @@ final class NetworkVerifier {
         ];
     }
 
+    /**
+     * The network check for the browser channel.
+     *
+     * Deliberately NOT a flag inside verify(). The two channels can produce
+     * different evidence, and merging them would lock the browser out rather
+     * than constrain it: `wifi_match` defaults to 'bssid' and a web page can
+     * never report a BSSID, so verify() would refuse every browser punch at any
+     * branch that enforces — an outage dressed as a security control.
+     *
+     * Only the IP-shaped rows are reachable from a browser, so only those are
+     * applied. A branch whose approved list is entirely BSSIDs therefore has no
+     * network control at all on this channel; that is reported honestly by
+     * browserConstraint() instead of being pretended into existence here.
+     *
+     * @return array{accepted: bool, reason: string, message: string}
+     */
+    public static function verifyBrowser(array $branch): array {
+        $mode = $branch['wifi_mode'] ?? null;
+
+        // Same order of mercy as verify(): learning never rejects, because the
+        // branch is still collecting its own access points.
+        if ($mode === null || $mode === 'learning') {
+            return self::ok('learning');
+        }
+
+        $networks = self::ipNetworksFor($branch);
+
+        // Enforcing with nothing a browser could match is a misconfiguration,
+        // not a reason to reject everyone. Fails open, exactly as verify() does
+        // with an empty approved list.
+        if ($networks === []) {
+            return self::ok('no_ip_networks');
+        }
+
+        $ip = self::clientIp();
+        if ($ip !== null && self::ipMatches($ip, $networks)) {
+            return self::ok('matched');
+        }
+
+        // `optional` covers employees on mobile data, on every channel.
+        if ($mode === 'optional') {
+            return self::ok('optional_gps_fallback');
+        }
+
+        return [
+            'accepted' => false,
+            'reason' => 'web_wrong_network',
+            'message' => I18n::t('web_wrong_network'),
+        ];
+    }
+
+    /**
+     * What the browser page may be told about this branch: 'ip' when a refusal
+     * is actually possible, 'none' when nothing on this channel can be checked.
+     *
+     * Shares verifyBrowser()'s conditions on purpose. A status endpoint that
+     * announces a control the punch path never applies is precisely the drift
+     * this pair exists to prevent — it shipped that way once already.
+     */
+    public static function browserConstraint(array $branch): string {
+        $mode = $branch['wifi_mode'] ?? null;
+        if ($mode === null || $mode === 'learning' || $mode === 'optional') {
+            return 'none';
+        }
+        return self::ipNetworksFor($branch) === [] ? 'none' : 'ip';
+    }
+
+    /** Approved rows a browser could possibly match — the IP-shaped ones. */
+    private static function ipNetworksFor(array $branch): array {
+        $networks = BranchNetworkModel::approvedFor(
+            (int) $branch['id'],
+            (int) $branch['tenant_id']
+        );
+        return array_values(array_filter(
+            $networks,
+            static fn($n) => $n['kind'] === 'ip_v4' || $n['kind'] === 'ip_cidr'
+        ));
+    }
+
     private static function bssidMatches(string $bssid, array $networks): bool {
         foreach ($networks as $network) {
             if ($network['kind'] === 'bssid' && $network['value'] === $bssid) {
