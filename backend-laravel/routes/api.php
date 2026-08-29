@@ -6,7 +6,9 @@ use App\Http\Controllers\Attendance\CheckInController;
 use App\Http\Controllers\Attendance\CheckOutController;
 use App\Http\Controllers\Attendance\CrewListController;
 use App\Http\Controllers\Attendance\FaceChallengeController;
+use App\Http\Controllers\Attendance\MyAttendanceController;
 use App\Http\Controllers\Attendance\SecurityLogController;
+use App\Http\Controllers\Attendance\SetMethodOverrideController;
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\AdminLogoutController;
 use App\Http\Controllers\Auth\DeleteAccountController;
@@ -172,6 +174,20 @@ Route::middleware('throttle:api')->group(function (): void {
             ->name('legacy.attendance.crew');
         Route::post('app/attendance/security_log.php', SecurityLogController::class)
             ->name('legacy.attendance.security-log');
+
+        Route::get('v1/attendance/mine', MyAttendanceController::class)->name('attendance.mine');
+        Route::get('app/attendance/get_my_attendance.php', MyAttendanceController::class)
+            ->name('legacy.attendance.mine');
+    });
+
+    // Management side: recorded for an employee rather than by them.
+    Route::middleware(['auth.admin', 'tenant'])->group(function (): void {
+        Route::post('v1/attendance/method-override', SetMethodOverrideController::class)
+            ->middleware('can.do:manage_company_settings')
+            ->name('attendance.method-override');
+        Route::post('app/attendance/set_method_override.php', SetMethodOverrideController::class)
+            ->middleware('can.do:manage_company_settings')
+            ->name('legacy.attendance.method-override');
     });
 
 });

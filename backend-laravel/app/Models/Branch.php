@@ -8,6 +8,7 @@ use App\Domain\Attendance\Geofence;
 use App\Support\Value;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property int $id
@@ -66,5 +67,56 @@ final class Branch extends Model
     public function hasLocation(): bool
     {
         return $this->latitude !== null && $this->longitude !== null;
+    }
+
+    /**
+     * The centre a check-in is measured against.
+     *
+     * $allowCompanyFallback is false on the punch path on purpose. A branch with
+     * no centre of its own must not borrow the company's: with several branches
+     * that would let somebody check into the Jeddah branch while standing at
+     * head office. The fallback exists only for display contexts that opt in.
+     *
+     * @return array{lat: float|null, lng: float|null, radius: int}
+     */
+    public function effectiveGeofence(bool $allowCompanyFallback = true): array
+    {
+        if ($this->hasLocation() && ! ((float) $this->latitude === 0.0 && (float) $this->longitude === 0.0)) {
+            return [
+                'lat' => (float) $this->latitude,
+                'lng' => (float) $this->longitude,
+                'radius' => $this->radiusMetres(),
+            ];
+        }
+
+        if (! $allowCompanyFallback) {
+            return ['lat' => null, 'lng' => null, 'radius' => $this->radiusMetres()];
+        }
+
+        $tenant = DB::table('tenants')->where('id', $this->tenant_id)
+            ->first(['latitude', 'longitude', 'gps_radius_meters']);
+
+        $lat = $tenant === null ? null : Value::nullableFloat($tenant->latitude);
+        $lng = $tenant === null ? null : Value::nullableFloat($tenant->longitude);
+
+        return [
+            'lat' => $lat === 0.0 ? null : $lat,
+            'lng' => $lng === 0.0 ? null : $lng,
+            'radius' => $this->radiusMetres(),
+        ];
+    }
+
+    /** Whether this branch lets the app queue punches while offline. */
+    public function allowsOffline(): bool
+    {
+        $branch = $this->getAttribute('allow_offline_attendance');
+
+        if ($branch !== null) {
+            return Value::int($branch) === 1;
+        }
+
+        return Value::int(
+            DB::table('tenants')->where('id', $this->tenant_id)->value('allow_offline_attendance')
+        ) === 1;
     }
 }

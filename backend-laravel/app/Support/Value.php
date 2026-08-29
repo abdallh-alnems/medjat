@@ -43,6 +43,11 @@ final class Value
         return is_scalar($value) ? (string) $value : null;
     }
 
+    public static function nullableFloat(mixed $value): ?float
+    {
+        return is_numeric($value) ? (float) $value : null;
+    }
+
     public static function nullableInt(mixed $value): ?int
     {
         return is_numeric($value) ? (int) $value : null;
