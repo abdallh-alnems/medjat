@@ -8,7 +8,6 @@ use App\Models\Admin;
 use App\Models\Employee;
 use App\Models\EmployeeAuthToken;
 use App\Services\Auth\FirebaseTokenVerifier;
-use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
@@ -357,7 +356,5 @@ final class EmployeeStatusTest extends TestCase
         }
 
         $this->send('/app/employees/reset_web_pin.php', ['employee_id' => $other->id])->assertNotFound();
-
-        $this->assertIsInt(Value::int($other->id));
     }
 }
