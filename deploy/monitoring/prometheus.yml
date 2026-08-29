@@ -34,7 +34,7 @@ scrape_configs:
       module: [api_401]
     scrape_interval: 30s
     static_configs:
-      - targets: ['https://api.medjatapp.com/backend_medjet/app/auth/login.php']
+      - targets: ['https://api.medjatapp.com/backend/api/app/auth/login.php']
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -51,7 +51,7 @@ scrape_configs:
       module: [api_401_origin]
     scrape_interval: 30s
     static_configs:
-      - targets: ['http://127.0.0.1/backend_medjet/app/auth/login.php']
+      - targets: ['http://127.0.0.1/backend/api/app/auth/login.php']
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target

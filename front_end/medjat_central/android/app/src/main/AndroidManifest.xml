@@ -59,6 +59,12 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="https"
                       android:host="api.medjatapp.com"
+                      android:pathPrefix="/backend/join_team.php"/>
+                <!-- Pre-rename path. Invitation emails already delivered carry
+                     this URL and stay valid for as long as their code does, so
+                     the filter has to keep matching it. -->
+                <data android:scheme="https"
+                      android:host="api.medjatapp.com"
                       android:pathPrefix="/backend_medjet/join_team.php"/>
             </intent-filter>
         </activity>

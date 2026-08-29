@@ -23,7 +23,7 @@ void main() {
 
     test('every payslip line label the backend sends is translated', () {
       // Must stay in sync with the `label_key` values emitted by
-      // backend_medjet/core/PayrollCalculator.php.
+      // backend/core/PayrollCalculator.php.
       const backendLabelKeys = [
         'payline_absence_day',
         'payline_absence_days',

@@ -25,7 +25,7 @@ PING="https://hc-ping.com/${UUID}"
 # The endpoints authenticate on a query parameter and send both key= and
 # cron_secret=, which is what the published cron wrappers have always done.
 SECRET="24f90498cfabccf4888efa11baad8eb9a60e8ccd6ebbc0f4"
-URL="http://127.0.0.1/backend_medjet/app/cron/${ENDPOINT}?key=${SECRET}&cron_secret=${SECRET}"
+URL="http://127.0.0.1/backend/api/app/cron/${ENDPOINT}?key=${SECRET}&cron_secret=${SECRET}"
 
 resp=$(curl -sS -f --max-time 300 "$URL" -H "Host: api.medjatapp.com" 2>&1)
 rc=$?

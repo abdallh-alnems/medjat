@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 /// Maps the backend's machine `action` codes (e.g. `loan.approve`) to readable
 /// Arabic phrases, a high-level category, and an icon — so the activity log
 /// never shows raw codes to the user. The category keys here mirror the
-/// `categoryPrefixes` map in `backend_medjet/app/audit/list.php`; keep them in
+/// `categoryPrefixes` map in `backend/api/app/audit/list.php`; keep them in
 /// sync when adding new modules.
 class AuditActions {
   AuditActions._();

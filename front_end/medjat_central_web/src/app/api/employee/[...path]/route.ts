@@ -11,7 +11,7 @@ import { EMPLOYEE_SESSION_COOKIE } from "../session/route";
  */
 
 const API_HOST =
-  process.env.NEXT_PUBLIC_API_HOST ?? "https://api.medjatapp.com/backend_medjet";
+  process.env.NEXT_PUBLIC_API_HOST ?? "https://api.medjatapp.com/backend/api";
 
 const SECURITY_USER = process.env.SECURITY_USER ?? "";
 const SECURITY_KEY = process.env.SECURITY_KEY ?? "";
