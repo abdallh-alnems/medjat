@@ -145,14 +145,15 @@ final class FaceMatcher
             return FaceVerification::accept('matched', $threshold, $score);
         }
 
-        $context->write('no_match', ! $settings['enforce'], $score, $livenessPassed, $challenge, $selfie);
+        // Below the threshold: refused only once the company has left tuning
+        // mode. The stored result is 'below_threshold' either way, so the audit
+        // reads the same whether or not anybody was turned away.
+        $accepted = ! $settings['enforce'];
+        $context->write('below_threshold', $accepted, $score, $livenessPassed, $challenge, $selfie);
 
-        if (! $settings['enforce']) {
-            // log_only: recorded as a non-match and allowed through anyway.
-            return FaceVerification::accept('no_match_log_only', $threshold, $score);
-        }
-
-        return FaceVerification::refuse('no_match', $threshold, 'لم يتم التعرف على الوجه', $score);
+        return $accepted
+            ? FaceVerification::accept('below_threshold', $threshold, $score)
+            : FaceVerification::refuse('below_threshold', $threshold, 'لم يتم التعرف على الوجه', $score);
     }
 
     /**

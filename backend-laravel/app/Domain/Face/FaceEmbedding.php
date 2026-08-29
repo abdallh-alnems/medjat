@@ -97,10 +97,29 @@ final class FaceEmbedding
      */
     public static function fingerprint(array $embedding): string
     {
-        // Rounded before hashing so floating-point noise in transport does not
-        // make two genuinely identical payloads look different.
-        $rounded = array_map(static fn (float $v): string => number_format($v, 6, '.', ''), $embedding);
+        // Quantised first — but not for the reason it looks like.
+        //
+        // Rounding does NOT defeat an attacker who adds noise. Perturbing every
+        // component by 1e-6 changes the fingerprint, because with 192
+        // components some inevitably sit near a rounding boundary and flip.
+        // Anyone deliberately jittering the array evades this, and no amount of
+        // quantisation fixes it: a hash answers "identical", never "similar".
+        //
+        // What it buys is representation stability. The same capture arrives as
+        // a float, or a string, or through a JSON round trip, and 0.1 printed
+        // at full precision is not always the same text. Without rounding an
+        // honest replay could hash differently and slip past — a false
+        // negative, which is the failure that matters for a detector.
+        //
+        // sprintf rather than round()+implode: locale-independent (a decimal
+        // comma would silently change every hash) and it gives -0.0 and 0.0 the
+        // same text, which they should have.
+        //
+        // The honest scope: this catches a build that stores an embedding and
+        // posts it back verbatim, which is what a modified APK does. It does not
+        // catch someone editing float arrays.
+        $quantised = array_map(static fn (float $v): string => sprintf('%.4F', $v), $embedding);
 
-        return hash('sha256', implode(',', $rounded));
+        return hash('sha256', implode(',', $quantised));
     }
 }

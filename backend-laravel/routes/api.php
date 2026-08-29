@@ -2,11 +2,15 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Attendance\BranchAttendanceController;
+use App\Http\Controllers\Attendance\BranchQrCodeController;
 use App\Http\Controllers\Attendance\CheckInController;
 use App\Http\Controllers\Attendance\CheckOutController;
 use App\Http\Controllers\Attendance\CrewListController;
 use App\Http\Controllers\Attendance\FaceChallengeController;
+use App\Http\Controllers\Attendance\FaceLogsController;
 use App\Http\Controllers\Attendance\MyAttendanceController;
+use App\Http\Controllers\Attendance\PunchPhotoController;
 use App\Http\Controllers\Attendance\SecurityLogController;
 use App\Http\Controllers\Attendance\SetMethodOverrideController;
 use App\Http\Controllers\Auth\AdminLoginController;
@@ -188,6 +192,29 @@ Route::middleware('throttle:api')->group(function (): void {
         Route::post('app/attendance/set_method_override.php', SetMethodOverrideController::class)
             ->middleware('can.do:manage_company_settings')
             ->name('legacy.attendance.method-override');
+
+        Route::post('v1/attendance/branch-qr', BranchQrCodeController::class)
+            ->middleware('can.do:manage_company_settings')
+            ->name('attendance.branch-qr');
+        Route::post('app/attendance/branch_qr_code.php', BranchQrCodeController::class)
+            ->middleware('can.do:manage_company_settings')
+            ->name('legacy.attendance.branch-qr');
+
+        Route::middleware('can.do:manage_attendance')->group(function (): void {
+            Route::get('v1/attendance/branch', BranchAttendanceController::class)
+                ->name('attendance.branch');
+            Route::get('v1/attendance/photo', PunchPhotoController::class)
+                ->name('attendance.photo');
+            Route::post('v1/attendance/face-logs', FaceLogsController::class)
+                ->name('attendance.face-logs');
+
+            Route::get('app/attendance/get_branch_attendance.php', BranchAttendanceController::class)
+                ->name('legacy.attendance.branch');
+            Route::get('app/attendance/punch_photo.php', PunchPhotoController::class)
+                ->name('legacy.attendance.photo');
+            Route::post('app/attendance/face_logs.php', FaceLogsController::class)
+                ->name('legacy.attendance.face-logs');
+        });
     });
 
 });

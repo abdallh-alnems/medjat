@@ -19,6 +19,12 @@ use Illuminate\Support\Facades\DB;
  */
 final class BranchQrChallenge
 {
+    /** How long a minted code stays valid. */
+    public const TTL_SECONDS = 90;
+
+    /** How often the display asks for a new one — shorter, so the windows overlap. */
+    public const ROTATE_SECONDS = 30;
+
     /** MySQL's duplicate-key error. */
     private const DUPLICATE_ENTRY = 1062;
 
@@ -91,5 +97,35 @@ final class BranchQrChallenge
     private static function isDuplicate(QueryException $e): bool
     {
         return Value::int($e->errorInfo[1] ?? null) === self::DUPLICATE_ENTRY;
+    }
+
+    /**
+     * Mints the next code for a branch display.
+     *
+     * The window is longer than the rotation interval on purpose: they overlap,
+     * so a code cannot expire between being rendered and being scanned.
+     *
+     * Expiry is computed by MySQL rather than PHP — PHP runs UTC here while
+     * MySQL runs the server's zone, so a PHP-built timestamp lands hours in the
+     * past and every code is born expired. face_challenges paid for that
+     * mistake first.
+     *
+     * @return array{nonce: string, expires_in: int, rotate_in: int}
+     */
+    public static function issue(int $tenantId, int $branchId, ?int $issuedBy = null): array
+    {
+        $nonce = bin2hex(random_bytes(32));
+
+        DB::insert(
+            'INSERT INTO branch_qr_challenges (tenant_id, branch_id, nonce, expires_at, issued_by)
+             VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND), ?)',
+            [$tenantId, $branchId, $nonce, self::TTL_SECONDS, $issuedBy]
+        );
+
+        return [
+            'nonce' => $nonce,
+            'expires_in' => self::TTL_SECONDS,
+            'rotate_in' => self::ROTATE_SECONDS,
+        ];
     }
 }
