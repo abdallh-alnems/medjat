@@ -15,6 +15,14 @@ declare(strict_types=1);
 
 return [
 
+    'uploads' => [
+        // Identity documents and contracts. Deliberately narrow: anything that
+        // is not one of these is either a mistake or an attempt to store
+        // something executable behind a document name.
+        'allowed_types' => explode(',', (string) env('UPLOAD_ALLOWED_TYPES', 'jpg,jpeg,png,pdf')),
+        'max_bytes' => (int) env('UPLOAD_MAX_SIZE', 5242880),
+    ],
+
     'join' => [
         // Must be a domain that hosts the App Links / Universal Links association
         // files, or the link opens a web page instead of the app.

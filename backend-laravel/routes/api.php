@@ -34,8 +34,12 @@ use App\Http\Controllers\Auth\SendAuthActionController;
 use App\Http\Controllers\Auth\UpdateFcmTokenController;
 use App\Http\Controllers\Auth\UpdateProfileController;
 use App\Http\Controllers\Documents\EmployeeDocumentsController;
+use App\Http\Controllers\Documents\MyDocumentController;
+use App\Http\Controllers\Documents\RequestDocumentController;
 use App\Http\Controllers\Documents\ReviewDocumentController;
+use App\Http\Controllers\Documents\UploadDocumentController;
 use App\Http\Controllers\Employees\ActivationCodeController;
+use App\Http\Controllers\Employees\AttendanceHistoryController;
 use App\Http\Controllers\Employees\CreateEmployeeController;
 use App\Http\Controllers\Employees\DeleteEmployeeController;
 use App\Http\Controllers\Employees\EmployeeProfileController;
@@ -386,6 +390,42 @@ Route::middleware('throttle:api')->group(function (): void {
         Route::get('app/employees/get_year_to_date.php', [EmployeeProfileController::class, 'yearToDate'])
             ->middleware('can.do:manage_payroll')
             ->name('legacy.employees.year-to-date');
+    });
+
+    // ── Handing documents in ─────────────────────────────────────────────
+    Route::middleware(['auth.employee', 'tenant'])->group(function (): void {
+        Route::post('v1/employees/documents/submit', [UploadDocumentController::class, 'byEmployee'])
+            ->name('documents.submit');
+        Route::get('v1/employees/documents/mine', MyDocumentController::class)
+            ->name('documents.mine');
+
+        Route::post('app/employees/submit_document.php', [UploadDocumentController::class, 'byEmployee'])
+            ->name('legacy.documents.submit');
+        Route::get('app/employees/my_document_view.php', MyDocumentController::class)
+            ->name('legacy.documents.mine');
+    });
+
+    Route::middleware(['auth.admin', 'tenant'])->group(function (): void {
+        Route::post('v1/employees/documents/upload', [UploadDocumentController::class, 'byAdmin'])
+            ->middleware('can.do:manage_documents')
+            ->name('documents.upload');
+        Route::post('app/employees/upload_document.php', [UploadDocumentController::class, 'byAdmin'])
+            ->middleware('can.do:manage_documents')
+            ->name('legacy.documents.upload');
+
+        Route::post('v1/employees/documents/request', RequestDocumentController::class)
+            ->middleware('can.do:manage_documents')
+            ->name('documents.request');
+        Route::post('app/employees/request_document.php', RequestDocumentController::class)
+            ->middleware('can.do:manage_documents')
+            ->name('legacy.documents.request');
+
+        Route::get('v1/employees/attendance-history', AttendanceHistoryController::class)
+            ->middleware('can.do:manage_attendance')
+            ->name('employees.attendance-history');
+        Route::get('app/employees/get_attendance_history.php', AttendanceHistoryController::class)
+            ->middleware('can.do:manage_attendance')
+            ->name('legacy.employees.attendance-history');
     });
 
 });

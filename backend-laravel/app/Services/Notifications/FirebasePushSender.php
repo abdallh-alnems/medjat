@@ -33,8 +33,16 @@ final class FirebasePushSender implements PushSender
             return false;
         }
 
+        return $this->toAdmin(Value::int($adminId), $title, $body, $data);
+    }
+
+    /**
+     * @param  array<string, string>  $data
+     */
+    public function toAdmin(int $adminId, string $title, string $body, array $data = []): bool
+    {
         $tokens = DB::table('admin_devices')
-            ->where('admin_id', Value::int($adminId))
+            ->where('admin_id', $adminId)
             ->where('is_active', 1)
             ->pluck('fcm_token')
             ->filter(static fn (mixed $token): bool => is_string($token) && $token !== '')
@@ -59,7 +67,7 @@ final class FirebasePushSender implements PushSender
 
             return true;
         } catch (Throwable $e) {
-            Log::warning('Push delivery failed', ['employee_id' => $employeeId, 'exception' => $e]);
+            Log::warning('Push delivery failed', ['admin_id' => $adminId, 'exception' => $e]);
 
             return false;
         }

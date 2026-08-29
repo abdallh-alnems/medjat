@@ -15,6 +15,9 @@ final class FakePushSender implements PushSender
     /** @var list<array{employee_id: int, title: string, body: string, data: array<string, string>}> */
     public array $sent = [];
 
+    /** @var list<array{admin_id: int, title: string, body: string, data: array<string, string>}> */
+    public array $sentToAdmins = [];
+
     /** Whether delivery should report failure, to prove it is best-effort. */
     public bool $fails = false;
 
@@ -28,6 +31,20 @@ final class FakePushSender implements PushSender
         }
 
         $this->sent[] = ['employee_id' => $employeeId, 'title' => $title, 'body' => $body, 'data' => $data];
+
+        return true;
+    }
+
+    /**
+     * @param  array<string, string>  $data
+     */
+    public function toAdmin(int $adminId, string $title, string $body, array $data = []): bool
+    {
+        if ($this->fails) {
+            return false;
+        }
+
+        $this->sentToAdmins[] = ['admin_id' => $adminId, 'title' => $title, 'body' => $body, 'data' => $data];
 
         return true;
     }

@@ -22,4 +22,9 @@ interface PushSender
      * @return bool Whether it was accepted for delivery.
      */
     public function toEmployee(int $employeeId, string $title, string $body, array $data = []): bool;
+
+    /**
+     * @param  array<string, string>  $data
+     */
+    public function toAdmin(int $adminId, string $title, string $body, array $data = []): bool;
 }
