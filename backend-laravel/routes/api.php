@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Attendance\CheckInController;
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\AdminLogoutController;
 use App\Http\Controllers\Auth\DeleteAccountController;
@@ -141,6 +142,15 @@ Route::middleware('throttle:api')->group(function (): void {
         Route::post('v1/auth/fcm-token', UpdateFcmTokenController::class)->name('fcm-token.update');
         Route::post('app/auth/update_fcm_token.php', UpdateFcmTokenController::class)
             ->name('legacy.fcm-token.update');
+    });
+
+    // ── Attendance ───────────────────────────────────────────────────────
+    // Both channels reach the same action; which one is in play comes from the
+    // session, never from the request.
+    Route::middleware(['auth.employee', 'tenant'])->group(function (): void {
+        Route::post('v1/attendance/check-in', CheckInController::class)->name('attendance.check-in');
+        Route::post('app/attendance/check_in.php', CheckInController::class)
+            ->name('legacy.attendance.check-in');
     });
 
 });

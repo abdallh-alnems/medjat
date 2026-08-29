@@ -32,6 +32,19 @@ return [
 
     'disks' => [
 
+        /*
+         * Employee evidence: payslips, identity documents, punch and face
+         * captures. Served only through an authenticated PHP endpoint — nginx
+         * denies the directory outright — so nothing written here is reachable
+         * by URL. These are photographs of people at work.
+         */
+        'uploads' => [
+            'driver' => 'local',
+            'root' => env('UPLOADS_PATH', storage_path('app/uploads')),
+            'visibility' => 'private',
+            'throw' => true,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
