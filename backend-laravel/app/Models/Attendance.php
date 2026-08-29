@@ -116,6 +116,99 @@ final class Attendance extends Model
     }
 
     /**
+     * True when today is open: checked in and not yet out.
+     *
+     * Used to let someone close a day the company disabled their channel
+     * halfway through — the policy applies to new days, not to hours already
+     * worked.
+     */
+    public static function hasOpenDay(int $employeeId, int $tenantId): bool
+    {
+        return self::query()
+            ->forTenant($tenantId)
+            ->where('employee_id', $employeeId)
+            ->where('date', TenantClock::date($tenantId))
+            ->whereNotNull('check_in_time')
+            ->whereNull('check_out_time')
+            ->exists();
+    }
+
+    /**
+     * Records a departure and computes the day's totals.
+     *
+     * Same company clock as the arrival: the row was keyed on that date, and the
+     * overtime arithmetic compares against shift times expressed in that zone.
+     *
+     * @throws ApiFailure When there is nothing open to close.
+     */
+    public static function recordCheckOut(int $employeeId, int $tenantId, ?string $atTime = null): void
+    {
+        $now = TenantClock::now($tenantId);
+        $today = $now->format('Y-m-d');
+        $time = $atTime ?? $now->format('H:i:s');
+
+        $record = self::forDay($employeeId, $tenantId, $today);
+
+        if ($record === null) {
+            throw new ApiFailure('No check-in record found for today', 404);
+        }
+
+        if ($record->check_in_time === null || $record->check_in_time === '') {
+            // A placeholder row with no arrival: there is no session to close.
+            throw new ApiFailure('No check-in record found for today', 404);
+        }
+
+        $checkIn = strtotime($record->check_in_time);
+        $checkOut = strtotime($time);
+
+        if ($checkIn === false || $checkOut === false) {
+            throw new ApiFailure('No check-in record found for today', 404);
+        }
+
+        [$shiftStart, $shiftEnd] = self::shiftWindow($employeeId, $tenantId, $today);
+
+        $startAt = strtotime($shiftStart);
+        $endAt = strtotime($shiftEnd);
+
+        self::query()->whereKey($record->id)->update([
+            'check_out_time' => $time,
+            'worked_minutes' => (int) max(0, ($checkOut - $checkIn) / 60),
+            'overtime_minutes' => $endAt === false ? 0 : (int) max(0, ($checkOut - $endAt) / 60),
+            // Recomputed rather than trusted: the arrival may have been edited
+            // by an administrator since it was stamped.
+            'late_minutes' => $startAt === false ? 0 : (int) max(0, ($checkIn - $startAt) / 60),
+        ]);
+    }
+
+    /**
+     * The day's shift window, falling back to the employee's standing hours and
+     * then to 09:00–17:00.
+     *
+     * @return array{string, string}
+     */
+    private static function shiftWindow(int $employeeId, int $tenantId, string $date): array
+    {
+        $shift = DB::table('employee_shift_schedule as ess')
+            ->leftJoin('shifts as s', 's.id', '=', 'ess.shift_id')
+            ->where('ess.employee_id', $employeeId)
+            ->where('ess.tenant_id', $tenantId)
+            ->where('ess.work_date', $date)
+            ->where('ess.status', 'published')
+            ->first(['s.start_time', 's.end_time']);
+
+        $employee = DB::table('employees')->where('id', $employeeId)
+            ->first(['work_start_time', 'work_end_time']);
+
+        $start = Value::string($shift?->start_time);
+        $end = Value::string($shift?->end_time);
+
+        return [
+            $start !== '' ? $start : Value::string($employee?->work_start_time, '09:00:00'),
+            $end !== '' ? $end : Value::string($employee?->work_end_time, '17:00:00'),
+        ];
+    }
+
+    /**
      * Minutes late against the shift scheduled for that day, falling back to the
      * employee's standing start time and then to 09:00.
      *

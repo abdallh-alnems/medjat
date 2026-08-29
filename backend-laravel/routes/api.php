@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Attendance\CheckInController;
+use App\Http\Controllers\Attendance\CheckOutController;
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\AdminLogoutController;
 use App\Http\Controllers\Auth\DeleteAccountController;
@@ -149,8 +150,12 @@ Route::middleware('throttle:api')->group(function (): void {
     // session, never from the request.
     Route::middleware(['auth.employee', 'tenant'])->group(function (): void {
         Route::post('v1/attendance/check-in', CheckInController::class)->name('attendance.check-in');
+        Route::post('v1/attendance/check-out', CheckOutController::class)->name('attendance.check-out');
+
         Route::post('app/attendance/check_in.php', CheckInController::class)
             ->name('legacy.attendance.check-in');
+        Route::post('app/attendance/check_out.php', CheckOutController::class)
+            ->name('legacy.attendance.check-out');
     });
 
 });
