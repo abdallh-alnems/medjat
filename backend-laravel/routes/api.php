@@ -33,10 +33,12 @@ use App\Http\Controllers\Auth\NotificationPrefsController;
 use App\Http\Controllers\Auth\SendAuthActionController;
 use App\Http\Controllers\Auth\UpdateFcmTokenController;
 use App\Http\Controllers\Auth\UpdateProfileController;
+use App\Http\Controllers\Employees\CreateEmployeeController;
 use App\Http\Controllers\Employees\DeleteEmployeeController;
 use App\Http\Controllers\Employees\ListEmployeesController;
 use App\Http\Controllers\Employees\ListTerminatedController;
 use App\Http\Controllers\Employees\MyProfileController;
+use App\Http\Controllers\Employees\UpdateEmployeeController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -275,6 +277,14 @@ Route::middleware('throttle:api')->group(function (): void {
             ->name('legacy.employees.terminated');
         Route::post('app/employees/delete.php', DeleteEmployeeController::class)
             ->name('legacy.employees.delete');
+
+        Route::post('v1/employees', CreateEmployeeController::class)->name('employees.create');
+        Route::post('v1/employees/update', UpdateEmployeeController::class)->name('employees.update');
+
+        Route::post('app/employees/create.php', CreateEmployeeController::class)
+            ->name('legacy.employees.create');
+        Route::post('app/employees/update.php', UpdateEmployeeController::class)
+            ->name('legacy.employees.update');
     });
 
 });

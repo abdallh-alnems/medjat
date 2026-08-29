@@ -15,6 +15,12 @@ declare(strict_types=1);
 
 return [
 
+    'join' => [
+        // Must be a domain that hosts the App Links / Universal Links association
+        // files, or the link opens a web page instead of the app.
+        'base_url' => (string) env('APP_JOIN_BASE_URL', 'https://medjatapp.com'),
+    ],
+
     'mail' => [
         // Our own branded action page, which enforces the app's password rules.
         // Firebase's query string is carried across unchanged, so switching this
