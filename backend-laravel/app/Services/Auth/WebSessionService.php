@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Auth;
 
+use App\Exceptions\ApiFailure;
 use App\Models\EmployeeAuthToken;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 
 /**
  * Browser sessions, which are deliberately not the same thing as app sessions.
@@ -18,6 +20,11 @@ final class WebSessionService
      * next morning.
      */
     public const LIFETIME_SECONDS = 16 * 3600;
+
+    /** Generous for a person tapping buttons, tight for a script. */
+    private const PER_EMPLOYEE_LIMIT = 60;
+
+    private const PER_EMPLOYEE_WINDOW = 60;
 
     /**
      * Issues a session, ending any other browser session this employee holds.
@@ -63,5 +70,26 @@ final class WebSessionService
             ?? $request->query('employee_token');
 
         return is_string($token) && $token !== '' ? $token : null;
+    }
+
+    /**
+     * Bounds one employee's browser traffic.
+     *
+     * The per-IP limit cannot do this: behind a proxy every browser session
+     * shares one address, so a single noisy tab would either be invisible inside
+     * the shared bucket or take a whole branch down with it. This is keyed on
+     * the person instead.
+     *
+     * @throws ApiFailure
+     */
+    public static function enforcePerEmployeeLimit(int $employeeId): void
+    {
+        $key = 'web_employee:'.$employeeId;
+
+        if (RateLimiter::tooManyAttempts($key, self::PER_EMPLOYEE_LIMIT)) {
+            throw new ApiFailure('عدد كبير من الطلبات، حاول بعد قليل', 429, 'rate_limited');
+        }
+
+        RateLimiter::hit($key, self::PER_EMPLOYEE_WINDOW);
     }
 }

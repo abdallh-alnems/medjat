@@ -12,7 +12,9 @@ use App\Http\Controllers\Attendance\FaceLogsController;
 use App\Http\Controllers\Attendance\MyAttendanceController;
 use App\Http\Controllers\Attendance\PunchPhotoController;
 use App\Http\Controllers\Attendance\SecurityLogController;
+use App\Http\Controllers\Attendance\SetDayStatusController;
 use App\Http\Controllers\Attendance\SetMethodOverrideController;
+use App\Http\Controllers\Attendance\WebStatusController;
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\AdminLogoutController;
 use App\Http\Controllers\Auth\DeleteAccountController;
@@ -182,6 +184,11 @@ Route::middleware('throttle:api')->group(function (): void {
         Route::get('v1/attendance/mine', MyAttendanceController::class)->name('attendance.mine');
         Route::get('app/attendance/get_my_attendance.php', MyAttendanceController::class)
             ->name('legacy.attendance.mine');
+
+        Route::post('v1/attendance/web-status', WebStatusController::class)
+            ->name('attendance.web-status');
+        Route::post('app/attendance/web_status.php', WebStatusController::class)
+            ->name('legacy.attendance.web-status');
     });
 
     // Management side: recorded for an employee rather than by them.
@@ -214,6 +221,11 @@ Route::middleware('throttle:api')->group(function (): void {
                 ->name('legacy.attendance.photo');
             Route::post('app/attendance/face_logs.php', FaceLogsController::class)
                 ->name('legacy.attendance.face-logs');
+
+            Route::post('v1/attendance/day-status', SetDayStatusController::class)
+                ->name('attendance.day-status');
+            Route::post('app/attendance/set_day_status.php', SetDayStatusController::class)
+                ->name('legacy.attendance.day-status');
         });
     });
 
