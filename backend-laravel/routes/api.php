@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Auth\AdminLogoutController;
+use App\Http\Controllers\Auth\EmployeeLoginController;
 use App\Http\Controllers\Auth\EmployeeLogoutController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,10 +30,22 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('throttle:api')->group(function (): void {
 
     // ── Employee sessions ────────────────────────────────────────────────
+    Route::post('v1/auth/employee/login', EmployeeLoginController::class)
+        ->name('employee.login');
     Route::post('v1/auth/employee/logout', EmployeeLogoutController::class)
         ->name('employee.logout');
 
+    Route::post('app/auth/employee_login.php', EmployeeLoginController::class)
+        ->name('legacy.employee.login');
     Route::post('app/auth/employee_logout.php', EmployeeLogoutController::class)
         ->name('legacy.employee.logout');
+
+    // ── Administrator sessions ───────────────────────────────────────────
+    Route::middleware('auth.admin')->group(function (): void {
+        Route::post('v1/auth/admin/logout', AdminLogoutController::class)
+            ->name('admin.logout');
+        Route::post('app/auth/logout.php', AdminLogoutController::class)
+            ->name('legacy.admin.logout');
+    });
 
 });

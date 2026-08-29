@@ -26,6 +26,15 @@ use Illuminate\Support\Facades\DB;
  */
 final class EmployeeAuthToken extends Model
 {
+    /**
+     * The phone platforms. Kept apart from 'web' so that signing in on a phone
+     * does not end an active browser session, and vice versa — the two channels
+     * are independent sessions for the same person.
+     *
+     * @var list<string>
+     */
+    public const APP_PLATFORMS = ['android', 'ios'];
+
     protected $table = 'employee_auth_tokens';
 
     public $timestamps = false;
@@ -91,5 +100,87 @@ final class EmployeeAuthToken extends Model
             ->where('token_hash', self::hash($plain))
             ->whereNull('revoked_at')
             ->update(['revoked_at' => DB::raw('NOW()'), 'revoke_reason' => $reason]);
+    }
+
+    /**
+     * Revokes **every** matching live session, not the first one found. With a
+     * phone channel and a browser channel in play, "the one active token" stopped
+     * being a safe assumption, and a stray survivor is the kind of thing that
+     * never fails visibly.
+     *
+     * @param  list<string>|null  $platforms  null = every platform.
+     * @return int Rows revoked.
+     */
+    public static function revokeForEmployee(int $employeeId, string $reason, ?array $platforms = null): int
+    {
+        $query = self::query()
+            ->where('employee_id', $employeeId)
+            ->whereNull('revoked_at');
+
+        if ($platforms !== null && $platforms !== []) {
+            $query->whereIn('platform', $platforms);
+        }
+
+        return $query->update(['revoked_at' => DB::raw('NOW()'), 'revoke_reason' => $reason]);
+    }
+
+    /**
+     * Issues a phone session and returns the plaintext token, which is the only
+     * time it exists in readable form.
+     */
+    public static function issue(
+        int $tenantId,
+        int $employeeId,
+        string $deviceId,
+        ?string $deviceModel,
+        string $platform,
+        ?string $appVersion,
+    ): string {
+        self::revokeForEmployee($employeeId, 'reissued_on_login', self::APP_PLATFORMS);
+
+        $plain = bin2hex(random_bytes(32));
+
+        self::query()->create([
+            'tenant_id' => $tenantId,
+            'employee_id' => $employeeId,
+            'token_hash' => self::hash($plain),
+            'device_id' => $deviceId,
+            'device_model' => $deviceModel,
+            'platform' => $platform,
+            'app_version' => $appVersion,
+        ]);
+
+        return $plain;
+    }
+
+    /**
+     * Issues a browser session: expiring, and one per employee.
+     *
+     * expires_at is computed in SQL. PHP runs UTC on the server while MySQL runs
+     * the server's zone, so a PHP-computed expiry is born hours wrong — the
+     * face-challenge table learned this the hard way.
+     *
+     * @return array{token: string, expires_at: string}
+     */
+    public static function issueWeb(int $tenantId, int $employeeId, string $deviceId, int $lifetimeSeconds): array
+    {
+        self::revokeForEmployee($employeeId, 'reissued_on_web_login', ['web']);
+
+        $plain = bin2hex(random_bytes(32));
+        $hash = self::hash($plain);
+
+        // Raw insert rather than Eloquent::create so the lifetime is a bound
+        // parameter inside the SQL expression instead of being interpolated
+        // into it.
+        DB::insert(
+            'INSERT INTO employee_auth_tokens
+                (tenant_id, employee_id, token_hash, device_id, platform, expires_at)
+             VALUES (?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND))',
+            [$tenantId, $employeeId, $hash, $deviceId, 'web', $lifetimeSeconds]
+        );
+
+        $expiresAt = self::query()->where('token_hash', $hash)->value('expires_at');
+
+        return ['token' => $plain, 'expires_at' => is_scalar($expiresAt) ? (string) $expiresAt : ''];
     }
 }
