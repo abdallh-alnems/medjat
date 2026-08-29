@@ -44,11 +44,27 @@ use App\Http\Controllers\Employees\CreateEmployeeController;
 use App\Http\Controllers\Employees\DeleteEmployeeController;
 use App\Http\Controllers\Employees\EmployeeProfileController;
 use App\Http\Controllers\Employees\EmployeeStatusController;
+use App\Http\Controllers\Employees\FinancialSummaryController;
 use App\Http\Controllers\Employees\ListEmployeesController;
 use App\Http\Controllers\Employees\ListTerminatedController;
 use App\Http\Controllers\Employees\MyProfileController;
 use App\Http\Controllers\Employees\SuspensionController;
 use App\Http\Controllers\Employees\UpdateEmployeeController;
+use App\Http\Controllers\Payroll\ApproveController;
+use App\Http\Controllers\Payroll\AuditLogController as PayrollAuditLogController;
+use App\Http\Controllers\Payroll\BankFileController;
+use App\Http\Controllers\Payroll\BulkAdjustController;
+use App\Http\Controllers\Payroll\CalculateController;
+use App\Http\Controllers\Payroll\DisburseController;
+use App\Http\Controllers\Payroll\EosbController;
+use App\Http\Controllers\Payroll\GenerateController;
+use App\Http\Controllers\Payroll\ListSlipsController;
+use App\Http\Controllers\Payroll\LiveController;
+use App\Http\Controllers\Payroll\MarkPaidController;
+use App\Http\Controllers\Payroll\MySlipController;
+use App\Http\Controllers\Payroll\OverrideLineController;
+use App\Http\Controllers\Payroll\PayslipPdfController;
+use App\Http\Controllers\Payroll\RevertController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -426,6 +442,75 @@ Route::middleware('throttle:api')->group(function (): void {
         Route::get('app/employees/get_attendance_history.php', AttendanceHistoryController::class)
             ->middleware('can.do:manage_attendance')
             ->name('legacy.employees.attendance-history');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payroll
+    |--------------------------------------------------------------------------
+    |
+    | Everything here except the employee's own payslip needs manage_payroll.
+    | The gate is on the route rather than inside the controllers so the
+    | permission a client must hold is visible in one place — the mismatch
+    | between a visible menu item and the permission behind it is what turns a
+    | 403 into "an error occurred" on somebody's screen.
+    |
+    */
+
+    Route::middleware(['auth.employee', 'tenant'])->group(function (): void {
+        Route::get('v1/payroll/me', MySlipController::class)->name('payroll.me');
+        Route::get('app/payroll/get_slip.php', MySlipController::class)->name('legacy.payroll.me');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:manage_payroll'])->group(function (): void {
+        Route::get('v1/payroll/live', LiveController::class)->name('payroll.live');
+        Route::get('v1/employees/financial-summary', FinancialSummaryController::class)
+            ->name('employees.financial-summary');
+        Route::get('v1/payroll/calculate', CalculateController::class)->name('payroll.calculate');
+        Route::get('v1/payroll/slips', ListSlipsController::class)->name('payroll.slips');
+        Route::get('v1/payroll/audit-log', PayrollAuditLogController::class)->name('payroll.audit-log');
+        Route::get('v1/payroll/eosb', EosbController::class)->name('payroll.eosb');
+        Route::get('v1/payroll/payslip.pdf', PayslipPdfController::class)->name('payroll.payslip-pdf');
+        Route::get('v1/payroll/bank-file/preview', [BankFileController::class, 'preview'])
+            ->name('payroll.bank-file.preview');
+        Route::get('v1/payroll/bank-file', [BankFileController::class, 'download'])
+            ->name('payroll.bank-file');
+
+        Route::post('v1/payroll/generate', GenerateController::class)->name('payroll.generate');
+        Route::post('v1/payroll/approve', [ApproveController::class, 'one'])->name('payroll.approve');
+        Route::post('v1/payroll/approve-bulk', [ApproveController::class, 'bulk'])->name('payroll.approve-bulk');
+        Route::post('v1/payroll/mark-paid', MarkPaidController::class)->name('payroll.mark-paid');
+        Route::post('v1/payroll/revert', RevertController::class)->name('payroll.revert');
+        Route::post('v1/payroll/disburse', [DisburseController::class, 'one'])->name('payroll.disburse');
+        Route::post('v1/payroll/disburse-all', [DisburseController::class, 'all'])->name('payroll.disburse-all');
+        Route::post('v1/payroll/override-line', OverrideLineController::class)->name('payroll.override-line');
+        Route::post('v1/payroll/bulk-adjust', BulkAdjustController::class)->name('payroll.bulk-adjust');
+
+        Route::get('app/payroll/live.php', LiveController::class)->name('legacy.payroll.live');
+        Route::get('app/employees/get_financial_summary.php', FinancialSummaryController::class)
+            ->name('legacy.employees.financial-summary');
+        Route::get('app/payroll/calculate.php', CalculateController::class)->name('legacy.payroll.calculate');
+        Route::get('app/payroll/list_slips.php', ListSlipsController::class)->name('legacy.payroll.slips');
+        Route::get('app/payroll/audit_log.php', PayrollAuditLogController::class)->name('legacy.payroll.audit-log');
+        Route::get('app/payroll/eosb_calculate.php', EosbController::class)->name('legacy.payroll.eosb');
+        Route::get('app/payroll/get_slip_pdf.php', PayslipPdfController::class)->name('legacy.payroll.payslip-pdf');
+        Route::get('app/payroll/bank_file_preview.php', [BankFileController::class, 'preview'])
+            ->name('legacy.payroll.bank-file.preview');
+        Route::get('app/payroll/export_bank_file.php', [BankFileController::class, 'download'])
+            ->name('legacy.payroll.bank-file');
+
+        Route::post('app/payroll/generate.php', GenerateController::class)->name('legacy.payroll.generate');
+        Route::post('app/payroll/approve.php', [ApproveController::class, 'one'])->name('legacy.payroll.approve');
+        Route::post('app/payroll/approve_bulk.php', [ApproveController::class, 'bulk'])
+            ->name('legacy.payroll.approve-bulk');
+        Route::post('app/payroll/mark_paid.php', MarkPaidController::class)->name('legacy.payroll.mark-paid');
+        Route::post('app/payroll/revert.php', RevertController::class)->name('legacy.payroll.revert');
+        Route::post('app/payroll/disburse.php', [DisburseController::class, 'one'])->name('legacy.payroll.disburse');
+        Route::post('app/payroll/disburse_all.php', [DisburseController::class, 'all'])
+            ->name('legacy.payroll.disburse-all');
+        Route::post('app/payroll/override_line.php', OverrideLineController::class)
+            ->name('legacy.payroll.override-line');
+        Route::post('app/payroll/bulk_adjust.php', BulkAdjustController::class)->name('legacy.payroll.bulk-adjust');
     });
 
 });

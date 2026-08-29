@@ -78,7 +78,11 @@ final class CheckOutTest extends TestCase
             'employee_id' => $this->employee->id,
             'branch_id' => $this->branchId,
             'date' => $today,
-            'check_in_time' => '09:00:00',
+            // Midnight rather than a plausible-looking 09:00: check-out stamps
+            // the tenant's current time, so a fixed morning arrival makes the
+            // worked span negative — and the assertion below fail — whenever
+            // the suite happens to run before 09:00 local time.
+            'check_in_time' => '00:00:00',
             'check_in_method' => 'gps_only',
             'check_in_origin' => 'app',
             'status' => 'present',
@@ -123,7 +127,14 @@ final class CheckOutTest extends TestCase
 
         $this->assertNotNull($row);
         $this->assertNotNull($row->check_out_time);
-        $this->assertGreaterThan(0, Value::int($row->worked_minutes));
+
+        // The span is derived from the two stamps, not left at zero.
+        $checkOut = strtotime(Value::string($row->check_out_time));
+        $this->assertNotFalse($checkOut);
+        $this->assertSame(
+            (int) max(0, ($checkOut - strtotime('00:00:00')) / 60),
+            Value::int($row->worked_minutes),
+        );
     }
 
     public function test_closing_a_day_that_was_never_opened_is_refused(): void
