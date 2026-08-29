@@ -67,4 +67,47 @@ final class Crew
     {
         return Value::int(DB::table('tenants')->where('id', $tenantId)->value('crew_photo_required')) === 1;
     }
+
+    /**
+     * Whether pointing $employeeId at $supervisorId would close a ring.
+     *
+     * The database cannot check this. A self-reference CHECK is refused by MySQL
+     * 8 on a column carrying ON DELETE SET NULL, and a longer ring spans rows a
+     * CHECK cannot see anyway. So the chain is walked here.
+     *
+     * The hop limit is a guard, not a depth policy: running out of hops means
+     * the *existing* chain is already a ring, and adding to it is refused rather
+     * than looped on forever.
+     */
+    public static function wouldCycle(int $supervisorId, int $employeeId, int $tenantId): bool
+    {
+        if ($supervisorId <= 0 || $employeeId <= 0) {
+            return false;
+        }
+
+        if ($supervisorId === $employeeId) {
+            return true;
+        }
+
+        $cursor = $supervisorId;
+
+        for ($hop = 0; $hop < 32; $hop++) {
+            $next = DB::table('employees')
+                ->where('id', $cursor)
+                ->where('tenant_id', $tenantId)
+                ->value('crew_supervisor_id');
+
+            if ($next === null) {
+                return false;
+            }
+
+            if (Value::int($next) === $employeeId) {
+                return true;
+            }
+
+            $cursor = Value::int($next);
+        }
+
+        return true;
+    }
 }

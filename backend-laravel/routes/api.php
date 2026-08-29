@@ -37,9 +37,11 @@ use App\Http\Controllers\Documents\EmployeeDocumentsController;
 use App\Http\Controllers\Documents\ReviewDocumentController;
 use App\Http\Controllers\Employees\CreateEmployeeController;
 use App\Http\Controllers\Employees\DeleteEmployeeController;
+use App\Http\Controllers\Employees\EmployeeStatusController;
 use App\Http\Controllers\Employees\ListEmployeesController;
 use App\Http\Controllers\Employees\ListTerminatedController;
 use App\Http\Controllers\Employees\MyProfileController;
+use App\Http\Controllers\Employees\SuspensionController;
 use App\Http\Controllers\Employees\UpdateEmployeeController;
 use Illuminate\Support\Facades\Route;
 
@@ -287,6 +289,32 @@ Route::middleware('throttle:api')->group(function (): void {
             ->name('legacy.employees.create');
         Route::post('app/employees/update.php', UpdateEmployeeController::class)
             ->name('legacy.employees.update');
+
+        Route::get('v1/employees/suspensions', [SuspensionController::class, 'index'])
+            ->name('employees.suspensions');
+        Route::post('v1/employees/suspend', [SuspensionController::class, 'open'])
+            ->name('employees.suspend');
+        Route::post('v1/employees/end-suspension', [SuspensionController::class, 'close'])
+            ->name('employees.end-suspension');
+        Route::post('v1/employees/reactivate', [EmployeeStatusController::class, 'reactivate'])
+            ->name('employees.reactivate');
+        Route::post('v1/employees/crew-supervisor', [EmployeeStatusController::class, 'setCrewSupervisor'])
+            ->name('employees.crew-supervisor');
+        Route::post('v1/employees/reset-web-pin', [EmployeeStatusController::class, 'resetWebPin'])
+            ->name('employees.reset-web-pin');
+
+        Route::get('app/employees/get_suspensions.php', [SuspensionController::class, 'index'])
+            ->name('legacy.employees.suspensions');
+        Route::post('app/employees/suspend.php', [SuspensionController::class, 'open'])
+            ->name('legacy.employees.suspend');
+        Route::post('app/employees/end_suspension.php', [SuspensionController::class, 'close'])
+            ->name('legacy.employees.end-suspension');
+        Route::post('app/employees/reactivate.php', [EmployeeStatusController::class, 'reactivate'])
+            ->name('legacy.employees.reactivate');
+        Route::post('app/employees/set_crew_supervisor.php', [EmployeeStatusController::class, 'setCrewSupervisor'])
+            ->name('legacy.employees.crew-supervisor');
+        Route::post('app/employees/reset_web_pin.php', [EmployeeStatusController::class, 'resetWebPin'])
+            ->name('legacy.employees.reset-web-pin');
     });
 
     // ── Employee documents ───────────────────────────────────────────────
