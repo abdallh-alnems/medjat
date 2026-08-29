@@ -148,8 +148,11 @@ final class EmployeeProfileTest extends TestCase
 
         $this->assertIsArray($items);
         $this->assertNotEmpty($items);
-        $this->assertTrue($items[0]['is_expired']);
-        $this->assertLessThan(0, $items[0]['days_left']);
+
+        $first = $items[0];
+        $this->assertIsArray($first);
+        $this->assertTrue($first['is_expired']);
+        $this->assertLessThan(0, $first['days_left']);
     }
 
     public function test_expired_items_can_be_excluded(): void
@@ -178,7 +181,7 @@ final class EmployeeProfileTest extends TestCase
             ->json('data.items');
 
         $this->assertIsArray($items);
-        $mine = array_filter($items, fn (array $i): bool => $i['employee_id'] === $this->employee->id);
+        $mine = array_filter($items, fn (mixed $i): bool => is_array($i) && $i['employee_id'] === $this->employee->id);
         $this->assertGreaterThanOrEqual(2, count($mine));
     }
 
