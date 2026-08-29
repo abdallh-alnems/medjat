@@ -78,6 +78,33 @@ final class EmployeeLoginAction
             throw new ApiFailure('رقم الهاتف لا يطابق كود التفعيل', 403, 'phone_code_mismatch');
         }
 
+        return $this->completeSignIn($employee, $activationCode, $deviceId, $deviceModel, $platform, $appVersion);
+    }
+
+    /**
+     * Everything that happens once the employee is established, whichever way
+     * they proved who they are.
+     *
+     * Shared with the join-link path, where the token is the proof and there is
+     * no phone to match — extracted rather than duplicated because the two paths
+     * drifting apart is how one of them quietly stops creating the admins row.
+     *
+     * @return LoginResult
+     *
+     * @throws ApiFailure
+     */
+    public function completeSignIn(
+        Employee $employee,
+        ?ActivationCode $activationCode,
+        string $deviceId,
+        ?string $deviceModel,
+        string $platform,
+        ?string $appVersion,
+    ): array {
+        if (! in_array($platform, EmployeeAuthToken::APP_PLATFORMS, true)) {
+            $platform = 'android';
+        }
+
         // Whether the app had already been linked before this request. Managers
         // are alerted on the first activation, not on every later sign-in.
         $linked = $employee->getAttribute('has_linked_account');
@@ -129,10 +156,24 @@ final class EmployeeLoginAction
      */
     private function resolveDemoLogin(string $code): ?Employee
     {
-        $demoPhone = trim((string) Config::string('medjat.review_demo.phone'));
-        $demoCode = strtoupper(trim((string) Config::string('medjat.review_demo.code')));
+        $demoCode = strtoupper(trim(Config::string('medjat.review_demo.code')));
 
-        if ($demoPhone === '' || $demoCode === '' || $code !== $demoCode) {
+        if ($demoCode === '' || $code !== $demoCode) {
+            return null;
+        }
+
+        return $this->demoEmployee();
+    }
+
+    /**
+     * The employee behind the store-review credentials, whichever of the two
+     * demo paths asked for them.
+     */
+    public function demoEmployee(): ?Employee
+    {
+        $demoPhone = trim(Config::string('medjat.review_demo.phone'));
+
+        if ($demoPhone === '') {
             return null;
         }
 

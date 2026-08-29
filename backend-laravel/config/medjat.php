@@ -15,6 +15,14 @@ declare(strict_types=1);
 
 return [
 
+    'mail' => [
+        // Our own branded action page, which enforces the app's password rules.
+        // Firebase's query string is carried across unchanged, so switching this
+        // needs no change in the Firebase console.
+        'action_url' => (string) env('APP_ACTION_URL', 'https://medjatapp.com/auth-action.html'),
+        'logo_url' => (string) env('APP_LOGO_URL', 'https://medjatapp.com/email-logo.png'),
+    ],
+
     'firebase' => [
         // Service-account JSON. Owned by the server and never deployed, which
         // is why the path is configuration and not a file in the repo.
@@ -29,6 +37,8 @@ return [
         // which makes the whole path inert there.
         'phone' => (string) env('REVIEW_DEMO_PHONE', ''),
         'code' => (string) env('REVIEW_DEMO_CODE', ''),
+        // The permanent demo QR, so reviewers can also test the scan flow.
+        'token' => (string) env('REVIEW_DEMO_TOKEN', ''),
     ],
 
     'rate_limit' => [

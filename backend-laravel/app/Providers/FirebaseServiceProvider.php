@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Services\Auth\FirebaseAccountManager;
+use App\Services\Auth\FirebaseCustomTokenMinter;
 use App\Services\Auth\FirebaseTokenVerifier;
+use App\Services\Auth\KreaitFirebaseAccountManager;
+use App\Services\Auth\KreaitFirebaseCustomTokenMinter;
 use App\Services\Auth\KreaitFirebaseTokenVerifier;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Config;
@@ -35,6 +39,16 @@ final class FirebaseServiceProvider extends ServiceProvider
         $this->app->bind(
             FirebaseTokenVerifier::class,
             fn (Application $app): FirebaseTokenVerifier => new KreaitFirebaseTokenVerifier($app->make(FirebaseAuth::class)),
+        );
+
+        $this->app->bind(
+            FirebaseCustomTokenMinter::class,
+            fn (Application $app): FirebaseCustomTokenMinter => new KreaitFirebaseCustomTokenMinter($app->make(FirebaseAuth::class)),
+        );
+
+        $this->app->bind(
+            FirebaseAccountManager::class,
+            fn (Application $app): FirebaseAccountManager => new KreaitFirebaseAccountManager($app->make(FirebaseAuth::class)),
         );
     }
 }

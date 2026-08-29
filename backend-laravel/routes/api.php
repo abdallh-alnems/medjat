@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\AdminLogoutController;
+use App\Http\Controllers\Auth\DeleteAccountController;
+use App\Http\Controllers\Auth\DesktopAuthController;
+use App\Http\Controllers\Auth\EmployeeActivateTokenController;
 use App\Http\Controllers\Auth\EmployeeLoginController;
 use App\Http\Controllers\Auth\EmployeeLogoutController;
+use App\Http\Controllers\Auth\EmployeeWebActivateController;
 use App\Http\Controllers\Auth\EmployeeWebLoginController;
 use App\Http\Controllers\Auth\EmployeeWebLogoutController;
 use App\Http\Controllers\Auth\NotificationPrefsController;
+use App\Http\Controllers\Auth\SendAuthActionController;
 use App\Http\Controllers\Auth\UpdateFcmTokenController;
 use App\Http\Controllers\Auth\UpdateProfileController;
 use Illuminate\Support\Facades\Route;
@@ -36,11 +41,15 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('throttle:api')->group(function (): void {
 
     // ── Employee sessions ────────────────────────────────────────────────
+    Route::post('v1/auth/employee/activate', EmployeeActivateTokenController::class)
+        ->name('employee.activate');
     Route::post('v1/auth/employee/login', EmployeeLoginController::class)
         ->name('employee.login');
     Route::post('v1/auth/employee/logout', EmployeeLogoutController::class)
         ->name('employee.logout');
 
+    Route::post('app/auth/employee_activate_token.php', EmployeeActivateTokenController::class)
+        ->name('legacy.employee.activate');
     Route::post('app/auth/employee_login.php', EmployeeLoginController::class)
         ->name('legacy.employee.login');
     Route::post('app/auth/employee_logout.php', EmployeeLogoutController::class)
@@ -49,11 +58,15 @@ Route::middleware('throttle:api')->group(function (): void {
     // ── Browser sessions ─────────────────────────────────────────────────
     // A separate identity from the phone: signing in here must not sign the
     // employee out of their app, and vice versa.
+    Route::post('v1/auth/employee/web/activate', EmployeeWebActivateController::class)
+        ->name('employee.web.activate');
     Route::post('v1/auth/employee/web/login', EmployeeWebLoginController::class)
         ->name('employee.web.login');
     Route::post('v1/auth/employee/web/logout', EmployeeWebLogoutController::class)
         ->name('employee.web.logout');
 
+    Route::post('app/auth/employee_web_activate.php', EmployeeWebActivateController::class)
+        ->name('legacy.employee.web.activate');
     Route::post('app/auth/employee_web_login.php', EmployeeWebLoginController::class)
         ->name('legacy.employee.web.login');
     Route::post('app/auth/employee_web_logout.php', EmployeeWebLogoutController::class)
@@ -70,6 +83,37 @@ Route::middleware('throttle:api')->group(function (): void {
         Route::post('app/auth/logout.php', AdminLogoutController::class)
             ->name('legacy.admin.logout');
     });
+
+    // ── Desktop shell sign-in ────────────────────────────────────────────
+    // The exchange is unauthenticated on purpose: the code IS the credential.
+    Route::post('v1/auth/desktop/exchange', [DesktopAuthController::class, 'exchange'])
+        ->name('desktop.exchange');
+    Route::post('app/auth/desktop_exchange.php', [DesktopAuthController::class, 'exchange'])
+        ->name('legacy.desktop.exchange');
+
+    Route::middleware('auth.admin')->group(function (): void {
+        Route::post('v1/auth/desktop/authorize', [DesktopAuthController::class, 'authorize'])
+            ->name('desktop.authorize');
+        Route::post('app/auth/desktop_authorize.php', [DesktopAuthController::class, 'authorize'])
+            ->name('legacy.desktop.authorize');
+
+        Route::post('v1/auth/account', DeleteAccountController::class)->name('account.delete');
+        Route::post('app/auth/delete_account.php', DeleteAccountController::class)
+            ->name('legacy.account.delete');
+    });
+
+    // ── Transactional auth email ─────────────────────────────────────────
+    // Unauthenticated, and both always answer success: saying whether an
+    // address is registered would make either one an enumeration oracle.
+    Route::post('v1/auth/password-reset', [SendAuthActionController::class, 'passwordReset'])
+        ->name('password-reset.send');
+    Route::post('v1/auth/verification', [SendAuthActionController::class, 'verification'])
+        ->name('verification.send');
+
+    Route::post('app/auth/send_password_reset.php', [SendAuthActionController::class, 'passwordReset'])
+        ->name('legacy.password-reset.send');
+    Route::post('app/auth/send_verification.php', [SendAuthActionController::class, 'verification'])
+        ->name('legacy.verification.send');
 
     // ── Account settings ─────────────────────────────────────────────────
     Route::middleware(['auth.admin', 'tenant'])->group(function (): void {
