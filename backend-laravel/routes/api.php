@@ -33,6 +33,10 @@ use App\Http\Controllers\Auth\NotificationPrefsController;
 use App\Http\Controllers\Auth\SendAuthActionController;
 use App\Http\Controllers\Auth\UpdateFcmTokenController;
 use App\Http\Controllers\Auth\UpdateProfileController;
+use App\Http\Controllers\Employees\DeleteEmployeeController;
+use App\Http\Controllers\Employees\ListEmployeesController;
+use App\Http\Controllers\Employees\ListTerminatedController;
+use App\Http\Controllers\Employees\MyProfileController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -250,6 +254,27 @@ Route::middleware('throttle:api')->group(function (): void {
             Route::post('app/attendance/update_note.php', UpdateNoteController::class)
                 ->name('legacy.attendance.note');
         });
+    });
+
+    // ── Employees ────────────────────────────────────────────────────────
+    Route::middleware(['auth.employee', 'tenant'])->group(function (): void {
+        Route::get('v1/employees/me', MyProfileController::class)->name('employees.me');
+        Route::get('app/employees/my_profile.php', MyProfileController::class)
+            ->name('legacy.employees.me');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:manage_employees'])->group(function (): void {
+        Route::get('v1/employees', ListEmployeesController::class)->name('employees.list');
+        Route::get('v1/employees/terminated', ListTerminatedController::class)
+            ->name('employees.terminated');
+        Route::post('v1/employees/delete', DeleteEmployeeController::class)->name('employees.delete');
+
+        Route::get('app/employees/list.php', ListEmployeesController::class)
+            ->name('legacy.employees.list');
+        Route::get('app/employees/list_terminated.php', ListTerminatedController::class)
+            ->name('legacy.employees.terminated');
+        Route::post('app/employees/delete.php', DeleteEmployeeController::class)
+            ->name('legacy.employees.delete');
     });
 
 });
