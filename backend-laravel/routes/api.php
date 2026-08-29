@@ -33,6 +33,8 @@ use App\Http\Controllers\Auth\NotificationPrefsController;
 use App\Http\Controllers\Auth\SendAuthActionController;
 use App\Http\Controllers\Auth\UpdateFcmTokenController;
 use App\Http\Controllers\Auth\UpdateProfileController;
+use App\Http\Controllers\Documents\EmployeeDocumentsController;
+use App\Http\Controllers\Documents\ReviewDocumentController;
 use App\Http\Controllers\Employees\CreateEmployeeController;
 use App\Http\Controllers\Employees\DeleteEmployeeController;
 use App\Http\Controllers\Employees\ListEmployeesController;
@@ -285,6 +287,43 @@ Route::middleware('throttle:api')->group(function (): void {
             ->name('legacy.employees.create');
         Route::post('app/employees/update.php', UpdateEmployeeController::class)
             ->name('legacy.employees.update');
+    });
+
+    // ── Employee documents ───────────────────────────────────────────────
+    Route::middleware(['auth.admin', 'tenant'])->group(function (): void {
+        Route::middleware('can.do:manage_documents')->group(function (): void {
+            Route::get('v1/employees/documents', [EmployeeDocumentsController::class, 'index'])
+                ->name('documents.index');
+            Route::get('v1/employees/documents/missing', [EmployeeDocumentsController::class, 'missing'])
+                ->name('documents.missing');
+            Route::post('v1/employees/documents/update', [ReviewDocumentController::class, 'update'])
+                ->name('documents.update');
+            Route::post('v1/employees/documents/delete', [ReviewDocumentController::class, 'destroy'])
+                ->name('documents.delete');
+
+            Route::get('app/employees/get_documents.php', [EmployeeDocumentsController::class, 'index'])
+                ->name('legacy.documents.index');
+            Route::get('app/employees/get_missing_documents.php', [EmployeeDocumentsController::class, 'missing'])
+                ->name('legacy.documents.missing');
+            Route::post('app/employees/update_document.php', [ReviewDocumentController::class, 'update'])
+                ->name('legacy.documents.update');
+            Route::post('app/employees/delete_document.php', [ReviewDocumentController::class, 'destroy'])
+                ->name('legacy.documents.delete');
+        });
+
+        // Verifying is its own permission: deciding whether a passport is
+        // genuine is a different job from filing it.
+        Route::middleware('can.do:documents_verify')->group(function (): void {
+            Route::post('v1/employees/documents/verify', [ReviewDocumentController::class, 'verify'])
+                ->name('documents.verify');
+            Route::post('v1/employees/documents/reject', [ReviewDocumentController::class, 'reject'])
+                ->name('documents.reject');
+
+            Route::post('app/employees/verify_document.php', [ReviewDocumentController::class, 'verify'])
+                ->name('legacy.documents.verify');
+            Route::post('app/employees/reject_document.php', [ReviewDocumentController::class, 'reject'])
+                ->name('legacy.documents.reject');
+        });
     });
 
 });
