@@ -18,9 +18,9 @@ use App\Exceptions\ApiFailure;
 interface FirebaseTokenVerifier
 {
     /**
-     * @return string The verified uid.
+     * @return VerifiedFirebaseUser The verified identity.
      *
      * @throws ApiFailure When the token is missing, malformed, expired or forged.
      */
-    public function verify(string $idToken): string;
+    public function verify(string $idToken): VerifiedFirebaseUser;
 }

@@ -17,7 +17,7 @@ final class KreaitFirebaseTokenVerifier implements FirebaseTokenVerifier
 {
     public function __construct(private readonly FirebaseAuth $auth) {}
 
-    public function verify(string $idToken): string
+    public function verify(string $idToken): VerifiedFirebaseUser
     {
         if ($idToken === '') {
             throw new ApiFailure('Token is required', 400);
@@ -36,12 +36,20 @@ final class KreaitFirebaseTokenVerifier implements FirebaseTokenVerifier
             throw new ApiFailure('Authentication failed', 500);
         }
 
-        $uid = $verified->claims()->get('sub');
+        $claims = $verified->claims();
+        $uid = $claims->get('sub');
 
         if (! is_string($uid) || $uid === '') {
             throw new ApiFailure('Invalid or expired token', 401);
         }
 
-        return $uid;
+        $email = $claims->get('email');
+        $name = $claims->get('name');
+
+        return new VerifiedFirebaseUser(
+            uid: $uid,
+            email: is_string($email) && $email !== '' ? $email : null,
+            name: is_string($name) && $name !== '' ? $name : null,
+        );
     }
 }

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\AdminLogoutController;
 use App\Http\Controllers\Auth\EmployeeLoginController;
 use App\Http\Controllers\Auth\EmployeeLogoutController;
@@ -41,6 +42,10 @@ Route::middleware('throttle:api')->group(function (): void {
         ->name('legacy.employee.logout');
 
     // ── Administrator sessions ───────────────────────────────────────────
+    // Sign-in verifies the Firebase token itself, so it sits outside the guard.
+    Route::post('v1/auth/admin/login', AdminLoginController::class)->name('admin.login');
+    Route::post('app/auth/login.php', AdminLoginController::class)->name('legacy.admin.login');
+
     Route::middleware('auth.admin')->group(function (): void {
         Route::post('v1/auth/admin/logout', AdminLogoutController::class)
             ->name('admin.logout');

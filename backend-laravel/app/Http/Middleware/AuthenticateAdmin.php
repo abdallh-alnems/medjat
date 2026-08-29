@@ -31,9 +31,9 @@ final class AuthenticateAdmin
             throw new ApiFailure('Token is required', 400);
         }
 
-        $uid = $this->verifier->verify($token);
+        $identity = $this->verifier->verify($token);
 
-        $admin = Admin::query()->where('firebase_uid', $uid)->first();
+        $admin = Admin::query()->where('firebase_uid', $identity->uid)->first();
         if ($admin === null) {
             throw new ApiFailure('Admin not found', 404);
         }

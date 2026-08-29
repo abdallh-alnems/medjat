@@ -36,6 +36,16 @@ abstract class ApiRequest extends FormRequest
         return 'حقل مطلوب';
     }
 
+    /**
+     * Not always 422. Some endpoints answered a missing field with 400 and the
+     * apps branch on the status, so the code each one returns is part of its
+     * contract rather than a detail to standardise away.
+     */
+    protected function validationStatus(): int
+    {
+        return 422;
+    }
+
     public function authorize(): bool
     {
         return true;
@@ -46,7 +56,7 @@ abstract class ApiRequest extends FormRequest
         throw new HttpResponseException(
             ApiResponse::fail(
                 $this->validationMessage(),
-                422,
+                $this->validationStatus(),
                 $this->validationErrorCode(),
                 ['fields' => array_keys($validator->errors()->toArray())],
             )
