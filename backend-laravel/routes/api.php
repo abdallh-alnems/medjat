@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Attendance\CheckInController;
 use App\Http\Controllers\Attendance\CheckOutController;
+use App\Http\Controllers\Attendance\CrewListController;
+use App\Http\Controllers\Attendance\FaceChallengeController;
+use App\Http\Controllers\Attendance\SecurityLogController;
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\AdminLogoutController;
 use App\Http\Controllers\Auth\DeleteAccountController;
@@ -156,6 +159,19 @@ Route::middleware('throttle:api')->group(function (): void {
             ->name('legacy.attendance.check-in');
         Route::post('app/attendance/check_out.php', CheckOutController::class)
             ->name('legacy.attendance.check-out');
+
+        Route::post('v1/attendance/face-challenge', FaceChallengeController::class)
+            ->name('attendance.face-challenge');
+        Route::post('v1/attendance/crew', CrewListController::class)->name('attendance.crew');
+        Route::post('v1/attendance/security-log', SecurityLogController::class)
+            ->name('attendance.security-log');
+
+        Route::post('app/attendance/face_challenge.php', FaceChallengeController::class)
+            ->name('legacy.attendance.face-challenge');
+        Route::post('app/attendance/crew_list.php', CrewListController::class)
+            ->name('legacy.attendance.crew');
+        Route::post('app/attendance/security_log.php', SecurityLogController::class)
+            ->name('legacy.attendance.security-log');
     });
 
 });

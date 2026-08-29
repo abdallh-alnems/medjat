@@ -24,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.admin' => App\Http\Middleware\AuthenticateAdmin::class,
             'auth.either' => App\Http\Middleware\AuthenticateEmployeeOrAdmin::class,
             'tenant' => App\Http\Middleware\RequireTenant::class,
+            'can.do' => App\Http\Middleware\RequirePermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
