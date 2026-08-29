@@ -6,6 +6,11 @@ use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\AdminLogoutController;
 use App\Http\Controllers\Auth\EmployeeLoginController;
 use App\Http\Controllers\Auth\EmployeeLogoutController;
+use App\Http\Controllers\Auth\EmployeeWebLoginController;
+use App\Http\Controllers\Auth\EmployeeWebLogoutController;
+use App\Http\Controllers\Auth\NotificationPrefsController;
+use App\Http\Controllers\Auth\UpdateFcmTokenController;
+use App\Http\Controllers\Auth\UpdateProfileController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -41,6 +46,19 @@ Route::middleware('throttle:api')->group(function (): void {
     Route::post('app/auth/employee_logout.php', EmployeeLogoutController::class)
         ->name('legacy.employee.logout');
 
+    // ── Browser sessions ─────────────────────────────────────────────────
+    // A separate identity from the phone: signing in here must not sign the
+    // employee out of their app, and vice versa.
+    Route::post('v1/auth/employee/web/login', EmployeeWebLoginController::class)
+        ->name('employee.web.login');
+    Route::post('v1/auth/employee/web/logout', EmployeeWebLogoutController::class)
+        ->name('employee.web.logout');
+
+    Route::post('app/auth/employee_web_login.php', EmployeeWebLoginController::class)
+        ->name('legacy.employee.web.login');
+    Route::post('app/auth/employee_web_logout.php', EmployeeWebLogoutController::class)
+        ->name('legacy.employee.web.logout');
+
     // ── Administrator sessions ───────────────────────────────────────────
     // Sign-in verifies the Firebase token itself, so it sits outside the guard.
     Route::post('v1/auth/admin/login', AdminLoginController::class)->name('admin.login');
@@ -51,6 +69,34 @@ Route::middleware('throttle:api')->group(function (): void {
             ->name('admin.logout');
         Route::post('app/auth/logout.php', AdminLogoutController::class)
             ->name('legacy.admin.logout');
+    });
+
+    // ── Account settings ─────────────────────────────────────────────────
+    Route::middleware(['auth.admin', 'tenant'])->group(function (): void {
+        Route::post('v1/auth/profile', UpdateProfileController::class)->name('profile.update');
+        Route::post('app/auth/update_profile.php', UpdateProfileController::class)
+            ->name('legacy.profile.update');
+    });
+
+    Route::middleware('auth.employee')->group(function (): void {
+        Route::get('v1/auth/notification-prefs', [NotificationPrefsController::class, 'show'])
+            ->name('notification-prefs.show');
+        Route::post('v1/auth/notification-prefs', [NotificationPrefsController::class, 'update'])
+            ->name('notification-prefs.update');
+
+        // One legacy URL, two methods — the old file branched on the request
+        // method inside itself.
+        Route::get('app/auth/notification_prefs.php', [NotificationPrefsController::class, 'show'])
+            ->name('legacy.notification-prefs.show');
+        Route::post('app/auth/notification_prefs.php', [NotificationPrefsController::class, 'update'])
+            ->name('legacy.notification-prefs.update');
+    });
+
+    // Called by both apps, so the principal follows whichever credential arrived.
+    Route::middleware('auth.either')->group(function (): void {
+        Route::post('v1/auth/fcm-token', UpdateFcmTokenController::class)->name('fcm-token.update');
+        Route::post('app/auth/update_fcm_token.php', UpdateFcmTokenController::class)
+            ->name('legacy.fcm-token.update');
     });
 
 });

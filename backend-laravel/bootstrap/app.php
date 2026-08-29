@@ -22,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'auth.employee' => App\Http\Middleware\AuthenticateEmployee::class,
             'auth.admin' => App\Http\Middleware\AuthenticateAdmin::class,
+            'auth.either' => App\Http\Middleware\AuthenticateEmployeeOrAdmin::class,
+            'tenant' => App\Http\Middleware\RequireTenant::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
