@@ -6,14 +6,18 @@ use App\Http\Controllers\Attendance\BranchAttendanceController;
 use App\Http\Controllers\Attendance\BranchQrCodeController;
 use App\Http\Controllers\Attendance\CheckInController;
 use App\Http\Controllers\Attendance\CheckOutController;
+use App\Http\Controllers\Attendance\CrewCheckInController;
 use App\Http\Controllers\Attendance\CrewListController;
 use App\Http\Controllers\Attendance\FaceChallengeController;
 use App\Http\Controllers\Attendance\FaceLogsController;
+use App\Http\Controllers\Attendance\ManualCheckInController;
 use App\Http\Controllers\Attendance\MyAttendanceController;
 use App\Http\Controllers\Attendance\PunchPhotoController;
 use App\Http\Controllers\Attendance\SecurityLogController;
 use App\Http\Controllers\Attendance\SetDayStatusController;
 use App\Http\Controllers\Attendance\SetMethodOverrideController;
+use App\Http\Controllers\Attendance\SyncOfflineController;
+use App\Http\Controllers\Attendance\UpdateNoteController;
 use App\Http\Controllers\Attendance\WebStatusController;
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\AdminLogoutController;
@@ -178,6 +182,16 @@ Route::middleware('throttle:api')->group(function (): void {
             ->name('legacy.attendance.face-challenge');
         Route::post('app/attendance/crew_list.php', CrewListController::class)
             ->name('legacy.attendance.crew');
+
+        Route::post('v1/attendance/crew/punch', CrewCheckInController::class)
+            ->name('attendance.crew.punch');
+        Route::post('app/attendance/crew_check_in.php', CrewCheckInController::class)
+            ->name('legacy.attendance.crew.punch');
+
+        Route::post('v1/attendance/sync-offline', SyncOfflineController::class)
+            ->name('attendance.sync-offline');
+        Route::post('app/attendance/sync_offline.php', SyncOfflineController::class)
+            ->name('legacy.attendance.sync-offline');
         Route::post('app/attendance/security_log.php', SecurityLogController::class)
             ->name('legacy.attendance.security-log');
 
@@ -226,6 +240,15 @@ Route::middleware('throttle:api')->group(function (): void {
                 ->name('attendance.day-status');
             Route::post('app/attendance/set_day_status.php', SetDayStatusController::class)
                 ->name('legacy.attendance.day-status');
+
+            Route::post('v1/attendance/manual', ManualCheckInController::class)
+                ->name('attendance.manual');
+            Route::post('v1/attendance/note', UpdateNoteController::class)->name('attendance.note');
+
+            Route::post('app/attendance/manual_check_in.php', ManualCheckInController::class)
+                ->name('legacy.attendance.manual');
+            Route::post('app/attendance/update_note.php', UpdateNoteController::class)
+                ->name('legacy.attendance.note');
         });
     });
 
