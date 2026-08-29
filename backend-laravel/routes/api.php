@@ -35,8 +35,10 @@ use App\Http\Controllers\Auth\UpdateFcmTokenController;
 use App\Http\Controllers\Auth\UpdateProfileController;
 use App\Http\Controllers\Documents\EmployeeDocumentsController;
 use App\Http\Controllers\Documents\ReviewDocumentController;
+use App\Http\Controllers\Employees\ActivationCodeController;
 use App\Http\Controllers\Employees\CreateEmployeeController;
 use App\Http\Controllers\Employees\DeleteEmployeeController;
+use App\Http\Controllers\Employees\EmployeeProfileController;
 use App\Http\Controllers\Employees\EmployeeStatusController;
 use App\Http\Controllers\Employees\ListEmployeesController;
 use App\Http\Controllers\Employees\ListTerminatedController;
@@ -315,6 +317,16 @@ Route::middleware('throttle:api')->group(function (): void {
             ->name('legacy.employees.crew-supervisor');
         Route::post('app/employees/reset_web_pin.php', [EmployeeStatusController::class, 'resetWebPin'])
             ->name('legacy.employees.reset-web-pin');
+
+        Route::get('v1/employees/activation-code', [ActivationCodeController::class, 'show'])
+            ->name('employees.activation-code');
+        Route::post('v1/employees/activation-code', [ActivationCodeController::class, 'regenerate'])
+            ->name('employees.activation-code.regenerate');
+
+        Route::get('app/employees/activation_code.php', [ActivationCodeController::class, 'show'])
+            ->name('legacy.employees.activation-code');
+        Route::post('app/employees/activation_code.php', [ActivationCodeController::class, 'regenerate'])
+            ->name('legacy.employees.activation-code.regenerate');
     });
 
     // ── Employee documents ───────────────────────────────────────────────
@@ -352,6 +364,28 @@ Route::middleware('throttle:api')->group(function (): void {
             Route::post('app/employees/reject_document.php', [ReviewDocumentController::class, 'reject'])
                 ->name('legacy.documents.reject');
         });
+    });
+
+    // ── Employee profile ─────────────────────────────────────────────────
+    Route::middleware(['auth.admin', 'tenant'])->group(function (): void {
+        Route::get('v1/employees/profile', [EmployeeProfileController::class, 'show'])
+            ->name('employees.profile');
+        Route::get('app/employees/get_profile.php', [EmployeeProfileController::class, 'show'])
+            ->name('legacy.employees.profile');
+
+        Route::get('v1/employees/expiring-compliance', [EmployeeProfileController::class, 'expiringCompliance'])
+            ->middleware('can.do:manage_employees')
+            ->name('employees.expiring-compliance');
+        Route::get('app/employees/expiring_compliance.php', [EmployeeProfileController::class, 'expiringCompliance'])
+            ->middleware('can.do:manage_employees')
+            ->name('legacy.employees.expiring-compliance');
+
+        Route::get('v1/employees/year-to-date', [EmployeeProfileController::class, 'yearToDate'])
+            ->middleware('can.do:manage_payroll')
+            ->name('employees.year-to-date');
+        Route::get('app/employees/get_year_to_date.php', [EmployeeProfileController::class, 'yearToDate'])
+            ->middleware('can.do:manage_payroll')
+            ->name('legacy.employees.year-to-date');
     });
 
 });

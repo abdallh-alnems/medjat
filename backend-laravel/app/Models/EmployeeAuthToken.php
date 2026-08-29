@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\DB;
  * @property int $employee_id
  * @property string $token_hash
  * @property string|null $device_id
+ * @property string|null $device_model
+ * @property string|null $app_version
  * @property string|null $platform
  * @property string|null $expires_at
  * @property string|null $revoked_at
