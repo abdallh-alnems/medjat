@@ -1,0 +1,77 @@
+name: backend-laravel
+
+# The gates that make the migration safe. The old backend has 36k lines, no
+# static analysis and five hand-run scripts; the whole point of moving is to not
+# arrive at the same place, so these run on every push from the first commit
+# rather than being retrofitted once the codebase is too big to fix.
+
+on:
+  push:
+    paths:
+      - 'backend-laravel/**'
+      - '.github/workflows/backend-laravel.yml'
+  pull_request:
+    paths:
+      - 'backend-laravel/**'
+
+defaults:
+  run:
+    working-directory: backend-laravel
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        # Matches production (MySQL 8.4). The schema is owned by the old
+        # backend's migration ledger, so CI loads its generated snapshot instead
+        # of running Laravel migrations.
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: medjat_laravel_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          # Production runs 8.5; 8.4 is the floor local development uses, so
+          # both are exercised rather than assumed compatible.
+          php-version: '8.4'
+          extensions: mbstring, pdo_mysql, gd, zip, bcmath
+          coverage: none
+
+      - name: Cache composer packages
+        uses: actions/cache@v4
+        with:
+          path: backend-laravel/vendor
+          key: composer-${{ hashFiles('backend-laravel/composer.lock') }}
+
+      - run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Load the production schema snapshot
+        run: mysql -h 127.0.0.1 -P 3306 -uroot -proot medjat_laravel_test < ../backend/database/migrations/schema.sql
+
+      - run: cp .env.example .env && php artisan key:generate
+
+      - name: Point the test environment at the service container
+        run: |
+          sed -i 's/^DB_PORT=.*/DB_PORT=3306/' .env.testing
+
+      - name: Code style
+        run: vendor/bin/pint --test
+
+      - name: Static analysis
+        run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
+
+      - name: Tests
+        run: php artisan test

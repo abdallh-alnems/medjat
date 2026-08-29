@@ -1,0 +1,19 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    # Max from day one. This is trivial to hold on an empty project and
+    # effectively impossible to introduce later — the old backend has 36k lines
+    # and zero static analysis, which is exactly what we are not repeating.
+    level: max
+
+    paths:
+        - app
+        - database
+        - routes
+        - tests
+
+    # Every file must declare strict types; without it "5" silently becomes 5
+    # and a wrong argument type never surfaces.
+    checkMissingCallableSignature: true
+    treatPhpDocTypesAsCertain: false
