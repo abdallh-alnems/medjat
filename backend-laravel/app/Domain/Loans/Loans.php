@@ -91,6 +91,26 @@ final class Loans
         return array_values(array_map(self::toArray(...), $rows));
     }
 
+    /**
+     * What this employee still owes across every live loan.
+     *
+     * Summed from the unpaid installments rather than from the loan header:
+     * the header records what was borrowed, and only the schedule knows how
+     * much of it has actually come out of a payslip.
+     */
+    public static function outstandingForEmployee(int $employeeId, int $tenantId): float
+    {
+        return round(Value::float(
+            DB::table('loan_installments as li')
+                ->join('employee_loans as el', 'el.id', '=', 'li.loan_id')
+                ->where('el.employee_id', $employeeId)
+                ->where('el.tenant_id', $tenantId)
+                ->whereIn('el.status', ['pending', 'active'])
+                ->where('li.status', 'pending')
+                ->sum('li.amount')
+        ), 2);
+    }
+
     public static function pendingCountForEmployee(int $employeeId, int $tenantId): int
     {
         return DB::table('employee_loans')

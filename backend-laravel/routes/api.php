@@ -96,6 +96,7 @@ use App\Http\Controllers\Payroll\OverrideLineController;
 use App\Http\Controllers\Payroll\PayslipPdfController;
 use App\Http\Controllers\Payroll\RevertController;
 use App\Http\Controllers\Reports\ReportController;
+use App\Http\Controllers\Settlements\SettlementController;
 use App\Http\Controllers\Shifts\ShiftController;
 use App\Http\Controllers\Support\SupportController;
 use App\Http\Controllers\Team\AdminPermissionsController;
@@ -693,6 +694,40 @@ Route::middleware('throttle:api')->group(function (): void {
         // published app bundles speak POST and cannot be changed.
         Route::match(['post', 'delete'], 'app/biometric/delete.php', [EnrollmentController::class, 'delete'])
             ->name('legacy.biometric.delete');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | End-of-service settlements
+    |--------------------------------------------------------------------------
+    |
+    | The final account with somebody leaving. Approving one ends the
+    | employment, so the whole module sits behind manage_payroll: it is the
+    | permission that already carries the authority to decide what a person is
+    | paid.
+    |
+    */
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:manage_payroll'])->group(function (): void {
+        Route::get('v1/settlements', [SettlementController::class, 'show'])->name('settlements.show');
+        Route::get('v1/settlements/preview', [SettlementController::class, 'preview'])
+            ->name('settlements.preview');
+        Route::post('v1/settlements', [SettlementController::class, 'save'])->name('settlements.save');
+        Route::post('v1/settlements/approve', [SettlementController::class, 'approve'])
+            ->name('settlements.approve');
+        Route::post('v1/settlements/mark-paid', [SettlementController::class, 'markPaid'])
+            ->name('settlements.mark-paid');
+
+        Route::get('app/settlements/get.php', [SettlementController::class, 'show'])
+            ->name('legacy.settlements.show');
+        Route::get('app/settlements/preview.php', [SettlementController::class, 'preview'])
+            ->name('legacy.settlements.preview');
+        Route::post('app/settlements/save.php', [SettlementController::class, 'save'])
+            ->name('legacy.settlements.save');
+        Route::post('app/settlements/approve.php', [SettlementController::class, 'approve'])
+            ->name('legacy.settlements.approve');
+        Route::post('app/settlements/mark_paid.php', [SettlementController::class, 'markPaid'])
+            ->name('legacy.settlements.mark-paid');
     });
 
     /*
