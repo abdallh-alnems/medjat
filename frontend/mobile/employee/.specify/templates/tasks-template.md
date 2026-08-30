@@ -19,7 +19,7 @@ description: "Task list template for Farkha feature implementation"
 
 ## Path Conventions (Farkha)
 
-- **Flutter app** (this project): `front_end/farkha_app/lib/`
+- **Flutter app** (this project): `frontend/farkha_app/lib/`
   - Models: `lib/data/model/<feature>_model.dart`
   - Remote data source: `lib/data/data_source/remote/<feature>_data.dart`
   - Controller: `lib/logic/controller/<feature>_controller.dart`
@@ -29,7 +29,7 @@ description: "Task list template for Farkha feature implementation"
   - Route constant: `lib/core/constant/routes/...`
   - Theme/colors/sizes: `lib/core/constant/theme/`
 - **PHP backend**: `backend_farkha/app/<endpoint>.php` + `backend_farkha/core/queries/<feature>_query.php`
-- **Admin panel** (if touched): `front_end/farkha_admin/`
+- **Admin panel** (if touched): `frontend/farkha_admin/`
 - **Tests** (optional): `test/<feature>/`
 
 <!-- 

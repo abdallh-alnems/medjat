@@ -3,7 +3,7 @@
 **Feature Branch**: `003-medjat-central-web`
 **Created**: 2026-06-19
 **Status**: Draft
-**Input**: User description: "عايز احول التطبيق دة front_end/medjat_central الي موقع ويب اريد كل التفاصيل الذي فية واريد ان تستخدم نفس الطريقة هذة front_end/farkha_web"
+**Input**: User description: "عايز احول التطبيق دة frontend/mobile/central الي موقع ويب اريد كل التفاصيل الذي فية واريد ان تستخدم نفس الطريقة هذة frontend/farkha_web"
 
 ## Summary
 
@@ -492,7 +492,7 @@ notifications, reviews the activity/audit log, and manages their own account
 ## Assumptions
 
 - **Same approach as `farkha_web`**: The web edition reuses the architectural pattern of
-  the existing `front_end/farkha_web` project — App-Router web framework, a server-side
+  the existing `frontend/farkha_web` project — App-Router web framework, a server-side
   `/api` proxy route that injects backend Basic-auth credentials and forwards the
   user's auth token, the same Firebase authentication and tenant-header conventions,
   server-state caching, a shared component/design system, RTL Arabic-first theming with

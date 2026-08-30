@@ -19,8 +19,8 @@ shipped on its own.
 ## Path Conventions
 
 - Backend: `backend_medjet/` — one endpoint per file under `app/<module>/`, shared logic in `core/`
-- Employee web: `front_end/medjat_central_web/src/`
-- Admin app: `front_end/medjat_central/lib/`
+- Employee web: `frontend/web/central/src/`
+- Admin app: `frontend/mobile/central/lib/`
 
 ---
 
@@ -29,9 +29,9 @@ shipped on its own.
 **Purpose**: Establish a known-clean starting point and the route scaffolding.
 
 - [X] T001 Run `backend_medjet/check-drift.sh` and resolve any drift before writing code — starting from a drifted state makes your changes indistinguishable from someone else's later
-- [X] T002 [P] Create the isolated employee route group at `front_end/medjat_central_web/src/app/(employee)/layout.tsx` with its own providers, importing nothing from the `(app)` admin tree
-- [X] T003 [P] Create the employee API client at `front_end/medjat_central_web/src/lib/api/employee.ts` — separate axios instance sending `X-Employee-Token`, never the admin Firebase token
-- [X] T004 [P] Create the feature folder `front_end/medjat_central_web/src/features/employee-attendance/` with `schemas.ts` (Zod) and `hooks.ts` (TanStack Query) stubs
+- [X] T002 [P] Create the isolated employee route group at `frontend/web/central/src/app/(employee)/layout.tsx` with its own providers, importing nothing from the `(app)` admin tree
+- [X] T003 [P] Create the employee API client at `frontend/web/central/src/lib/api/employee.ts` — separate axios instance sending `X-Employee-Token`, never the admin Firebase token
+- [X] T004 [P] Create the feature folder `frontend/web/central/src/features/employee-attendance/` with `schemas.ts` (Zod) and `hooks.ts` (TanStack Query) stubs
 - [X] T005 Confirm `npm run dev:https` serves over TLS — geolocation and camera are secure-context APIs and fail confusingly over plain HTTP
 
 ---
@@ -78,10 +78,10 @@ shipped on its own.
 
 ### Employee web surface
 
-- [X] T024 [P] [US1] Implement the browser identity cookie in `front_end/medjat_central_web/src/features/employee-attendance/device-id.ts` — random UUID, long-lived, sent as `device_id`
-- [X] T025 [US1] Build the activation page `front_end/medjat_central_web/src/app/(employee)/activate/page.tsx` — phone, activation code, choose and confirm a 6-digit PIN, with client-side Zod mirroring the server rules
-- [X] T026 [US1] Build the sign-in page `front_end/medjat_central_web/src/app/(employee)/login/page.tsx` — phone (remembered locally) + PIN, with a distinct locked-account state pointing the employee at their administrator
-- [X] T027 [US1] Build the attendance page `front_end/medjat_central_web/src/app/(employee)/attendance/page.tsx` — render state from `web_status.php`, request geolocation, warm the camera only when `photo_required`, and show one primary button
+- [X] T024 [P] [US1] Implement the browser identity cookie in `frontend/web/central/src/features/employee-attendance/device-id.ts` — random UUID, long-lived, sent as `device_id`
+- [X] T025 [US1] Build the activation page `frontend/web/central/src/app/(employee)/activate/page.tsx` — phone, activation code, choose and confirm a 6-digit PIN, with client-side Zod mirroring the server rules
+- [X] T026 [US1] Build the sign-in page `frontend/web/central/src/app/(employee)/login/page.tsx` — phone (remembered locally) + PIN, with a distinct locked-account state pointing the employee at their administrator
+- [X] T027 [US1] Build the attendance page `frontend/web/central/src/app/(employee)/attendance/page.tsx` — render state from `web_status.php`, request geolocation, warm the camera only when `photo_required`, and show one primary button
 - [X] T028 [US1] Implement the pre-capture consent notice on the attendance page — the employee must be told the image is being captured and retained **before** it is taken (FR-017c)
 - [X] T029 [US1] Implement the failure and permission states — location denied, camera denied, outside the geofence, network refusal, session expired (return to PIN with phone pre-filled), and **connection lost mid-punch: re-read `web_status.php` and state plainly whether the punch landed** (FR-011)
 - [X] T030 [P] [US1] Add Arabic and English strings and confirm RTL rendering across all three employee pages
@@ -89,8 +89,8 @@ shipped on its own.
 
 ### Verification
 
-- [X] T032 [P] [US1] Vitest unit tests in `front_end/medjat_central_web/src/features/employee-attendance/__tests__/` — PIN validation, attendance state machine, device-id persistence
-- [ ] T033 [US1] Playwright e2e in `front_end/medjat_central_web/e2e/employee-attendance.spec.ts` — activate → check in → check out → confirm the session is dead, with geolocation and camera mocked
+- [X] T032 [P] [US1] Vitest unit tests in `frontend/web/central/src/features/employee-attendance/__tests__/` — PIN validation, attendance state machine, device-id persistence
+- [ ] T033 [US1] Playwright e2e in `frontend/web/central/e2e/employee-attendance.spec.ts` — activate → check in → check out → confirm the session is dead, with geolocation and camera mocked
 - [X] T034 [US1] Manually verify on a real device that a **denied** location permission behaves sanely on both Safari iOS and Chrome Android — denial behaviour differs between them and is not faithfully reproduced by Playwright
 
 **Checkpoint**: US1 is independently shippable. A company flipped on in the database gets working browser attendance.
@@ -108,7 +108,7 @@ shipped on its own.
 - [X] T037 [P] [US2] Create `backend_medjet/app/categories/update_web_access.php` — set `web_attendance_allowed` to true/false/null behind `manage_company_settings`
 - [X] T038 [US2] Wire `WebAccessPolicy` (T015) into T016, T017, T019, T020 and T021 so a refusal returns `web_not_permitted` **and** writes that reason to `attendance_security_logs`
 - [X] T039 [US2] Verify a company that has never touched the settings still refuses every web endpoint while its app attendance is untouched (SC-006) — this is the release-safety property, worth testing explicitly rather than assuming
-- [X] T040 [US2] Build the settings UI in `front_end/medjat_central/lib/view/screen/settings/` — the two toggles, per-category access, and the honest disclosure of what the browser cannot verify (WiFi BSSID, mock-location, face) with the branch warning from T036
+- [X] T040 [US2] Build the settings UI in `frontend/mobile/central/lib/view/screen/settings/` — the two toggles, per-category access, and the honest disclosure of what the browser cannot verify (WiFi BSSID, mock-location, face) with the branch warning from T036
 - [X] T041 [US2] Confirm the frontend menu/tab gate uses **exactly** `manage_company_settings` — a mismatch surfaces to the user as a bare "an error occurred", which is the hardest class of bug to diagnose from a support ticket
 - [ ] T042 [US2] Verify an employee whose shift is open when the company disables the channel **can still close it**, while new check-ins are refused
       *Implemented 2026-08-15*: `check_out.php` now permits the close when `AttendanceModel::hasOpenDay()` is true and logs it as `flagged` instead of `blocked`; the comment above it had described this behaviour while the code refused. Still needs the live check.
@@ -136,8 +136,8 @@ shipped on its own.
 
 ## Phase 6: Polish & Deployment
 
-- [X] T049 [P] Run `flutter analyze lib` in `front_end/medjat_central` (bare `flutter analyze` reports phantom errors from FlutterFire examples under `build/`)
-- [X] T050 [P] Run `npm run lint` and `npm test` in `front_end/medjat_central_web`
+- [X] T049 [P] Run `flutter analyze lib` in `frontend/mobile/central` (bare `flutter analyze` reports phantom errors from FlutterFire examples under `build/`)
+- [X] T050 [P] Run `npm run lint` and `npm test` in `frontend/web/central`
 - [X] T051 [P] Lint every changed PHP file with the MAMP binary `/Applications/MAMP/bin/php/php8.4.15/bin/php -l`
 - [ ] T052 Work through the manual verification matrix in `quickstart.md` §6 — the cross-channel and clock-skew rows in particular, which no automated test covers
 - [ ] T053 Run `backend_medjet/check-drift.sh`, then `deploy.sh --dry-run`, then `deploy.sh`, then `check-drift.sh` again — it must come back clean

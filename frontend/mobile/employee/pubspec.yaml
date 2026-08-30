@@ -16,7 +16,7 @@ dependencies:
   # The server matches embeddings from both products against one stored vector
   # per employee, so extraction must be identical — hence one copy, not two.
   medjat_shared:
-    path: ../packages/medjat_shared
+    path: ../shared
 
   cupertino_icons: ^1.0.8
 

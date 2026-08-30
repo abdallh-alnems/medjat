@@ -176,7 +176,7 @@ BSSID بوضع تعلّم · المطابقة على السيرفر بـnonce ·
 
 **مراجع:** `specs/004-web-attendance-checkin/` · `specs/005-branch-kiosk/` ·
 `backend_medjet/app/kiosk/README.md` · `backend_medjet/device/README.md` ·
-`front_end/packages/medjat_shared/assets/models/README.md` (قياسات LFW والعتبة)
+`frontend/mobile/shared/assets/models/README.md` (قياسات LFW والعتبة)
 
 **الملف ده بديل لملفين اتمسحوا 2026-08-14:** `attendance.md` و`compass_artifact_wf-*.md`.
 آخر نسخة منهم في **`528e016`** — استرجاع: `git show 528e016:attendance.md`.

@@ -10,9 +10,9 @@
 ## 0. TL;DR (one paragraph)
 
 Build a **Next.js (App Router) web app** that is a feature-for-feature port of the
-existing **Flutter admin app** `front_end/medjat_central`, talking to the **same PHP
+existing **Flutter admin app** `frontend/mobile/central`, talking to the **same PHP
 backend and same Firebase project**. Copy the architecture of the already-working
-reference app `front_end/farkha_web` (../../../farkha/front_end/farkha_web). It is an
+reference app `frontend/farkha_web` (../../../farkha/frontend/farkha_web). It is an
 **admin-only** HR/payroll tool (no employee self check-in). Ship **all features in one
 release**. The single hardest correctness requirement: **all browser→backend traffic
 goes through a server-side proxy `/api/[...path]` that injects backend credentials and
@@ -35,12 +35,12 @@ reach the browser.
 
 **Two reference codebases you will read constantly:**
 
-- **Port FROM (the spec):** `front_end/medjat_central/` — the Flutter app. Its
+- **Port FROM (the spec):** `frontend/mobile/central/` — the Flutter app. Its
   `lib/data/data_source/remote/*` (API calls), `lib/data/model/*` (entities),
   `lib/logic/controller/*` (business logic per screen), `lib/view/screen/*` (UI/UX), and
   `lib/core/constant/id/app_links.dart` (every endpoint), `lib/core/constant/locale/{ar,en}.dart`
   (all UI strings → i18n), `lib/core/constant/theme/app_colors.dart` (theme tokens).
-- **Copy the HOW (the pattern):** `../farkha/front_end/farkha_web/` — a finished Next.js
+- **Copy the HOW (the pattern):** `../farkha/frontend/farkha_web/` — a finished Next.js
   app with the **exact** patterns to mirror: `src/app/api/[...path]/route.ts` (proxy),
   `src/lib/api/client.ts`, `src/lib/firebase/*`, `src/lib/stores/auth-store.ts`,
   `src/lib/providers/*`, `src/app/layout.tsx`, `src/components/ui/*`, `globals.css`.
@@ -49,7 +49,7 @@ reach the browser.
 
 ## 2. Target location & stack (non-negotiable)
 
-- **Build the new app at:** `front_end/medjat_central_web/` (sibling of the Flutter app).
+- **Build the new app at:** `frontend/web/central/` (sibling of the Flutter app).
 - **Stack (mirror farkha_web):** Next.js 16 App Router · React 19 · TypeScript ·
   TanStack Query (server state) · Zustand (session/UI) · axios · Firebase Web SDK
   (auth + remote-config + analytics — **NOT messaging**) · shadcn + Tailwind v4 ·
@@ -81,12 +81,12 @@ These are settled in `spec.md` → `## Clarifications`. Treat as law:
 
 ## 4. Before you write any code (gather these)
 
-1. **Backend host + Basic-auth creds** — read from `front_end/medjat_central/.env`:
+1. **Backend host + Basic-auth creds** — read from `frontend/mobile/central/.env`:
    `API_HOST`, `SECURITY_USER`, `SECURITY_KEY`. Put `API_HOST` →
    `NEXT_PUBLIC_API_HOST`; put `SECURITY_USER`/`SECURITY_KEY` → **server-only** env (no
    `NEXT_PUBLIC_` prefix). They live only in the proxy.
 2. **Firebase web config** — from the Firebase console (same project the mobile app
-   uses; see `front_end/medjat_central/lib/core/constant/firebase_options.dart` for the
+   uses; see `frontend/mobile/central/lib/core/constant/firebase_options.dart` for the
    project id). Fill `NEXT_PUBLIC_FIREBASE_*` per `quickstart.md`. Add `localhost` + the
    deploy domain to Firebase Auth **authorized domains**, and enable **Google + Apple**
    providers for web.

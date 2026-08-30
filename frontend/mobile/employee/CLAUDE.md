@@ -6,7 +6,7 @@
 
 ```
 Medjat/
-├── front_end/medjat_app/    — تطبيق Flutter (هذا المشروع)
+├── frontend/mobile/employee/    — تطبيق Flutter (هذا المشروع)
 └── backend_medjet/          — PHP REST API
 ```
 
@@ -77,7 +77,7 @@ flutter clean && flutter pub get
 ## ملاحظات
 
 - **بصمة الوجه انتقلت إلى حزمة مشتركة.** `FaceEmbedder` و`LivenessDetector` وملف الموديل
-  `mobilefacenet.tflite` صاروا في `front_end/packages/medjat_shared/`، ويستوردهم التطبيق عبر
+  `mobilefacenet.tflite` صاروا في `frontend/mobile/shared/`، ويستوردهم التطبيق عبر
   `package:medjat_shared/medjat_shared.dart`. السبب: تطبيق الكيوسك يرسل embeddings إلى نفس
   العمود (`employees.face_embedding`)، فلو وُجدت نسختان من كود الاستخراج وتباعدتا، يتوقف
   التطابق **بصمت** دون خطأ في أي مكان.

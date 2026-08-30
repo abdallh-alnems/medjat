@@ -1120,7 +1120,7 @@ packages:
   medjat_shared:
     dependency: "direct main"
     description:
-      path: "../packages/medjat_shared"
+      path: "../shared"
       relative: true
     source: path
     version: "1.0.0"

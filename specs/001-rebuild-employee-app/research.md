@@ -2,7 +2,7 @@
 
 **Date**: 2026-06-01 | **Feature**: `001-rebuild-employee-app`
 
-This file records the **technical decisions** grounded in the current code (`backend_medjet`, `front_end/medjat_app`). Product ambiguities were already resolved in the spec's Clarifications (Sessions 2026-05-31 / 2026-06-01); nothing here is a NEEDS CLARIFICATION.
+This file records the **technical decisions** grounded in the current code (`backend_medjet`, `frontend/mobile/employee`). Product ambiguities were already resolved in the spec's Clarifications (Sessions 2026-05-31 / 2026-06-01); nothing here is a NEEDS CLARIFICATION.
 
 ---
 

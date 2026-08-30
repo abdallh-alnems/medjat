@@ -7,12 +7,18 @@
 ```
 Medjat/
 ├── backend_medjet/          ← REST API بلغة PHP 8.x (MySQL 8) — قلب المنصّة
-├── front_end/
-│   ├── medjat_app/          ← تطبيق الموظف (Android / iOS)
-│   ├── medjat_central/      ← تطبيق الإدارة والموارد البشرية للشركة (Android / iOS)
-│   ├── medjat_central_web/  ← نسخة الويب من تطبيق الإدارة (Next.js 16)
-│   ├── medjat_admin/        ← لوحة الـ Super Admin للفريق الداخلي (Android)
-│   └── web_pages/           ← الموقع التعريفي والصفحات الثابتة (الخصوصية، حذف الحساب، الدعم)
+├── frontend/
+│   ├── mobile/              ← تطبيقات Flutter — أداة `flutter`
+│   │   ├── employee/        ← تطبيق الموظف (Android / iOS)
+│   │   ├── central/         ← تطبيق الإدارة والموارد البشرية للشركة (Android / iOS)
+│   │   ├── kiosk/           ← كشك الفرع (تابلت Android) — حضور بجهاز مشترك
+│   │   ├── admin/           ← لوحة الـ Super Admin للفريق الداخلي (Android)
+│   │   └── shared/          ← حزمة `medjat_shared` المشتركة بين تطبيقات Flutter
+│   ├── web/                 ← أداة `npm`
+│   │   ├── central/         ← نسخة الويب من تطبيق الإدارة (Next.js 16)
+│   │   └── site/            ← الموقع التعريفي والصفحات الثابتة (الخصوصية، حذف الحساب، الدعم)
+│   └── desktop/
+│       └── central/         ← غلاف Electron فوق web/central → ‏.dmg / .exe
 └── specs/                   ← مواصفات الميزات (spec-kit)
 ```
 
@@ -29,16 +35,16 @@ REST API بلغة **PHP 8.x** على قاعدة **MySQL 8**، مستضاف عل�
 - **النواة (`core/`):** `Auth` / `AdminAuth` / `BaseApi` / `AdminBaseApi`، `TenantMiddleware` + `PermissionMiddleware` (العزل والصلاحيات)، `PayrollCalculator` + `PayrollCache` + `PayslipPdfService` (الرواتب)، `SettlementCalculator`، `AttendanceMethodResolver`، `GpsService`، `NetworkVerifier` (شبكات WiFi)، `FaceMatchService` + `BiometricEnrollment` (الوجه)، `ZktecoAdms` + `DevicePunchIngestor` (أجهزة البصمة)، `TenantClock` (توقيت كل شركة)، `NotificationService` + `RemoteConfigService` + `SmartAlertService` (Firebase عبر `kreait/firebase-php`)، `EmailService` / `AuthEmail`، `I18n`، `RateLimiter`، `Validator`، `Response`.
 - **أخرى:** `migrations/` (المخطّط + migrations مؤرّخة)، `models/`، `scripts/`، `lang/` (i18n)، `uploads/`، `app/cron/` (مهام مجدولة)، `join.php` و`well_known.php` (روابط الانضمام و deep links)، `device/iclock.php` (نقطة اتصال أجهزة الحضور — راجع `device/README.md`).
 
-### 2) تطبيق الموظف — `front_end/medjat_app/`
+### 2) تطبيق الموظف — `frontend/mobile/employee/`
 يستخدمه الموظف لتسجيل الحضور (QR / GPS / شبكة WiFi / سيلفي الوجه)، ومتابعة الراتب والمستندات، وتقديم طلبات الإجازات والسلف، مع عمل **offline** يُزامن تلقائيًا. الدخول برقم الهاتف + رمز تفعيل (أو رمز/رابط/QR انضمام). (Android + iOS)
 
-### 3) تطبيق الإدارة — `front_end/medjat_central/`
+### 3) تطبيق الإدارة — `frontend/mobile/central/`
 مركز التحكّم الكامل للشركة: إدارة الموظفين والفروع والفئات، تصميم الورديات والجدول الأسبوعي، اعتماد الإجازات، تشغيل الرواتب والتعديلات الجماعية والتسويات، ضبط طرق الحضور وشبكات الفروع وأجهزة البصمة، والتقارير مع التصدير (PDF/Word/DOCX). يدعم العربية والإنجليزية. (Android + iOS)
 
-### 4) نسخة الويب — `front_end/medjat_central_web/`
+### 4) نسخة الويب — `frontend/web/central/`
 منفذ ويب لتطبيق الإدارة بـ **Next.js 16 (App Router)** و React 19 و TypeScript، يتحدّث إلى **نفس الباك إند ونفس مشروع Firebase** عبر وسيط `/api/[...path]` يحقن بيانات الـ Basic-auth على الخادم. مُستضاف ذاتيًا على نفس خادم Hetzner على `app.medjatapp.com`.
 
-### 5) لوحة الـ Super Admin — `front_end/medjat_admin/`
+### 5) لوحة الـ Super Admin — `frontend/mobile/admin/`
 للفريق الداخلي: إدارة الشركات العميلة (Tenants) والمستخدمين الداخليين، الدعم الفني، سجل التدقيق، والتحكّم عن بُعد في حالة التطبيقات (تحديث إجباري/صيانة) عبر Firebase Remote Config. (Android)
 
 ---
@@ -83,7 +89,7 @@ REST API بلغة **PHP 8.x** على قاعدة **MySQL 8**، مستضاف عل�
 - لتشغيل/فحص PHP محليًا استخدم نسخة MAMP: `/Applications/MAMP/bin/php/php8.4.15/bin/php`.
 
 ### 2) أي تطبيق Flutter
-داخل مجلد التطبيق (`front_end/medjat_app` أو `medjat_central` أو `medjat_admin`):
+داخل مجلد التطبيق (`frontend/mobile/employee` أو `frontend/mobile/central` أو `frontend/mobile/admin`):
 
 ```bash
 flutter pub get
@@ -100,10 +106,10 @@ SECURITY_USER = ""
 ثم شغّل:
 
 ```bash
-# medjat_admin / medjat_central (يحمّلان .env كـ asset عند الإقلاع)
+# mobile/admin و mobile/central (يحمّلان .env كـ asset عند الإقلاع)
 flutter run
 
-# medjat_app
+# mobile/employee
 flutter run --dart-define-from-file=.env
 ```
 
@@ -113,7 +119,7 @@ flutter run --dart-define-from-file=.env
 ### 3) نسخة الويب
 
 ```bash
-cd front_end/medjat_central_web
+cd frontend/web/central
 npm install
 cp .env.local.example .env.local   # ثم املأ SECURITY_USER/KEY و NEXT_PUBLIC_*
 npm run dev

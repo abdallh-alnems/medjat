@@ -54,7 +54,7 @@ curl -s "$HOST/app/attendance/get_my_attendance.php?month=2026-06" -H "Authoriza
 
 ## 2. Flutter build & run
 ```bash
-cd front_end/medjat_app
+cd frontend/mobile/employee
 flutter pub get
 grep -rn "firebase_auth\|google_sign_in" lib/   # MUST be empty (FR-022, SC-010)
 flutter analyze                                  # MUST be clean (constitution Quality Gate)

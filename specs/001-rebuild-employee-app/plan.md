@@ -3,7 +3,7 @@
 **Branch**: `001-rebuild-employee-app` | **Date**: 2026-06-01 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/001-rebuild-employee-app/spec.md`
 
-> **Audience note**: This plan is written so a *different* implementer (human or model) can execute it without re-discovering context. It names exact files, marks **[EXISTS]** vs **[NEW]** vs **[EDIT]** vs **[REWRITE]**, and prescribes order. Read [research.md](./research.md), [data-model.md](./data-model.md), [contracts/](./contracts/), and [quickstart.md](./quickstart.md) before writing code. The original prose plan is `front_end/medjat_app/REBUILD_PHONE_CODE_PLAN.md` (Arabic) — this plan supersedes and structures it; where they differ, **follow this plan** because it is grounded in the current code (verified file paths, existing endpoints).
+> **Audience note**: This plan is written so a *different* implementer (human or model) can execute it without re-discovering context. It names exact files, marks **[EXISTS]** vs **[NEW]** vs **[EDIT]** vs **[REWRITE]**, and prescribes order. Read [research.md](./research.md), [data-model.md](./data-model.md), [contracts/](./contracts/), and [quickstart.md](./quickstart.md) before writing code. The original prose plan is `frontend/mobile/employee/REBUILD_PHONE_CODE_PLAN.md` (Arabic) — this plan supersedes and structures it; where they differ, **follow this plan** because it is grounded in the current code (verified file paths, existing endpoints).
 
 ## Summary
 
@@ -18,7 +18,7 @@ Replace the employee app's authentication from **Firebase Auth (Google/Email) + 
 **Storage**: Backend MySQL (all tables already exist: `employee_auth_tokens`, `employee_activation_codes`, `attendance_stations`, `employees`, `branches`, `admins`, `admin_devices`, `notifications`, …). App — `flutter_secure_storage` for `auth_token` + `device_id` + `station_token`; `hive` for offline attendance queue.
 **Testing**: `flutter test` (unit for model `fromJson`/`toJson` + controller logic; widget/integration for critical flows per constitution IV). Backend — manual `curl` acceptance per quickstart.md (no PHP test harness in repo).
 **Target Platform**: Android + iOS (Arabic RTL). Backend — existing PHP host serving both apps.
-**Project Type**: Mobile app + REST API (two real trees: `front_end/medjat_app`, `backend_medjet`).
+**Project Type**: Mobile app + REST API (two real trees: `frontend/mobile/employee`, `backend_medjet`).
 **Performance Goals**: Sign-in to home < 60s (SC-001); leave submit < 90s (SC-005); kiosk pairing < 2 min and biometric check-in < 10s (SC-011). UI 60fps.
 **Constraints**: Arabic RTL only; tokens only in `flutter_secure_storage` (constitution V); all HTTP through the single `CRUD` class (constitution III); no Firebase **Auth** anywhere after this; offline attendance must lose zero records (SC-006).
 **Scale/Scope**: ~11 employee endpoints touched/added + 2 new auth endpoints + reuse of ~8 station endpoints; ~12 app files edited + ~5 new app files; 7 user stories.
@@ -80,7 +80,7 @@ backend_medjet/                         # PHP REST API (serves BOTH apps)
     └── notifications/{list,read}.php    # [EDIT] authenticateEmployee → $auth['admin_id']
     # station/* and stations/* endpoints: [EXISTS, REUSE AS-IS] for Kiosk
 
-front_end/medjat_app/                    # Flutter (employee app) — the rebuild target
+frontend/mobile/employee/                    # Flutter (employee app) — the rebuild target
 ├── pubspec.yaml                         # [EDIT] remove firebase_auth + google_sign_in; keep messaging etc.
 ├── lib/
 │   ├── main.dart                        # [EDIT] keep Firebase.init (messaging); drop any Auth-only calls

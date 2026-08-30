@@ -29,7 +29,7 @@ final class FaceMatchService {
     // costs 0.2% false accepts for 19% false rejects. LFW is harsher than a
     // deliberate check-in selfie, so expect better in the field — but tune per
     // company from face_verification_logs before switching to `enforce`.
-    // Numbers and method: front_end/medjat_app/assets/models/README.md
+    // Numbers and method: frontend/mobile/employee/assets/models/README.md
     public const DEFAULT_THRESHOLD = 0.450;
 
     /** Liveness challenges the server may ask for. */

@@ -31,14 +31,14 @@ there is nothing to queue. What replaces it is a safe retry: an idempotency key
 so a lost response cannot become a double punch.
 
 **The tablet is a separate application, activated only by management.** Its own
-Flutter project (`front_end/medjat_kiosk/`) with its own `applicationId`,
+Flutter project (`frontend/mobile/kiosk/`) with its own `applicationId`,
 manifest, and release cadence, so the wakelock, boot receiver, and always-on
 camera never reach the app employees install on personal phones.
 
 The one thing it does **not** duplicate is the face pipeline. Both products send
 embeddings the server compares against a single stored vector per employee, so
 two copies of that code would eventually drift and silently stop matching
-anybody. It lives in `front_end/packages/medjat_shared/` and both apps depend on it.
+anybody. It lives in `frontend/mobile/shared/` and both apps depend on it.
 
 Everything else is additive to code that already exists: enrollment writes the
 same `employees.face_*` columns as `enroll_face.php`, punches route through
@@ -143,14 +143,14 @@ backend_medjet/
 ├── lang/{ar,en}.php                    # kiosk message keys
 └── uploads/kiosk/                      # captures, purged on schedule
 
-front_end/packages/medjat_shared/                # NEW package — the one shared thing
+frontend/mobile/shared/                # NEW package — the one shared thing
 ├── pubspec.yaml                        # publish_to: none, path-depended
 ├── lib/medjat_shared.dart              # barrel
 ├── lib/src/face/face_embedder.dart     # MOVED out of medjat_app
 ├── lib/src/face/face_liveness.dart     # MOVED out of medjat_app
 └── assets/models/mobilefacenet.tflite  # MOVED — one copy, 5.2 MB
 
-front_end/medjat_kiosk/                 # NEW standalone Flutter app (Android)
+frontend/mobile/kiosk/                 # NEW standalone Flutter app (Android)
 ├── lib/main.dart                       # portrait, RTL, immersive
 ├── lib/core/api/kiosk_api.dart         # the only endpoints a kiosk may call
 ├── lib/core/network/{kiosk_crud,kiosk_result}.dart   # X-Kiosk-Token, POST-only
@@ -162,9 +162,9 @@ front_end/medjat_kiosk/                 # NEW standalone Flutter app (Android)
     ├── AndroidManifest.xml             # WAKE_LOCK, BOOT_COMPLETED, camera, HOME
     └── kotlin/.../KioskBootReceiver.kt # returns after a power cut
 
-front_end/medjat_app/                   # employee app — now depends on medjat_shared
-front_end/medjat_central/               # management: kiosk tab on a branch
-front_end/medjat_central_web/           # same surfaces on the web port
+frontend/mobile/employee/                   # employee app — now depends on medjat_shared
+frontend/mobile/central/               # management: kiosk tab on a branch
+frontend/web/central/           # same surfaces on the web port
 ```
 
 **Structure Decision**: Three Flutter projects, not two and not one.

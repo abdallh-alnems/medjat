@@ -23,7 +23,7 @@ branch roster, and that is not the same problem with a loop around it. False
 accepts compound: at a per-comparison false-accept rate of *p*, scanning *N*
 candidates gives roughly `1 − (1−p)^N`.
 
-Measured on 800 LFW pairs (`front_end/packages/medjat_shared/assets/models/README.md`):
+Measured on 800 LFW pairs (`frontend/mobile/shared/assets/models/README.md`):
 
 | Threshold | FAR per comparison | FRR | Implied FAR across 40 | across 200 |
 |---|---|---|---|---|

@@ -76,11 +76,11 @@
   المتصفّح لا يمسح QR ولا يُرسل `method`، فالخادم يستنتج `gps_only`.
 - **نكهتان لكل فرع على حدة:**
   - **QR مطبوع ثابت:** يُقارَن بـ`branches.qr_code`. الملصق يُولَّد من تطبيق الإدارة —
-    `medjat_central/lib/view/screen/branch/branch_qr_poster_screen.dart`.
+    `frontend/mobile/central/lib/view/screen/branch/branch_qr_poster_screen.dart`.
   - **QR متغيّر (rotating):** يُفعَّل بـ`branches.rotating_qr_enabled`، الكود يتغيّر كل
     عدة ثوانٍ ويُستهلك مرة واحدة لكل موظف — `models/BranchQrChallengeModel.php`.
     الشاشة التي تُعلَّق على الباب موجودة **على الويب فقط**:
-    `medjat_central_web/src/app/(app)/attendance/branch-qr/page.tsx`.
+    `frontend/web/central/src/app/(app)/attendance/branch-qr/page.tsx`.
 - **مهم:** لا إصدار تطبيق جديد بين النكهتين — التطبيق يمرّر ما قرأته الكاميرا كما هو،
   والخادم وحده يقرّر أيّهما يتوقّع.
 - **يفرضه الخادم دائماً:** الـGPS مطلوب مع QR (لا يمرّ كود بلا موقع حقيقي).
@@ -166,7 +166,7 @@
 - كلا المسارين يُرجعان `punch_ticket` قصير العمر؛ `app/kiosk/punch.php` يستبدل التذكرة
   ولا يقبل `employee_id` من الطلب، وإلا لأمكن للتابلت أن يتعرّف على شخص ويبصم باسم آخر.
 - يُكتب في قاعدة البيانات كـ`kiosk`، مع تمييز `station_face` / `station_code` في سجلّ التعرّف.
-- **الإدارة:** `medjat_central/lib/view/screen/kiosk/` و`medjat_central_web/src/app/(app)/kiosks`.
+- **الإدارة:** `frontend/mobile/central/lib/view/screen/kiosk/` و`frontend/web/central/src/app/(app)/kiosks`.
 
 ### `device` — جهاز بصمة ZKTeco
 
@@ -179,9 +179,9 @@
   `AttendanceModel` كـ`check_in_method = 'device'`.
 - **مسار ثانٍ:** استيراد ملف بصمات يدوياً — `app/devices/import_punches.php`، وواجهته على
   الويب `src/app/(app)/settings/import-punches/page.tsx`. وتطبيق الديسكتوب يستطيع **قراءة
-  الجهاز مباشرة عبر الشبكة المحلية** (`medjat_central_desktop/src/device.js`) ثم تغذية
+  الجهاز مباشرة عبر الشبكة المحلية** (`frontend/desktop/central/src/device.js`) ثم تغذية
   نفس الصفحة — وهي القدرة الوحيدة التي يملكها الديسكتوب ولا يملكها المتصفّح.
-- **الإدارة:** `medjat_central/lib/view/screen/devices/` (تسجيل الجهاز وربط المستخدمين).
+- **الإدارة:** `frontend/mobile/central/lib/view/screen/devices/` (تسجيل الجهاز وربط المستخدمين).
 
 ### `manual` — إدخال إداري
 
@@ -210,7 +210,7 @@
   عنه إطلاقاً. كل حظر أو وسم يُكتب في `attendance_security_logs`.
   الأجهزة المروَّتة **لا تُحظر عمداً** (شائعة على الأجهزة الرخيصة، وليست دليل تحايل).
 
-### متصفّح الموظف — `medjat_central_web/src/app/(employee)/me/*`
+### متصفّح الموظف — `frontend/web/central/src/app/(employee)/me/*`
 
 - الصفحات: `/me/activate` (تفعيل أول + اختيار PIN)، `/me/login`، `/me/attendance`.
 - **الطريقة الوحيدة: `gps_only`** — بالاستنتاج، لأن الصفحة لا ترسل `method` ولا `qr_code`.
@@ -252,7 +252,7 @@
 
 | المستوى | العمود | الشاشة |
 |---|---|---|
-| الشركة | `tenants.attendance_methods` | `medjat_central` → إعدادات → طرق الحضور · و`medjat_central_web/src/app/(app)/settings/attendance-method` |
+| الشركة | `tenants.attendance_methods` | `medjat_central` → إعدادات → طرق الحضور · و`frontend/web/central/src/app/(app)/settings/attendance-method` |
 | الفرع | `branches.attendance_methods` | نفس الشاشتين (تبويب الفروع) |
 | الفئة الوظيفية | `employee_categories.attendance_methods` | نفس الشاشتين (تبويب الفئات) → `app/attendance/set_method_override.php` |
 | الموظف | `employees.attendance_methods` | نفس الشاشتين (تبويب الموظفين) → نفس النقطة |

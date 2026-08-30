@@ -5,7 +5,7 @@
 
 > **Read this first (for the implementer).** You are building on TWO existing trees:
 > - **Backend** `backend_medjet/` (PHP, file-per-endpoint, PDO via `Database` helper). It serves BOTH the management app and this employee app.
-> - **App** `front_end/medjat_app/` (Flutter + GetX, Arabic RTL).
+> - **App** `frontend/mobile/employee/` (Flutter + GetX, Arabic RTL).
 >
 > **Three hard rules:**
 > 1. **NEVER touch `Auth::authenticateUser` or anything the management app uses.** Add siblings. Breaking the management app fails the feature (FR-023 / SC-008).
@@ -29,9 +29,9 @@
 
 **Purpose**: Prepare both trees; remove Firebase Auth; confirm tooling.
 
-- [X] T001 In `front_end/medjat_app/pubspec.yaml`, remove `firebase_auth` and `google_sign_in`; KEEP `firebase_core`, `firebase_messaging`, `firebase_crashlytics`, `firebase_analytics`, `firebase_remote_config`, `firebase_app_check`. Then run `flutter pub get`.
-- [X] T002 Confirm `front_end/medjat_app/.env` has `API_HOST`, `SECURITY_USER`, `SECURITY_KEY` (used by `crud.dart` `_baseHeaders()`); do not commit secrets. Document required keys in the PR description.
-- [X] T003 [P] Baseline check: run `flutter analyze` in `front_end/medjat_app/` and record the current warning count (so later "clean analyze" is verifiable).
+- [X] T001 In `frontend/mobile/employee/pubspec.yaml`, remove `firebase_auth` and `google_sign_in`; KEEP `firebase_core`, `firebase_messaging`, `firebase_crashlytics`, `firebase_analytics`, `firebase_remote_config`, `firebase_app_check`. Then run `flutter pub get`.
+- [X] T002 Confirm `frontend/mobile/employee/.env` has `API_HOST`, `SECURITY_USER`, `SECURITY_KEY` (used by `crud.dart` `_baseHeaders()`); do not commit secrets. Document required keys in the PR description.
+- [X] T003 [P] Baseline check: run `flutter analyze` in `frontend/mobile/employee/` and record the current warning count (so later "clean analyze" is verifiable).
 - [X] T004 [P] Confirm backend local run + DB access; verify tables exist: `employee_auth_tokens`, `employee_activation_codes`, `attendance_stations`, `employees`, `branches`, `admins`, `admin_devices`, `notifications` (per [data-model.md](./data-model.md)). No migrations are needed.
 
 **Checkpoint**: Both projects build; Firebase Auth deps removed (compile errors expected until Phase 5 — that is fine).
@@ -69,20 +69,20 @@
 
 ### App — auth core (after backend works)
 
-- [X] T013 [P] [US1] Extend `front_end/medjat_app/lib/core/services/token_storage_service.dart`: add const `_deviceIdKey='device_id'`, `_stationTokenKey='station_token'`; add `getOrCreateDeviceId()` (create a UUID-like value once, persist, reuse), `clearSession()` (delete ONLY `auth_token` + user data, keep `device_id`), and station-token get/set/clear. (See [data-model.md](./data-model.md) storage table.)
-- [X] T014 [US1] Rewrite `front_end/medjat_app/lib/core/class/crud.dart` `_headers()`: REMOVE all `FirebaseAuth`/`X-Firebase-Token` logic; add `X-Employee-Token` from `TokenStorageService.getToken()`; keep `X-Tenant-Id` from cached user; keep Basic auth. Also strip the Firebase `params['token']` branches in `getData`/`getBytes`. Keep `handleResponse` (it already maps 401→Arabic message).
-- [X] T015 [US1] In `front_end/medjat_app/lib/core/constant/id/app_links.dart`, replace the link set per [contracts/employee-endpoints.md](./contracts/employee-endpoints.md) "app_links.dart target set" (add `employeeLogin`, `employeeLogout`, `myProfile`, `leaveBalance`, `registerFcm`, `notificationPrefs`, attendance/payroll/notifications links; REMOVE `activateEmployee`/`me`).
-- [X] T016 [P] [US1] Edit `front_end/medjat_app/lib/data/model/user_model.dart`: `fromJson` reads `photoUrl = json['profile_image'] ?? json['photo_url']`; make `email` optional (default `''`); ensure `toJson` round-trips fields used by `X-Tenant-Id` (`tenant_id`).
-- [X] T017 [US1] Rewrite `front_end/medjat_app/lib/data/data_source/remote/auth_data/auth_data.dart` per [contracts/auth.md](./contracts/auth.md): `login(phone, activationCode)` builds `{phone, activation_code, device_id(getOrCreateDeviceId), platform, device_model, app_version(package_info)}` → `CRUD.postData(AppLinks.employeeLogin, ..., auth:false)`; `logout()` → `CRUD.postData(AppLinks.employeeLogout, {})` then `TokenStorageService.clearSession()`; `getCachedUser()`; `getProfile()` → `CRUD.getData(AppLinks.myProfile)`. Remove all Firebase/Google code.
-- [X] T018 [US1] Rewrite `front_end/medjat_app/lib/logic/controller/auth/auth_controller.dart`: `login({phone, code})` using `StatusRequest`; on success save token + `UserModel`, call FCM registration AFTER token saved, `Get.offAllNamed(AppRoutes.home)`; map 403→"رقم الهاتف لا يطابق كود التفعيل", 404→"كود التفعيل غير صالح أو منتهي"; add `isLoggedIn()` (token present + cached user parses) and `logout()`. Remove all Firebase/Google.
-- [X] T019 [US1] Rewrite `front_end/medjat_app/lib/view/screen/auth/login_screen.dart`: single screen, two fields — phone (`TextInputType.phone`) + activation code (`textCapitalization: characters`, len ≥4) — using existing `PrimaryInput`/`PrimaryButton`; loading from controller `StatusRequest`; helper text "اطلب رقم هاتفك وكود التفعيل من إدارة الشركة"; add a secondary "وضع الكيوسك" entry that routes to `AppRoutes.kioskPair` (screen built in US7). Remove email/password/Google.
-- [X] T020 [US1] Edit `front_end/medjat_app/lib/view/screen/splash/splash_screen.dart`: remove any `FirebaseAuth` dependency; route via `Get.find<AuthController>().isLoggedIn()` → `home` else `login`.
-- [X] T021 [US1] Edit `front_end/medjat_app/lib/core/constant/routes/app_pages.dart` (GetX DI) and `lib/main.dart`: ensure `CRUD`, `TokenStorageService` usage, `AuthData`, `AuthController` are wired (AuthController permanent); KEEP `Firebase.initializeApp` for messaging; remove Firebase-Auth-only initialization. Keep existing routes.
+- [X] T013 [P] [US1] Extend `frontend/mobile/employee/lib/core/services/token_storage_service.dart`: add const `_deviceIdKey='device_id'`, `_stationTokenKey='station_token'`; add `getOrCreateDeviceId()` (create a UUID-like value once, persist, reuse), `clearSession()` (delete ONLY `auth_token` + user data, keep `device_id`), and station-token get/set/clear. (See [data-model.md](./data-model.md) storage table.)
+- [X] T014 [US1] Rewrite `frontend/mobile/employee/lib/core/class/crud.dart` `_headers()`: REMOVE all `FirebaseAuth`/`X-Firebase-Token` logic; add `X-Employee-Token` from `TokenStorageService.getToken()`; keep `X-Tenant-Id` from cached user; keep Basic auth. Also strip the Firebase `params['token']` branches in `getData`/`getBytes`. Keep `handleResponse` (it already maps 401→Arabic message).
+- [X] T015 [US1] In `frontend/mobile/employee/lib/core/constant/id/app_links.dart`, replace the link set per [contracts/employee-endpoints.md](./contracts/employee-endpoints.md) "app_links.dart target set" (add `employeeLogin`, `employeeLogout`, `myProfile`, `leaveBalance`, `registerFcm`, `notificationPrefs`, attendance/payroll/notifications links; REMOVE `activateEmployee`/`me`).
+- [X] T016 [P] [US1] Edit `frontend/mobile/employee/lib/data/model/user_model.dart`: `fromJson` reads `photoUrl = json['profile_image'] ?? json['photo_url']`; make `email` optional (default `''`); ensure `toJson` round-trips fields used by `X-Tenant-Id` (`tenant_id`).
+- [X] T017 [US1] Rewrite `frontend/mobile/employee/lib/data/data_source/remote/auth_data/auth_data.dart` per [contracts/auth.md](./contracts/auth.md): `login(phone, activationCode)` builds `{phone, activation_code, device_id(getOrCreateDeviceId), platform, device_model, app_version(package_info)}` → `CRUD.postData(AppLinks.employeeLogin, ..., auth:false)`; `logout()` → `CRUD.postData(AppLinks.employeeLogout, {})` then `TokenStorageService.clearSession()`; `getCachedUser()`; `getProfile()` → `CRUD.getData(AppLinks.myProfile)`. Remove all Firebase/Google code.
+- [X] T018 [US1] Rewrite `frontend/mobile/employee/lib/logic/controller/auth/auth_controller.dart`: `login({phone, code})` using `StatusRequest`; on success save token + `UserModel`, call FCM registration AFTER token saved, `Get.offAllNamed(AppRoutes.home)`; map 403→"رقم الهاتف لا يطابق كود التفعيل", 404→"كود التفعيل غير صالح أو منتهي"; add `isLoggedIn()` (token present + cached user parses) and `logout()`. Remove all Firebase/Google.
+- [X] T019 [US1] Rewrite `frontend/mobile/employee/lib/view/screen/auth/login_screen.dart`: single screen, two fields — phone (`TextInputType.phone`) + activation code (`textCapitalization: characters`, len ≥4) — using existing `PrimaryInput`/`PrimaryButton`; loading from controller `StatusRequest`; helper text "اطلب رقم هاتفك وكود التفعيل من إدارة الشركة"; add a secondary "وضع الكيوسك" entry that routes to `AppRoutes.kioskPair` (screen built in US7). Remove email/password/Google.
+- [X] T020 [US1] Edit `frontend/mobile/employee/lib/view/screen/splash/splash_screen.dart`: remove any `FirebaseAuth` dependency; route via `Get.find<AuthController>().isLoggedIn()` → `home` else `login`.
+- [X] T021 [US1] Edit `frontend/mobile/employee/lib/core/constant/routes/app_pages.dart` (GetX DI) and `lib/main.dart`: ensure `CRUD`, `TokenStorageService` usage, `AuthData`, `AuthController` are wired (AuthController permanent); KEEP `Firebase.initializeApp` for messaging; remove Firebase-Auth-only initialization. Keep existing routes.
 
 ### App test
 
-- [X] T022 [P] [US1] Add unit test `front_end/medjat_app/test/unit/models/user_model_test.dart` (fromJson reads `profile_image`, email optional) and `front_end/medjat_app/test/unit/auth_controller_test.dart` (success saves token+user; 403/404 map to the right Arabic messages) using a fake `CRUD`/`AuthData`. Run `flutter test`.
-- [X] T023 [P] [US1] Add widget test `front_end/medjat_app/test/widget/login_screen_test.dart`: renders two fields + button, no Google/email controls (guards SC-010 at the UI).
+- [X] T022 [P] [US1] Add unit test `frontend/mobile/employee/test/unit/models/user_model_test.dart` (fromJson reads `profile_image`, email optional) and `frontend/mobile/employee/test/unit/auth_controller_test.dart` (success saves token+user; 403/404 map to the right Arabic messages) using a fake `CRUD`/`AuthData`. Run `flutter test`.
+- [X] T023 [P] [US1] Add widget test `frontend/mobile/employee/test/widget/login_screen_test.dart`: renders two fields + button, no Google/email controls (guards SC-010 at the UI).
 
 **Checkpoint** (MVP): An employee can sign in with phone+code, reach home, and stay signed in after restart. `grep -rn "firebase_auth\|google_sign_in" lib/` is empty; `flutter analyze` clean.
 
@@ -96,10 +96,10 @@
 
 > Backend note: `app/employees/activation_code.php` ALREADY revokes the active token + sets `status='pending_activation'` on regenerate (research D1 verified). No backend change needed for revocation.
 
-- [X] T024 [US2] In `front_end/medjat_app/lib/core/class/crud.dart`, add a central 401 handler hook: when any protected response is HTTP 401, trigger a single app-level callback that calls `TokenStorageService.clearSession()` and `Get.offAllNamed(AppRoutes.login)` with snackbar "انتهت الجلسة، يرجى تسجيل الدخول مجدداً". Implement once (e.g., a static callback set at app start) so every feature inherits it — do NOT duplicate per controller. (research D5.)
-- [X] T025 [US2] Wire the 401 callback in `front_end/medjat_app/lib/main.dart` / `app_pages.dart` after GetX is ready, and ensure it is idempotent (guard against double navigation).
-- [X] T026 [US2] In `front_end/medjat_app/lib/view/screen/settings/settings_screen.dart`, wire the sign-out button to `AuthController.logout()` → `Get.offAllNamed(AppRoutes.login)`. Ensure logout still succeeds offline (revoke call best-effort; always clear local session).
-- [X] T027 [P] [US2] Add unit test `front_end/medjat_app/test/unit/crud_401_test.dart`: a 401 response invokes the session-expiry callback exactly once.
+- [X] T024 [US2] In `frontend/mobile/employee/lib/core/class/crud.dart`, add a central 401 handler hook: when any protected response is HTTP 401, trigger a single app-level callback that calls `TokenStorageService.clearSession()` and `Get.offAllNamed(AppRoutes.login)` with snackbar "انتهت الجلسة، يرجى تسجيل الدخول مجدداً". Implement once (e.g., a static callback set at app start) so every feature inherits it — do NOT duplicate per controller. (research D5.)
+- [X] T025 [US2] Wire the 401 callback in `frontend/mobile/employee/lib/main.dart` / `app_pages.dart` after GetX is ready, and ensure it is idempotent (guard against double navigation).
+- [X] T026 [US2] In `frontend/mobile/employee/lib/view/screen/settings/settings_screen.dart`, wire the sign-out button to `AuthController.logout()` → `Get.offAllNamed(AppRoutes.login)`. Ensure logout still succeeds offline (revoke call best-effort; always clear local session).
+- [X] T027 [P] [US2] Add unit test `frontend/mobile/employee/test/unit/crud_401_test.dart`: a 401 response invokes the session-expiry callback exactly once.
 
 **Checkpoint**: Sign-out and admin code-regen both return the user to login; protected 401s are handled globally.
 
@@ -119,10 +119,10 @@
 
 ### App
 
-- [X] T031 [US3] Point `front_end/medjat_app/lib/data/data_source/remote/leave_data/leave_data.dart` at `AppLinks.leaveBalance` (= my_balance) and `AppLinks.leaveApply`; ensure fields `{date, type, reason?, start_date?, end_date?}`.
-- [X] T032 [US3] In `front_end/medjat_app/lib/logic/controller/leave/leave_controller.dart`, handle 409 as a clear "يوجد تداخل مع إجازة قائمة" message via `StatusRequest`; load balance on screen open.
-- [X] T033 [US3] In `front_end/medjat_app/lib/view/screen/leave/leave_screen.dart`, confirm type picker (Annual/Sick/Personal/Unpaid), from/to dates, reason, submit, and balance display work against the new endpoints (RTL).
-- [X] T034 [P] [US3] Add unit test `front_end/medjat_app/test/unit/leave_controller_test.dart`: valid submit → success; 409 → overlap message.
+- [X] T031 [US3] Point `frontend/mobile/employee/lib/data/data_source/remote/leave_data/leave_data.dart` at `AppLinks.leaveBalance` (= my_balance) and `AppLinks.leaveApply`; ensure fields `{date, type, reason?, start_date?, end_date?}`.
+- [X] T032 [US3] In `frontend/mobile/employee/lib/logic/controller/leave/leave_controller.dart`, handle 409 as a clear "يوجد تداخل مع إجازة قائمة" message via `StatusRequest`; load balance on screen open.
+- [X] T033 [US3] In `frontend/mobile/employee/lib/view/screen/leave/leave_screen.dart`, confirm type picker (Annual/Sick/Personal/Unpaid), from/to dates, reason, submit, and balance display work against the new endpoints (RTL).
+- [X] T034 [P] [US3] Add unit test `frontend/mobile/employee/test/unit/leave_controller_test.dart`: valid submit → success; 409 → overlap message.
 
 **Checkpoint**: Leave submit + balance work end-to-end against the new auth; manager notification observable on the admin side.
 
@@ -144,10 +144,10 @@
 
 ### App
 
-- [X] T040 [US4] Point `front_end/medjat_app/lib/data/data_source/remote/attendance_data/attendance_data.dart` and `home_data/home_data.dart` at the new attendance links; confirm `home_controller` derives today's checked_in/out from `get_my_attendance`.
-- [X] T041 [US4] Confirm `front_end/medjat_app/lib/view/screen/attendance/scan_qr_screen.dart` + `attendance_controller.dart` send `{branch_id, latitude, longitude, qr_code}`; surface `GPS_OUT_OF_RANGE` as "أنت خارج نطاق الفرع" and QR mismatch clearly.
+- [X] T040 [US4] Point `frontend/mobile/employee/lib/data/data_source/remote/attendance_data/attendance_data.dart` and `home_data/home_data.dart` at the new attendance links; confirm `home_controller` derives today's checked_in/out from `get_my_attendance`.
+- [X] T041 [US4] Confirm `frontend/mobile/employee/lib/view/screen/attendance/scan_qr_screen.dart` + `attendance_controller.dart` send `{branch_id, latitude, longitude, qr_code}`; surface `GPS_OUT_OF_RANGE` as "أنت خارج نطاق الفرع" and QR mismatch clearly.
 - [X] T042 [US4] Verify the Hive offline queue + `sync_offline` path still flushes when connectivity returns (use `connectivity_service.dart`); ensure zero-loss (SC-006).
-- [X] T043 [P] [US4] Add unit test `front_end/medjat_app/test/unit/attendance_controller_test.dart`: out-of-range response → range message; offline action → queued.
+- [X] T043 [P] [US4] Add unit test `frontend/mobile/employee/test/unit/attendance_controller_test.dart`: out-of-range response → range message; offline action → queued.
 
 **Checkpoint**: Personal QR+GPS attendance + offline sync work under the new auth.
 
@@ -161,7 +161,7 @@
 
 - [X] T044 [US5] Edit `backend_medjet/app/payroll/get_slip.php`: swap to `authenticateEmployee`; keep `?month=` default current; not-found when no slip. (Check `get_slip_pdf.php` too if the app uses it for `?format=pdf`.)
 - [X] T045 [US5] Curl-verify: existing month → 200 slip; nonexistent month → not-found.
-- [X] T046 [US5] In `front_end/medjat_app/lib/data/data_source/remote/payroll_data/payroll_data.dart` + `payroll_controller.dart` + `payroll_screen.dart`: use `AppLinks.payrollSlipMonth`/`payrollPdf`; PDF via `CRUD.getBytes` → `open_filex`; render "لا توجد قسيمة لهذا الشهر" on not-found.
+- [X] T046 [US5] In `frontend/mobile/employee/lib/data/data_source/remote/payroll_data/payroll_data.dart` + `payroll_controller.dart` + `payroll_screen.dart`: use `AppLinks.payrollSlipMonth`/`payrollPdf`; PDF via `CRUD.getBytes` → `open_filex`; render "لا توجد قسيمة لهذا الشهر" on not-found.
 
 **Checkpoint**: Payroll view + PDF download work; empty state handled.
 
@@ -183,9 +183,9 @@
 
 ### App
 
-- [X] T052 [US6] In `front_end/medjat_app/lib/data/data_source/remote/profile_data/profile_data.dart` + `profile_controller.dart` + `view/screen/profile/my_profile_screen.dart`: use `AppLinks.myProfile`; render strictly view-only (remove/hide any edit affordance — FR-019); documents from the same payload feed `my_documents_screen.dart`.
-- [X] T053 [P] [US6] In `front_end/medjat_app/lib/core/services/push_notification_service.dart`: register the FCM token via `CRUD.postData(AppLinks.registerFcm, {...})` (sends `X-Employee-Token`), and ensure it is called AFTER login success (research D6). Do not depend on Firebase Auth.
-- [X] T054 [P] [US6] In `front_end/medjat_app/lib/data/data_source/remote/notification_data/notification_data.dart` + `notification_controller.dart` + `notifications_screen.dart`: use `AppLinks.notifications` + `notificationRead(id)`; mark-read updates the list.
+- [X] T052 [US6] In `frontend/mobile/employee/lib/data/data_source/remote/profile_data/profile_data.dart` + `profile_controller.dart` + `view/screen/profile/my_profile_screen.dart`: use `AppLinks.myProfile`; render strictly view-only (remove/hide any edit affordance — FR-019); documents from the same payload feed `my_documents_screen.dart`.
+- [X] T053 [P] [US6] In `frontend/mobile/employee/lib/core/services/push_notification_service.dart`: register the FCM token via `CRUD.postData(AppLinks.registerFcm, {...})` (sends `X-Employee-Token`), and ensure it is called AFTER login success (research D6). Do not depend on Firebase Auth.
+- [X] T054 [P] [US6] In `frontend/mobile/employee/lib/data/data_source/remote/notification_data/notification_data.dart` + `notification_controller.dart` + `notifications_screen.dart`: use `AppLinks.notifications` + `notificationRead(id)`; mark-read updates the list.
 
 **Checkpoint**: Profile (view-only), documents, notifications, and FCM all work under the new auth; push still delivers.
 
@@ -199,14 +199,14 @@
 
 > **No backend changes.** All endpoints already exist and use `X-Station-Token` (see [contracts/kiosk.md](./contracts/kiosk.md)). Admin-side station creation is out of scope.
 
-- [X] T055 [P] [US7] Create `front_end/medjat_app/lib/data/model/station_model.dart` per [data-model.md](./data-model.md): `Station`, `BranchEmployee`, `KioskCheckInResult` with `fromJson` (+`toJson` for offline cache).
-- [X] T056 [US7] Create `front_end/medjat_app/lib/data/data_source/remote/station_data/station_data.dart` per [contracts/kiosk.md](./contracts/kiosk.md): `activate(qrPayload, deviceInfo)`, `sync()`, `branchEmployees()`, `checkInOut({employeeId, method, confidence?, gpsLat?, gpsLng?, capturedImageBase64?})`, `verifyAdminPin(pin)`, `enrollBiometric(...)`, `heartbeat(gpsLat?, gpsLng?)`. These calls must send `X-Station-Token` (from `TokenStorageService.station_token`) NOT `X-Employee-Token` — add a station-header variant in `CRUD` (a flag/param) so the single CRUD class still owns all HTTP.
-- [X] T057 [US7] Add `kioskPair` and `kioskHome` to `front_end/medjat_app/lib/core/constant/routes/app_routes.dart`, register them in `app_pages.dart`, and create `front_end/medjat_app/lib/logic/bindings/station_binding.dart` (provides `StationData` + `StationController`).
-- [X] T058 [US7] Create `front_end/medjat_app/lib/logic/controller/station/station_controller.dart`: pairing (scan admin QR → `activate` → store `station_token` → route to kiosk home), load roster + branch settings via `sync`, on-device biometric capture/match honoring `station_methods`/`station_confidence_threshold`/`station_anti_spoofing_enabled`, `checkInOut` (handle 429 `too_soon`), periodic `heartbeat` (stop accepting check-ins when `locked`), `verifyAdminPin` to exit, offline queue + flush.
-- [X] T059 [US7] Create `front_end/medjat_app/lib/view/screen/kiosk/kiosk_pair_screen.dart`: scan/enter admin pairing QR, call `activate`, show clear error on invalid/expired (stay on screen).
-- [X] T060 [US7] Create `front_end/medjat_app/lib/view/screen/kiosk/kiosk_home_screen.dart`: branch employee grid, biometric check-in flow, on-screen confirmation (`employee_name` + action), locked-state banner, and an admin-PIN gate to exit kiosk mode (FR-029). Lock the device to this screen.
+- [X] T055 [P] [US7] Create `frontend/mobile/employee/lib/data/model/station_model.dart` per [data-model.md](./data-model.md): `Station`, `BranchEmployee`, `KioskCheckInResult` with `fromJson` (+`toJson` for offline cache).
+- [X] T056 [US7] Create `frontend/mobile/employee/lib/data/data_source/remote/station_data/station_data.dart` per [contracts/kiosk.md](./contracts/kiosk.md): `activate(qrPayload, deviceInfo)`, `sync()`, `branchEmployees()`, `checkInOut({employeeId, method, confidence?, gpsLat?, gpsLng?, capturedImageBase64?})`, `verifyAdminPin(pin)`, `enrollBiometric(...)`, `heartbeat(gpsLat?, gpsLng?)`. These calls must send `X-Station-Token` (from `TokenStorageService.station_token`) NOT `X-Employee-Token` — add a station-header variant in `CRUD` (a flag/param) so the single CRUD class still owns all HTTP.
+- [X] T057 [US7] Add `kioskPair` and `kioskHome` to `frontend/mobile/employee/lib/core/constant/routes/app_routes.dart`, register them in `app_pages.dart`, and create `frontend/mobile/employee/lib/logic/bindings/station_binding.dart` (provides `StationData` + `StationController`).
+- [X] T058 [US7] Create `frontend/mobile/employee/lib/logic/controller/station/station_controller.dart`: pairing (scan admin QR → `activate` → store `station_token` → route to kiosk home), load roster + branch settings via `sync`, on-device biometric capture/match honoring `station_methods`/`station_confidence_threshold`/`station_anti_spoofing_enabled`, `checkInOut` (handle 429 `too_soon`), periodic `heartbeat` (stop accepting check-ins when `locked`), `verifyAdminPin` to exit, offline queue + flush.
+- [X] T059 [US7] Create `frontend/mobile/employee/lib/view/screen/kiosk/kiosk_pair_screen.dart`: scan/enter admin pairing QR, call `activate`, show clear error on invalid/expired (stay on screen).
+- [X] T060 [US7] Create `frontend/mobile/employee/lib/view/screen/kiosk/kiosk_home_screen.dart`: branch employee grid, biometric check-in flow, on-screen confirmation (`employee_name` + action), locked-state banner, and an admin-PIN gate to exit kiosk mode (FR-029). Lock the device to this screen.
 - [X] T061 [US7] On-device biometric spike: **Decision — fingerprint-only initially** via `local_auth` package. Face recognition deferred to a follow-up (requires `google_mlkit_face_detection` + on-device embedding model, not yet in pubspec). Kiosk ships with fingerprint check-in; `station_methods` = `fingerprint_only` is the default.
-- [X] T062 [P] [US7] Add unit test `front_end/medjat_app/test/unit/station_controller_test.dart`: `activate` stores station token; `checkInOut` 429 → "too soon" message; `heartbeat` `locked` → check-ins refused.
+- [X] T062 [P] [US7] Add unit test `frontend/mobile/employee/test/unit/station_controller_test.dart`: `activate` stores station token; `checkInOut` 429 → "too soon" message; `heartbeat` `locked` → check-ins refused.
 
 **Checkpoint**: Kiosk pairing, biometric check-in, lock/admin-PIN exit, offline + heartbeat all work; reuses existing backend.
 
@@ -214,8 +214,8 @@
 
 ## Phase 10: Polish & Cross-Cutting Concerns
 
-- [X] T063 [P] Run `grep -rn "firebase_auth\|google_sign_in" front_end/medjat_app/lib/` and confirm EMPTY (FR-022 / SC-010). Remove any leftover Google asset/strings.
-- [X] T064 [P] `flutter analyze` clean and `flutter test` green in `front_end/medjat_app/`.
+- [X] T063 [P] Run `grep -rn "firebase_auth\|google_sign_in" frontend/mobile/employee/lib/` and confirm EMPTY (FR-022 / SC-010). Remove any leftover Google asset/strings.
+- [X] T064 [P] `flutter analyze` clean and `flutter test` green in `frontend/mobile/employee/`.
 - [X] T065 Management-app smoke test: `authenticateUser` in Auth.php untouched (verified line 25); no PHP endpoint used by management app was edited (only siblings created); admin login flow unaffected (FR-023 / SC-008).
 - [X] T066 Run the full [quickstart.md](./quickstart.md) acceptance (backend curl gate §1 + app manual checks §3 + DoD §4) and tick each item.
 - [X] T067 [P] Verify Arabic RTL on every new/changed screen (login, leave, attendance, payroll, profile, notifications, kiosk pair/home). — **All 8 screens OK**: global `TextDirection.rtl` in `main.dart` (GetMaterialApp + Directionality wrapper), Arabic locale, no hardcoded LTR.

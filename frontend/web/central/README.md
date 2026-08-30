@@ -1,7 +1,7 @@
 # Medjat Central — Web Edition
 
 The admin web app for **Medjat Central** HR/payroll. A feature-for-feature port of the
-Flutter admin app (`front_end/medjat_central`), talking to the **same PHP backend and
+Flutter admin app (`frontend/mobile/central`), talking to the **same PHP backend and
 same Firebase project** through a server-side `/api/[...path]` proxy that injects
 backend Basic-auth credentials and forwards `X-Firebase-Token` / `X-Tenant-Id` /
 `X-Device-Id`.

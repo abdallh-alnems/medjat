@@ -21,7 +21,7 @@
 **Storage**: PHP REST API (`backend_farkha/app/*.php`) + Firebase (Auth users, Remote Config, FCM tokens) · `get_storage` for client cache if needed  
 **Testing**: `flutter test` for widget/unit · Manual QA on Android (primary) + iOS (secondary) · Firebase Crashlytics post-release monitoring  
 **Target Platform**: Android SDK 23+ / iOS 13+ · Arabic RTL locale  
-**Project Type**: Mobile app (Flutter) + REST backend (PHP). Admin panel in `front_end/farkha_admin/` may also be affected — flag if so.  
+**Project Type**: Mobile app (Flutter) + REST backend (PHP). Admin panel in `frontend/farkha_admin/` may also be affected — flag if so.  
 **Performance Goals**: First paint of feature screen < 1s on 3G · Smooth 60fps scroll on mid-range Android · API call latency ≤ 2s p95  
 **Constraints**: Arabic RTL mandatory · Light + Dark mode parity · Works offline for read-only data where possible · `.env` driven config · No direct `http.*` outside `data_source/remote/`  
 **Scale/Scope**: [feature-specific — e.g., "expected 1k daily cycle updates across 500 active farms, 20 new screens/widgets, 3 new endpoints"]
@@ -62,7 +62,7 @@ specs/[###-feature]/
 -->
 
 ```text
-# Flutter app (this project): front_end/farkha_app/
+# Flutter app (this project): frontend/farkha_app/
 lib/
 ├── core/
 │   ├── class/                 # (usually unchanged)
@@ -88,7 +88,7 @@ test/
 app/                           # ADD: new endpoint files (one per endpoint)
 core/queries/                  # ADD: query classes for DB access
 
-# Admin panel (only if feature affects it): front_end/farkha_admin/
+# Admin panel (only if feature affects it): frontend/farkha_admin/
 ```
 
 **Structure Decision**: [Document which layers this feature touches. Examples: "Client-only: adds controller + screen + widget, reuses existing endpoint." — or — "Full-stack: new PHP endpoint + query class + Flutter data_source + controller + screen."]

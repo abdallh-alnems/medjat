@@ -24,9 +24,9 @@ shipped on its own.
 ## Path Conventions
 
 - Backend: `backend_medjet/` — one endpoint per file under `app/<module>/`, shared logic in `core/`
-- Kiosk app: `front_end/medjat_kiosk/` — a **standalone Flutter project**
-- Shared: `front_end/packages/medjat_shared/` — the face pipeline and its model, depended on by both `medjat_app` and `medjat_kiosk`
-- Management: `front_end/medjat_central/` (Flutter) and `front_end/medjat_central_web/` (Next.js)
+- Kiosk app: `frontend/mobile/kiosk/` — a **standalone Flutter project**
+- Shared: `frontend/mobile/shared/` — the face pipeline and its model, depended on by both `medjat_app` and `medjat_kiosk`
+- Management: `frontend/mobile/central/` (Flutter) and `frontend/web/central/` (Next.js)
 
 ---
 
@@ -36,9 +36,9 @@ shipped on its own.
 
 - [X] T001 [P] Create backend module directories `backend_medjet/app/kiosk/` and `backend_medjet/app/kiosk/admin/`
 - [X] T002 [P] Create capture storage directory `backend_medjet/uploads/kiosk/`. Note: `uploads/` is entirely gitignored in this repo and directories are created at runtime with `mkdir(..., 0755, true)` — see `BiometricEnrollment::storeReferencePhoto()`. No tracked keeper file; the local directory is for MAMP only
-- [X] T003 Create the shared package `front_end/packages/medjat_shared/` (`publish_to: none`) and move `face_embedder.dart`, `face_liveness.dart`, and `assets/models/mobilefacenet.tflite` into it from `medjat_app`. Change the asset key to `packages/medjat_shared/assets/models/mobilefacenet.tflite` — a package asset is not reachable at its bare path
-- [X] T004 Migrate `front_end/medjat_app/` onto the package: add the path dependency, drop `assets/models/` from its pubspec so the 5 MB model is not bundled twice, delete the two local face files, repoint the three importers to `package:medjat_shared/medjat_shared.dart`, and confirm `flutter analyze lib` is clean
-- [X] T005 Create the standalone kiosk project `front_end/medjat_kiosk/` (`flutter create --platforms=android`), set `applicationId`/`namespace` to `com.khawarizmie.medjat.kiosk`, move the Kotlin source to the matching package, set `minSdk = 29`, wire release signing from `key.properties` as `medjat_app` does, and write `android/app/src/main/AndroidManifest.xml` with `WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`, camera, portrait, `showWhenLocked`, and an optional HOME intent filter so a supervisor can make it the launcher
+- [X] T003 Create the shared package `frontend/mobile/shared/` (`publish_to: none`) and move `face_embedder.dart`, `face_liveness.dart`, and `assets/models/mobilefacenet.tflite` into it from `medjat_app`. Change the asset key to `packages/medjat_shared/assets/models/mobilefacenet.tflite` — a package asset is not reachable at its bare path
+- [X] T004 Migrate `frontend/mobile/employee/` onto the package: add the path dependency, drop `assets/models/` from its pubspec so the 5 MB model is not bundled twice, delete the two local face files, repoint the three importers to `package:medjat_shared/medjat_shared.dart`, and confirm `flutter analyze lib` is clean
+- [X] T005 Create the standalone kiosk project `frontend/mobile/kiosk/` (`flutter create --platforms=android`), set `applicationId`/`namespace` to `com.khawarizmie.medjat.kiosk`, move the Kotlin source to the matching package, set `minSdk = 29`, wire release signing from `key.properties` as `medjat_app` does, and write `android/app/src/main/AndroidManifest.xml` with `WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`, camera, portrait, `showWhenLocked`, and an optional HOME intent filter so a supervisor can make it the launcher
 - [X] T006 Run `backend_medjet/check-drift.sh` and resolve any pre-existing drift before writing migrations — starting dirty makes your damage indistinguishable from existing damage
 
 ---
@@ -68,8 +68,8 @@ shipped on its own.
 
 ### Kiosk app foundation
 
-- [X] T020 Create `front_end/medjat_kiosk/lib/core/network/kiosk_crud.dart` — a `CRUD` variant that sends `X-Kiosk-Token` on every request and POSTs all mutations
-- [X] T021 [P] Create `front_end/medjat_kiosk/lib/core/storage/kiosk_token_store.dart` storing the token in platform secure storage and wiping it on revocation
+- [X] T020 Create `frontend/mobile/kiosk/lib/core/network/kiosk_crud.dart` — a `CRUD` variant that sends `X-Kiosk-Token` on every request and POSTs all mutations
+- [X] T021 [P] Create `frontend/mobile/kiosk/lib/core/storage/kiosk_token_store.dart` storing the token in platform secure storage and wiping it on revocation
 
 **Checkpoint**: Schema applied, a kiosk can be authenticated, permissions exist. User stories can begin.
 
@@ -87,10 +87,10 @@ shipped on its own.
 - [X] T025 [US1] Implement `backend_medjet/app/kiosk/heartbeat.php` — `X-Kiosk-Token`, returns tenant-zone `server_time` via `TenantClock` plus branch settings; returns `401` on revocation, `426` below `medjat_kiosk_min_version`, `503` in maintenance
 - [X] T026 [P] [US1] Implement `backend_medjet/app/kiosk/list.php` — permission `kiosk_devices`, returns each station's `app_version`, `below_min_version`, `last_seen_at`, `is_offline`, and `punch_count`
 - [X] T027 [P] [US1] Implement `backend_medjet/app/kiosk/revoke.php` — permission `kiosk_devices`, sets station `revoked` and stamps the live token row; must not orphan `attendance.station_id` on historical rows
-- [X] T028 [US1] Build the pairing screen in `front_end/medjat_kiosk/lib/view/pairing_screen.dart` — code entry, branch confirmation, and persistence of the returned token
-- [X] T029 [US1] Build the heartbeat/bootstrap controller in `front_end/medjat_kiosk/lib/logic/kiosk_controller.dart` — on launch, resolve stored token → heartbeat → route to identify, pairing, update-required, or maintenance
-- [X] T030 [P] [US1] Add a Kiosks tab to the branch screen in `front_end/medjat_central/` — list, add (shows the code), and revoke, gated on `kiosk_devices`
-- [X] T031 [P] [US1] Add the same Kiosks surface to `front_end/medjat_central_web/`, gated on `kiosk_devices` from the permissions `login.php` already returns
+- [X] T028 [US1] Build the pairing screen in `frontend/mobile/kiosk/lib/view/pairing_screen.dart` — code entry, branch confirmation, and persistence of the returned token
+- [X] T029 [US1] Build the heartbeat/bootstrap controller in `frontend/mobile/kiosk/lib/logic/kiosk_controller.dart` — on launch, resolve stored token → heartbeat → route to identify, pairing, update-required, or maintenance
+- [X] T030 [P] [US1] Add a Kiosks tab to the branch screen in `frontend/mobile/central/` — list, add (shows the code), and revoke, gated on `kiosk_devices`
+- [X] T031 [P] [US1] Add the same Kiosks surface to `frontend/web/central/`, gated on `kiosk_devices` from the permissions `login.php` already returns
 - [ ] T032 [US1] **Verify**: pair a tablet; re-enter the same code on a second device and confirm `410`; revoke and confirm the first device gets `401` on its next heartbeat and wipes local state
 - [ ] T033 [US1] **Verify**: sign in as a user without `kiosk_devices` and confirm both that `create_pairing_code.php` refuses and that the UI never shows the control (FR-061)
 
@@ -110,10 +110,10 @@ shipped on its own.
 - [X] T037 [US2] Implement `backend_medjet/app/kiosk/admin/enroll.php` — validates `model_version` against `FaceMatchService::MODEL_VERSION`, enforces `BiometricEnrollment::MIN_QUALITY_SCORE` **server-side**, stores the photo via `BiometricEnrollment::storeReferencePhoto()`, writes the same `employees.face_*` columns as `app/biometric/enroll_face.php`, plus `face_enrolled_by_station_id`
 - [X] T038 [US2] Add re-enrollment handling to `admin/enroll.php` — without `confirm_replace: true` an already-enrolled employee returns `409` naming the existing enrollment date; with it, the replacement is recorded rather than silently overwriting (FR-041)
 - [X] T039 [P] [US2] Implement `backend_medjet/app/kiosk/admin/close.php` — ends the admin session, and with `release_kiosk_mode: true` releases kiosk mode
-- [X] T040 [US2] Build the admin area in `front_end/medjat_kiosk/lib/view/admin_screen.dart` — code entry, roster list, and an idle timer that closes the area by itself (FR-038)
-- [X] T041 [US2] Build the enrollment capture flow in `front_end/medjat_kiosk/lib/logic/enrollment_controller.dart`, reusing `lib/core/services/face_embedder.dart` and `face_liveness.dart` unchanged
-- [X] T042 [P] [US2] Add "Open kiosk settings" (generate access code) to the branch screen in `front_end/medjat_central/` and `front_end/medjat_central_web/`, gated on `kiosk_access`
-- [X] T043 [P] [US2] Surface enrollment provenance on the employee screen in `front_end/medjat_central/` — enrolled, when, by whom, at which kiosk
+- [X] T040 [US2] Build the admin area in `frontend/mobile/kiosk/lib/view/admin_screen.dart` — code entry, roster list, and an idle timer that closes the area by itself (FR-038)
+- [X] T041 [US2] Build the enrollment capture flow in `frontend/mobile/kiosk/lib/logic/enrollment_controller.dart`, reusing `lib/core/services/face_embedder.dart` and `face_liveness.dart` unchanged
+- [X] T042 [P] [US2] Add "Open kiosk settings" (generate access code) to the branch screen in `frontend/mobile/central/` and `frontend/web/central/`, gated on `kiosk_access`
+- [X] T043 [P] [US2] Surface enrollment provenance on the employee screen in `frontend/mobile/central/` — enrolled, when, by whom, at which kiosk
 - [ ] T044 [US2] **Verify**: enroll three employees in one session; confirm an employee of another branch never appears in the roster; confirm a deliberately blurred capture is refused with a reason and stores nothing
 - [ ] T045 [US2] **Verify**: leave the admin area untouched and confirm it closes itself and returns to the identification screen; confirm a spent access code returns `410`
 
@@ -136,8 +136,8 @@ shipped on its own.
 - [X] T052 [US3] Implement `backend_medjet/app/kiosk/punch.php` — redeems the `punch_ticket`, writes through the existing `AttendanceModel` methods so `late_minutes`/`worked_minutes`/`overtime_minutes`/`status` cannot diverge from other channels, stamps time via `TenantClock`, and sets `check_in_method`/`check_out_method` = `kiosk`, `recognition_method` = `station_face`, `recognition_confidence`, and `station_id`
 - [X] T053 [US3] Add idempotency to `punch.php` — a repeated `kiosk_idempotency_key` returns the **original** result with `200`, not an error (FR-027)
 - [X] T054 [US3] Mirror kiosk refusals that resolve to a known employee into `attendance_security_logs` with the new `kiosk_*` reasons; attempts that identify nobody live only in `station_recognition_logs`, because that table's `employee_id` is `NOT NULL` (FR-034)
-- [X] T055 [US3] Build the identification screen in `front_end/medjat_kiosk/lib/view/identify_screen.dart` — camera preview, liveness prompt, and a result state that renders `message_key` as guidance rather than as an error
-- [X] T056 [US3] Build the confirmation screen in `front_end/medjat_kiosk/lib/view/confirm_screen.dart` — shows the resolved name and the correct direction, records on one press, then returns to identification after a short pause
+- [X] T055 [US3] Build the identification screen in `frontend/mobile/kiosk/lib/view/identify_screen.dart` — camera preview, liveness prompt, and a result state that renders `message_key` as guidance rather than as an error
+- [X] T056 [US3] Build the confirmation screen in `frontend/mobile/kiosk/lib/view/confirm_screen.dart` — shows the resolved name and the correct direction, records on one press, then returns to identification after a short pause
 - [ ] T057 [US3] **Verify**: enroll two similar-looking people, present a capture that scores close to both, and confirm `ambiguous` with no attendance row and both scores logged. **This is the single most important behaviour in the feature**
 - [X] T058 [US3] **Verify**: send the same `punch.php` request twice with one idempotency key and confirm two `200`s and exactly one `attendance` row
 - [ ] T059 [US3] **Verify**: set `tenants.timezone` to `Asia/Dubai`, punch, and confirm `attendance.check_in_time` reflects Dubai — a bare `date()` or `NOW()` anywhere in the write path shows up here as a multi-hour offset
@@ -155,9 +155,9 @@ shipped on its own.
 - [X] T060 [P] [US4] Implement `backend_medjet/app/kiosk/set_pin.php` — permission `manage_employees`, generates and hashes into `employees.kiosk_pin_hash`, returns the plaintext once, invalidates the previous code immediately
 - [X] T061 [US4] Implement `backend_medjet/app/kiosk/identify_by_code.php` — returns the same envelope as `identify.php` with `method = 'code'`; refuses with `422` when `branches.station_code_fallback_enabled = 0`
 - [X] T062 [US4] Add per-station rate limiting to `identify_by_code.php` via `RateLimiter`; crossing the threshold writes `kiosk_pin_bruteforce` to `attendance_security_logs` and returns `429` (FR-019)
-- [X] T063 [US4] Build the code entry screen in `front_end/medjat_kiosk/lib/view/code_entry_screen.dart`, reachable from a failed identification and hidden when the branch has the fallback disabled
-- [X] T064 [P] [US4] Add the kiosk code control to the employee screen in `front_end/medjat_central/` and `front_end/medjat_central_web/`, gated on `manage_employees`
-- [X] T065 [P] [US4] Add the per-branch `station_code_fallback_enabled` toggle to the branch settings screen in `front_end/medjat_central/`
+- [X] T063 [US4] Build the code entry screen in `frontend/mobile/kiosk/lib/view/code_entry_screen.dart`, reachable from a failed identification and hidden when the branch has the fallback disabled
+- [X] T064 [P] [US4] Add the kiosk code control to the employee screen in `frontend/mobile/central/` and `frontend/web/central/`, gated on `manage_employees`
+- [X] T065 [P] [US4] Add the per-branch `station_code_fallback_enabled` toggle to the branch settings screen in `frontend/mobile/central/`
 - [ ] T066 [US4] **Verify**: punch by code and confirm the attendance row and its log row both show code identification, not face; confirm repeated wrong codes are throttled and flagged
 
 **Checkpoint**: A bad face day no longer sends the branch back to manual entry.
@@ -170,9 +170,9 @@ shipped on its own.
 
 **Independent Test**: Attempt to leave the kiosk through every ordinary device gesture; confirm only an access code releases it; power-cycle and confirm it returns unattended.
 
-- [X] T067 [US5] Implement screen pinning (lock task) entry and exit in `front_end/medjat_kiosk/lib/logic/kiosk_lock_controller.dart` — deliberately **not** `DEVICE_ADMIN`, which attracts Play policy scrutiny for no gain here
+- [X] T067 [US5] Implement screen pinning (lock task) entry and exit in `frontend/mobile/kiosk/lib/logic/kiosk_lock_controller.dart` — deliberately **not** `DEVICE_ADMIN`, which attracts Play policy scrutiny for no gain here
 - [X] T068 [P] [US5] Hold a wakelock while the kiosk screen is foreground and return to identification after each interaction or a short idle period (FR-021)
-- [X] T069 [P] [US5] Add a `BOOT_COMPLETED` receiver in `front_end/medjat_kiosk/android/app/src/main/kotlin/com/khawarizmie/medjat/kiosk/` so the tablet returns to its branch's kiosk screen after a restart with nobody signing in (FR-023)
+- [X] T069 [P] [US5] Add a `BOOT_COMPLETED` receiver in `frontend/mobile/kiosk/android/app/src/main/kotlin/com/khawarizmie/medjat/kiosk/` so the tablet returns to its branch's kiosk screen after a restart with nobody signing in (FR-023)
 - [X] T070 [US5] Wire kiosk-mode release to `admin/close.php` with `release_kiosk_mode: true`, reachable only through the administration area — never a static PIN
 - [X] T071 [US5] Throttle repeated invalid access codes on the tablet and record the event (User Story 5 scenario 4)
 - [ ] T072 [US5] **Verify on a physical Android tablet** — screen pinning and boot behaviour do not reproduce in an emulator. Confirm back, home, and recents cannot leave the kiosk, and that the screen never sleeps
@@ -188,13 +188,13 @@ shipped on its own.
 
 **Independent Test**: Disconnect the tablet, confirm it identifies nobody and states why; reconnect and confirm it resumes unattended with no punches invented and none lost.
 
-- [X] T074 [US6] Add connectivity detection and a blocking offline state to `front_end/medjat_kiosk/lib/logic/kiosk_controller.dart` — no queue, no local roster, no local decision (FR-024)
-- [X] T075 [US6] Build the offline screen in `front_end/medjat_kiosk/lib/view/offline_screen.dart` — tells the employee what to do instead, in the tenant's language, never a technical error
-- [X] T076 [P] [US6] Build the update-required and maintenance screens in `front_end/medjat_kiosk/lib/view/` for the `426` and `503` heartbeat responses — the update message is addressed to a **supervisor**, not to the employee standing in front of it (FR-053)
+- [X] T074 [US6] Add connectivity detection and a blocking offline state to `frontend/mobile/kiosk/lib/logic/kiosk_controller.dart` — no queue, no local roster, no local decision (FR-024)
+- [X] T075 [US6] Build the offline screen in `frontend/mobile/kiosk/lib/view/offline_screen.dart` — tells the employee what to do instead, in the tenant's language, never a technical error
+- [X] T076 [P] [US6] Build the update-required and maintenance screens in `frontend/mobile/kiosk/lib/view/` for the `426` and `503` heartbeat responses — the update message is addressed to a **supervisor**, not to the employee standing in front of it (FR-053)
 - [X] T077 [US6] Implement outcome resolution on reconnect in the kiosk client — replay the pending punch with its original idempotency key rather than creating a new one, so a lost response cannot become a double punch
 - [X] T078 [US6] Assert that no embedding, roster, or capture is written to device storage anywhere in the kiosk app — audit `lib/kiosk/` for persistence and confirm only the token is stored (FR-025)
 - [X] T079 [US6] Add dark-kiosk detection to the existing alerting cron in `backend_medjet/app/cron/run_alerts.php` — a station whose `last_seen_at` has gone stale during its branch's working hours notifies management (FR-048)
-- [ ] T080 [P] [US6] Surface kiosk outage windows beside branch attendance in `front_end/medjat_central/` so missing punches have an explanation (FR-050)
+- [ ] T080 [P] [US6] Surface kiosk outage windows beside branch attendance in `frontend/mobile/central/` so missing punches have an explanation (FR-050)
 - [ ] T081 [US6] **Verify**: pull the network mid-shift, confirm the tablet identifies nobody and states why; reconnect and confirm it resumes with no intervention and no invented punches
 - [ ] T082 [US6] **Verify**: inspect the tablet's app storage after a full session and confirm no biometric data persists. If anything does, the offline capability was given up for a security property that was never delivered
 
@@ -211,7 +211,7 @@ shipped on its own.
 - [X] T083 [US7] Implement `backend_medjet/app/kiosk/recognition_logs.php` — permission `manage_attendance`, filters on branch/station/result/date, plus `view: "distribution"` returning a score histogram in the same shape as `app/attendance/face_logs.php`. **Omit `capture_path`** — reaching the image costs a different permission
 - [X] T084 [US7] Implement `backend_medjet/app/kiosk/capture.php` — permission `kiosk_evidence`, returns a short-lived signed URL, writes an audit row on every call, and returns `410` once `capture_expires_at` has passed (FR-055, FR-059)
 - [X] T085 [US7] Create `backend_medjet/app/cron/purge_kiosk_captures.php` — unlinks the file **then** nulls `capture_path`; deleting the row alone leaves the image on disk (FR-056)
-- [X] T086 [P] [US7] Add kiosk activity and score distribution to the attendance section of `front_end/medjat_central/` and `front_end/medjat_central_web/`, gated on `manage_attendance`
+- [X] T086 [P] [US7] Add kiosk activity and score distribution to the attendance section of `frontend/mobile/central/` and `frontend/web/central/`, gated on `manage_attendance`
 - [X] T087 [P] [US7] Add "view capture" beside kiosk attendance rows, gated on `kiosk_evidence` — visible only to holders, per FR-061
 - [X] T088 [P] [US7] Surface branches whose identification failure rate is abnormal, and kiosks unseen for an extended period, in the existing alerts surface (FR-032)
 - [X] T089 [US7] Implement the roster-size warning (FR-047) — warn when a branch's enrolled roster passes the size at which the configured threshold and margin can still hold SC-013

@@ -84,10 +84,10 @@ specs/003-medjat-central-web/
 
 ### Source Code (repository root)
 
-A new sibling web app under `front_end/`, mirroring `farkha_web` conventions:
+A new sibling web app under `frontend/`, mirroring `farkha_web` conventions:
 
 ```text
-front_end/medjat_central_web/
+frontend/web/central/
 ├── public/
 │   ├── manifest.json
 │   ├── icons/                     # PWA + Medjat papyrus icon set
@@ -154,8 +154,8 @@ front_end/medjat_central_web/
 
 **Structure Decision**: Web application (Option 2, frontend only). The backend
 (`backend_medjat`) and Firebase project are reused unchanged; this plan delivers a new
-Next.js client at `front_end/medjat_central_web/`, a direct sibling of the existing
-`front_end/medjat_central` Flutter app, following `farkha_web`'s `src/app` + `src/lib`
+Next.js client at `frontend/web/central/`, a direct sibling of the existing
+`frontend/mobile/central` Flutter app, following `farkha_web`'s `src/app` + `src/lib`
 + `src/components` layout. Route groups `(auth)` and `(app)` separate the public auth
 surface from the authenticated, tenant-guarded shell.
 

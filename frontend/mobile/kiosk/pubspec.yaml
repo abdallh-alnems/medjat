@@ -17,7 +17,7 @@ dependencies:
   # The server matches embeddings from both products against one stored vector
   # per employee, so extraction must be identical. One copy, not two.
   medjat_shared:
-    path: ../packages/medjat_shared
+    path: ../shared
 
   # Version constraints deliberately match medjat_app.
   get: ^4.7.2

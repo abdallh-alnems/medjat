@@ -32,7 +32,7 @@ Deferred TODOs: none
 
 # Medjat App Constitution
 
-تطبيق Flutter. تُوجّه هذه الوثيقة كل خطط المزايا، والـ reviews، وقرارات الهندسة داخل `front_end/medjat_app/` ومشاريعها المصاحبة (`backend_medjat/`). ما يُذكر هنا MUST يُحترم؛ أي انحراف يُوثَّق في `plan.md → Complexity Tracking`.
+تطبيق Flutter. تُوجّه هذه الوثيقة كل خطط المزايا، والـ reviews، وقرارات الهندسة داخل `frontend/mobile/employee/` ومشاريعها المصاحبة (`backend_medjat/`). ما يُذكر هنا MUST يُحترم؛ أي انحراف يُوثَّق في `plan.md → Complexity Tracking`.
 
 ## Core Principles
 

@@ -25,7 +25,7 @@ The real cost is statistical. `FaceMatchService::similarity()` already computes
 cosine similarity and `verify()` compares it to one threshold. That is sufficient
 for 1:1 and **insufficient for 1:N**: at a per-comparison false-accept rate of
 *p*, scanning *N* candidates gives roughly `1 − (1 − p)^N`. The measured figures
-in `front_end/packages/medjat_shared/assets/models/README.md` (800 LFW pairs) give:
+in `frontend/mobile/shared/assets/models/README.md` (800 LFW pairs) give:
 
 | Threshold | FAR (per comparison) | FRR | Implied FAR across 40 | across 200 |
 |---|---|---|---|---|
@@ -235,9 +235,9 @@ unlink before deleting.
 ## R-009 — A standalone project, with exactly one shared package
 
 **Decision**: Ship the kiosk as its own Flutter project,
-`front_end/medjat_kiosk/`, with its own `applicationId`
+`frontend/mobile/kiosk/`, with its own `applicationId`
 (`com.khawarizmie.medjat.kiosk`), manifest, signing key, and release cadence.
-Share **only** the face pipeline, through a new `front_end/packages/medjat_shared/`
+Share **only** the face pipeline, through a new `frontend/mobile/shared/`
 package that both apps depend on by path.
 
 **Rationale**: Two products, two release trains, two permission sets — that is a

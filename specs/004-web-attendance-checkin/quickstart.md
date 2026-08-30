@@ -44,7 +44,7 @@ certificate once.
 ## 3. Front end
 
 ```bash
-cd front_end/medjat_central_web
+cd frontend/web/central
 npm run dev:https      # NOT `npm run dev` — see above
 ```
 
@@ -132,7 +132,7 @@ mobile app deals with.
 ## 7. Automated tests
 
 ```bash
-cd front_end/medjat_central_web
+cd frontend/web/central
 npm test              # vitest — PIN validation, state machine, api client
 npm run test:e2e      # playwright — activate → check in → check out
 npm run lint

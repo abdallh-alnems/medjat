@@ -86,7 +86,7 @@ synthetic to prove anything.
 Its own project, Android only:
 
 ```bash
-cd front_end/medjat_kiosk
+cd frontend/mobile/kiosk
 cp .env.example .env      # set API_HOST, SECURITY_USER, SECURITY_KEY
 flutter pub get
 flutter run
@@ -103,7 +103,7 @@ FlutterFire example files under `build/` and reports phantom errors.
 
 ### The shared package
 
-`front_end/packages/medjat_shared/` holds the face pipeline and `mobilefacenet.tflite`,
+`frontend/mobile/shared/` holds the face pipeline and `mobilefacenet.tflite`,
 and both apps depend on it by path. After changing anything in it, run
 `flutter pub get` in **both** consumers — a path dependency is not re-resolved on
 its own.
@@ -121,7 +121,7 @@ cd ../medjat_kiosk && flutter build apk --debug
 
 # different packages, and the employee APK must carry NEITHER
 # RECEIVE_BOOT_COMPLETED NOR WAKE_LOCK
-aapt dump permissions ../medjat_app/build/app/outputs/flutter-apk/app-debug.apk
+aapt dump permissions ../employee/build/app/outputs/flutter-apk/app-debug.apk
 aapt dump permissions build/app/outputs/flutter-apk/app-debug.apk
 ```
 

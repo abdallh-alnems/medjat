@@ -32,4 +32,4 @@
 ## Notes
 
 - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`
-- The source rebuild plan (`front_end/medjat_app/REBUILD_PHONE_CODE_PLAN.md`) is implementation-focused; this spec deliberately abstracts it to the WHAT/WHY level. The detailed technical approach belongs in `/speckit.plan`.
+- The source rebuild plan (`frontend/mobile/employee/REBUILD_PHONE_CODE_PLAN.md`) is implementation-focused; this spec deliberately abstracts it to the WHAT/WHY level. The detailed technical approach belongs in `/speckit.plan`.

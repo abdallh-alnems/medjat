@@ -10,15 +10,18 @@ Next.js web port, and a desktop shell that wraps that web port.
 ```
 Medjat/
 ├── backend_medjet/          ← PHP 8.x REST API on MySQL 8 — the core (Hetzner VPS)
-├── front_end/
-│   ├── medjat_app/          ← Employee app (Android/iOS) — attendance, payslips, requests
-│   ├── medjat_central/      ← Company HR/management app (Android/iOS)
-│   ├── medjat_central_web/  ← Next.js 16 web port of medjat_central (self-hosted)
-│   ├── medjat_central_desktop/ ← Electron shell over the web app → .dmg / .exe
-│   ├── medjat_kiosk/        ← Branch kiosk (Android tablet) — shared-device attendance
-│   ├── medjat_admin/        ← Internal super-admin panel (Android)
-│   ├── packages/            ← medjat_shared — code shared between the Flutter apps
-│   └── web_pages/           ← Static promo/landing + privacy, delete-account, support
+├── frontend/
+│   ├── mobile/              ← Flutter apps — the `flutter` toolchain
+│   │   ├── employee/        ← Employee app (Android/iOS) — attendance, payslips, requests
+│   │   ├── central/         ← Company HR/management app (Android/iOS)
+│   │   ├── kiosk/           ← Branch kiosk (Android tablet) — shared-device attendance
+│   │   ├── admin/           ← Internal super-admin panel (Android)
+│   │   └── shared/          ← package `medjat_shared` — shared between the Flutter apps
+│   ├── web/                 ← the `npm` toolchain
+│   │   ├── central/         ← Next.js 16 web port of mobile/central (self-hosted)
+│   │   └── site/            ← Static promo/landing + privacy, delete-account, support
+│   └── desktop/
+│       └── central/         ← Electron shell over web/central → .dmg / .exe
 └── specs/                   ← spec-kit feature specs
 ```
 
@@ -149,7 +152,7 @@ migrations. SSH alias `medjat` is configured in `~/.ssh/config`.
   only). Deploy is `rsync` from the Mac — no CI.
   - `api.medjatapp.com/backend_medjet` → PHP backend at `/var/www/medjat/backend_medjet`
   - `app.medjatapp.com` → Next.js via systemd `medjat-web.service` (`next start` on :3000)
-  - `medjatapp.com` + `www` → static promo site (`front_end/web_pages`), plus `/join` and
+  - `medjatapp.com` + `www` → static promo site (`frontend/web/site`), plus `/join` and
     `/.well-known/*` deep links served from the backend copies
   - `grafana.medjatapp.com` (Grafana + Prometheus) and `db.medjatapp.com` (Adminer, basic-auth)
 - **Cron:** `/etc/cron.d/medjat` (Africa/Cairo) — leave rollover 00:00+00:30 (CLI), catch-up absences
@@ -171,7 +174,7 @@ Feature specs live in `specs/` (spec-kit): `001-rebuild-employee-app`, `002-admi
 ## Active Technologies
 - PHP 8.4 local (MAMP) / 8.5 live · TypeScript 5, React 19, Next.js 16 (App Router) + Existing `core/` services — `Auth`, `GpsService`, `NetworkVerifier`, `TenantClock`, `RateLimiter`, `Validator`, `Response`, `BiometricEnrollment` (photo-storage pattern). Web: TanStack Query, Zustand, React Hook Form + Zod, Tailwind, shadcn/Base UI, axios. (004-web-attendance-checkin)
 - MySQL 8.4 (live) — additive migrations only; images to `backend_medjet/uploads/` (004-web-attendance-checkin)
-- PHP 8.4 local (MAMP) / 8.5 live · Dart 3.11 / Flutter (GetX, MVVM) · TypeScript 5, React 19, Next.js 16 for the management web surface + Existing `core/` services — `Auth`, `FaceMatchService`, `BiometricEnrollment`, `GpsService`, `TenantClock`, `PermissionMiddleware`, `TenantMiddleware`, `RateLimiter`, `RemoteConfigService`, `I18n`, `Response`. Kiosk app: `camera`, `google_mlkit_face_detection`, `tflite_flutter` (all already in `medjat_app/pubspec.yaml`), `assets/models/mobilefacenet.tflite` (5.2 MB, BSD-3, already in the repo) (005-branch-kiosk)
+- PHP 8.4 local (MAMP) / 8.5 live · Dart 3.11 / Flutter (GetX, MVVM) · TypeScript 5, React 19, Next.js 16 for the management web surface + Existing `core/` services — `Auth`, `FaceMatchService`, `BiometricEnrollment`, `GpsService`, `TenantClock`, `PermissionMiddleware`, `TenantMiddleware`, `RateLimiter`, `RemoteConfigService`, `I18n`, `Response`. Kiosk app: `camera`, `google_mlkit_face_detection`, `tflite_flutter` (all already in `frontend/mobile/employee/pubspec.yaml`), `assets/models/mobilefacenet.tflite` (5.2 MB, BSD-3, already in the repo) (005-branch-kiosk)
 - MySQL 8.4 (live) — four additive migrations, no drops or narrowing. Captures to `backend_medjet/uploads/kiosk/`, purged on a schedule (005-branch-kiosk)
 
 ## Recent Changes

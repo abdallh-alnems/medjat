@@ -6,7 +6,7 @@ How to build, wire, and verify this feature. Order follows the user-story priori
 - MAMP MySQL running: `medjat` DB on `127.0.0.1:8889` (root/root). Apply migration:
   `mysql -u root -proot -h 127.0.0.1 -P 8889 medjat < backend_medjet/migrations/2026_06_admin_support_control.sql`
 - Backend Firebase service-account credential available (same one `NotificationService` uses) — needed for Remote Config writes and FCM.
-- Flutter: `cd front_end/medjat_admin && flutter pub get`.
+- Flutter: `cd frontend/mobile/admin && flutter pub get`.
 
 ## Slice 1 — Support inbox & reply (US1, P1) — no Firebase needed
 Backend: reuse `admin_support/list.php`, `messages.php`, `reply.php`; add `admin_support/status.php`.
@@ -31,7 +31,7 @@ Admin app:
 
 ## Slice 3 — Support push (US push, FR-010b/SC-009) — adds Firebase to medjat_admin
 1. Migration adds `super_admin_devices`.
-2. Add `firebase_core` + `firebase_messaging` to `medjat_admin/pubspec.yaml`; add platform Firebase config files; init in `main.dart`.
+2. Add `firebase_core` + `firebase_messaging` to `frontend/mobile/admin/pubspec.yaml`; add platform Firebase config files; init in `main.dart`.
 3. `admin/devices/register.php` (upsert token); register on login/start; request notification permission.
 4. `NotificationService::sendToSupportTeam(...)`; call it from tenant-side `support/create.php` and `support/reply.php` (user messages).
 5. Notification tap → deep-link to the ticket thread.

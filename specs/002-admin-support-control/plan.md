@@ -77,7 +77,7 @@ backend_medjet/
 └── migrations/
     └── 2026_06_admin_support_control.sql   # NEW — super_admin_devices table (+ optional app_control mirror)
 
-front_end/medjat_admin/lib/
+frontend/mobile/admin/lib/
 ├── core/constant/id/app_links.dart        # EXTEND — support + app-control endpoints
 ├── core/constant/routes/{app_routes,app_pages}.dart  # EXTEND — routes + bindings
 ├── data/model/
@@ -95,8 +95,8 @@ front_end/medjat_admin/lib/
     ├── support/support_thread_screen.dart  # NEW
     └── app_control/app_control_screen.dart # NEW
 
-front_end/medjat_app/  (Employee) — verify/add RC read of medjat_app_min_version + medjat_app_maintenance_enabled
-front_end/medjat_central/ (HR) — already reads medjat_central_* keys (no change)
+frontend/mobile/employee/  (Employee) — verify/add RC read of medjat_app_min_version + medjat_app_maintenance_enabled
+frontend/mobile/central/ (HR) — already reads medjat_central_* keys (no change)
 ```
 
 **Structure Decision**: Mobile + API (Option 3). The backend extends the existing `app/admin_*` endpoint convention (thin PHP files using `AdminAuth::require()` + `SupportModel`/new services). The admin app follows its established GetX layering: `data/model` → `data/data_source/remote/*_data` → `logic/controller/*` → `view/screen/*`, registered via `*Binding` classes in `app_pages.dart`. The deprecated `force_update` flow is superseded by `app_control`.

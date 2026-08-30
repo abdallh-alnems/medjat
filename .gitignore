@@ -20,3 +20,11 @@ build/
 pubspec.lock
 coverage/
 .gradle/
+
+# Electron build output
+dist/
+dist-*/
+
+# GetStorage local containers (regenerated at runtime)
+GetStorage.bak
+GetStorage.gs

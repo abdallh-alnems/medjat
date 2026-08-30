@@ -10,13 +10,13 @@ Auto-generated from feature plans. Last updated: [DATE]
 
 ```text
 farkha/
-├── front_end/farkha_app/        # Flutter app (this project) — MVVM with GetX
+├── frontend/farkha_app/        # Flutter app (this project) — MVVM with GetX
 │   └── lib/
 │       ├── core/{class,constant,functions,middleware,package,services,shared}/
 │       ├── data/{data_source/remote, model}/
 │       ├── logic/{bindings, controller}/
 │       └── view/{screen, widget}/
-├── front_end/farkha_admin/      # Flutter admin panel
+├── frontend/farkha_admin/      # Flutter admin panel
 └── backend_farkha/              # PHP REST API
     ├── app/                     # one file per endpoint
     └── core/queries/            # query classes
