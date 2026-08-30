@@ -191,6 +191,11 @@ final class BreakRequestTest extends TestCase
 
     public function test_the_window_is_judged_by_the_companys_clock(): void
     {
+        // Frozen at midday: the claim here is about which zone the window is
+        // judged in, not about the hour, and a window built by subtracting
+        // minutes from "now" wraps past midnight when the suite runs at 01:00.
+        $this->travelTo(TenantClock::now($this->tenantId)->setTime(12, 0));
+
         // The original compared a company-zone window against a UTC clock, so a
         // closed window looked open for another three hours.
         $today = TenantClock::date($this->tenantId);

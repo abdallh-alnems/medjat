@@ -491,6 +491,11 @@ final class DeviceFleetTest extends TestCase
 
     public function test_a_linked_id_is_written_straight_to_attendance(): void
     {
+        // After the working day the punches describe. The ingestor refuses a
+        // timestamp more than twelve hours ahead as a misconfigured device
+        // clock, so a 17:30 punch is out of range if the suite runs at 01:00.
+        $this->travelTo(TenantClock::now($this->tenantId)->setTime(20, 0));
+
         $today = TenantClock::date($this->tenantId);
         $device = AttendanceDevice::ensureFileImportDevice($this->tenantId, $this->branchId, null);
         DB::table('device_users')->insert([

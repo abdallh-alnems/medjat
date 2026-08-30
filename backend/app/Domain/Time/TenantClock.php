@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Time;
 
 use App\Support\Value;
+use Carbon\CarbonImmutable;
 use DateTimeImmutable;
 use DateTimeZone;
 use Illuminate\Support\Facades\DB;
@@ -54,9 +55,20 @@ final class TenantClock
         return self::$zones[$tenantId] = $zone;
     }
 
+    /**
+     * Now, in the company's zone.
+     *
+     * Through Carbon rather than `new DateTimeImmutable`, so the clock can be
+     * frozen. Everything in this system that is easy to get wrong is a function
+     * of the time of day — whether a break window has closed, whether a shift
+     * has started, whether a punch is inside its sanity range — and a clock
+     * that cannot be fixed in place means those are tested against whatever
+     * time the suite happens to run at. CarbonImmutable is a DateTimeImmutable,
+     * so nothing downstream can tell the difference.
+     */
     public static function now(int $tenantId): DateTimeImmutable
     {
-        return new DateTimeImmutable('now', self::zone($tenantId));
+        return CarbonImmutable::now(self::zone($tenantId));
     }
 
     /** Today's date (Y-m-d) as the company experiences it. */

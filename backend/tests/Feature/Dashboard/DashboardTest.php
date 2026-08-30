@@ -146,6 +146,11 @@ final class DashboardTest extends TestCase
 
     public function test_a_confirmed_absence_and_a_no_show_are_counted_apart(): void
     {
+        // Midday, inside the fixture's 09:00–17:00 shift. Before it starts a
+        // no-show is correctly 'pre_shift' instead, which is a different
+        // distinction and has its own test below.
+        $this->travelTo(TenantClock::now($this->tenantId)->setTime(12, 0));
+
         // Otherwise the two overlap and the same person is counted twice.
         $absent = $this->employee('Marked absent');
         $this->employee('No record yet');
