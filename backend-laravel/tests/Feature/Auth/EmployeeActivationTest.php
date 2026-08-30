@@ -9,6 +9,7 @@ use App\Models\ActivationCode;
 use App\Models\Employee;
 use App\Models\EmployeeAuthToken;
 use App\Models\EmployeeWebCredential;
+use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
@@ -148,6 +149,38 @@ final class EmployeeActivationTest extends TestCase
         $this->assertNotNull(EmployeeAuthToken::findActiveByPlain($token));
         $this->assertNotNull(EmployeeWebCredential::findFor($employee->id, $employee->tenant_id));
         $this->assertNull(ActivationCode::findUsableByCode($code->code));
+    }
+
+    public function test_browser_activation_creates_the_account_permissions_hang_off(): void
+    {
+        // An employee carries permissions through an `admins` row. Creating it
+        // on the phone path and not here made an account differ depending on
+        // which surface the person first activated on.
+        $employee = $this->employee();
+        DB::table('employee_web_credentials')->where('employee_id', $employee->id)->delete();
+        DB::table('employees')->where('id', $employee->id)->update(['admin_id' => null]);
+        $code = $this->activationCode($employee);
+
+        $this->postJson('/app/auth/employee_web_activate.php', [
+            'phone' => $employee->phone,
+            'activation_code' => $code->code,
+            'pin' => '481920',
+            'device_id' => 'browser-1',
+        ])->assertOk();
+
+        $adminId = Value::nullableInt(
+            DB::table('employees')->where('id', $employee->id)->value('admin_id')
+        );
+
+        $this->assertNotNull($adminId);
+        $this->assertDatabaseHas('admins', [
+            'id' => $adminId,
+            'tenant_id' => $employee->tenant_id,
+            'role' => 'employee',
+        ]);
+        $this->assertDatabaseHas('employees', [
+            'id' => $employee->id, 'status' => 'active', 'has_linked_account' => 1,
+        ]);
     }
 
     public function test_a_weak_pin_is_refused_before_the_code_is_spent(): void

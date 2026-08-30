@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Domain\Access\PinPolicy;
 use App\Domain\Attendance\WebAccessPolicy;
+use App\Domain\Employees\EmployeeAccount;
 use App\Exceptions\ApiFailure;
 use App\Http\ApiResponse;
 use App\Http\Requests\Auth\EmployeeWebActivateRequest;
@@ -89,11 +90,11 @@ final class EmployeeWebActivateController
 
         try {
             $session = DB::transaction(function () use ($employee, $tenantId, $code, $request): array {
-                Employee::query()->whereKey($employee->id)->update([
-                    'status' => 'active',
-                    'has_linked_account' => 1,
-                    'updated_at' => DB::raw('NOW()'),
-                ]);
+                // Also creates the `admins` row the employee's permissions
+                // hang off. Omitting it here is what made an account differ
+                // depending on whether the person first activated on a phone or
+                // in a browser.
+                EmployeeAccount::activate($employee);
 
                 EmployeeWebCredential::query()->create([
                     'tenant_id' => $tenantId,

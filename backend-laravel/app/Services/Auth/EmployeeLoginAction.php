@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\Auth;
 
+use App\Domain\Employees\EmployeeAccount;
 use App\Exceptions\ApiFailure;
 use App\Models\ActivationCode;
-use App\Models\Admin;
 use App\Models\Employee;
 use App\Models\EmployeeAuthToken;
 use Illuminate\Support\Facades\Config;
@@ -118,7 +118,7 @@ final class EmployeeLoginAction
                     'updated_at' => DB::raw('NOW()'),
                 ]);
 
-                $this->ensureAdminRow($employee);
+                EmployeeAccount::ensureAdminRow($employee);
 
                 // A demo sign-in never consumes an activation row, so the same
                 // credentials stay valid for every future store review.
@@ -187,40 +187,6 @@ final class EmployeeLoginAction
         }
 
         return $employee;
-    }
-
-    /**
-     * Employees carry permissions through an `admins` row with the `employee`
-     * role. Created on first sign-in and reused afterwards; the firebase_uid is
-     * synthetic because an employee never authenticates through Firebase.
-     */
-    private function ensureAdminRow(Employee $employee): void
-    {
-        if ($employee->admin_id !== null) {
-            return;
-        }
-
-        $existing = Admin::query()
-            ->where('tenant_id', $employee->tenant_id)
-            ->where('phone', $employee->phone)
-            ->where('role', 'employee')
-            ->first();
-
-        if ($existing !== null) {
-            $adminId = $existing->id;
-        } else {
-            $adminId = (int) Admin::query()->insertGetId([
-                'firebase_uid' => 'employee:'.$employee->id,
-                'tenant_id' => $employee->tenant_id,
-                'branch_id' => $employee->branch_id,
-                'name' => $employee->name,
-                'phone' => $employee->phone,
-                'role' => 'employee',
-            ]);
-        }
-
-        Employee::query()->whereKey($employee->id)->update(['admin_id' => $adminId]);
-        $employee->admin_id = $adminId;
     }
 
     /**
