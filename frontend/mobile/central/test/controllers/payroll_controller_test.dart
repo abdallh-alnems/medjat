@@ -65,13 +65,18 @@ void main() {
       controller = PayrollController();
       await controller.loadPayrolls();
 
+      // The first successful load anchors the picker on the latest *completed*
+      // cycle, and that re-fetch is a second call. Counting from zero here
+      // keeps this test about the reload `changeMonth` itself triggers.
+      clearInteractions(mockData);
+
       controller.changeMonth(1, 2024);
 
       expect(controller.selectedMonth, 1);
       expect(controller.selectedYear, 2024);
       verify(() => mockData.getPayrollLive(any(), any(),
               branchId: any(named: 'branchId')))
-          .called(2);
+          .called(1);
     });
 
   });

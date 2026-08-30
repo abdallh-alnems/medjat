@@ -51,6 +51,7 @@ void main() {
             'is_vpn': 0,
             'is_mock_location': 0,
             'is_rooted_device': 0,
+            'local_biometric': 0,
           })).called(1);
     });
 
@@ -65,6 +66,7 @@ void main() {
       expect(result['status'], StatusRequest.success);
       verify(() => mockCrud.postData(AppLinks.checkOut, {
             'is_mock_location': 0,
+            'local_biometric': 0,
           })).called(1);
     });
 
@@ -82,6 +84,7 @@ void main() {
 
       verify(() => mockCrud.postData(AppLinks.checkOut, {
             'is_mock_location': 1,
+            'local_biometric': 0,
             'latitude': 30.0444,
             'longitude': 31.2357,
           })).called(1);
