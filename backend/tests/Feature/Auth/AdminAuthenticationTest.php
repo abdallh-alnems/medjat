@@ -22,7 +22,7 @@ final class AdminAuthenticationTest extends TestCase
 {
     use DatabaseTransactions;
 
-    private const ENDPOINT = '/app/auth/logout.php';
+    private const ENDPOINT = '/v1/auth/admin/logout';
 
     private FakeFirebaseTokenVerifier $firebase;
 

@@ -94,7 +94,7 @@ final class ReviewDocumentTest extends TestCase
     public function test_verifying_records_who_approved_it_and_when(): void
     {
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/verify_document.php', ['document_id' => $this->documentId])
+            ->postJson('/v1/employees/documents/verify', ['document_id' => $this->documentId])
             ->assertOk();
 
         $row = DB::table('employee_documents')->where('id', $this->documentId)->first();
@@ -107,7 +107,7 @@ final class ReviewDocumentTest extends TestCase
     public function test_the_employee_is_told_their_document_was_approved(): void
     {
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/verify_document.php', ['document_id' => $this->documentId])
+            ->postJson('/v1/employees/documents/verify', ['document_id' => $this->documentId])
             ->assertOk();
 
         $this->assertDatabaseHas('notifications', [
@@ -124,7 +124,7 @@ final class ReviewDocumentTest extends TestCase
         // "Rejected" on its own tells them nothing they can act on, and they
         // will upload the same file again.
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/reject_document.php', [
+            ->postJson('/v1/employees/documents/reject', [
                 'document_id' => $this->documentId,
                 'reason' => 'الصورة غير واضحة',
             ])->assertOk();
@@ -142,7 +142,7 @@ final class ReviewDocumentTest extends TestCase
     public function test_a_rejection_without_a_reason_is_refused(): void
     {
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/reject_document.php', ['document_id' => $this->documentId])
+            ->postJson('/v1/employees/documents/reject', ['document_id' => $this->documentId])
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'missing_fields');
     }
@@ -150,10 +150,10 @@ final class ReviewDocumentTest extends TestCase
     public function test_a_rejection_clears_a_previous_approval(): void
     {
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/verify_document.php', ['document_id' => $this->documentId])->assertOk();
+            ->postJson('/v1/employees/documents/verify', ['document_id' => $this->documentId])->assertOk();
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/reject_document.php', [
+            ->postJson('/v1/employees/documents/reject', [
                 'document_id' => $this->documentId, 'reason' => 'Expired',
             ])->assertOk();
 
@@ -166,12 +166,12 @@ final class ReviewDocumentTest extends TestCase
     public function test_approving_clears_a_previous_rejection_reason(): void
     {
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/reject_document.php', [
+            ->postJson('/v1/employees/documents/reject', [
                 'document_id' => $this->documentId, 'reason' => 'Blurred',
             ])->assertOk();
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/verify_document.php', ['document_id' => $this->documentId])->assertOk();
+            ->postJson('/v1/employees/documents/verify', ['document_id' => $this->documentId])->assertOk();
 
         $this->assertNull(
             DB::table('employee_documents')->where('id', $this->documentId)->value('rejected_reason')
@@ -185,7 +185,7 @@ final class ReviewDocumentTest extends TestCase
         $this->push->fails = true;
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/verify_document.php', ['document_id' => $this->documentId])
+            ->postJson('/v1/employees/documents/verify', ['document_id' => $this->documentId])
             ->assertOk();
 
         $row = DB::table('employee_documents')->where('id', $this->documentId)->first();
@@ -207,7 +207,7 @@ final class ReviewDocumentTest extends TestCase
         ]);
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/employees/verify_document.php', ['document_id' => $this->documentId])
+            ->postJson('/v1/employees/documents/verify', ['document_id' => $this->documentId])
             ->assertOk();
     }
 
@@ -222,7 +222,7 @@ final class ReviewDocumentTest extends TestCase
         ]);
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/employees/verify_document.php', ['document_id' => $this->documentId])
+            ->postJson('/v1/employees/documents/verify', ['document_id' => $this->documentId])
             ->assertForbidden()
             ->assertJsonPath('error_code', 'missing_permission');
     }
@@ -235,14 +235,14 @@ final class ReviewDocumentTest extends TestCase
         }
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/verify_document.php', ['document_id' => Value::int($other)])
+            ->postJson('/v1/employees/documents/verify', ['document_id' => Value::int($other)])
             ->assertNotFound();
     }
 
     public function test_an_expiry_can_be_set_and_cleared(): void
     {
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/update_document.php', [
+            ->postJson('/v1/employees/documents/update', [
                 'document_id' => $this->documentId, 'expires_at' => '2027-01-01',
             ])->assertOk();
 
@@ -252,7 +252,7 @@ final class ReviewDocumentTest extends TestCase
         );
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/update_document.php', [
+            ->postJson('/v1/employees/documents/update', [
                 'document_id' => $this->documentId, 'expires_at' => '',
             ])->assertOk();
 
@@ -264,7 +264,7 @@ final class ReviewDocumentTest extends TestCase
     public function test_a_malformed_expiry_is_refused(): void
     {
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/update_document.php', [
+            ->postJson('/v1/employees/documents/update', [
                 'document_id' => $this->documentId, 'expires_at' => 'next tuesday',
             ])->assertStatus(400)->assertJsonPath('error_code', 'invalid_date');
     }
@@ -276,7 +276,7 @@ final class ReviewDocumentTest extends TestCase
         DB::table('employee_documents')->where('id', $this->documentId)->delete();
 
         $documents = $this->withHeader('X-Firebase-Token', $this->token)
-            ->getJson('/app/employees/get_documents.php?employee_id='.$this->employee->id)
+            ->getJson('/v1/employees/documents?employee_id='.$this->employee->id)
             ->assertOk()
             ->json('data.required_documents');
 
@@ -289,12 +289,12 @@ final class ReviewDocumentTest extends TestCase
         // The requirement is unmet whether nothing arrived or the wrong thing
         // did.
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/reject_document.php', [
+            ->postJson('/v1/employees/documents/reject', [
                 'document_id' => $this->documentId, 'reason' => 'Wrong document',
             ])->assertOk();
 
         $missing = $this->withHeader('X-Firebase-Token', $this->token)
-            ->getJson('/app/employees/get_missing_documents.php?employee_id='.$this->employee->id)
+            ->getJson('/v1/employees/documents/missing?employee_id='.$this->employee->id)
             ->assertOk()
             ->json('data.missing_documents');
 
@@ -305,10 +305,10 @@ final class ReviewDocumentTest extends TestCase
     public function test_a_verified_document_is_not_missing(): void
     {
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/verify_document.php', ['document_id' => $this->documentId])->assertOk();
+            ->postJson('/v1/employees/documents/verify', ['document_id' => $this->documentId])->assertOk();
 
         $missing = $this->withHeader('X-Firebase-Token', $this->token)
-            ->getJson('/app/employees/get_missing_documents.php?employee_id='.$this->employee->id)
+            ->getJson('/v1/employees/documents/missing?employee_id='.$this->employee->id)
             ->assertOk()
             ->json('data.missing_documents');
 
@@ -319,7 +319,7 @@ final class ReviewDocumentTest extends TestCase
     public function test_deleting_removes_the_upload_but_leaves_the_requirement(): void
     {
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/delete_document.php', ['document_id' => $this->documentId])
+            ->postJson('/v1/employees/documents/delete', ['document_id' => $this->documentId])
             ->assertOk();
 
         $this->assertDatabaseMissing('employee_documents', ['id' => $this->documentId]);

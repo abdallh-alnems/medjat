@@ -69,7 +69,7 @@ final class DesktopAndAccountTest extends TestCase
         [$admin, $token] = $this->admin();
 
         $response = $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/desktop_authorize.php', ['state' => str_repeat('s', 32)])
+            ->postJson('/v1/auth/desktop/authorize', ['state' => str_repeat('s', 32)])
             ->assertOk()
             ->assertJsonPath('data.expires_in_seconds', DesktopAuthCode::LIFETIME_SECONDS);
 
@@ -87,7 +87,7 @@ final class DesktopAndAccountTest extends TestCase
     public function test_an_unauthenticated_caller_cannot_mint_a_code(): void
     {
         // The code is only ever minted for the account signed in right there.
-        $this->postJson('/app/auth/desktop_authorize.php', ['state' => str_repeat('s', 32)])
+        $this->postJson('/v1/auth/desktop/authorize', ['state' => str_repeat('s', 32)])
             ->assertStatus(400);
     }
 
@@ -96,7 +96,7 @@ final class DesktopAndAccountTest extends TestCase
         [, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/desktop_authorize.php', ['state' => 'short'])
+            ->postJson('/v1/auth/desktop/authorize', ['state' => 'short'])
             ->assertStatus(400);
     }
 
@@ -106,11 +106,11 @@ final class DesktopAndAccountTest extends TestCase
         $state = str_repeat('s', 32);
 
         $code = $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/desktop_authorize.php', ['state' => $state])
+            ->postJson('/v1/auth/desktop/authorize', ['state' => $state])
             ->json('data.code');
         $this->assertIsString($code);
 
-        $this->postJson('/app/auth/desktop_exchange.php', ['code' => $code, 'state' => $state])
+        $this->postJson('/v1/auth/desktop/exchange', ['code' => $code, 'state' => $state])
             ->assertOk()
             ->assertJsonPath('data.token', 'custom-token:'.$admin->firebase_uid.':{"desktop":true}');
     }
@@ -121,13 +121,13 @@ final class DesktopAndAccountTest extends TestCase
         $state = str_repeat('s', 32);
 
         $code = $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/desktop_authorize.php', ['state' => $state])
+            ->postJson('/v1/auth/desktop/authorize', ['state' => $state])
             ->json('data.code');
         $this->assertIsString($code);
 
-        $this->postJson('/app/auth/desktop_exchange.php', ['code' => $code, 'state' => $state])->assertOk();
+        $this->postJson('/v1/auth/desktop/exchange', ['code' => $code, 'state' => $state])->assertOk();
 
-        $this->postJson('/app/auth/desktop_exchange.php', ['code' => $code, 'state' => $state])
+        $this->postJson('/v1/auth/desktop/exchange', ['code' => $code, 'state' => $state])
             ->assertUnauthorized()
             ->assertJsonPath('error_code', 'desktop_code_invalid');
     }
@@ -139,11 +139,11 @@ final class DesktopAndAccountTest extends TestCase
         [, $token] = $this->admin();
 
         $code = $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/desktop_authorize.php', ['state' => str_repeat('s', 32)])
+            ->postJson('/v1/auth/desktop/authorize', ['state' => str_repeat('s', 32)])
             ->json('data.code');
         $this->assertIsString($code);
 
-        $this->postJson('/app/auth/desktop_exchange.php', ['code' => $code, 'state' => str_repeat('x', 32)])
+        $this->postJson('/v1/auth/desktop/exchange', ['code' => $code, 'state' => str_repeat('x', 32)])
             ->assertUnauthorized()
             ->assertJsonPath('error_code', 'desktop_code_invalid');
     }
@@ -160,7 +160,7 @@ final class DesktopAndAccountTest extends TestCase
             [DesktopAuthCode::hash($code), DesktopAuthCode::hash($state), $admin->id, $admin->firebase_uid]
         );
 
-        $this->postJson('/app/auth/desktop_exchange.php', ['code' => $code, 'state' => $state])
+        $this->postJson('/v1/auth/desktop/exchange', ['code' => $code, 'state' => $state])
             ->assertUnauthorized();
     }
 
@@ -168,7 +168,7 @@ final class DesktopAndAccountTest extends TestCase
     {
         // Unknown, expired, spent and state-mismatch must be indistinguishable,
         // or the endpoint says which half of the pair was wrong.
-        $unknown = $this->postJson('/app/auth/desktop_exchange.php', [
+        $unknown = $this->postJson('/v1/auth/desktop/exchange', [
             'code' => bin2hex(random_bytes(32)), 'state' => str_repeat('s', 32),
         ]);
 
@@ -186,7 +186,7 @@ final class DesktopAndAccountTest extends TestCase
         );
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/desktop_authorize.php', ['state' => str_repeat('s', 32)])
+            ->postJson('/v1/auth/desktop/authorize', ['state' => str_repeat('s', 32)])
             ->assertOk();
 
         $this->assertDatabaseMissing('desktop_auth_codes', ['code_hash' => DesktopAuthCode::hash('spent')]);
@@ -200,7 +200,7 @@ final class DesktopAndAccountTest extends TestCase
         [$admin, $token] = $this->admin(['tenant_id' => $other->tenant_id]);
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/delete_account.php')
+            ->postJson('/v1/auth/account')
             ->assertOk()
             ->assertJsonPath('data.deleted_company', false);
 
@@ -214,7 +214,7 @@ final class DesktopAndAccountTest extends TestCase
         [, $token] = $this->admin(['role' => 'hr']);
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/delete_account.php')
+            ->postJson('/v1/auth/account')
             ->assertOk()
             ->assertJsonPath('data.deleted_company', false);
     }
@@ -224,7 +224,7 @@ final class DesktopAndAccountTest extends TestCase
         [$admin, $token] = $this->admin(['tenant_id' => null]);
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/delete_account.php')
+            ->postJson('/v1/auth/account')
             ->assertOk()
             ->assertJsonPath('data.deleted_company', false);
 
@@ -239,7 +239,7 @@ final class DesktopAndAccountTest extends TestCase
         $this->accounts->deletionFails = true;
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/delete_account.php')
+            ->postJson('/v1/auth/account')
             ->assertOk();
 
         $this->assertDatabaseMissing('admins', ['id' => $admin->id]);

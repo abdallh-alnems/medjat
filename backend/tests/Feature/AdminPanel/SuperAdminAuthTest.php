@@ -53,7 +53,7 @@ final class SuperAdminAuthTest extends TestCase
      */
     private function login(array $payload): TestResponse
     {
-        return $this->postJson('/admin/auth/login.php', $payload);
+        return $this->postJson('/v1/admin/auth/login', $payload);
     }
 
     private function openSession(): string
@@ -134,7 +134,7 @@ final class SuperAdminAuthTest extends TestCase
         $this->openSession();
 
         $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/admin/auth/me.php')
+            ->getJson('/v1/admin/auth/me')
             ->assertOk()
             ->assertJsonPath('data.username', $this->username)
             ->assertJsonPath('data.role', 'admin')
@@ -148,7 +148,7 @@ final class SuperAdminAuthTest extends TestCase
         $drop = $this->openSession();
 
         $this->withHeader('Authorization', 'Bearer '.$drop)
-            ->postJson('/admin/auth/logout.php')
+            ->postJson('/v1/admin/auth/logout')
             ->assertOk();
 
         $this->assertDatabaseMissing('super_admin_sessions', [
@@ -165,7 +165,7 @@ final class SuperAdminAuthTest extends TestCase
         $other = $this->openSession();
 
         $this->withHeader('Authorization', 'Bearer '.$keep)
-            ->postJson('/admin/auth/change_password.php', [
+            ->postJson('/v1/admin/auth/password', [
                 'current_password' => self::PASSWORD,
                 'new_password' => 'a-much-longer-secret',
             ])->assertOk();
@@ -186,7 +186,7 @@ final class SuperAdminAuthTest extends TestCase
     public function test_a_wrong_current_password_is_refused_and_recorded(): void
     {
         $this->withHeader('Authorization', 'Bearer '.$this->openSession())
-            ->postJson('/admin/auth/change_password.php', [
+            ->postJson('/v1/admin/auth/password', [
                 'current_password' => 'not-it',
                 'new_password' => 'a-much-longer-secret',
             ])->assertStatus(401);
@@ -203,12 +203,12 @@ final class SuperAdminAuthTest extends TestCase
         $token = $this->openSession();
 
         $this->withHeader('Authorization', 'Bearer '.$token)
-            ->postJson('/admin/auth/change_password.php', [
+            ->postJson('/v1/admin/auth/password', [
                 'current_password' => self::PASSWORD, 'new_password' => 'short',
             ])->assertStatus(422);
 
         $this->withHeader('Authorization', 'Bearer '.$token)
-            ->postJson('/admin/auth/change_password.php', [
+            ->postJson('/v1/admin/auth/password', [
                 'current_password' => self::PASSWORD, 'new_password' => self::PASSWORD,
             ])->assertStatus(422);
     }

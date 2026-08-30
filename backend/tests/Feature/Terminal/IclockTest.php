@@ -82,7 +82,7 @@ final class IclockTest extends TestCase
     {
         return $this->call(
             'POST',
-            '/device/iclock.php?SN='.$serial.'&table='.$table.'&action=cdata',
+            '/iclock/cdata?SN='.$serial.'&table='.$table,
             [], [], [], ['CONTENT_TYPE' => 'text/plain'], $body,
         );
     }
@@ -90,9 +90,9 @@ final class IclockTest extends TestCase
     /**
      * @return TestResponse<\Illuminate\Http\Response>
      */
-    private function poll(string $query): TestResponse
+    private function poll(string $action, string $query): TestResponse
     {
-        return $this->call('GET', '/device/iclock.php?'.$query);
+        return $this->call('GET', '/iclock/'.$action.'?'.$query);
     }
 
     private static function punchLine(string $pin, string $at, int $status = 0, int $verify = 1): string
@@ -120,7 +120,7 @@ final class IclockTest extends TestCase
 
     public function test_the_handshake_answers_with_the_options_the_firmware_expects(): void
     {
-        $response = $this->poll('SN='.self::SERIAL.'&action=cdata&DeviceType=uFace800&pushver=2.4.1')
+        $response = $this->poll('cdata', 'SN='.self::SERIAL.'&DeviceType=uFace800&pushver=2.4.1')
             ->assertOk()
             ->assertHeader('Content-Type', 'text/plain; charset=utf-8');
 
@@ -140,8 +140,8 @@ final class IclockTest extends TestCase
 
     public function test_a_handshake_that_omits_a_field_does_not_erase_what_we_knew(): void
     {
-        $this->poll('SN='.self::SERIAL.'&action=cdata&DeviceType=uFace800&pushver=2.4.1')->assertOk();
-        $this->poll('SN='.self::SERIAL.'&action=cdata')->assertOk();
+        $this->poll('cdata', 'SN='.self::SERIAL.'&DeviceType=uFace800&pushver=2.4.1')->assertOk();
+        $this->poll('cdata', 'SN='.self::SERIAL)->assertOk();
 
         $this->assertDatabaseHas('attendance_devices', [
             'id' => $this->deviceId, 'model' => 'uFace800', 'firmware' => '2.4.1',
@@ -235,7 +235,7 @@ final class IclockTest extends TestCase
     public function test_a_request_with_no_serial_is_answered_politely(): void
     {
         // So it stops retrying rather than spinning.
-        $this->poll('action=cdata')->assertOk()->assertSee('OK', false);
+        $this->poll('cdata', '')->assertOk()->assertSee('OK', false);
     }
 
     public function test_a_disabled_device_is_acknowledged_and_ignored(): void
@@ -250,7 +250,7 @@ final class IclockTest extends TestCase
 
     public function test_contact_is_recorded_even_when_nothing_else_happens(): void
     {
-        $this->poll('SN='.self::SERIAL.'&action=ping')->assertOk();
+        $this->poll('ping', 'SN='.self::SERIAL)->assertOk();
 
         $this->assertNotNull(DB::table('attendance_devices')->where('id', $this->deviceId)->value('last_seen_at'));
     }
@@ -297,7 +297,7 @@ final class IclockTest extends TestCase
             'state' => 'queued',
         ]);
 
-        $this->poll('SN='.self::SERIAL.'&action=getrequest')
+        $this->poll('getrequest', 'SN='.self::SERIAL)
             ->assertOk()
             ->assertSee('C:'.$commandId.':REBOOT', false);
 
@@ -306,7 +306,7 @@ final class IclockTest extends TestCase
 
     public function test_a_poll_with_nothing_queued_answers_ok(): void
     {
-        $this->poll('SN='.self::SERIAL.'&action=getrequest')->assertOk()->assertSee('OK', false);
+        $this->poll('getrequest', 'SN='.self::SERIAL)->assertOk()->assertSee('OK', false);
     }
 
     public function test_a_stale_command_is_failed_rather_than_executed_late(): void
@@ -322,7 +322,7 @@ final class IclockTest extends TestCase
             'created_at' => DB::raw('DATE_SUB(NOW(), INTERVAL 3 DAY)'),
         ]);
 
-        $this->poll('SN='.self::SERIAL.'&action=getrequest')->assertOk()->assertSee('OK', false);
+        $this->poll('getrequest', 'SN='.self::SERIAL)->assertOk()->assertSee('OK', false);
 
         $this->assertDatabaseHas('device_commands', [
             'id' => $commandId, 'state' => 'failed', 'result_code' => 'expired',
@@ -333,7 +333,7 @@ final class IclockTest extends TestCase
     {
         DB::table('attendance_devices')->where('id', $this->deviceId)->update(['tenant_id' => null]);
 
-        $this->poll('SN='.self::SERIAL.'&action=getrequest')->assertOk()->assertSee('OK', false);
+        $this->poll('getrequest', 'SN='.self::SERIAL)->assertOk()->assertSee('OK', false);
     }
 
     public function test_a_command_result_closes_the_command(): void
@@ -347,7 +347,7 @@ final class IclockTest extends TestCase
         ]);
 
         $this->call(
-            'POST', '/device/iclock.php?SN='.self::SERIAL.'&action=devicecmd',
+            'POST', '/iclock/devicecmd?SN='.self::SERIAL,
             [], [], [], ['CONTENT_TYPE' => 'text/plain'], "ID={$commandId}\tReturn=0\tCMD=REBOOT",
         )->assertOk();
 
@@ -365,7 +365,7 @@ final class IclockTest extends TestCase
         ]);
 
         $this->call(
-            'POST', '/device/iclock.php?SN='.self::SERIAL.'&action=devicecmd',
+            'POST', '/iclock/devicecmd?SN='.self::SERIAL,
             [], [], [], ['CONTENT_TYPE' => 'text/plain'], "ID={$commandId}\tReturn=-14",
         )->assertOk();
 
@@ -377,7 +377,7 @@ final class IclockTest extends TestCase
     public function test_an_unrecognised_action_is_acknowledged(): void
     {
         foreach (['ping', 'fdata', 'edata', 'querydata', 'somethingnew'] as $action) {
-            $this->poll('SN='.self::SERIAL.'&action='.$action)->assertOk()->assertSee('OK', false);
+            $this->poll($action, 'SN='.self::SERIAL)->assertOk()->assertSee('OK', false);
         }
     }
 

@@ -95,7 +95,7 @@ final class DeviceFleetTest extends TestCase
 
     private function registered(?string $serial = null): int
     {
-        $response = $this->asAdmin()->postJson('/app/devices/register.php', [
+        $response = $this->asAdmin()->postJson('/v1/devices', [
             'serial_number' => $serial ?? $this->serial(),
             'branch_id' => $this->branchId,
             'name' => 'Front door',
@@ -126,7 +126,7 @@ final class DeviceFleetTest extends TestCase
         // create a second row for the same physical device.
         $serial = $this->serial();
 
-        $this->asAdmin()->postJson('/app/devices/register.php', [
+        $this->asAdmin()->postJson('/v1/devices', [
             'serial_number' => strtolower($serial),
             'branch_id' => $this->branchId,
         ])->assertOk();
@@ -136,7 +136,7 @@ final class DeviceFleetTest extends TestCase
 
     public function test_a_nonsense_serial_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/devices/register.php', [
+        $this->asAdmin()->postJson('/v1/devices', [
             'serial_number' => 'no',
             'branch_id' => $this->branchId,
         ])->assertStatus(422)->assertJsonPath('error_code', 'INVALID_SERIAL');
@@ -155,7 +155,7 @@ final class DeviceFleetTest extends TestCase
             'status' => 'active',
         ]);
 
-        $this->asAdmin()->postJson('/app/devices/register.php', [
+        $this->asAdmin()->postJson('/v1/devices', [
             'serial_number' => $serial,
             'branch_id' => $this->branchId,
         ])->assertStatus(409)->assertJsonPath('error_code', 'DEVICE_ALREADY_CLAIMED');
@@ -192,7 +192,7 @@ final class DeviceFleetTest extends TestCase
     public function test_claiming_hardware_needs_the_settings_permission(): void
     {
         $this->withHeader('X-Firebase-Token', $this->attendanceToken)
-            ->postJson('/app/devices/register.php', [
+            ->postJson('/v1/devices', [
                 'serial_number' => $this->serial(),
                 'branch_id' => $this->branchId,
             ])->assertForbidden();
@@ -206,7 +206,7 @@ final class DeviceFleetTest extends TestCase
         DB::table('attendance_devices')->where('id', $id)
             ->update(['last_seen_at' => DB::raw('DATE_SUB(NOW(), INTERVAL 10 SECOND)')]);
 
-        $devices = $this->asAdmin()->getJson('/app/devices/list.php')->assertOk()->json('data.devices');
+        $devices = $this->asAdmin()->getJson('/v1/devices')->assertOk()->json('data.devices');
         $this->assertIsArray($devices);
 
         $mine = null;
@@ -226,7 +226,7 @@ final class DeviceFleetTest extends TestCase
         DB::table('attendance_devices')->where('id', $id)
             ->update(['last_seen_at' => DB::raw('DATE_SUB(NOW(), INTERVAL 1 HOUR)')]);
 
-        $devices = $this->asAdmin()->getJson('/app/devices/list.php')->assertOk()->json('data.devices');
+        $devices = $this->asAdmin()->getJson('/v1/devices')->assertOk()->json('data.devices');
         $this->assertIsArray($devices);
 
         foreach ($devices as $device) {
@@ -241,13 +241,13 @@ final class DeviceFleetTest extends TestCase
         // Reachable from two directions; either must not meet a 403 on a page
         // their own navigation offers them.
         $this->withHeader('X-Firebase-Token', $this->attendanceToken)
-            ->getJson('/app/devices/list.php')->assertOk();
+            ->getJson('/v1/devices')->assertOk();
     }
 
     public function test_the_fleet_is_closed_to_somebody_with_neither_permission(): void
     {
         $this->withHeader('X-Firebase-Token', $this->viewerToken)
-            ->getJson('/app/devices/list.php')->assertForbidden();
+            ->getJson('/v1/devices')->assertForbidden();
     }
 
     // ── Configuring and releasing ────────────────────────────────────────
@@ -256,7 +256,7 @@ final class DeviceFleetTest extends TestCase
     {
         $id = $this->registered();
 
-        $this->asAdmin()->postJson('/app/devices/update.php', [
+        $this->asAdmin()->postJson('/v1/devices/update', [
             'device_id' => $id,
             'name' => 'Back door',
             'direction_mode' => 'device_status',
@@ -277,7 +277,7 @@ final class DeviceFleetTest extends TestCase
     {
         $id = $this->registered();
 
-        $this->asAdmin()->postJson('/app/devices/update.php', [
+        $this->asAdmin()->postJson('/v1/devices/update', [
             'device_id' => $id,
             'min_interval_seconds' => 99999,
         ])->assertStatus(422)->assertJsonPath('error_code', 'min_interval_range');
@@ -289,7 +289,7 @@ final class DeviceFleetTest extends TestCase
         // cleaned up with it.
         $id = $this->registered();
 
-        $this->asAdmin()->postJson('/app/devices/update.php', [
+        $this->asAdmin()->postJson('/v1/devices/update', [
             'device_id' => $id,
             'status' => 'unclaimed',
         ])->assertStatus(422)->assertJsonPath('error_code', 'invalid_status');
@@ -313,7 +313,7 @@ final class DeviceFleetTest extends TestCase
             'state' => 'applied',
         ]);
 
-        $this->asAdmin()->postJson('/app/devices/delete.php', ['device_id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/devices/delete', ['device_id' => $id])->assertOk();
 
         $this->assertDatabaseHas('attendance_devices', ['id' => $id, 'status' => 'unclaimed', 'tenant_id' => null]);
         $this->assertDatabaseMissing('device_users', ['device_id' => $id]);
@@ -325,7 +325,7 @@ final class DeviceFleetTest extends TestCase
         // We never dial the device — it lives behind the customer's router.
         $id = $this->registered();
 
-        $this->asAdmin()->postJson('/app/devices/command.php', [
+        $this->asAdmin()->postJson('/v1/devices/command', [
             'device_id' => $id,
             'kind' => 'sync_time',
         ])->assertOk()->assertJsonStructure(['data' => ['command_id', 'recent']]);
@@ -341,7 +341,7 @@ final class DeviceFleetTest extends TestCase
     {
         $id = $this->registered();
 
-        $this->asAdmin()->postJson('/app/devices/command.php', [
+        $this->asAdmin()->postJson('/v1/devices/command', [
             'device_id' => $id,
             'kind' => 'self_destruct',
         ])->assertStatus(422)->assertJsonPath('error_code', 'UNSUPPORTED_COMMAND');
@@ -367,7 +367,7 @@ final class DeviceFleetTest extends TestCase
         $unlinked = $this->deviceUser($deviceId, '9');
         DB::table('device_users')->where('id', $linked)->update(['employee_id' => $this->employeeId]);
 
-        $users = $this->asAdmin()->getJson('/app/devices/users.php?device_id='.$deviceId)
+        $users = $this->asAdmin()->getJson('/v1/devices/users?device_id='.$deviceId)
             ->assertOk()->json('data.users');
 
         $this->assertIsArray($users);
@@ -392,7 +392,7 @@ final class DeviceFleetTest extends TestCase
             'state' => 'unmatched',
         ]);
 
-        $this->asAdmin()->postJson('/app/devices/link_user.php', [
+        $this->asAdmin()->postJson('/v1/devices/link-user', [
             'device_user_row_id' => $rowId,
             'employee_id' => $this->employeeId,
         ])->assertOk()->assertJsonPath('data.replayed.applied', 1);
@@ -416,7 +416,7 @@ final class DeviceFleetTest extends TestCase
 
         DB::table('device_users')->where('id', $first)->update(['employee_id' => $this->employeeId]);
 
-        $this->asAdmin()->postJson('/app/devices/link_user.php', [
+        $this->asAdmin()->postJson('/v1/devices/link-user', [
             'device_user_row_id' => $second,
             'employee_id' => $this->employeeId,
         ])->assertStatus(409)->assertJsonPath('error_code', 'EMPLOYEE_ALREADY_LINKED');
@@ -428,7 +428,7 @@ final class DeviceFleetTest extends TestCase
         $rowId = $this->deviceUser($deviceId);
         DB::table('device_users')->where('id', $rowId)->update(['employee_id' => $this->employeeId]);
 
-        $this->asAdmin()->postJson('/app/devices/link_user.php', ['device_user_row_id' => $rowId])
+        $this->asAdmin()->postJson('/v1/devices/link-user', ['device_user_row_id' => $rowId])
             ->assertOk()->assertJsonPath('data.message', 'User unlinked');
 
         $this->assertDatabaseHas('device_users', ['id' => $rowId, 'employee_id' => null, 'linked_at' => null]);
@@ -446,7 +446,7 @@ final class DeviceFleetTest extends TestCase
         // Bulk imports are the one place a mistake is expensive and invisible.
         $today = TenantClock::date($this->tenantId);
 
-        $this->asAdmin()->post('/app/devices/import_punches.php', [
+        $this->asAdmin()->post('/v1/devices/import-punches', [
             'branch_id' => $this->branchId,
             'preview' => true,
             'file' => $this->csv("UserID,DateTime\n7,{$today} 08:05:00\n"),
@@ -464,7 +464,7 @@ final class DeviceFleetTest extends TestCase
         // branch, the clock offset and the repeat-tap window.
         $today = TenantClock::date($this->tenantId);
 
-        $this->asAdmin()->post('/app/devices/import_punches.php', [
+        $this->asAdmin()->post('/v1/devices/import-punches', [
             'branch_id' => $this->branchId,
             'file' => $this->csv("UserID,DateTime\n7,{$today} 08:05:00\n"),
         ])->assertOk()->assertJsonPath('data.read_rows', 1);
@@ -480,7 +480,7 @@ final class DeviceFleetTest extends TestCase
         // The expected outcome of a first import, not an error.
         $today = TenantClock::date($this->tenantId);
 
-        $this->asAdmin()->post('/app/devices/import_punches.php', [
+        $this->asAdmin()->post('/v1/devices/import-punches', [
             'branch_id' => $this->branchId,
             'file' => $this->csv("UserID,DateTime\n7,{$today} 08:05:00\n"),
         ])
@@ -505,7 +505,7 @@ final class DeviceFleetTest extends TestCase
             'employee_id' => $this->employeeId,
         ]);
 
-        $this->asAdmin()->post('/app/devices/import_punches.php', [
+        $this->asAdmin()->post('/v1/devices/import-punches', [
             'branch_id' => $this->branchId,
             'file' => $this->csv("UserID,DateTime\n7,{$today} 08:05:00\n7,{$today} 17:30:00\n"),
         ])->assertOk()->assertJsonPath('data.results.applied', 2);
@@ -524,12 +524,12 @@ final class DeviceFleetTest extends TestCase
         $today = TenantClock::date($this->tenantId);
         $body = "UserID,DateTime\n7,{$today} 08:05:00\n";
 
-        $this->asAdmin()->post('/app/devices/import_punches.php', [
+        $this->asAdmin()->post('/v1/devices/import-punches', [
             'branch_id' => $this->branchId,
             'file' => $this->csv($body),
         ])->assertOk();
 
-        $this->asAdmin()->post('/app/devices/import_punches.php', [
+        $this->asAdmin()->post('/v1/devices/import-punches', [
             'branch_id' => $this->branchId,
             'file' => $this->csv($body),
         ])->assertOk()->assertJsonPath('data.already_imported', 1);
@@ -541,7 +541,7 @@ final class DeviceFleetTest extends TestCase
     {
         // Almost always the wrong column was taken for the id or the date;
         // saying so beats reporting "0 imported".
-        $this->asAdmin()->post('/app/devices/import_punches.php', [
+        $this->asAdmin()->post('/v1/devices/import-punches', [
             'branch_id' => $this->branchId,
             'file' => $this->csv("Notes\nsomething\nelse\n"),
         ])->assertStatus(422)->assertJsonPath('error_code', 'NO_READABLE_ROWS');
@@ -549,14 +549,14 @@ final class DeviceFleetTest extends TestCase
 
     public function test_an_import_needs_somewhere_to_put_the_punches(): void
     {
-        $this->asAdmin()->post('/app/devices/import_punches.php', [
+        $this->asAdmin()->post('/v1/devices/import-punches', [
             'file' => $this->csv("UserID,DateTime\n7,2026-08-30 08:05:00\n"),
         ])->assertStatus(422)->assertJsonPath('error_code', 'BRANCH_REQUIRED');
     }
 
     public function test_an_empty_upload_is_refused(): void
     {
-        $this->asAdmin()->post('/app/devices/import_punches.php', ['branch_id' => $this->branchId])
+        $this->asAdmin()->post('/v1/devices/import-punches', ['branch_id' => $this->branchId])
             ->assertStatus(422)->assertJsonPath('error_code', 'FILE_REQUIRED');
     }
 
@@ -571,7 +571,7 @@ final class DeviceFleetTest extends TestCase
             'employee_id' => $this->employeeId,
         ]);
 
-        $this->asAdmin()->post('/app/devices/import_punches.php', [
+        $this->asAdmin()->post('/v1/devices/import-punches', [
             'branch_id' => $this->branchId,
             'file' => $this->csv("UserID,DateTime\n7,2001-01-01 08:05:00\n"),
         ])->assertOk()->assertJsonPath('data.results.ignored', 1);
@@ -592,7 +592,7 @@ final class DeviceFleetTest extends TestCase
             'employee_id' => $this->employeeId,
         ]);
 
-        $this->asAdmin()->post('/app/devices/import_punches.php', [
+        $this->asAdmin()->post('/v1/devices/import-punches', [
             'branch_id' => $this->branchId,
             'file' => $this->csv("UserID,DateTime\n7,{$today} 08:05:00\n7,{$today} 08:06:00\n"),
         ])->assertOk()->assertJsonPath('data.results.duplicate', 1);
@@ -601,7 +601,7 @@ final class DeviceFleetTest extends TestCase
     public function test_importing_needs_the_attendance_permission(): void
     {
         $this->withHeader('X-Firebase-Token', $this->viewerToken)
-            ->post('/app/devices/import_punches.php', [
+            ->post('/v1/devices/import-punches', [
                 'branch_id' => $this->branchId,
                 'file' => $this->csv("UserID,DateTime\n7,2026-08-30 08:05:00\n"),
             ])->assertForbidden();

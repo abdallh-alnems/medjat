@@ -83,8 +83,8 @@ final class DeepLinkTest extends TestCase
     public function test_the_legacy_filenames_still_answer(): void
     {
         // Published builds and already-sent emails link to these.
-        $this->get('/join.php?token='.str_repeat('a1', 12))->assertOk();
-        $this->get('/join_team.php?code=AB12CD34')->assertOk()->assertSee('AB12CD34', false);
+        $this->get('/join?token='.str_repeat('a1', 12))->assertOk();
+        $this->get('/join_team?code=AB12CD34')->assertOk()->assertSee('AB12CD34', false);
     }
 
     public function test_the_api_host_serves_the_management_apps_association_files(): void
@@ -112,23 +112,6 @@ final class DeepLinkTest extends TestCase
             ->assertOk()
             ->assertHeader('Content-Type', 'application/json')
             ->assertSee('applinks', false);
-    }
-
-    public function test_the_legacy_well_known_entry_point_still_answers(): void
-    {
-        // nginx aliases /.well-known/* straight at the files, so nothing is
-        // known to call this — but it answered on the old backend, and a URL
-        // that used to answer is not retired on a guess.
-        $this->get('http://api.medjatapp.com/well_known.php?f=assetlinks')
-            ->assertOk()
-            ->assertHeader('Content-Type', 'application/json')
-            ->assertSee('medjat_central', false);
-
-        $this->get('http://api.medjatapp.com/well_known.php?f=aasa')
-            ->assertOk()
-            ->assertSee('applinks', false);
-
-        $this->get('/well_known.php?f=nonsense')->assertNotFound();
     }
 
     public function test_nothing_else_under_well_known_is_served(): void

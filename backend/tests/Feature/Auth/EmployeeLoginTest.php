@@ -21,7 +21,7 @@ final class EmployeeLoginTest extends TestCase
 {
     use DatabaseTransactions;
 
-    private const ENDPOINT = '/app/auth/employee_login.php';
+    private const ENDPOINT = '/v1/auth/employee/login';
 
     /**
      * A sign-in candidate needs a phone number: not every employee row has one,

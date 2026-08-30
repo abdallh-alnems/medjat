@@ -118,7 +118,7 @@ final class PayrollEndpointsTest extends TestCase
         // Every gate in the frontend has to agree with this one; a menu item
         // that opens a 403 surfaces to the user as "an error occurred".
         $this->withHeader('X-Firebase-Token', $this->viewerToken)
-            ->getJson('/app/payroll/live.php?month='.self::MONTH)
+            ->getJson('/v1/payroll/live?month='.self::MONTH)
             ->assertForbidden();
     }
 
@@ -126,7 +126,7 @@ final class PayrollEndpointsTest extends TestCase
     {
         // 400, not 401: the published apps have always been answered this way
         // for a missing token, and the legacy URLs cannot change their contract.
-        $this->getJson('/app/payroll/live.php?month='.self::MONTH)
+        $this->getJson('/v1/payroll/live?month='.self::MONTH)
             ->assertStatus(400)
             ->assertJsonPath('message', 'Token is required');
     }
@@ -136,7 +136,7 @@ final class PayrollEndpointsTest extends TestCase
     public function test_the_live_overview_lists_everybody_with_their_cycle(): void
     {
         $response = $this->asAdmin()
-            ->getJson('/app/payroll/live.php?month='.self::MONTH.'&branch_id='.$this->branchId)
+            ->getJson('/v1/payroll/live?month='.self::MONTH.'&branch_id='.$this->branchId)
             ->assertOk()
             ->assertJsonPath('data.currency', 'EGP')
             ->assertJsonPath('data.cycle_start_day', 1);
@@ -163,7 +163,7 @@ final class PayrollEndpointsTest extends TestCase
         DB::table('employees')->where('id', $this->employeeId)->update(['hire_date' => '2026-06-01']);
 
         $items = $this->asAdmin()
-            ->getJson('/app/payroll/live.php?month='.self::MONTH.'&branch_id='.$this->branchId)
+            ->getJson('/v1/payroll/live?month='.self::MONTH.'&branch_id='.$this->branchId)
             ->assertOk()
             ->json('data.items');
 
@@ -175,7 +175,7 @@ final class PayrollEndpointsTest extends TestCase
     {
         // A finished cycle cannot change, so caching it trades freshness for
         // nothing — the header proves the calculator ran both times.
-        $this->asAdmin()->getJson('/app/payroll/live.php?month='.self::MONTH)->assertOk()
+        $this->asAdmin()->getJson('/v1/payroll/live?month='.self::MONTH)->assertOk()
             ->assertHeaderMissing('X-Cache');
     }
 
@@ -183,9 +183,9 @@ final class PayrollEndpointsTest extends TestCase
     {
         $month = date('Y-m');
 
-        $this->asAdmin()->getJson('/app/payroll/live.php?month='.$month)
+        $this->asAdmin()->getJson('/v1/payroll/live?month='.$month)
             ->assertOk()->assertHeader('X-Cache', 'MISS');
-        $this->asAdmin()->getJson('/app/payroll/live.php?month='.$month)
+        $this->asAdmin()->getJson('/v1/payroll/live?month='.$month)
             ->assertOk()->assertHeader('X-Cache', 'HIT');
     }
 
@@ -194,18 +194,18 @@ final class PayrollEndpointsTest extends TestCase
         // A stale "draft" badge on a slip somebody just acted on is the one
         // kind of staleness users do notice.
         $month = date('Y-m');
-        $this->asAdmin()->getJson('/app/payroll/live.php?month='.$month)->assertOk();
+        $this->asAdmin()->getJson('/v1/payroll/live?month='.$month)->assertOk();
 
-        $this->asAdmin()->postJson('/app/payroll/generate.php', ['month' => $month])->assertOk();
+        $this->asAdmin()->postJson('/v1/payroll/generate', ['month' => $month])->assertOk();
 
-        $this->asAdmin()->getJson('/app/payroll/live.php?month='.$month)
+        $this->asAdmin()->getJson('/v1/payroll/live?month='.$month)
             ->assertOk()->assertHeader('X-Cache', 'MISS');
     }
 
     public function test_calculating_one_employee_returns_their_breakdown(): void
     {
         $this->asAdmin()
-            ->getJson('/app/payroll/calculate.php?employee_id='.$this->employeeId.'&month='.self::MONTH)
+            ->getJson('/v1/payroll/calculate?employee_id='.$this->employeeId.'&month='.self::MONTH)
             ->assertOk()
             ->assertJsonPath('data.base_salary', 3000)
             ->assertJsonPath('data.net_salary', 3000);
@@ -213,7 +213,7 @@ final class PayrollEndpointsTest extends TestCase
 
     public function test_calculating_without_an_employee_is_refused(): void
     {
-        $this->asAdmin()->getJson('/app/payroll/calculate.php?month='.self::MONTH)
+        $this->asAdmin()->getJson('/v1/payroll/calculate?month='.self::MONTH)
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'employee_id_required');
     }
@@ -222,7 +222,7 @@ final class PayrollEndpointsTest extends TestCase
 
     public function test_generate_approve_and_pay_walk_the_slip_through_its_states(): void
     {
-        $this->asAdmin()->postJson('/app/payroll/generate.php', [
+        $this->asAdmin()->postJson('/v1/payroll/generate', [
             'month' => self::MONTH,
             'branch_id' => $this->branchId,
         ])->assertOk()->assertJsonPath('data.month', self::MONTH);
@@ -230,10 +230,10 @@ final class PayrollEndpointsTest extends TestCase
         $id = $this->slipId();
         $this->assertGreaterThan(0, $id);
 
-        $this->asAdmin()->postJson('/app/payroll/approve.php', ['payroll_id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/payroll/approve', ['payroll_id' => $id])->assertOk();
         $this->assertDatabaseHas('payroll', ['id' => $id, 'status' => 'approved']);
 
-        $this->asAdmin()->postJson('/app/payroll/mark_paid.php', [
+        $this->asAdmin()->postJson('/v1/payroll/mark-paid', [
             'payroll_id' => $id,
             'paid_at' => '2026-03-02',
         ])->assertOk()->assertJsonPath('data.paid_count', 1);
@@ -243,7 +243,7 @@ final class PayrollEndpointsTest extends TestCase
 
     public function test_the_employee_is_told_their_salary_was_paid(): void
     {
-        $this->asAdmin()->postJson('/app/payroll/disburse.php', [
+        $this->asAdmin()->postJson('/v1/payroll/disburse', [
             'employee_id' => $this->employeeId,
             'month' => self::MONTH,
         ])->assertOk()->assertJsonPath('data.result', 'paid');
@@ -258,7 +258,7 @@ final class PayrollEndpointsTest extends TestCase
 
     public function test_a_malformed_payment_date_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/payroll/mark_paid.php', [
+        $this->asAdmin()->postJson('/v1/payroll/mark-paid', [
             'payroll_id' => 1,
             'paid_at' => '02/03/2026',
         ])->assertStatus(422)->assertJsonPath('error_code', 'paid_at_yyyy_mm_dd');
@@ -266,21 +266,21 @@ final class PayrollEndpointsTest extends TestCase
 
     public function test_bulk_approval_needs_a_non_empty_list(): void
     {
-        $this->asAdmin()->postJson('/app/payroll/approve_bulk.php', ['ids' => []])
+        $this->asAdmin()->postJson('/v1/payroll/approve-bulk', ['ids' => []])
             ->assertStatus(422)->assertJsonPath('error_code', 'ids_non_empty_array');
     }
 
     public function test_reverting_a_draft_says_so_rather_than_reporting_success(): void
     {
-        $this->asAdmin()->postJson('/app/payroll/generate.php', ['month' => self::MONTH])->assertOk();
+        $this->asAdmin()->postJson('/v1/payroll/generate', ['month' => self::MONTH])->assertOk();
 
-        $this->asAdmin()->postJson('/app/payroll/revert.php', ['payroll_id' => $this->slipId()])
+        $this->asAdmin()->postJson('/v1/payroll/revert', ['payroll_id' => $this->slipId()])
             ->assertStatus(422)->assertJsonPath('error_code', 'slip_not_found_already_draft');
     }
 
     public function test_disburse_all_pays_the_branch_it_was_given(): void
     {
-        $this->asAdmin()->postJson('/app/payroll/disburse_all.php', [
+        $this->asAdmin()->postJson('/v1/payroll/disburse-all', [
             'month' => self::MONTH,
             'branch_id' => $this->branchId,
         ])->assertOk()->assertJsonPath('data.paid_count', 1);
@@ -294,9 +294,9 @@ final class PayrollEndpointsTest extends TestCase
 
     public function test_every_payroll_action_leaves_a_trail(): void
     {
-        $this->asAdmin()->postJson('/app/payroll/generate.php', ['month' => self::MONTH])->assertOk();
+        $this->asAdmin()->postJson('/v1/payroll/generate', ['month' => self::MONTH])->assertOk();
 
-        $this->asAdmin()->getJson('/app/payroll/audit_log.php')
+        $this->asAdmin()->getJson('/v1/payroll/audit-log')
             ->assertOk()
             ->assertJsonPath('data.items.0.action', 'payroll.generate');
     }
@@ -307,10 +307,10 @@ final class PayrollEndpointsTest extends TestCase
     {
         // The approved slip is the source of truth; the admin reverts it to
         // draft first, which leaves a trail of the fact.
-        $this->asAdmin()->postJson('/app/payroll/generate.php', ['month' => self::MONTH])->assertOk();
-        $this->asAdmin()->postJson('/app/payroll/approve.php', ['payroll_id' => $this->slipId()])->assertOk();
+        $this->asAdmin()->postJson('/v1/payroll/generate', ['month' => self::MONTH])->assertOk();
+        $this->asAdmin()->postJson('/v1/payroll/approve', ['payroll_id' => $this->slipId()])->assertOk();
 
-        $this->asAdmin()->postJson('/app/payroll/override_line.php', [
+        $this->asAdmin()->postJson('/v1/payroll/override-line', [
             'employee_id' => $this->employeeId,
             'month' => self::MONTH,
             'line_kind' => 'deduction',
@@ -323,7 +323,7 @@ final class PayrollEndpointsTest extends TestCase
 
     public function test_a_manual_line_is_refused_by_the_correction_endpoint(): void
     {
-        $this->asAdmin()->postJson('/app/payroll/override_line.php', [
+        $this->asAdmin()->postJson('/v1/payroll/override-line', [
             'employee_id' => $this->employeeId,
             'month' => self::MONTH,
             'line_kind' => 'deduction',
@@ -335,7 +335,7 @@ final class PayrollEndpointsTest extends TestCase
 
     public function test_setting_a_correction_without_an_amount_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/payroll/override_line.php', [
+        $this->asAdmin()->postJson('/v1/payroll/override-line', [
             'employee_id' => $this->employeeId,
             'month' => self::MONTH,
             'line_kind' => 'deduction',
@@ -356,14 +356,14 @@ final class PayrollEndpointsTest extends TestCase
             'line_desc' => 'غياب يوم 2026-02-10',
         ];
 
-        $this->asAdmin()->postJson('/app/payroll/override_line.php', $payload + ['action' => 'waive'])->assertOk();
+        $this->asAdmin()->postJson('/v1/payroll/override-line', $payload + ['action' => 'waive'])->assertOk();
         $this->assertDatabaseHas('payroll_line_overrides', [
             'employee_id' => $this->employeeId,
             'month' => self::MONTH,
             'waived' => 1,
         ]);
 
-        $this->asAdmin()->postJson('/app/payroll/override_line.php', $payload + ['action' => 'clear'])->assertOk();
+        $this->asAdmin()->postJson('/v1/payroll/override-line', $payload + ['action' => 'clear'])->assertOk();
         $this->assertDatabaseMissing('payroll_line_overrides', [
             'employee_id' => $this->employeeId,
             'month' => self::MONTH,
@@ -374,7 +374,7 @@ final class PayrollEndpointsTest extends TestCase
 
     public function test_a_bulk_bonus_writes_one_row_per_employee_in_scope(): void
     {
-        $this->asAdmin()->postJson('/app/payroll/bulk_adjust.php', [
+        $this->asAdmin()->postJson('/v1/payroll/bulk-adjust', [
             'kind' => 'bonus',
             'scope_type' => 'branch',
             'scope_id' => $this->branchId,
@@ -392,7 +392,7 @@ final class PayrollEndpointsTest extends TestCase
 
     public function test_a_percentage_adjustment_resolves_per_employee_and_says_so(): void
     {
-        $this->asAdmin()->postJson('/app/payroll/bulk_adjust.php', [
+        $this->asAdmin()->postJson('/v1/payroll/bulk-adjust', [
             'kind' => 'deduction',
             'scope_type' => 'branch',
             'scope_id' => $this->branchId,
@@ -410,7 +410,7 @@ final class PayrollEndpointsTest extends TestCase
 
     public function test_a_percentage_over_a_hundred_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/payroll/bulk_adjust.php', [
+        $this->asAdmin()->postJson('/v1/payroll/bulk-adjust', [
             'kind' => 'bonus',
             'scope_type' => 'branch',
             'scope_id' => $this->branchId,
@@ -422,7 +422,7 @@ final class PayrollEndpointsTest extends TestCase
 
     public function test_an_empty_scope_is_reported_rather_than_silently_doing_nothing(): void
     {
-        $this->asAdmin()->postJson('/app/payroll/bulk_adjust.php', [
+        $this->asAdmin()->postJson('/v1/payroll/bulk-adjust', [
             'kind' => 'bonus',
             'scope_type' => 'branch',
             'scope_id' => 9999999,
@@ -446,16 +446,16 @@ final class PayrollEndpointsTest extends TestCase
             'hire_date' => '2020-01-01',
         ]);
 
-        $this->asAdmin()->postJson('/app/payroll/generate.php', [
+        $this->asAdmin()->postJson('/v1/payroll/generate', [
             'month' => self::MONTH,
             'branch_id' => $this->branchId,
         ])->assertOk();
         $ids = DB::table('payroll')->where('month', self::MONTH)
             ->whereIn('employee_id', [$this->employeeId, $strandedId])->pluck('id')->all();
-        $this->asAdmin()->postJson('/app/payroll/approve_bulk.php', ['ids' => $ids])->assertOk();
+        $this->asAdmin()->postJson('/v1/payroll/approve-bulk', ['ids' => $ids])->assertOk();
 
         $this->asAdmin()
-            ->getJson('/app/payroll/bank_file_preview.php?month='.self::MONTH.'&branch_id='.$this->branchId)
+            ->getJson('/v1/payroll/bank-file/preview?month='.self::MONTH.'&branch_id='.$this->branchId)
             ->assertOk()
             ->assertJsonPath('data.ready_count', 1)
             ->assertJsonPath('data.missing_bank_count', 1)
@@ -465,27 +465,27 @@ final class PayrollEndpointsTest extends TestCase
 
     public function test_only_approved_slips_reach_the_bank_file(): void
     {
-        $this->asAdmin()->postJson('/app/payroll/generate.php', [
+        $this->asAdmin()->postJson('/v1/payroll/generate', [
             'month' => self::MONTH,
             'branch_id' => $this->branchId,
         ])->assertOk();
 
         $this->asAdmin()
-            ->getJson('/app/payroll/bank_file_preview.php?month='.self::MONTH.'&branch_id='.$this->branchId)
+            ->getJson('/v1/payroll/bank-file/preview?month='.self::MONTH.'&branch_id='.$this->branchId)
             ->assertOk()
             ->assertJsonPath('data.total_employees', 0);
     }
 
     public function test_the_bank_file_downloads_as_csv(): void
     {
-        $this->asAdmin()->postJson('/app/payroll/generate.php', [
+        $this->asAdmin()->postJson('/v1/payroll/generate', [
             'month' => self::MONTH,
             'branch_id' => $this->branchId,
         ])->assertOk();
-        $this->asAdmin()->postJson('/app/payroll/approve.php', ['payroll_id' => $this->slipId()])->assertOk();
+        $this->asAdmin()->postJson('/v1/payroll/approve', ['payroll_id' => $this->slipId()])->assertOk();
 
         $response = $this->asAdmin()
-            ->get('/app/payroll/export_bank_file.php?month='.self::MONTH.'&branch_id='.$this->branchId)
+            ->get('/v1/payroll/bank-file?month='.self::MONTH.'&branch_id='.$this->branchId)
             ->assertOk()
             ->assertHeader('Content-Type', 'text/csv; charset=utf-8');
 
@@ -503,14 +503,14 @@ final class PayrollEndpointsTest extends TestCase
         // A company that asked for its own bank's layout and silently received
         // a different one would upload a file the bank rejects.
         $this->asAdmin()
-            ->getJson('/app/payroll/export_bank_file.php?month='.self::MONTH.'&exporter=made_up')
+            ->getJson('/v1/payroll/bank-file?month='.self::MONTH.'&exporter=made_up')
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'payroll_exporter_available_country_format');
     }
 
     public function test_the_bank_file_needs_a_well_formed_month(): void
     {
-        $this->asAdmin()->getJson('/app/payroll/bank_file_preview.php?month=february')
+        $this->asAdmin()->getJson('/v1/payroll/bank-file/preview?month=february')
             ->assertStatus(400)
             ->assertJsonPath('error_code', 'invalid_month_format_yyyy_mm');
     }
@@ -521,7 +521,7 @@ final class PayrollEndpointsTest extends TestCase
     {
         DB::table('payroll_statutory_settings')->where('tenant_id', $this->tenantId)->delete();
 
-        $this->asAdmin()->getJson('/app/payroll/eosb_calculate.php?employee_id='.$this->employeeId)
+        $this->asAdmin()->getJson('/v1/payroll/eosb?employee_id='.$this->employeeId)
             ->assertOk()
             ->assertJsonPath('data.enabled', false);
     }
@@ -537,7 +537,7 @@ final class PayrollEndpointsTest extends TestCase
         DB::table('employees')->where('id', $this->employeeId)->update(['hire_date' => '2024-08-30']);
 
         $response = $this->asAdmin()
-            ->getJson('/app/payroll/eosb_calculate.php?employee_id='.$this->employeeId)
+            ->getJson('/v1/payroll/eosb?employee_id='.$this->employeeId)
             ->assertOk()
             ->assertJsonPath('data.enabled', true)
             ->assertJsonPath('data.daily_wage', 100);
@@ -555,7 +555,7 @@ final class PayrollEndpointsTest extends TestCase
         ]);
         DB::table('employees')->where('id', $this->employeeId)->update(['hire_date' => null]);
 
-        $this->asAdmin()->getJson('/app/payroll/eosb_calculate.php?employee_id='.$this->employeeId)
+        $this->asAdmin()->getJson('/v1/payroll/eosb?employee_id='.$this->employeeId)
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'employee_hire_date');
     }
@@ -567,7 +567,7 @@ final class PayrollEndpointsTest extends TestCase
         // Somebody should always be able to see what they have earned so far,
         // marked clearly as not yet paid.
         $this->withHeader('X-Employee-Token', $this->employeeToken)
-            ->getJson('/app/payroll/get_slip.php?month='.self::MONTH)
+            ->getJson('/v1/payroll/me?month='.self::MONTH)
             ->assertOk()
             ->assertJsonPath('data.status', 'live')
             ->assertJsonPath('data.base_salary', 3000);
@@ -575,11 +575,11 @@ final class PayrollEndpointsTest extends TestCase
 
     public function test_an_employee_sees_the_frozen_figures_once_payroll_is_approved(): void
     {
-        $this->asAdmin()->postJson('/app/payroll/generate.php', ['month' => self::MONTH])->assertOk();
-        $this->asAdmin()->postJson('/app/payroll/approve.php', ['payroll_id' => $this->slipId()])->assertOk();
+        $this->asAdmin()->postJson('/v1/payroll/generate', ['month' => self::MONTH])->assertOk();
+        $this->asAdmin()->postJson('/v1/payroll/approve', ['payroll_id' => $this->slipId()])->assertOk();
 
         $this->withHeader('X-Employee-Token', $this->employeeToken)
-            ->getJson('/app/payroll/get_slip.php?month='.self::MONTH)
+            ->getJson('/v1/payroll/me?month='.self::MONTH)
             ->assertOk()
             ->assertJsonPath('data.status', 'approved')
             ->assertJsonPath('data.net_salary', '3000.00');
@@ -590,7 +590,7 @@ final class PayrollEndpointsTest extends TestCase
         // Without this the app saved a JSON body under a .pdf name, producing a
         // file no reader could open.
         $response = $this->withHeader('X-Employee-Token', $this->employeeToken)
-            ->get('/app/payroll/get_slip.php?month='.self::MONTH.'&format=pdf')
+            ->get('/v1/payroll/me?month='.self::MONTH.'&format=pdf')
             ->assertOk()
             ->assertHeader('Content-Type', 'application/pdf');
 
@@ -600,7 +600,7 @@ final class PayrollEndpointsTest extends TestCase
     public function test_a_manager_can_download_somebodys_payslip(): void
     {
         $response = $this->asAdmin()
-            ->get('/app/payroll/get_slip_pdf.php?employee_id='.$this->employeeId.'&month='.self::MONTH)
+            ->get('/v1/payroll/payslip.pdf?employee_id='.$this->employeeId.'&month='.self::MONTH)
             ->assertOk()
             ->assertHeader('Content-Type', 'application/pdf');
 
@@ -611,7 +611,7 @@ final class PayrollEndpointsTest extends TestCase
     {
         // An employee token is not an admin token, whatever else it opens.
         $this->withHeader('X-Employee-Token', $this->employeeToken)
-            ->getJson('/app/payroll/live.php?month='.self::MONTH)
+            ->getJson('/v1/payroll/live?month='.self::MONTH)
             ->assertStatus(400);
     }
 }

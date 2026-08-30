@@ -67,7 +67,7 @@ final class ManualAdjustmentTest extends TestCase
 
     public function test_a_manual_deduction_is_recorded_against_the_current_month(): void
     {
-        $response = $this->send('/app/deductions/add_manual.php', [
+        $response = $this->send('/v1/deductions/manual', [
             'employee_id' => $this->employeeId,
             'amount' => 250,
             'reason' => 'Damaged equipment',
@@ -88,7 +88,7 @@ final class ManualAdjustmentTest extends TestCase
 
     public function test_a_manual_bonus_lands_in_its_own_table(): void
     {
-        $response = $this->send('/app/bonuses/add_manual.php', [
+        $response = $this->send('/v1/bonuses/manual', [
             'employee_id' => $this->employeeId,
             'amount' => 500,
             'reason' => 'Overtime weekend',
@@ -105,7 +105,7 @@ final class ManualAdjustmentTest extends TestCase
 
     public function test_the_employee_is_told_about_the_deduction(): void
     {
-        $this->send('/app/deductions/add_manual.php', [
+        $this->send('/v1/deductions/manual', [
             'employee_id' => $this->employeeId,
             'amount' => 100,
             'reason' => 'Late fine',
@@ -122,13 +122,13 @@ final class ManualAdjustmentTest extends TestCase
 
     public function test_a_zero_or_negative_amount_is_refused(): void
     {
-        $this->send('/app/deductions/add_manual.php', [
+        $this->send('/v1/deductions/manual', [
             'employee_id' => $this->employeeId,
             'amount' => 0,
             'reason' => 'Nothing',
         ])->assertStatus(422);
 
-        $this->send('/app/bonuses/add_manual.php', [
+        $this->send('/v1/bonuses/manual', [
             'employee_id' => $this->employeeId,
             'amount' => -5,
             'reason' => 'Negative bonus',
@@ -150,7 +150,7 @@ final class ManualAdjustmentTest extends TestCase
             'hire_date' => '2022-01-01',
         ]);
 
-        $this->send('/app/deductions/add_manual.php', [
+        $this->send('/v1/deductions/manual', [
             'employee_id' => $stranger,
             'amount' => 100,
             'reason' => 'Should not reach',
@@ -159,13 +159,13 @@ final class ManualAdjustmentTest extends TestCase
 
     public function test_an_existing_line_can_be_corrected(): void
     {
-        $id = Value::int($this->send('/app/bonuses/add_manual.php', [
+        $id = Value::int($this->send('/v1/bonuses/manual', [
             'employee_id' => $this->employeeId,
             'amount' => 300,
             'reason' => 'Typo',
         ])->json('data.id'));
 
-        $this->send('/app/bonuses/update_manual.php', [
+        $this->send('/v1/bonuses/manual/update', [
             'id' => $id,
             'amount' => 350,
             'reason' => 'Corrected',
@@ -178,13 +178,13 @@ final class ManualAdjustmentTest extends TestCase
 
     public function test_a_line_can_be_withdrawn(): void
     {
-        $id = Value::int($this->send('/app/deductions/add_manual.php', [
+        $id = Value::int($this->send('/v1/deductions/manual', [
             'employee_id' => $this->employeeId,
             'amount' => 75,
             'reason' => 'Applied by mistake',
         ])->json('data.id'));
 
-        $this->send('/app/deductions/delete_manual.php', ['id' => $id])->assertOk();
+        $this->send('/v1/deductions/manual/delete', ['id' => $id])->assertOk();
 
         $this->assertDatabaseMissing('manual_deductions', ['id' => $id]);
     }
@@ -194,13 +194,13 @@ final class ManualAdjustmentTest extends TestCase
         // The two live in separate tables and the endpoints are separate for
         // the same reason: crossing them would let a bonus be silently turned
         // into a charge against somebody's pay.
-        $bonusId = Value::int($this->send('/app/bonuses/add_manual.php', [
+        $bonusId = Value::int($this->send('/v1/bonuses/manual', [
             'employee_id' => $this->employeeId,
             'amount' => 200,
             'reason' => 'Bonus',
         ])->json('data.id'));
 
-        $this->send('/app/deductions/update_manual.php', [
+        $this->send('/v1/deductions/manual/update', [
             'id' => $bonusId,
             'amount' => 200,
             'reason' => 'Crossed over',
@@ -222,7 +222,7 @@ final class ManualAdjustmentTest extends TestCase
         ]);
 
         $this->withHeader('X-Firebase-Token', $firebase->issue($uid))
-            ->postJson('/app/deductions/add_manual.php', [
+            ->postJson('/v1/deductions/manual', [
                 'employee_id' => $this->employeeId,
                 'amount' => 100,
                 'reason' => 'Not allowed',

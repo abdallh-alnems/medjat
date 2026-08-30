@@ -120,7 +120,7 @@ final class ReportTest extends TestCase
         $this->attendance('2026-02-03', 'present', ['late_minutes' => 20, 'worked_minutes' => 460]);
         $this->attendance('2026-02-04', 'absent');
 
-        $this->asAdmin()->getJson('/app/reports/attendance.php'.$this->range())
+        $this->asAdmin()->getJson('/v1/reports/attendance'.$this->range())
             ->assertOk()
             ->assertJsonPath('data.items.0.days_present', 1)
             ->assertJsonPath('data.items.0.days_late', 1)
@@ -132,7 +132,7 @@ final class ReportTest extends TestCase
     public function test_somebody_with_no_attendance_at_all_still_appears(): void
     {
         // That is exactly who a manager opening this report is looking for.
-        $this->asAdmin()->getJson('/app/reports/attendance.php'.$this->range())
+        $this->asAdmin()->getJson('/v1/reports/attendance'.$this->range())
             ->assertOk()
             ->assertJsonPath('data.items.0.employee_name', 'Reported on')
             ->assertJsonPath('data.items.0.days_recorded', 0);
@@ -140,7 +140,7 @@ final class ReportTest extends TestCase
 
     public function test_a_malformed_date_is_refused(): void
     {
-        $this->asAdmin()->getJson('/app/reports/attendance.php?start_date=february')
+        $this->asAdmin()->getJson('/v1/reports/attendance?start_date=february')
             ->assertStatus(422)->assertJsonPath('error_code', 'invalid_date');
     }
 
@@ -166,7 +166,7 @@ final class ReportTest extends TestCase
         ]);
         $this->attendance('2026-02-02', 'present', ['late_minutes' => 30, 'overtime_minutes' => 60]);
 
-        $items = $this->asAdmin()->getJson('/app/reports/overtime_late.php'.$this->range())
+        $items = $this->asAdmin()->getJson('/v1/reports/overtime-late'.$this->range())
             ->assertOk()->json('data.items');
 
         $this->assertIsArray($items);
@@ -181,7 +181,7 @@ final class ReportTest extends TestCase
         // totals honest.
         $this->attendance('2026-02-02', 'absent', ['late_minutes' => 999]);
 
-        $items = $this->asAdmin()->getJson('/app/reports/overtime_late.php'.$this->range())
+        $items = $this->asAdmin()->getJson('/v1/reports/overtime-late'.$this->range())
             ->assertOk()->json('data.items');
 
         $this->assertSame([], $items);
@@ -194,7 +194,7 @@ final class ReportTest extends TestCase
         $this->attendance('2026-02-03', 'present', ['late_minutes' => 0, 'overtime_minutes' => 0]);
 
         $this->asAdmin()
-            ->getJson('/app/reports/overtime_late.php'.$this->range().'&employee_id='.$this->employeeId)
+            ->getJson('/v1/reports/overtime-late'.$this->range().'&employee_id='.$this->employeeId)
             ->assertOk()
             ->assertJsonCount(1, 'data.days')
             ->assertJsonPath('data.days.0.late_minutes', 30);
@@ -203,14 +203,14 @@ final class ReportTest extends TestCase
     public function test_the_sort_is_whitelisted(): void
     {
         // A client-supplied sort never reaches the SQL.
-        $this->asAdmin()->getJson('/app/reports/overtime_late.php'.$this->range().'&sort=name;DROP')
+        $this->asAdmin()->getJson('/v1/reports/overtime-late'.$this->range().'&sort=name;DROP')
             ->assertStatus(422)->assertJsonPath('error_code', 'invalid_sort');
     }
 
     public function test_a_backwards_window_is_refused(): void
     {
         $this->asAdmin()
-            ->getJson('/app/reports/overtime_late.php?start_date=2026-03-01&end_date=2026-02-01')
+            ->getJson('/v1/reports/overtime-late?start_date=2026-03-01&end_date=2026-02-01')
             ->assertStatus(422)->assertJsonPath('error_code', 'start_date_before_end_date');
     }
 
@@ -219,7 +219,7 @@ final class ReportTest extends TestCase
     public function test_the_staff_report_excludes_people_who_have_left(): void
     {
         // A headcount and a salary total are present-tense questions.
-        $this->asAdmin()->getJson('/app/reports/employees.php')
+        $this->asAdmin()->getJson('/v1/reports/employees')
             ->assertOk()
             ->assertJsonPath('data.summary.total_employees', 1)
             ->assertJsonPath('data.summary.total_salaries', '3000.00');
@@ -240,7 +240,7 @@ final class ReportTest extends TestCase
             ],
         ]);
 
-        $this->asAdmin()->getJson('/app/reports/leaves.php'.$this->range())
+        $this->asAdmin()->getJson('/v1/reports/leaves'.$this->range())
             ->assertOk()
             ->assertJsonPath('data.summary.total_leaves', 2)
             ->assertJsonPath('data.summary.approved_count', 1)
@@ -257,7 +257,7 @@ final class ReportTest extends TestCase
             'type' => 'annual', 'status' => 'approved',
         ]);
 
-        $this->asAdmin()->getJson('/app/reports/leaves.php'.$this->range().'&status=pending')
+        $this->asAdmin()->getJson('/v1/reports/leaves'.$this->range().'&status=pending')
             ->assertOk()
             ->assertJsonPath('data.items', []);
     }
@@ -278,7 +278,7 @@ final class ReportTest extends TestCase
             'status' => 'approved',
         ]);
 
-        $this->asAdmin()->getJson('/app/reports/payroll.php?month=2026-02')
+        $this->asAdmin()->getJson('/v1/reports/payroll?month=2026-02')
             ->assertOk()
             ->assertJsonPath('data.summary.employee_count', 1)
             ->assertJsonPath('data.items.0.employee_name', 'Reported on')
@@ -287,7 +287,7 @@ final class ReportTest extends TestCase
 
     public function test_a_malformed_month_is_refused(): void
     {
-        $this->asAdmin()->getJson('/app/reports/payroll.php?month=2026')
+        $this->asAdmin()->getJson('/v1/reports/payroll?month=2026')
             ->assertStatus(422)->assertJsonPath('error_code', 'invalid_month');
     }
 
@@ -302,11 +302,11 @@ final class ReportTest extends TestCase
         $pinned = $this->admin('branch_manager', $this->branchId);
 
         $this->withHeader('X-Firebase-Token', $pinned)
-            ->getJson('/app/reports/attendance.php'.$this->range().'&branch_id='.$otherBranch)
+            ->getJson('/v1/reports/attendance'.$this->range().'&branch_id='.$otherBranch)
             ->assertForbidden();
 
         $this->withHeader('X-Firebase-Token', $pinned)
-            ->getJson('/app/reports/attendance.php'.$this->range().'&branch_id='.$this->branchId)
+            ->getJson('/v1/reports/attendance'.$this->range().'&branch_id='.$this->branchId)
             ->assertOk();
     }
 
@@ -315,10 +315,10 @@ final class ReportTest extends TestCase
         $attendanceOnly = $this->admin('attendance');
 
         $this->withHeader('X-Firebase-Token', $attendanceOnly)
-            ->getJson('/app/reports/attendance.php')->assertForbidden();
+            ->getJson('/v1/reports/attendance')->assertForbidden();
 
         // A viewer's whole job is reading these.
         $this->withHeader('X-Firebase-Token', $this->viewerToken)
-            ->getJson('/app/reports/attendance.php')->assertOk();
+            ->getJson('/v1/reports/attendance')->assertOk();
     }
 }

@@ -80,7 +80,7 @@ final class KioskPairingTest extends TestCase
     private function pairingCode(): string
     {
         $response = $this->asAdmin()
-            ->postJson('/app/kiosk/create_pairing_code.php', ['branch_id' => $this->branchId])
+            ->postJson('/v1/kiosk/pairing-code', ['branch_id' => $this->branchId])
             ->assertOk();
 
         return Value::string($response->json('data.code'));
@@ -91,7 +91,7 @@ final class KioskPairingTest extends TestCase
      */
     private function pairedStation(): array
     {
-        $response = $this->postJson('/app/kiosk/pair.php', [
+        $response = $this->postJson('/v1/kiosk/pair', [
             'code' => $this->pairingCode(),
             'device_id' => 'tablet-'.bin2hex(random_bytes(4)),
             'device_model' => 'Galaxy Tab A9',
@@ -110,7 +110,7 @@ final class KioskPairingTest extends TestCase
     public function test_a_pairing_code_is_issued_for_a_branch(): void
     {
         $this->asAdmin()
-            ->postJson('/app/kiosk/create_pairing_code.php', ['branch_id' => $this->branchId])
+            ->postJson('/v1/kiosk/pairing-code', ['branch_id' => $this->branchId])
             ->assertOk()
             ->assertJsonPath('data.branch.name', 'Kiosk branch')
             ->assertJsonPath('data.expires_in_seconds', KioskPairing::PAIR_TTL_SECONDS)
@@ -134,7 +134,7 @@ final class KioskPairingTest extends TestCase
         DB::table('branches')->where('id', $this->branchId)->update(['station_enabled' => 0]);
 
         $this->asAdmin()
-            ->postJson('/app/kiosk/create_pairing_code.php', ['branch_id' => $this->branchId])
+            ->postJson('/v1/kiosk/pairing-code', ['branch_id' => $this->branchId])
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'kiosk_pair_branch_disabled');
     }
@@ -142,7 +142,7 @@ final class KioskPairingTest extends TestCase
     public function test_issuing_a_pairing_code_needs_the_device_permission(): void
     {
         $this->withHeader('X-Firebase-Token', $this->viewerToken)
-            ->postJson('/app/kiosk/create_pairing_code.php', ['branch_id' => $this->branchId])
+            ->postJson('/v1/kiosk/pairing-code', ['branch_id' => $this->branchId])
             ->assertForbidden();
     }
 
@@ -168,9 +168,9 @@ final class KioskPairingTest extends TestCase
         // pairing several devices will type the same one twice by accident.
         $code = $this->pairingCode();
 
-        $this->postJson('/app/kiosk/pair.php', ['code' => $code, 'device_id' => 'tablet-a'])->assertOk();
+        $this->postJson('/v1/kiosk/pair', ['code' => $code, 'device_id' => 'tablet-a'])->assertOk();
 
-        $this->postJson('/app/kiosk/pair.php', ['code' => $code, 'device_id' => 'tablet-b'])
+        $this->postJson('/v1/kiosk/pair', ['code' => $code, 'device_id' => 'tablet-b'])
             ->assertStatus(410)
             ->assertJsonPath('error_code', 'kiosk_pair_code_spent');
     }
@@ -179,7 +179,7 @@ final class KioskPairingTest extends TestCase
     {
         // Distinguishing them would turn this into an oracle: an attacker could
         // tell a real-but-spent code from a wrong guess and learn the alphabet.
-        $this->postJson('/app/kiosk/pair.php', ['code' => 'ZZZZ-9999', 'device_id' => 'tablet-x'])
+        $this->postJson('/v1/kiosk/pair', ['code' => 'ZZZZ-9999', 'device_id' => 'tablet-x'])
             ->assertStatus(410)
             ->assertJsonPath('error_code', 'kiosk_pair_code_spent');
     }
@@ -190,7 +190,7 @@ final class KioskPairingTest extends TestCase
         DB::table('kiosk_codes')->where('code_hash', KioskPairing::hash($code))
             ->update(['expires_at' => DB::raw('DATE_SUB(NOW(), INTERVAL 1 SECOND)')]);
 
-        $this->postJson('/app/kiosk/pair.php', ['code' => $code, 'device_id' => 'tablet-x'])
+        $this->postJson('/v1/kiosk/pair', ['code' => $code, 'device_id' => 'tablet-x'])
             ->assertStatus(410);
     }
 
@@ -215,7 +215,7 @@ final class KioskPairingTest extends TestCase
     {
         $paired = $this->pairedStation();
 
-        $this->asAdmin()->postJson('/app/kiosk/revoke.php', ['station_id' => $paired['station_id']])
+        $this->asAdmin()->postJson('/v1/kiosk/revoke', ['station_id' => $paired['station_id']])
             ->assertOk()
             ->assertJsonPath('data.already_revoked', false);
 
@@ -231,10 +231,10 @@ final class KioskPairingTest extends TestCase
         // The honest guarantee: a device that is switched off cannot be told
         // anything, so revocation takes effect when it next reaches the network.
         $paired = $this->pairedStation();
-        $this->asAdmin()->postJson('/app/kiosk/revoke.php', ['station_id' => $paired['station_id']])->assertOk();
+        $this->asAdmin()->postJson('/v1/kiosk/revoke', ['station_id' => $paired['station_id']])->assertOk();
 
         $this->withHeader('X-Kiosk-Token', $paired['token'])
-            ->postJson('/app/kiosk/heartbeat.php')
+            ->postJson('/v1/kiosk/heartbeat')
             ->assertUnauthorized()
             ->assertJsonPath('error_code', 'kiosk_token_invalid');
     }
@@ -243,9 +243,9 @@ final class KioskPairingTest extends TestCase
     {
         $paired = $this->pairedStation();
 
-        $this->asAdmin()->postJson('/app/kiosk/revoke.php', ['station_id' => $paired['station_id']])->assertOk();
+        $this->asAdmin()->postJson('/v1/kiosk/revoke', ['station_id' => $paired['station_id']])->assertOk();
 
-        $this->asAdmin()->postJson('/app/kiosk/revoke.php', ['station_id' => $paired['station_id']])
+        $this->asAdmin()->postJson('/v1/kiosk/revoke', ['station_id' => $paired['station_id']])
             ->assertOk()
             ->assertJsonPath('data.already_revoked', true);
     }
@@ -258,13 +258,13 @@ final class KioskPairingTest extends TestCase
 
         $code = Value::string(
             $this->asAdmin()
-                ->postJson('/app/kiosk/create_access_code.php', ['station_id' => $paired['station_id']])
+                ->postJson('/v1/kiosk/access-code', ['station_id' => $paired['station_id']])
                 ->assertOk()
                 ->json('data.code')
         );
 
         $this->withHeader('X-Kiosk-Token', $paired['token'])
-            ->postJson('/app/kiosk/open_admin.php', ['code' => $code])
+            ->postJson('/v1/kiosk/open-admin', ['code' => $code])
             ->assertOk()
             ->assertJsonPath('data.authorised_by.name', 'Admin general_manager')
             ->assertJsonStructure(['data' => ['admin_session']]);
@@ -279,13 +279,13 @@ final class KioskPairingTest extends TestCase
 
         $code = Value::string(
             $this->asAdmin()
-                ->postJson('/app/kiosk/create_access_code.php', ['station_id' => $first['station_id']])
+                ->postJson('/v1/kiosk/access-code', ['station_id' => $first['station_id']])
                 ->assertOk()
                 ->json('data.code')
         );
 
         $this->withHeader('X-Kiosk-Token', $second['token'])
-            ->postJson('/app/kiosk/open_admin.php', ['code' => $code])
+            ->postJson('/v1/kiosk/open-admin', ['code' => $code])
             ->assertStatus(410)
             ->assertJsonPath('error_code', 'kiosk_pair_code_spent');
     }
@@ -293,9 +293,9 @@ final class KioskPairingTest extends TestCase
     public function test_an_access_code_cannot_be_issued_for_a_revoked_station(): void
     {
         $paired = $this->pairedStation();
-        $this->asAdmin()->postJson('/app/kiosk/revoke.php', ['station_id' => $paired['station_id']])->assertOk();
+        $this->asAdmin()->postJson('/v1/kiosk/revoke', ['station_id' => $paired['station_id']])->assertOk();
 
-        $this->asAdmin()->postJson('/app/kiosk/create_access_code.php', ['station_id' => $paired['station_id']])
+        $this->asAdmin()->postJson('/v1/kiosk/access-code', ['station_id' => $paired['station_id']])
             ->assertStatus(409)
             ->assertJsonPath('error_code', 'kiosk_revoked');
     }
@@ -305,7 +305,7 @@ final class KioskPairingTest extends TestCase
         $paired = $this->pairedStation();
 
         $this->withHeader('X-Kiosk-Token', $paired['token'])
-            ->postJson('/app/kiosk/admin/close.php', ['admin_session' => 'never-opened'])
+            ->postJson('/v1/kiosk/admin/close', ['admin_session' => 'never-opened'])
             ->assertOk()
             ->assertJsonPath('data.already_closed', true);
     }
@@ -315,7 +315,7 @@ final class KioskPairingTest extends TestCase
         $paired = $this->pairedStation();
 
         $this->withHeader('X-Kiosk-Token', $paired['token'])
-            ->postJson('/app/kiosk/admin/roster.php', ['admin_session' => 'not-a-session'])
+            ->postJson('/v1/kiosk/admin/roster', ['admin_session' => 'not-a-session'])
             ->assertUnauthorized()
             ->assertJsonPath('error_code', 'kiosk_admin_session_expired');
     }
@@ -329,7 +329,7 @@ final class KioskPairingTest extends TestCase
         $this->pairedStation();
         $this->gate->set('medjat_kiosk', '2.0.0');
 
-        $this->asAdmin()->postJson('/app/kiosk/list.php', ['branch_id' => $this->branchId])
+        $this->asAdmin()->postJson('/v1/kiosk/stations', ['branch_id' => $this->branchId])
             ->assertOk()
             ->assertJsonPath('data.min_version', '2.0.0')
             ->assertJsonPath('data.would_block_count', 1)
@@ -341,7 +341,7 @@ final class KioskPairingTest extends TestCase
         $this->pairedStation();
         $this->gate->set('medjat_kiosk', '1.0.0');
 
-        $this->asAdmin()->postJson('/app/kiosk/list.php', ['branch_id' => $this->branchId])
+        $this->asAdmin()->postJson('/v1/kiosk/stations', ['branch_id' => $this->branchId])
             ->assertOk()
             ->assertJsonPath('data.would_block_count', 0);
     }
@@ -352,7 +352,7 @@ final class KioskPairingTest extends TestCase
         // administrator that face-only identification has reached its limit.
         $this->pairedStation();
 
-        $this->asAdmin()->postJson('/app/kiosk/list.php', ['branch_id' => $this->branchId])
+        $this->asAdmin()->postJson('/v1/kiosk/stations', ['branch_id' => $this->branchId])
             ->assertOk()
             ->assertJsonPath('data.rosters.0.enrolled', 0)
             ->assertJsonPath('data.rosters.0.over_ceiling', false);

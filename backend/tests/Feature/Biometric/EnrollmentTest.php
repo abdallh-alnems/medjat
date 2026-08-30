@@ -103,7 +103,7 @@ final class EnrollmentTest extends TestCase
 
     public function test_a_face_enrollment_records_the_vector_and_derives_the_status(): void
     {
-        $this->send('/app/biometric/enroll_face.php', [
+        $this->send('/v1/biometric/face', [
             'employee_id' => $this->employeeId,
             'embedding' => self::vector(),
             'quality_score' => 0.9,
@@ -121,7 +121,7 @@ final class EnrollmentTest extends TestCase
     public function test_a_malformed_vector_is_refused_at_the_door(): void
     {
         // Stored happily, it would fail every check-in with an opaque error.
-        $this->send('/app/biometric/enroll_face.php', [
+        $this->send('/v1/biometric/face', [
             'employee_id' => $this->employeeId,
             'embedding' => [1, 2, 3],
             'quality_score' => 0.9,
@@ -134,13 +134,13 @@ final class EnrollmentTest extends TestCase
 
     public function test_holding_both_templates_is_reflected_in_the_status(): void
     {
-        $this->send('/app/biometric/enroll_face.php', [
+        $this->send('/v1/biometric/face', [
             'employee_id' => $this->employeeId,
             'embedding' => self::vector(),
             'quality_score' => 0.9,
         ])->assertStatus(201);
 
-        $this->send('/app/biometric/enroll_fingerprint.php', [
+        $this->send('/v1/biometric/fingerprint', [
             'employee_id' => $this->employeeId,
             'template_base64' => base64_encode('template-bytes'),
         ])->assertStatus(201);
@@ -152,17 +152,17 @@ final class EnrollmentTest extends TestCase
 
     public function test_clearing_the_face_leaves_the_fingerprint_standing(): void
     {
-        $this->send('/app/biometric/enroll_face.php', [
+        $this->send('/v1/biometric/face', [
             'employee_id' => $this->employeeId,
             'embedding' => self::vector(),
             'quality_score' => 0.9,
         ])->assertStatus(201);
-        $this->send('/app/biometric/enroll_fingerprint.php', [
+        $this->send('/v1/biometric/fingerprint', [
             'employee_id' => $this->employeeId,
             'template_base64' => base64_encode('template-bytes'),
         ])->assertStatus(201);
 
-        $this->send('/app/biometric/delete.php', [
+        $this->send('/v1/biometric/delete', [
             'employee_id' => $this->employeeId, 'type' => 'face',
         ])->assertOk()->assertJsonPath('data.deleted_type', 'face');
 
@@ -175,30 +175,22 @@ final class EnrollmentTest extends TestCase
 
     public function test_clearing_everything_returns_the_employee_to_unenrolled(): void
     {
-        $this->send('/app/biometric/enroll_face.php', [
+        $this->send('/v1/biometric/face', [
             'employee_id' => $this->employeeId,
             'embedding' => self::vector(),
             'quality_score' => 0.9,
         ])->assertStatus(201);
 
-        $this->send('/app/biometric/delete.php', ['employee_id' => $this->employeeId])->assertOk();
+        $this->send('/v1/biometric/delete', ['employee_id' => $this->employeeId])->assertOk();
 
         $this->assertDatabaseHas('employees', [
             'id' => $this->employeeId, 'biometric_enrollment_status' => 'not_enrolled',
         ]);
     }
 
-    public function test_the_legacy_url_still_answers_the_delete_verb(): void
-    {
-        // Published app bundles speak POST, but the original answered both.
-        $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->json('DELETE', '/app/biometric/delete.php', ['employee_id' => $this->employeeId])
-            ->assertOk();
-    }
-
     public function test_an_unknown_removal_type_is_refused(): void
     {
-        $this->send('/app/biometric/delete.php', [
+        $this->send('/v1/biometric/delete', [
             'employee_id' => $this->employeeId, 'type' => 'retina',
         ])->assertStatus(422);
     }
@@ -209,13 +201,13 @@ final class EnrollmentTest extends TestCase
         // could be used to swap somebody's reference face.
         $clerk = $this->admin('attendance');
 
-        $this->send('/app/biometric/enroll_face.php', [
+        $this->send('/v1/biometric/face', [
             'employee_id' => $this->employeeId,
             'embedding' => self::vector(),
             'quality_score' => 0.9,
         ], $clerk)->assertStatus(201);
 
-        $this->send('/app/biometric/delete.php', ['employee_id' => $this->employeeId], $clerk)
+        $this->send('/v1/biometric/delete', ['employee_id' => $this->employeeId], $clerk)
             ->assertStatus(403);
     }
 
@@ -226,7 +218,7 @@ final class EnrollmentTest extends TestCase
         ]);
         $token = $this->admin('branch_manager', $otherBranch);
 
-        $this->send('/app/biometric/enroll_face.php', [
+        $this->send('/v1/biometric/face', [
             'employee_id' => $this->employeeId,
             'embedding' => self::vector(),
             'quality_score' => 0.9,
@@ -246,7 +238,7 @@ final class EnrollmentTest extends TestCase
             'hire_date' => '2022-01-01',
         ]);
 
-        $this->send('/app/biometric/enroll_face.php', [
+        $this->send('/v1/biometric/face', [
             'employee_id' => $stranger,
             'embedding' => self::vector(),
             'quality_score' => 0.9,
@@ -255,14 +247,14 @@ final class EnrollmentTest extends TestCase
 
     public function test_the_status_screen_reports_what_is_held(): void
     {
-        $this->send('/app/biometric/enroll_face.php', [
+        $this->send('/v1/biometric/face', [
             'employee_id' => $this->employeeId,
             'embedding' => self::vector(),
             'quality_score' => 0.82,
         ])->assertStatus(201);
 
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/biometric/status.php?employee_id='.$this->employeeId)
+            ->getJson('/v1/biometric/status?employee_id='.$this->employeeId)
             ->assertOk()
             ->assertJsonPath('data.biometric_enrollment_status', 'face_only')
             ->assertJsonPath('data.needs_reenrollment', false);
@@ -270,7 +262,7 @@ final class EnrollmentTest extends TestCase
 
     public function test_an_embedding_from_a_retired_model_is_flagged_for_re_enrollment(): void
     {
-        $this->send('/app/biometric/enroll_face.php', [
+        $this->send('/v1/biometric/face', [
             'employee_id' => $this->employeeId,
             'embedding' => self::vector(),
             'quality_score' => 0.9,
@@ -281,14 +273,14 @@ final class EnrollmentTest extends TestCase
 
         // Otherwise every check-in fails with a mismatch nobody can explain.
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/biometric/status.php?employee_id='.$this->employeeId)
+            ->getJson('/v1/biometric/status?employee_id='.$this->employeeId)
             ->assertOk()
             ->assertJsonPath('data.needs_reenrollment', true);
     }
 
     public function test_an_enrollment_from_before_the_version_column_is_not_flagged(): void
     {
-        $this->send('/app/biometric/enroll_face.php', [
+        $this->send('/v1/biometric/face', [
             'employee_id' => $this->employeeId,
             'embedding' => self::vector(),
             'quality_score' => 0.9,
@@ -300,7 +292,7 @@ final class EnrollmentTest extends TestCase
         // The verifier accepts a null version, so telling HR to reset these
         // would send people back through enrollment for nothing.
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/biometric/status.php?employee_id='.$this->employeeId)
+            ->getJson('/v1/biometric/status?employee_id='.$this->employeeId)
             ->assertOk()
             ->assertJsonPath('data.needs_reenrollment', false);
     }
@@ -308,7 +300,7 @@ final class EnrollmentTest extends TestCase
     public function test_a_status_request_for_nobody_is_a_404(): void
     {
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/biometric/status.php?employee_id=0')
+            ->getJson('/v1/biometric/status?employee_id=0')
             ->assertStatus(404);
     }
 }

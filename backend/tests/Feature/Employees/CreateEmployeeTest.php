@@ -61,7 +61,7 @@ final class CreateEmployeeTest extends TestCase
     private function create(array $body = []): TestResponse
     {
         return $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/create.php', array_merge([
+            ->postJson('/v1/employees', array_merge([
                 'name' => 'New Hire',
                 'branch_id' => $this->branchId,
                 'base_salary' => 8000,
@@ -218,7 +218,7 @@ final class CreateEmployeeTest extends TestCase
         $id = Value::int($this->create(['job_title' => 'Cashier'])->json('data.employee_id'));
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/update.php', ['employee_id' => $id, 'name' => 'Renamed'])
+            ->postJson('/v1/employees/update', ['employee_id' => $id, 'name' => 'Renamed'])
             ->assertOk();
 
         $row = DB::table('employees')->where('id', $id)->first();
@@ -232,7 +232,7 @@ final class CreateEmployeeTest extends TestCase
         $id = Value::int($this->create(['contract_end' => '2027-01-01'])->json('data.employee_id'));
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/update.php', ['employee_id' => $id, 'contract_end' => ''])
+            ->postJson('/v1/employees/update', ['employee_id' => $id, 'contract_end' => ''])
             ->assertOk();
 
         $this->assertNull(DB::table('employees')->where('id', $id)->value('contract_end'));
@@ -245,7 +245,7 @@ final class CreateEmployeeTest extends TestCase
         $id = Value::int($this->create(['annual_leave_days' => 25])->json('data.employee_id'));
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/update.php', ['employee_id' => $id, 'annual_leave_days' => ''])
+            ->postJson('/v1/employees/update', ['employee_id' => $id, 'annual_leave_days' => ''])
             ->assertOk();
 
         $this->assertNull(DB::table('employees')->where('id', $id)->value('annual_leave_days'));
@@ -256,7 +256,7 @@ final class CreateEmployeeTest extends TestCase
         $id = Value::int($this->create()->json('data.employee_id'));
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/update.php', ['employee_id' => $id, 'annual_leave_days' => 400])
+            ->postJson('/v1/employees/update', ['employee_id' => $id, 'annual_leave_days' => 400])
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'annual_leave_days_between_0');
     }
@@ -268,7 +268,7 @@ final class CreateEmployeeTest extends TestCase
         $id = Value::int($this->create(['category_ids' => [1]])->json('data.employee_id'));
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/update.php', ['employee_id' => $id, 'category_ids' => []])
+            ->postJson('/v1/employees/update', ['employee_id' => $id, 'category_ids' => []])
             ->assertOk();
 
         $this->assertSame(0, DB::table('employee_category_assignments')->where('employee_id', $id)->count());
@@ -282,7 +282,7 @@ final class CreateEmployeeTest extends TestCase
         }
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/update.php', ['employee_id' => $other->id, 'name' => 'Hijacked'])
+            ->postJson('/v1/employees/update', ['employee_id' => $other->id, 'name' => 'Hijacked'])
             ->assertNotFound();
     }
 }

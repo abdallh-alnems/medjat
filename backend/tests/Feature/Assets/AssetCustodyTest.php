@@ -98,7 +98,7 @@ final class AssetCustodyTest extends TestCase
      */
     private function assigned(array $overrides = []): int
     {
-        $response = $this->asAdmin()->postJson('/app/assets/create.php', $overrides + [
+        $response = $this->asAdmin()->postJson('/v1/assets', $overrides + [
             'employee_id' => $this->employeeId,
             'type' => 'device',
             'name' => 'Laptop',
@@ -129,7 +129,7 @@ final class AssetCustodyTest extends TestCase
 
     public function test_an_unnamed_item_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/assets/create.php', [
+        $this->asAdmin()->postJson('/v1/assets', [
             'employee_id' => $this->employeeId,
             'name' => '   ',
         ])->assertStatus(422)->assertJsonPath('error_code', 'name_required');
@@ -137,7 +137,7 @@ final class AssetCustodyTest extends TestCase
 
     public function test_an_unknown_type_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/assets/create.php', [
+        $this->asAdmin()->postJson('/v1/assets', [
             'employee_id' => $this->employeeId,
             'name' => 'Thing',
             'type' => 'spaceship',
@@ -154,7 +154,7 @@ final class AssetCustodyTest extends TestCase
 
     public function test_assigning_to_an_unknown_employee_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/assets/create.php', [
+        $this->asAdmin()->postJson('/v1/assets', [
             'employee_id' => 9999999,
             'name' => 'Laptop',
         ])->assertNotFound();
@@ -166,7 +166,7 @@ final class AssetCustodyTest extends TestCase
     {
         $id = $this->assigned();
 
-        $this->asAdmin()->postJson('/app/assets/update.php', [
+        $this->asAdmin()->postJson('/v1/assets/update', [
             'id' => $id,
             'name' => 'Laptop (renamed)',
         ])->assertOk();
@@ -182,7 +182,7 @@ final class AssetCustodyTest extends TestCase
     {
         $id = $this->assigned();
 
-        $this->asAdmin()->postJson('/app/assets/update.php', ['id' => $id, 'value' => ''])->assertOk();
+        $this->asAdmin()->postJson('/v1/assets/update', ['id' => $id, 'value' => ''])->assertOk();
 
         $this->assertNull(DB::table('asset_custody')->where('id', $id)->value('value'));
     }
@@ -191,9 +191,9 @@ final class AssetCustodyTest extends TestCase
     {
         // Editing it would rewrite what was handed back, after the fact.
         $id = $this->assigned();
-        $this->asAdmin()->postJson('/app/assets/approve_return.php', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/assets/approve-return', ['id' => $id])->assertOk();
 
-        $this->asAdmin()->postJson('/app/assets/update.php', ['id' => $id, 'name' => 'Changed'])
+        $this->asAdmin()->postJson('/v1/assets/update', ['id' => $id, 'name' => 'Changed'])
             ->assertStatus(409)->assertJsonPath('error_code', 'asset_returned_locked');
     }
 
@@ -201,7 +201,7 @@ final class AssetCustodyTest extends TestCase
     {
         $id = $this->assigned();
 
-        $this->asAdmin()->postJson('/app/assets/delete.php', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/assets/delete', ['id' => $id])->assertOk();
 
         $this->assertDatabaseMissing('asset_custody', ['id' => $id]);
     }
@@ -212,7 +212,7 @@ final class AssetCustodyTest extends TestCase
     {
         $id = $this->assigned();
 
-        $this->asEmployee()->postJson('/app/assets/request_return.php', [
+        $this->asEmployee()->postJson('/v1/assets/request-return', [
             'id' => $id,
             'return_note' => 'Left it at reception',
         ])->assertOk();
@@ -231,7 +231,7 @@ final class AssetCustodyTest extends TestCase
         // A one-sided return would let anybody clear their own list without the
         // laptop ever reaching a desk.
         $id = $this->assigned();
-        $this->asEmployee()->postJson('/app/assets/request_return.php', ['id' => $id])->assertOk();
+        $this->asEmployee()->postJson('/v1/assets/request-return', ['id' => $id])->assertOk();
 
         $this->assertDatabaseMissing('asset_custody', ['id' => $id, 'status' => 'returned']);
     }
@@ -239,9 +239,9 @@ final class AssetCustodyTest extends TestCase
     public function test_a_manager_confirms_the_return(): void
     {
         $id = $this->assigned();
-        $this->asEmployee()->postJson('/app/assets/request_return.php', ['id' => $id])->assertOk();
+        $this->asEmployee()->postJson('/v1/assets/request-return', ['id' => $id])->assertOk();
 
-        $this->asAdmin()->postJson('/app/assets/approve_return.php', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/assets/approve-return', ['id' => $id])->assertOk();
 
         $this->assertDatabaseHas('asset_custody', ['id' => $id, 'status' => 'returned']);
         $this->assertDatabaseHas('notifications', [
@@ -256,7 +256,7 @@ final class AssetCustodyTest extends TestCase
         // that requiring a request would just mean nobody records it.
         $id = $this->assigned();
 
-        $this->asAdmin()->postJson('/app/assets/approve_return.php', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/assets/approve-return', ['id' => $id])->assertOk();
 
         $this->assertDatabaseHas('asset_custody', ['id' => $id, 'status' => 'returned']);
     }
@@ -264,18 +264,18 @@ final class AssetCustodyTest extends TestCase
     public function test_confirming_twice_is_refused(): void
     {
         $id = $this->assigned();
-        $this->asAdmin()->postJson('/app/assets/approve_return.php', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/assets/approve-return', ['id' => $id])->assertOk();
 
-        $this->asAdmin()->postJson('/app/assets/approve_return.php', ['id' => $id])
+        $this->asAdmin()->postJson('/v1/assets/approve-return', ['id' => $id])
             ->assertStatus(409)->assertJsonPath('error_code', 'custody_item_already_returned');
     }
 
     public function test_a_refused_return_goes_back_to_assigned_with_a_reason(): void
     {
         $id = $this->assigned();
-        $this->asEmployee()->postJson('/app/assets/request_return.php', ['id' => $id])->assertOk();
+        $this->asEmployee()->postJson('/v1/assets/request-return', ['id' => $id])->assertOk();
 
-        $this->asAdmin()->postJson('/app/assets/reject_return.php', [
+        $this->asAdmin()->postJson('/v1/assets/reject-return', [
             'id' => $id,
             'rejection_reason' => 'The charger is missing',
         ])->assertOk();
@@ -292,7 +292,7 @@ final class AssetCustodyTest extends TestCase
     {
         $id = $this->assigned();
 
-        $this->asAdmin()->postJson('/app/assets/reject_return.php', ['id' => $id])
+        $this->asAdmin()->postJson('/v1/assets/reject-return', ['id' => $id])
             ->assertStatus(409)->assertJsonPath('error_code', 'only_pending_return_request_can');
     }
 
@@ -300,13 +300,13 @@ final class AssetCustodyTest extends TestCase
     {
         // It is a new attempt, not a continuation of the one turned down.
         $id = $this->assigned();
-        $this->asEmployee()->postJson('/app/assets/request_return.php', ['id' => $id])->assertOk();
-        $this->asAdmin()->postJson('/app/assets/reject_return.php', [
+        $this->asEmployee()->postJson('/v1/assets/request-return', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/assets/reject-return', [
             'id' => $id,
             'rejection_reason' => 'Charger missing',
         ])->assertOk();
 
-        $this->asEmployee()->postJson('/app/assets/request_return.php', ['id' => $id])->assertOk();
+        $this->asEmployee()->postJson('/v1/assets/request-return', ['id' => $id])->assertOk();
 
         $this->assertDatabaseHas('asset_custody', [
             'id' => $id,
@@ -325,7 +325,7 @@ final class AssetCustodyTest extends TestCase
         ]);
         $id = $this->assigned(['employee_id' => $stranger]);
 
-        $this->asEmployee()->postJson('/app/assets/request_return.php', ['id' => $id])->assertNotFound();
+        $this->asEmployee()->postJson('/v1/assets/request-return', ['id' => $id])->assertNotFound();
     }
 
     // ── Reading ──────────────────────────────────────────────────────────
@@ -341,7 +341,7 @@ final class AssetCustodyTest extends TestCase
         $this->assigned();
         $this->assigned(['employee_id' => $stranger, 'name' => 'Not yours']);
 
-        $items = $this->asEmployee()->getJson('/app/assets/my_list.php')->assertOk()->json('data.items');
+        $items = $this->asEmployee()->getJson('/v1/assets/mine')->assertOk()->json('data.items');
 
         $this->assertIsArray($items);
         $this->assertCount(1, $items);
@@ -353,9 +353,9 @@ final class AssetCustodyTest extends TestCase
     {
         $returned = $this->assigned(['name' => 'Old phone']);
         $this->assigned(['name' => 'Current laptop']);
-        $this->asAdmin()->postJson('/app/assets/approve_return.php', ['id' => $returned])->assertOk();
+        $this->asAdmin()->postJson('/v1/assets/approve-return', ['id' => $returned])->assertOk();
 
-        $items = $this->asAdmin()->getJson('/app/assets/list.php?status=assigned&employee_id='.$this->employeeId)
+        $items = $this->asAdmin()->getJson('/v1/assets?status=assigned&employee_id='.$this->employeeId)
             ->assertOk()->json('data.items');
 
         $this->assertIsArray($items);
@@ -367,6 +367,6 @@ final class AssetCustodyTest extends TestCase
     public function test_custody_is_closed_without_the_assets_permission(): void
     {
         $this->withHeader('X-Firebase-Token', $this->viewerToken)
-            ->getJson('/app/assets/list.php')->assertForbidden();
+            ->getJson('/v1/assets')->assertForbidden();
     }
 }

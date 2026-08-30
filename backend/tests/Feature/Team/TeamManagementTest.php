@@ -106,7 +106,7 @@ final class TeamManagementTest extends TestCase
             'is_active' => 1,
         ]);
 
-        $items = $this->as($this->gmToken)->getJson('/app/managers/list_admins.php')
+        $items = $this->as($this->gmToken)->getJson('/v1/team')
             ->assertOk()->json('data.items');
 
         $this->assertIsArray($items);
@@ -128,7 +128,7 @@ final class TeamManagementTest extends TestCase
         $this->customise($hrId, ['manage_employees']);
         $this->customise($callerId, ['manage_employees', 'add_managers']);
 
-        $items = $this->as($hrToken)->getJson('/app/managers/list_admins.php')
+        $items = $this->as($hrToken)->getJson('/v1/team')
             ->assertOk()->json('data.items');
 
         $this->assertIsArray($items);
@@ -152,7 +152,7 @@ final class TeamManagementTest extends TestCase
     {
         [$hrId] = $this->member('hr', 'HR Person');
 
-        $this->as($this->gmToken)->postJson('/app/managers/update_admin.php', [
+        $this->as($this->gmToken)->postJson('/v1/team/update', [
             'admin_id' => $hrId,
             'role' => 'branch_manager',
             'branch_id' => $this->branchId,
@@ -172,7 +172,7 @@ final class TeamManagementTest extends TestCase
         [$hrId] = $this->member('hr', 'HR Person');
         $this->customise($hrId, ['manage_employees', 'manage_payroll']);
 
-        $this->as($this->gmToken)->postJson('/app/managers/update_admin.php', [
+        $this->as($this->gmToken)->postJson('/v1/team/update', [
             'admin_id' => $hrId,
             'role' => 'viewer',
         ])->assertOk();
@@ -182,7 +182,7 @@ final class TeamManagementTest extends TestCase
 
     public function test_nobody_edits_their_own_role(): void
     {
-        $this->as($this->gmToken)->postJson('/app/managers/update_admin.php', [
+        $this->as($this->gmToken)->postJson('/v1/team/update', [
             'admin_id' => $this->gmId,
             'role' => 'viewer',
         ])->assertForbidden();
@@ -192,7 +192,7 @@ final class TeamManagementTest extends TestCase
     {
         [$hrId] = $this->member('hr', 'HR Person');
 
-        $this->as($this->gmToken)->postJson('/app/managers/update_admin.php', ['admin_id' => $hrId])
+        $this->as($this->gmToken)->postJson('/v1/team/update', ['admin_id' => $hrId])
             ->assertStatus(422)->assertJsonPath('error_code', 'no_changes');
     }
 
@@ -203,7 +203,7 @@ final class TeamManagementTest extends TestCase
         $this->customise($hrId, Permissions::CATALOGUE);
 
         // Even holding every listed permission is not the same as full access.
-        $this->as($hrToken)->postJson('/app/managers/update_admin.php', [
+        $this->as($hrToken)->postJson('/v1/team/update', [
             'admin_id' => $otherGmId,
             'role' => 'viewer',
         ])->assertForbidden();
@@ -216,7 +216,7 @@ final class TeamManagementTest extends TestCase
         $this->customise($juniorId, ['manage_employees', 'add_managers']);
         $this->customise($seniorId, ['manage_employees', 'add_managers', 'manage_payroll']);
 
-        $this->as($juniorToken)->postJson('/app/managers/update_admin.php', [
+        $this->as($juniorToken)->postJson('/v1/team/update', [
             'admin_id' => $seniorId,
             'role' => 'viewer',
         ])->assertForbidden();
@@ -228,7 +228,7 @@ final class TeamManagementTest extends TestCase
         [$viewerId] = $this->member('viewer', 'A Viewer');
         $this->customise($hrId, ['manage_employees', 'add_managers']);
 
-        $this->as($hrToken)->postJson('/app/managers/update_admin.php', [
+        $this->as($hrToken)->postJson('/v1/team/update', [
             'admin_id' => $viewerId,
             'role' => 'general_manager',
         ])->assertForbidden();
@@ -238,7 +238,7 @@ final class TeamManagementTest extends TestCase
     {
         [$hrId] = $this->member('hr', 'HR Person');
 
-        $this->as($this->gmToken)->postJson('/app/managers/update_admin.php', [
+        $this->as($this->gmToken)->postJson('/v1/team/update', [
             'admin_id' => $hrId,
             'branch_id' => 9999999,
         ])->assertNotFound()->assertJsonPath('error_code', 'branch_not_found');
@@ -250,14 +250,14 @@ final class TeamManagementTest extends TestCase
     {
         [$hrId] = $this->member('hr', 'HR Person');
 
-        $this->as($this->gmToken)->postJson('/app/managers/set_admin_active.php', [
+        $this->as($this->gmToken)->postJson('/v1/team/set-active', [
             'admin_id' => $hrId,
             'is_active' => false,
         ])->assertOk()->assertJsonPath('data.is_active', false);
 
         $this->assertDatabaseHas('admins', ['id' => $hrId, 'is_active' => 0]);
 
-        $this->as($this->gmToken)->postJson('/app/managers/set_admin_active.php', [
+        $this->as($this->gmToken)->postJson('/v1/team/set-active', [
             'admin_id' => $hrId,
             'is_active' => true,
         ])->assertOk();
@@ -267,7 +267,7 @@ final class TeamManagementTest extends TestCase
 
     public function test_nobody_suspends_themselves(): void
     {
-        $this->as($this->gmToken)->postJson('/app/managers/set_admin_active.php', [
+        $this->as($this->gmToken)->postJson('/v1/team/set-active', [
             'admin_id' => $this->gmId,
             'is_active' => false,
         ])->assertForbidden();
@@ -280,7 +280,7 @@ final class TeamManagementTest extends TestCase
         [$hrId] = $this->member('hr', 'HR Person');
         $this->customise($hrId, ['manage_employees']);
 
-        $this->as($this->gmToken)->postJson('/app/managers/remove_admin.php', ['admin_id' => $hrId])
+        $this->as($this->gmToken)->postJson('/v1/team/remove', ['admin_id' => $hrId])
             ->assertOk();
 
         $this->assertDatabaseHas('admins', [
@@ -300,7 +300,7 @@ final class TeamManagementTest extends TestCase
         [$secondId, $secondToken] = $this->member('general_manager', 'Second GM');
         DB::table('admins')->where('id', $this->gmId)->update(['is_active' => 0]);
 
-        $this->as($secondToken)->postJson('/app/managers/remove_admin.php', ['admin_id' => $this->gmId])
+        $this->as($secondToken)->postJson('/v1/team/remove', ['admin_id' => $this->gmId])
             ->assertStatus(409)
             ->assertJsonPath('error_code', 'cannot_remove_last_owner');
 
@@ -312,7 +312,7 @@ final class TeamManagementTest extends TestCase
     {
         [, $secondToken] = $this->member('general_manager', 'Second GM');
 
-        $this->as($secondToken)->postJson('/app/managers/remove_admin.php', ['admin_id' => $this->gmId])
+        $this->as($secondToken)->postJson('/v1/team/remove', ['admin_id' => $this->gmId])
             ->assertOk();
 
         $this->assertDatabaseHas('admins', ['id' => $this->gmId, 'tenant_id' => null]);
@@ -324,13 +324,13 @@ final class TeamManagementTest extends TestCase
         $this->customise($hrId, Permissions::CATALOGUE);
 
         // Holding every listed permission is still not full access.
-        $this->as($hrToken)->postJson('/app/managers/remove_admin.php', ['admin_id' => $this->gmId])
+        $this->as($hrToken)->postJson('/v1/team/remove', ['admin_id' => $this->gmId])
             ->assertForbidden();
     }
 
     public function test_nobody_removes_themselves(): void
     {
-        $this->as($this->gmToken)->postJson('/app/managers/remove_admin.php', ['admin_id' => $this->gmId])
+        $this->as($this->gmToken)->postJson('/v1/team/remove', ['admin_id' => $this->gmId])
             ->assertForbidden();
     }
 
@@ -345,7 +345,7 @@ final class TeamManagementTest extends TestCase
             'is_active' => 1,
         ]);
 
-        $this->as($this->gmToken)->postJson('/app/managers/remove_admin.php', ['admin_id' => $stranger])
+        $this->as($this->gmToken)->postJson('/v1/team/remove', ['admin_id' => $stranger])
             ->assertNotFound();
     }
 
@@ -355,7 +355,7 @@ final class TeamManagementTest extends TestCase
     {
         [$hrId] = $this->member('hr', 'HR Person');
 
-        $this->as($this->gmToken)->getJson('/app/managers/get_admin_permissions.php?admin_id='.$hrId)
+        $this->as($this->gmToken)->getJson('/v1/team/permissions?admin_id='.$hrId)
             ->assertOk()
             ->assertJsonPath('data.role', 'hr')
             ->assertJsonPath('data.is_customized', false)
@@ -364,7 +364,7 @@ final class TeamManagementTest extends TestCase
 
     public function test_a_general_managers_defaults_are_the_whole_catalogue(): void
     {
-        $this->as($this->gmToken)->getJson('/app/managers/get_admin_permissions.php?admin_id='.$this->gmId)
+        $this->as($this->gmToken)->getJson('/v1/team/permissions?admin_id='.$this->gmId)
             ->assertOk()
             ->assertJsonPath('data.role_defaults', Permissions::CATALOGUE);
     }
@@ -373,12 +373,12 @@ final class TeamManagementTest extends TestCase
     {
         [$hrId] = $this->member('hr', 'HR Person');
 
-        $this->as($this->gmToken)->postJson('/app/managers/update_admin_permissions.php', [
+        $this->as($this->gmToken)->postJson('/v1/team/permissions', [
             'admin_id' => $hrId,
             'permissions' => ['manage_employees', 'view_reports'],
         ])->assertOk();
 
-        $this->as($this->gmToken)->getJson('/app/managers/get_admin_permissions.php?admin_id='.$hrId)
+        $this->as($this->gmToken)->getJson('/v1/team/permissions?admin_id='.$hrId)
             ->assertOk()
             ->assertJsonPath('data.is_customized', true)
             ->assertJsonPath('data.effective_permissions', ['manage_employees', 'view_reports']);
@@ -391,7 +391,7 @@ final class TeamManagementTest extends TestCase
         [$hrId, $hrToken] = $this->member('hr', 'HR Person');
         $this->customise($hrId, ['view_reports']);
 
-        $this->as($hrToken)->getJson('/app/managers/list_admins.php')->assertForbidden();
+        $this->as($hrToken)->getJson('/v1/team')->assertForbidden();
     }
 
     public function test_nobody_grants_a_permission_they_do_not_hold(): void
@@ -400,7 +400,7 @@ final class TeamManagementTest extends TestCase
         [$viewerId] = $this->member('viewer', 'A Viewer');
         $this->customise($hrId, ['add_managers', 'manage_employees']);
 
-        $this->as($hrToken)->postJson('/app/managers/update_admin_permissions.php', [
+        $this->as($hrToken)->postJson('/v1/team/permissions', [
             'admin_id' => $viewerId,
             'permissions' => ['manage_payroll'],
         ])->assertForbidden();
@@ -410,7 +410,7 @@ final class TeamManagementTest extends TestCase
     {
         [$hrId] = $this->member('hr', 'HR Person');
 
-        $this->as($this->gmToken)->postJson('/app/managers/update_admin_permissions.php', [
+        $this->as($this->gmToken)->postJson('/v1/team/permissions', [
             'admin_id' => $hrId,
             'permissions' => ['rule_the_world'],
         ])->assertStatus(400)->assertJsonPath('error_code', 'unknown_permission');
@@ -422,7 +422,7 @@ final class TeamManagementTest extends TestCase
         // leave a company whose top role means something different.
         [$otherGmId] = $this->member('general_manager', 'Second GM');
 
-        $this->as($this->gmToken)->postJson('/app/managers/update_admin_permissions.php', [
+        $this->as($this->gmToken)->postJson('/v1/team/permissions', [
             'admin_id' => $otherGmId,
             'permissions' => ['view_reports'],
         ])->assertForbidden();
@@ -433,7 +433,7 @@ final class TeamManagementTest extends TestCase
         [$hrId] = $this->member('hr', 'HR Person');
         $this->customise($hrId, ['view_reports']);
 
-        $this->as($this->gmToken)->postJson('/app/managers/reset_admin_permissions.php', ['admin_id' => $hrId])
+        $this->as($this->gmToken)->postJson('/v1/team/permissions/reset', ['admin_id' => $hrId])
             ->assertOk();
 
         $this->assertDatabaseMissing('custom_roles', ['admin_id' => $hrId]);
@@ -443,7 +443,7 @@ final class TeamManagementTest extends TestCase
 
     public function test_an_invitation_is_issued_with_a_code_shown_once(): void
     {
-        $response = $this->as($this->gmToken)->postJson('/app/managers/invite.php', [
+        $response = $this->as($this->gmToken)->postJson('/v1/team/invitations', [
             'name' => 'New Manager',
             'email' => 'new.manager@example.test',
             'role' => 'hr',
@@ -465,7 +465,7 @@ final class TeamManagementTest extends TestCase
     {
         // Computed in PHP it was three hours short, because PHP runs UTC and
         // the expiry is compared against the database's own NOW().
-        $this->as($this->gmToken)->postJson('/app/managers/invite.php', [
+        $this->as($this->gmToken)->postJson('/v1/team/invitations', [
             'name' => 'New Manager',
             'email' => 'window@example.test',
             'role' => 'viewer',
@@ -483,7 +483,7 @@ final class TeamManagementTest extends TestCase
     public function test_an_unregistered_email_may_still_be_invited(): void
     {
         // The invitation waits, and the person is linked when they sign up.
-        $this->as($this->gmToken)->postJson('/app/managers/invite.php', [
+        $this->as($this->gmToken)->postJson('/v1/team/invitations', [
             'name' => 'Nobody Yet',
             'email' => 'stranger@example.test',
             'role' => 'viewer',
@@ -494,7 +494,7 @@ final class TeamManagementTest extends TestCase
     {
         $this->member('hr', 'Taken Person', 'taken@example.test');
 
-        $this->as($this->gmToken)->postJson('/app/managers/invite.php', [
+        $this->as($this->gmToken)->postJson('/v1/team/invitations', [
             'name' => 'Taken Person',
             'email' => 'taken@example.test',
             'role' => 'viewer',
@@ -505,9 +505,9 @@ final class TeamManagementTest extends TestCase
     {
         $payload = ['name' => 'New Manager', 'email' => 'dup@example.test', 'role' => 'hr'];
 
-        $this->as($this->gmToken)->postJson('/app/managers/invite.php', $payload)->assertStatus(201);
+        $this->as($this->gmToken)->postJson('/v1/team/invitations', $payload)->assertStatus(201);
 
-        $this->as($this->gmToken)->postJson('/app/managers/invite.php', $payload)
+        $this->as($this->gmToken)->postJson('/v1/team/invitations', $payload)
             ->assertStatus(409)->assertJsonPath('error_code', 'invitation_already_pending');
     }
 
@@ -516,7 +516,7 @@ final class TeamManagementTest extends TestCase
         [$hrId, $hrToken] = $this->member('hr', 'HR Person');
         $this->customise($hrId, ['add_managers', 'manage_employees']);
 
-        $this->as($hrToken)->postJson('/app/managers/invite.php', [
+        $this->as($hrToken)->postJson('/v1/team/invitations', [
             'name' => 'Would-be GM',
             'email' => 'wouldbe@example.test',
             'role' => 'general_manager',
@@ -531,7 +531,7 @@ final class TeamManagementTest extends TestCase
         [$hrId, $hrToken] = $this->member('hr', 'HR Person');
         $this->customise($hrId, ['add_managers', 'manage_employees', 'manage_attendance']);
 
-        $this->as($hrToken)->postJson('/app/managers/invite.php', [
+        $this->as($hrToken)->postJson('/v1/team/invitations', [
             'name' => 'Would-be HR',
             'email' => 'wouldbehr@example.test',
             'role' => 'hr',
@@ -540,13 +540,13 @@ final class TeamManagementTest extends TestCase
 
     public function test_an_invitation_is_listed_without_its_hash(): void
     {
-        $this->as($this->gmToken)->postJson('/app/managers/invite.php', [
+        $this->as($this->gmToken)->postJson('/v1/team/invitations', [
             'name' => 'New Manager',
             'email' => 'listed@example.test',
             'role' => 'hr',
         ])->assertStatus(201);
 
-        $items = $this->as($this->gmToken)->getJson('/app/managers/list_invitations.php?status=pending')
+        $items = $this->as($this->gmToken)->getJson('/v1/team/invitations?status=pending')
             ->assertOk()->json('data.items');
 
         $this->assertIsArray($items);
@@ -557,7 +557,7 @@ final class TeamManagementTest extends TestCase
 
     public function test_an_invitation_can_be_cancelled_once(): void
     {
-        $response = $this->as($this->gmToken)->postJson('/app/managers/invite.php', [
+        $response = $this->as($this->gmToken)->postJson('/v1/team/invitations', [
             'name' => 'New Manager',
             'email' => 'cancelme@example.test',
             'role' => 'hr',
@@ -565,15 +565,15 @@ final class TeamManagementTest extends TestCase
 
         $id = Value::int($response->json('data.invitation_id'));
 
-        $this->as($this->gmToken)->getJson('/app/managers/cancel_invitation.php?id='.$id)->assertOk();
+        $this->as($this->gmToken)->getJson('/v1/team/invitations/cancel?id='.$id)->assertOk();
 
-        $this->as($this->gmToken)->getJson('/app/managers/cancel_invitation.php?id='.$id)
+        $this->as($this->gmToken)->getJson('/v1/team/invitations/cancel?id='.$id)
             ->assertStatus(409)->assertJsonPath('error_code', 'invitation_already_cancelled');
     }
 
     public function test_resending_issues_a_new_code_and_revives_a_cancelled_invitation(): void
     {
-        $response = $this->as($this->gmToken)->postJson('/app/managers/invite.php', [
+        $response = $this->as($this->gmToken)->postJson('/v1/team/invitations', [
             'name' => 'New Manager',
             'email' => 'resend@example.test',
             'role' => 'hr',
@@ -582,10 +582,10 @@ final class TeamManagementTest extends TestCase
         $id = Value::int($response->json('data.invitation_id'));
         $firstCode = Value::string($response->json('data.invitation_code'));
 
-        $this->as($this->gmToken)->getJson('/app/managers/cancel_invitation.php?id='.$id)->assertOk();
+        $this->as($this->gmToken)->getJson('/v1/team/invitations/cancel?id='.$id)->assertOk();
 
         $resent = $this->as($this->gmToken)
-            ->postJson('/app/managers/resend_invitation.php', ['id' => $id])
+            ->postJson('/v1/team/invitations/resend', ['id' => $id])
             ->assertOk();
 
         $newCode = Value::string($resent->json('data.invitation_code'));
@@ -600,7 +600,7 @@ final class TeamManagementTest extends TestCase
 
     public function test_an_accepted_invitation_cannot_be_resent(): void
     {
-        $response = $this->as($this->gmToken)->postJson('/app/managers/invite.php', [
+        $response = $this->as($this->gmToken)->postJson('/v1/team/invitations', [
             'name' => 'New Manager',
             'email' => 'accepted@example.test',
             'role' => 'hr',
@@ -609,7 +609,7 @@ final class TeamManagementTest extends TestCase
         $id = Value::int($response->json('data.invitation_id'));
         DB::table('manager_invitations')->where('id', $id)->update(['accepted_at' => DB::raw('NOW()')]);
 
-        $this->as($this->gmToken)->postJson('/app/managers/resend_invitation.php', ['id' => $id])
+        $this->as($this->gmToken)->postJson('/v1/team/invitations/resend', ['id' => $id])
             ->assertStatus(409)->assertJsonPath('error_code', 'invitation_already_accepted');
     }
 
@@ -617,6 +617,6 @@ final class TeamManagementTest extends TestCase
     {
         [, $viewerToken] = $this->member('viewer', 'A Viewer');
 
-        $this->as($viewerToken)->getJson('/app/managers/list_admins.php')->assertForbidden();
+        $this->as($viewerToken)->getJson('/v1/team')->assertForbidden();
     }
 }

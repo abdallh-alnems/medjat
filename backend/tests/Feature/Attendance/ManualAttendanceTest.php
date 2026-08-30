@@ -86,7 +86,7 @@ final class ManualAttendanceTest extends TestCase
     private function record(string $token, array $body): TestResponse
     {
         return $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/attendance/manual_check_in.php', array_merge([
+            ->postJson('/v1/attendance/manual', array_merge([
                 'employee_id' => $this->employee->id,
                 'branch_id' => $this->branchId,
                 'date' => $this->date,
@@ -251,7 +251,7 @@ final class ManualAttendanceTest extends TestCase
         ]);
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/attendance/update_note.php', ['attendance_id' => $id, 'note' => 'Checked with HR'])
+            ->postJson('/v1/attendance/note', ['attendance_id' => $id, 'note' => 'Checked with HR'])
             ->assertOk()
             ->assertJsonPath('data.note', 'Checked with HR');
     }
@@ -268,7 +268,7 @@ final class ManualAttendanceTest extends TestCase
         ]);
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/attendance/update_note.php', [
+            ->postJson('/v1/attendance/note', [
                 'employee_id' => $this->employee->id,
                 'date' => $this->date,
                 'note' => 'By date',
@@ -293,7 +293,7 @@ final class ManualAttendanceTest extends TestCase
         ]);
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/attendance/update_note.php', ['attendance_id' => $id, 'note' => 'Same'])
+            ->postJson('/v1/attendance/note', ['attendance_id' => $id, 'note' => 'Same'])
             ->assertOk();
     }
 
@@ -310,7 +310,7 @@ final class ManualAttendanceTest extends TestCase
         ]);
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/attendance/update_note.php', ['attendance_id' => $id, 'note' => '   '])
+            ->postJson('/v1/attendance/note', ['attendance_id' => $id, 'note' => '   '])
             ->assertOk()
             ->assertJsonPath('data.note', null);
 
@@ -322,7 +322,7 @@ final class ManualAttendanceTest extends TestCase
         [, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/attendance/update_note.php', ['attendance_id' => 999999, 'note' => 'x'])
+            ->postJson('/v1/attendance/note', ['attendance_id' => 999999, 'note' => 'x'])
             ->assertNotFound()
             ->assertJsonPath('error_code', 'attendance_record_not_found');
     }

@@ -78,7 +78,7 @@ final class AccountSettingsTest extends TestCase
         [$admin, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/update_profile.php', ['name' => 'New Name', 'phone' => '+201234567890'])
+            ->postJson('/v1/auth/profile', ['name' => 'New Name', 'phone' => '+201234567890'])
             ->assertOk();
 
         $row = DB::table('admins')->where('id', $admin->id)->first();
@@ -95,7 +95,7 @@ final class AccountSettingsTest extends TestCase
         [, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/update_profile.php', ['phone' => '01023809407'])
+            ->postJson('/v1/auth/profile', ['phone' => '01023809407'])
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'invalid_phone_number');
     }
@@ -106,7 +106,7 @@ final class AccountSettingsTest extends TestCase
         [$admin, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/update_profile.php', ['phone' => '00٢٠١٢٣٤٥٦٧٨٩٠'])
+            ->postJson('/v1/auth/profile', ['phone' => '00٢٠١٢٣٤٥٦٧٨٩٠'])
             ->assertOk();
 
         $this->assertSame('+201234567890', DB::table('admins')->where('id', $admin->id)->value('phone'));
@@ -117,7 +117,7 @@ final class AccountSettingsTest extends TestCase
         [$admin, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/update_profile.php', ['phone' => ''])
+            ->postJson('/v1/auth/profile', ['phone' => ''])
             ->assertOk();
 
         $this->assertNull(DB::table('admins')->where('id', $admin->id)->value('phone'));
@@ -131,7 +131,7 @@ final class AccountSettingsTest extends TestCase
         Admin::query()->whereKey($admin->id)->update(['phone' => '+201111111111']);
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/update_profile.php', ['name' => 'Only The Name'])
+            ->postJson('/v1/auth/profile', ['name' => 'Only The Name'])
             ->assertOk();
 
         $this->assertSame('+201111111111', DB::table('admins')->where('id', $admin->id)->value('phone'));
@@ -142,7 +142,7 @@ final class AccountSettingsTest extends TestCase
         [, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/update_profile.php', ['name' => '   '])
+            ->postJson('/v1/auth/profile', ['name' => '   '])
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'name_cannot_empty');
     }
@@ -152,7 +152,7 @@ final class AccountSettingsTest extends TestCase
         [, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/update_profile.php', [])
+            ->postJson('/v1/auth/profile', [])
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'nothing_update');
     }
@@ -162,7 +162,7 @@ final class AccountSettingsTest extends TestCase
         [$admin, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/update_profile.php', ['name' => 'Audited'])
+            ->postJson('/v1/auth/profile', ['name' => 'Audited'])
             ->assertOk();
 
         $this->assertDatabaseHas('audit_log', [
@@ -182,7 +182,7 @@ final class AccountSettingsTest extends TestCase
         DB::table('admin_notification_prefs')->where('admin_id', $employee->admin_id)->delete();
 
         $this->withHeader('X-Employee-Token', $token)
-            ->getJson('/app/auth/notification_prefs.php')
+            ->getJson('/v1/auth/notification-prefs')
             ->assertOk()
             ->assertJsonPath('data.prefs.late_absence', true)
             ->assertJsonPath('data.prefs.payroll_events', true);
@@ -193,7 +193,7 @@ final class AccountSettingsTest extends TestCase
         [, $token] = $this->employee();
 
         $this->withHeader('X-Employee-Token', $token)
-            ->postJson('/app/auth/notification_prefs.php', ['prefs' => [
+            ->postJson('/v1/auth/notification-prefs', ['prefs' => [
                 'late_absence' => false,
                 'missing_checkout' => true,
             ]])
@@ -203,7 +203,7 @@ final class AccountSettingsTest extends TestCase
             ->assertJsonPath('data.prefs.document_expiry', true);
 
         $this->withHeader('X-Employee-Token', $token)
-            ->getJson('/app/auth/notification_prefs.php')
+            ->getJson('/v1/auth/notification-prefs')
             ->assertOk()
             ->assertJsonPath('data.prefs.late_absence', false);
     }
@@ -213,7 +213,7 @@ final class AccountSettingsTest extends TestCase
         [, $token] = $this->employee();
 
         $this->withHeader('X-Employee-Token', $token)
-            ->postJson('/app/auth/notification_prefs.php', ['prefs' => ['made_up_switch' => true]])
+            ->postJson('/v1/auth/notification-prefs', ['prefs' => ['made_up_switch' => true]])
             ->assertOk()
             ->assertJsonMissingPath('data.prefs.made_up_switch');
     }
@@ -223,7 +223,7 @@ final class AccountSettingsTest extends TestCase
         [, $token] = $this->employee();
 
         $this->withHeader('X-Employee-Token', $token)
-            ->postJson('/app/auth/notification_prefs.php', ['prefs' => 'nope'])
+            ->postJson('/v1/auth/notification-prefs', ['prefs' => 'nope'])
             ->assertStatus(400)
             ->assertJsonPath('error_code', 'prefs_object');
     }
@@ -235,7 +235,7 @@ final class AccountSettingsTest extends TestCase
         [$employee, $token] = $this->employee();
 
         $this->withHeader('X-Employee-Token', $token)
-            ->postJson('/app/auth/update_fcm_token.php', ['fcm_token' => 'fcm-abc', 'platform' => 'ios'])
+            ->postJson('/v1/auth/fcm-token', ['fcm_token' => 'fcm-abc', 'platform' => 'ios'])
             ->assertOk();
 
         $this->assertDatabaseHas('admin_devices', [
@@ -251,7 +251,7 @@ final class AccountSettingsTest extends TestCase
         [$admin, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/update_fcm_token.php', ['fcm_token' => 'fcm-mgmt'])
+            ->postJson('/v1/auth/fcm-token', ['fcm_token' => 'fcm-mgmt'])
             ->assertOk();
 
         $this->assertDatabaseHas('admin_devices', ['admin_id' => $admin->id, 'fcm_token' => 'fcm-mgmt']);
@@ -264,9 +264,9 @@ final class AccountSettingsTest extends TestCase
         [$admin, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/update_fcm_token.php', ['fcm_token' => 'fcm-old'])->assertOk();
+            ->postJson('/v1/auth/fcm-token', ['fcm_token' => 'fcm-old'])->assertOk();
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/update_fcm_token.php', ['fcm_token' => 'fcm-new'])->assertOk();
+            ->postJson('/v1/auth/fcm-token', ['fcm_token' => 'fcm-new'])->assertOk();
 
         $this->assertDatabaseHas('admin_devices', ['admin_id' => $admin->id, 'fcm_token' => 'fcm-old', 'is_active' => 0]);
         $this->assertDatabaseHas('admin_devices', ['admin_id' => $admin->id, 'fcm_token' => 'fcm-new', 'is_active' => 1]);
@@ -277,7 +277,7 @@ final class AccountSettingsTest extends TestCase
         [, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/auth/update_fcm_token.php', [])
+            ->postJson('/v1/auth/fcm-token', [])
             ->assertStatus(400)
             ->assertJsonPath('error_code', 'fcm_token_required');
     }

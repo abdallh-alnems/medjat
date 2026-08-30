@@ -93,7 +93,7 @@ final class CronTest extends TestCase
      */
     private function alerts(): TestResponse
     {
-        return $this->fire('/app/cron/run_alerts.php');
+        return $this->fire('/v1/cron/run-alerts');
     }
 
     private function alertCount(string $type = 'attendance'): int
@@ -104,8 +104,8 @@ final class CronTest extends TestCase
 
     public function test_a_request_without_the_secret_is_refused(): void
     {
-        $this->fire('/app/cron/run_alerts.php', null)->assertStatus(403);
-        $this->fire('/app/cron/run_alerts.php', 'wrong-secret')->assertStatus(403);
+        $this->fire('/v1/cron/run-alerts', null)->assertStatus(403);
+        $this->fire('/v1/cron/run-alerts', 'wrong-secret')->assertStatus(403);
     }
 
     public function test_an_unset_secret_refuses_everything(): void
@@ -114,15 +114,15 @@ final class CronTest extends TestCase
         // endpoints that terminate employees and delete photographs.
         Config::set('medjat.cron.secret', '');
 
-        $this->fire('/app/cron/run_alerts.php')->assertStatus(403);
-        $this->fire('/app/cron/run_alerts.php', '')->assertStatus(403);
+        $this->fire('/v1/cron/run-alerts')->assertStatus(403);
+        $this->fire('/v1/cron/run-alerts', '')->assertStatus(403);
     }
 
     public function test_the_crontabs_other_parameter_name_is_accepted_too(): void
     {
         // The installed crontab passes both; the code adapts to what is
         // deployed rather than the other way round.
-        $this->getJson('/app/cron/run_alerts.php?cron_secret='.self::SECRET)->assertOk();
+        $this->getJson('/v1/cron/run-alerts?cron_secret='.self::SECRET)->assertOk();
     }
 
     public function test_lateness_reaches_the_people_who_can_act_on_it(): void
@@ -314,7 +314,7 @@ final class CronTest extends TestCase
         $employee = $this->employee('Never showed up');
         $yesterday = TenantClock::now($this->tenantId)->modify('-1 day')->format('Y-m-d');
 
-        $this->fire('/app/cron/catchup_absences.php')->assertOk()->assertJsonPath('data.status', 'success');
+        $this->fire('/v1/cron/catch-up-absences')->assertOk()->assertJsonPath('data.status', 'success');
 
         $this->assertDatabaseHas('attendance', [
             'employee_id' => $employee, 'date' => $yesterday, 'status' => 'absent',
@@ -325,10 +325,10 @@ final class CronTest extends TestCase
     {
         $this->employee('Never showed up either');
 
-        $this->fire('/app/cron/catchup_absences.php')->assertOk();
+        $this->fire('/v1/cron/catch-up-absences')->assertOk();
         $before = DB::table('attendance')->where('tenant_id', $this->tenantId)->count();
 
-        $this->fire('/app/cron/catchup_absences.php')->assertOk();
+        $this->fire('/v1/cron/catch-up-absences')->assertOk();
 
         // Idempotent through the unique key on (employee_id, date).
         $this->assertSame($before, DB::table('attendance')->where('tenant_id', $this->tenantId)->count());
@@ -355,7 +355,7 @@ final class CronTest extends TestCase
             'capture_expires_at' => DB::raw('DATE_SUB(NOW(), INTERVAL 1 DAY)'),
         ]);
 
-        $this->fire('/app/cron/purge_kiosk_captures.php')
+        $this->fire('/v1/cron/purge-kiosk-captures')
             ->assertOk()
             ->assertJsonPath('data.deleted', 1);
 
@@ -386,7 +386,7 @@ final class CronTest extends TestCase
             'capture_expires_at' => DB::raw('DATE_ADD(NOW(), INTERVAL 30 DAY)'),
         ]);
 
-        $this->fire('/app/cron/purge_kiosk_captures.php')->assertOk()->assertJsonPath('data.deleted', 0);
+        $this->fire('/v1/cron/purge-kiosk-captures')->assertOk()->assertJsonPath('data.deleted', 0);
 
         Storage::disk('uploads')->assertExists('kiosk/fresh.jpg');
     }
@@ -414,7 +414,7 @@ final class CronTest extends TestCase
         // The pointer is dropped so it stops being selected, but nothing is
         // unlinked — a stored path that escapes its directory is a bug worth
         // leaving evidence of on disk.
-        $this->fire('/app/cron/purge_kiosk_captures.php')
+        $this->fire('/v1/cron/purge-kiosk-captures')
             ->assertOk()
             ->assertJsonPath('data.deleted', 0)
             ->assertJsonPath('data.failed', 1);
@@ -432,7 +432,7 @@ final class CronTest extends TestCase
             [$this->tenantId, $this->branchId, bin2hex(random_bytes(16))],
         );
 
-        $this->fire('/app/cron/purge_kiosk_captures.php')
+        $this->fire('/v1/cron/purge-kiosk-captures')
             ->assertOk()
             ->assertJsonPath('data.qr_challenges_purged', 1);
     }
@@ -449,7 +449,7 @@ final class CronTest extends TestCase
             [$this->tenantId, $this->branchId, bin2hex(random_bytes(16))],
         );
 
-        $this->fire('/app/cron/purge_kiosk_captures.php')
+        $this->fire('/v1/cron/purge-kiosk-captures')
             ->assertOk()
             ->assertJsonPath('data.qr_challenges_purged', 0);
     }

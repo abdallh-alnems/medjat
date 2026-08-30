@@ -7,19 +7,20 @@ ZKTeco attendance terminals.
 
 Laravel 13 on PHP 8.4 (local, MAMP) / 8.5 (live), MySQL 8.4.
 
-## Two URLs for everything
-
-Every endpoint answers on two paths:
+## One URL for everything
 
 ```
-POST /v1/payroll/approve          the current shape
-POST /app/payroll/approve.php     the shape published app bundles call
+POST /v1/payroll/approve
 ```
 
-The `.php` URLs are **permanent**, not a deprecation. `API_HOST` is compiled
-into Flutter builds that are already in the stores and on people's phones; a
-build from two years ago has to keep working, so those paths cannot be retired
-on any schedule we control.
+Every endpoint lives under `/v1`. There is no second, older shape: the port
+carried one for a while so published app builds would keep working, and it was
+removed once those builds turned out to be pre-release. What is left is the
+surface the clients should have been written against.
+
+Versioning is in the path rather than a header because it is the shape a
+client can see in a log, a bug report and a curl command without knowing
+anything about this API's conventions.
 
 ## Layout
 
@@ -100,10 +101,10 @@ Two gates sit in front of them:
 
 Two things sit outside both, deliberately:
 
-- **The terminals** (`/iclock/*`) — the firmware has no field for a secret, so a
-  serial number is the whole authorisation model, and an unclaimed serial can do
-  nothing but say hello. Never rate-limited either: a device polls every ten
-  seconds by design.
+- **The terminals** (`/iclock/{action}`) — the firmware has no field for a
+  secret, so a serial number is the whole authorisation model, and an unclaimed
+  serial can do nothing but say hello. Never rate-limited either: a device polls
+  every ten seconds by design.
 - **The deep-link pages and association files** — the operating system fetches
   those before anybody has signed in.
 

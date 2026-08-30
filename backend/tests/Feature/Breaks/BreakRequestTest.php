@@ -118,7 +118,7 @@ final class BreakRequestTest extends TestCase
      */
     private function ask(array $overrides = []): TestResponse
     {
-        return $this->asEmployee()->postJson('/app/breaks/request.php', $overrides + [
+        return $this->asEmployee()->postJson('/v1/breaks/request', $overrides + [
             'date' => $this->future(),
             'start_time' => '10:00',
             'end_time' => '12:00',
@@ -252,7 +252,7 @@ final class BreakRequestTest extends TestCase
         ]);
         $mine = $this->existing();
 
-        $breaks = $this->asEmployee()->getJson('/app/breaks/my_list.php')->assertOk()->json('data.breaks');
+        $breaks = $this->asEmployee()->getJson('/v1/breaks/mine')->assertOk()->json('data.breaks');
 
         $this->assertIsArray($breaks);
         $this->assertCount(1, $breaks);
@@ -265,7 +265,7 @@ final class BreakRequestTest extends TestCase
         // A request cannot stay pending once its time is gone.
         $stale = $this->existing('pending', ['date' => '2020-01-01']);
 
-        $this->asEmployee()->getJson('/app/breaks/my_list.php')->assertOk();
+        $this->asEmployee()->getJson('/v1/breaks/mine')->assertOk();
 
         $this->assertDatabaseHas('break_requests', ['id' => $stale, 'status' => 'cancelled']);
     }
@@ -276,7 +276,7 @@ final class BreakRequestTest extends TestCase
     {
         $id = $this->existing();
 
-        $this->asEmployee()->postJson('/app/breaks/cancel.php', ['break_id' => $id])->assertOk();
+        $this->asEmployee()->postJson('/v1/breaks/cancel', ['break_id' => $id])->assertOk();
 
         $this->assertDatabaseHas('break_requests', ['id' => $id, 'status' => 'cancelled']);
     }
@@ -285,7 +285,7 @@ final class BreakRequestTest extends TestCase
     {
         $id = $this->existing('approved');
 
-        $this->asEmployee()->postJson('/app/breaks/cancel.php', ['break_id' => $id])
+        $this->asEmployee()->postJson('/v1/breaks/cancel', ['break_id' => $id])
             ->assertStatus(409)->assertJsonPath('error_code', 'not_pending');
     }
 
@@ -308,7 +308,7 @@ final class BreakRequestTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $this->asEmployee()->postJson('/app/breaks/cancel.php', ['break_id' => $id])->assertNotFound();
+        $this->asEmployee()->postJson('/v1/breaks/cancel', ['break_id' => $id])->assertNotFound();
     }
 
     // ── Deciding ─────────────────────────────────────────────────────────
@@ -317,7 +317,7 @@ final class BreakRequestTest extends TestCase
     {
         $id = $this->existing();
 
-        $this->asAdmin()->postJson('/app/breaks/approve.php', ['break_id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/breaks/approve', ['break_id' => $id])->assertOk();
 
         $this->assertDatabaseHas('break_requests', ['id' => $id, 'status' => 'approved']);
         $this->assertDatabaseHas('notifications', [
@@ -332,7 +332,7 @@ final class BreakRequestTest extends TestCase
         // The manager sees the request in context; the asker only saw a form.
         $id = $this->existing('pending', ['deduct_from_salary' => 0]);
 
-        $this->asAdmin()->postJson('/app/breaks/approve.php', [
+        $this->asAdmin()->postJson('/v1/breaks/approve', [
             'break_id' => $id,
             'deduct_from_salary' => true,
         ])->assertOk();
@@ -344,7 +344,7 @@ final class BreakRequestTest extends TestCase
     {
         $id = $this->existing('pending', ['deduct_from_salary' => 1]);
 
-        $this->asAdmin()->postJson('/app/breaks/approve.php', ['break_id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/breaks/approve', ['break_id' => $id])->assertOk();
 
         $this->assertDatabaseHas('break_requests', ['id' => $id, 'deduct_from_salary' => 1]);
     }
@@ -354,7 +354,7 @@ final class BreakRequestTest extends TestCase
         // Approving it would record an unauthorised absence as authorised.
         $id = $this->existing('pending', ['date' => '2020-01-01']);
 
-        $this->asAdmin()->postJson('/app/breaks/approve.php', ['break_id' => $id])
+        $this->asAdmin()->postJson('/v1/breaks/approve', ['break_id' => $id])
             ->assertStatus(409)->assertJsonPath('error_code', 'break_window_passed');
 
         $this->assertDatabaseHas('break_requests', ['id' => $id, 'status' => 'cancelled']);
@@ -364,7 +364,7 @@ final class BreakRequestTest extends TestCase
     {
         $id = $this->existing();
 
-        $this->asAdmin()->postJson('/app/breaks/reject.php', [
+        $this->asAdmin()->postJson('/v1/breaks/reject', [
             'break_id' => $id,
             'rejection_reason' => 'Short-staffed that morning',
         ])->assertOk();
@@ -384,13 +384,13 @@ final class BreakRequestTest extends TestCase
     {
         $id = $this->existing('approved');
 
-        $this->asAdmin()->postJson('/app/breaks/reject.php', ['break_id' => $id])
+        $this->asAdmin()->postJson('/v1/breaks/reject', ['break_id' => $id])
             ->assertStatus(409)->assertJsonPath('error_code', 'not_pending');
     }
 
     public function test_a_manager_records_a_permission_for_somebody(): void
     {
-        $this->asAdmin()->postJson('/app/breaks/create_for.php', [
+        $this->asAdmin()->postJson('/v1/breaks', [
             'employee_id' => $this->employeeId,
             'date' => $this->future(),
             'start_time' => '09:00',
@@ -407,7 +407,7 @@ final class BreakRequestTest extends TestCase
 
     public function test_recording_for_an_unknown_employee_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/breaks/create_for.php', [
+        $this->asAdmin()->postJson('/v1/breaks', [
             'employee_id' => 9999999,
             'date' => $this->future(),
             'start_time' => '09:00',
@@ -419,7 +419,7 @@ final class BreakRequestTest extends TestCase
     {
         $this->existing();
 
-        $this->asAdmin()->getJson('/app/breaks/list.php?branch_id='.$this->branchId)
+        $this->asAdmin()->getJson('/v1/breaks?branch_id='.$this->branchId)
             ->assertOk()
             ->assertJsonPath('data.breaks.0.employee_name', 'Break asker');
     }
@@ -427,7 +427,7 @@ final class BreakRequestTest extends TestCase
     public function test_deciding_needs_the_leave_permission(): void
     {
         $this->withHeader('X-Firebase-Token', $this->viewerToken)
-            ->getJson('/app/breaks/list.php')
+            ->getJson('/v1/breaks')
             ->assertForbidden();
     }
 
@@ -437,7 +437,7 @@ final class BreakRequestTest extends TestCase
     {
         $id = $this->existing();
 
-        $this->asAdmin()->postJson('/app/breaks/postpone.php', [
+        $this->asAdmin()->postJson('/v1/breaks/postpone', [
             'break_id' => $id,
             'suggested_date' => $this->future(5),
             'suggested_start_time' => '14:00',
@@ -462,7 +462,7 @@ final class BreakRequestTest extends TestCase
             'suggested_end_time' => '15:00:00',
         ]);
 
-        $this->asEmployee()->postJson('/app/breaks/respond_postpone.php', [
+        $this->asEmployee()->postJson('/v1/breaks/respond-postpone', [
             'break_id' => $id,
             'action' => 'accept',
         ])->assertOk()->assertJsonPath('data.status', 'approved');
@@ -486,7 +486,7 @@ final class BreakRequestTest extends TestCase
             'suggested_end_time' => '15:00:00',
         ]);
 
-        $this->asEmployee()->postJson('/app/breaks/respond_postpone.php', [
+        $this->asEmployee()->postJson('/v1/breaks/respond-postpone', [
             'break_id' => $id,
             'action' => 'reject',
         ])->assertOk()->assertJsonPath('data.status', 'cancelled');
@@ -502,7 +502,7 @@ final class BreakRequestTest extends TestCase
             'suggested_end_time' => '15:00:00',
         ]);
 
-        $this->asEmployee()->postJson('/app/breaks/respond_postpone.php', [
+        $this->asEmployee()->postJson('/v1/breaks/respond-postpone', [
             'break_id' => $id,
             'action' => 'accept',
         ])->assertStatus(422)->assertJsonPath('error_code', 'break_window_passed');
@@ -512,7 +512,7 @@ final class BreakRequestTest extends TestCase
     {
         $id = $this->existing();
 
-        $this->asEmployee()->postJson('/app/breaks/respond_postpone.php', [
+        $this->asEmployee()->postJson('/v1/breaks/respond-postpone', [
             'break_id' => $id,
             'action' => 'accept',
         ])->assertStatus(409)->assertJsonPath('error_code', 'not_postponed');
@@ -522,7 +522,7 @@ final class BreakRequestTest extends TestCase
     {
         $id = $this->existing('postponed', ['suggested_date' => $this->future(5)]);
 
-        $this->asEmployee()->postJson('/app/breaks/respond_postpone.php', [
+        $this->asEmployee()->postJson('/v1/breaks/respond-postpone', [
             'break_id' => $id,
             'action' => 'accept',
         ])->assertStatus(422)->assertJsonPath('error_code', 'no_suggestion');

@@ -97,7 +97,7 @@ final class AdminSupportTest extends TestCase
     public function test_the_queue_spans_every_company(): void
     {
         // Looking across companies is the whole point of the desk.
-        $this->read('/app/admin_support/list.php')
+        $this->read('/v1/admin/support/tickets')
             ->assertOk()
             ->assertJsonPath('data.page', 1)
             ->assertJsonStructure(['data' => ['tickets', 'total', 'page']]);
@@ -105,7 +105,7 @@ final class AdminSupportTest extends TestCase
 
     public function test_each_ticket_names_the_company_it_came_from(): void
     {
-        $response = $this->read('/app/admin_support/list.php?tenant_id='.$this->tenantId)->assertOk();
+        $response = $this->read('/v1/admin/support/tickets?tenant_id='.$this->tenantId)->assertOk();
 
         /** @var list<array<string, mixed>> $tickets */
         $tickets = (array) $response->json('data.tickets');
@@ -117,8 +117,8 @@ final class AdminSupportTest extends TestCase
     {
         SupportTickets::setStatus($this->ticketId, 'closed');
 
-        $open = $this->read('/app/admin_support/list.php?status=pending_support')->assertOk();
-        $closed = $this->read('/app/admin_support/list.php?status=closed')->assertOk();
+        $open = $this->read('/v1/admin/support/tickets?status=pending_support')->assertOk();
+        $closed = $this->read('/v1/admin/support/tickets?status=closed')->assertOk();
 
         $this->assertNotSame(
             Value::int($open->json('data.total')),
@@ -132,7 +132,7 @@ final class AdminSupportTest extends TestCase
             DB::table('support_tickets')->where('id', $this->ticketId)->value('unread_for_support')
         ));
 
-        $this->read('/app/admin_support/messages.php?ticket_id='.$this->ticketId)
+        $this->read('/v1/admin/support/messages?ticket_id='.$this->ticketId)
             ->assertOk()
             ->assertJsonCount(1, 'data.messages');
 
@@ -145,7 +145,7 @@ final class AdminSupportTest extends TestCase
     {
         // Asking what is new does not mean anybody read the thread; opening it
         // does.
-        $this->read('/app/admin_support/messages.php?ticket_id='.$this->ticketId.'&after_id=0')->assertOk();
+        $this->read('/v1/admin/support/messages?ticket_id='.$this->ticketId.'&after_id=0')->assertOk();
 
         $this->assertSame(1, Value::int(
             DB::table('support_tickets')->where('id', $this->ticketId)->value('unread_for_support')
@@ -154,7 +154,7 @@ final class AdminSupportTest extends TestCase
 
     public function test_a_reply_moves_the_ticket_to_the_company(): void
     {
-        $this->send('/app/admin_support/reply.php', [
+        $this->send('/v1/admin/support/reply', [
             'ticket_id' => $this->ticketId,
             'body' => 'Checked it — the deduction is a loan installment.',
         ])->assertOk()->assertJsonPath('data.status', 'pending_user');
@@ -168,7 +168,7 @@ final class AdminSupportTest extends TestCase
 
     public function test_a_reply_tells_the_person_who_opened_the_ticket(): void
     {
-        $this->send('/app/admin_support/reply.php', [
+        $this->send('/v1/admin/support/reply', [
             'ticket_id' => $this->ticketId,
             'body' => 'Looking into it now.',
         ])->assertOk();
@@ -184,7 +184,7 @@ final class AdminSupportTest extends TestCase
 
     public function test_a_message_with_neither_text_nor_attachment_is_refused(): void
     {
-        $this->send('/app/admin_support/reply.php', ['ticket_id' => $this->ticketId, 'body' => '  '])
+        $this->send('/v1/admin/support/reply', ['ticket_id' => $this->ticketId, 'body' => '  '])
             ->assertStatus(422);
     }
 
@@ -197,7 +197,7 @@ final class AdminSupportTest extends TestCase
             .'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
         ));
 
-        $this->send('/app/admin_support/reply.php', [
+        $this->send('/v1/admin/support/reply', [
             'ticket_id' => $this->ticketId,
             'body' => '',
             'attachment' => $png,
@@ -212,7 +212,7 @@ final class AdminSupportTest extends TestCase
 
     public function test_an_overlong_message_is_refused(): void
     {
-        $this->send('/app/admin_support/reply.php', [
+        $this->send('/v1/admin/support/reply', [
             'ticket_id' => $this->ticketId,
             'body' => str_repeat('ا', 5001),
         ])->assertStatus(422);
@@ -220,26 +220,26 @@ final class AdminSupportTest extends TestCase
 
     public function test_a_reply_to_an_unknown_ticket_is_a_404(): void
     {
-        $this->send('/app/admin_support/reply.php', ['ticket_id' => 99999999, 'body' => 'Hello?'])
+        $this->send('/v1/admin/support/reply', ['ticket_id' => 99999999, 'body' => 'Hello?'])
             ->assertStatus(404);
     }
 
     public function test_a_ticket_can_be_resolved_and_reopened(): void
     {
-        $this->send('/app/admin_support/status.php', ['ticket_id' => $this->ticketId, 'status' => 'resolved'])
+        $this->send('/v1/admin/support/status', ['ticket_id' => $this->ticketId, 'status' => 'resolved'])
             ->assertOk()
             ->assertJsonPath('data.status', 'resolved');
 
         // Reopening puts the ball back in the desk's court, which is what
         // pending_support means — there is no separate "reopened" state.
-        $this->send('/app/admin_support/status.php', ['ticket_id' => $this->ticketId, 'status' => 'reopen'])
+        $this->send('/v1/admin/support/status', ['ticket_id' => $this->ticketId, 'status' => 'reopen'])
             ->assertOk()
             ->assertJsonPath('data.status', 'pending_support');
     }
 
     public function test_a_status_change_is_audited_with_what_it_was(): void
     {
-        $this->send('/app/admin_support/status.php', ['ticket_id' => $this->ticketId, 'status' => 'closed'])
+        $this->send('/v1/admin/support/status', ['ticket_id' => $this->ticketId, 'status' => 'closed'])
             ->assertOk();
 
         $payload = json_decode(Value::string(DB::table('super_admin_audit_log')
@@ -252,7 +252,7 @@ final class AdminSupportTest extends TestCase
 
     public function test_an_arbitrary_status_cannot_be_set(): void
     {
-        $this->send('/app/admin_support/status.php', ['ticket_id' => $this->ticketId, 'status' => 'urgent'])
+        $this->send('/v1/admin/support/status', ['ticket_id' => $this->ticketId, 'status' => 'urgent'])
             ->assertStatus(422);
     }
 
@@ -266,14 +266,14 @@ final class AdminSupportTest extends TestCase
             'uploads/support/'.$this->ticketId.'/note.pdf', 'note.pdf',
         );
 
-        $this->read('/app/admin_support/attachment.php?message_id='.$messageId)
+        $this->read('/v1/admin/support/attachment?message_id='.$messageId)
             ->assertOk()
             ->assertHeader('Content-Type', 'application/pdf');
 
         // A leaked URL is worthless without a session: a client's screenshot
         // can hold payroll figures or staff faces.
         $this->flushHeaders();
-        $this->getJson('/app/admin_support/attachment.php?message_id='.$messageId)->assertStatus(401);
+        $this->getJson('/v1/admin/support/attachment?message_id='.$messageId)->assertStatus(401);
     }
 
     public function test_a_message_with_no_attachment_is_a_404(): void
@@ -282,12 +282,12 @@ final class AdminSupportTest extends TestCase
             $this->ticketId, 'support', null, $this->operatorId, 'Text only',
         );
 
-        $this->read('/app/admin_support/attachment.php?message_id='.$messageId)->assertStatus(404);
+        $this->read('/v1/admin/support/attachment?message_id='.$messageId)->assertStatus(404);
     }
 
     public function test_a_device_registers_its_push_token(): void
     {
-        $this->send('/app/admin/devices/register.php', [
+        $this->send('/v1/admin/devices', [
             'fcm_token' => 'token-abc',
             'platform' => 'android',
             'device_id' => 'pixel-9',
@@ -302,11 +302,11 @@ final class AdminSupportTest extends TestCase
 
     public function test_re_registering_the_same_device_replaces_its_token(): void
     {
-        $this->send('/app/admin/devices/register.php', [
+        $this->send('/v1/admin/devices', [
             'fcm_token' => 'old-token', 'device_id' => 'pixel-9',
         ])->assertOk();
 
-        $this->send('/app/admin/devices/register.php', [
+        $this->send('/v1/admin/devices', [
             'fcm_token' => 'new-token', 'device_id' => 'pixel-9',
         ])->assertOk();
 
@@ -321,8 +321,8 @@ final class AdminSupportTest extends TestCase
     {
         // Otherwise it accumulates a row per sign-in, and every push goes out
         // as many times as the operator has ever logged in.
-        $this->send('/app/admin/devices/register.php', ['fcm_token' => 'first'])->assertOk();
-        $this->send('/app/admin/devices/register.php', ['fcm_token' => 'second'])->assertOk();
+        $this->send('/v1/admin/devices', ['fcm_token' => 'first'])->assertOk();
+        $this->send('/v1/admin/devices', ['fcm_token' => 'second'])->assertOk();
 
         $this->assertSame(1, DB::table('super_admin_devices')
             ->where('admin_id', $this->operatorId)->count());
@@ -330,13 +330,13 @@ final class AdminSupportTest extends TestCase
 
     public function test_re_registering_revives_a_deactivated_device(): void
     {
-        $this->send('/app/admin/devices/register.php', [
+        $this->send('/v1/admin/devices', [
             'fcm_token' => 'token', 'device_id' => 'pixel-9',
         ])->assertOk();
 
         DB::table('super_admin_devices')->where('admin_id', $this->operatorId)->update(['is_active' => 0]);
 
-        $this->send('/app/admin/devices/register.php', [
+        $this->send('/v1/admin/devices', [
             'fcm_token' => 'token', 'device_id' => 'pixel-9',
         ])->assertOk();
 
@@ -348,8 +348,8 @@ final class AdminSupportTest extends TestCase
 
     public function test_a_registration_with_no_token_or_a_bad_platform_is_refused(): void
     {
-        $this->send('/app/admin/devices/register.php', ['fcm_token' => '  '])->assertStatus(422);
-        $this->send('/app/admin/devices/register.php', [
+        $this->send('/v1/admin/devices', ['fcm_token' => '  '])->assertStatus(422);
+        $this->send('/v1/admin/devices', [
             'fcm_token' => 'token', 'platform' => 'blackberry',
         ])->assertStatus(422);
     }
@@ -358,10 +358,10 @@ final class AdminSupportTest extends TestCase
     {
         [, $token] = $this->operator('readonly');
 
-        $this->send('/app/admin_support/reply.php', [
+        $this->send('/v1/admin/support/reply', [
             'ticket_id' => $this->ticketId, 'body' => 'Should not land',
         ], $token)->assertStatus(403);
 
-        $this->read('/app/admin_support/list.php', $token)->assertStatus(403);
+        $this->read('/v1/admin/support/tickets', $token)->assertStatus(403);
     }
 }

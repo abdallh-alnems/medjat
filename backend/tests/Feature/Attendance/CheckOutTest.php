@@ -25,7 +25,7 @@ final class CheckOutTest extends TestCase
 {
     use DatabaseTransactions;
 
-    private const ENDPOINT = '/app/attendance/check_out.php';
+    private const ENDPOINT = '/v1/attendance/check-out';
 
     private Employee $employee;
 

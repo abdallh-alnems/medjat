@@ -70,7 +70,7 @@ final class MyAttendanceTest extends TestCase
         // One call rather than three: the app makes it on launch and most of the
         // answers are "no".
         $this->withHeader('X-Employee-Token', $this->token)
-            ->getJson('/app/attendance/get_my_attendance.php')
+            ->getJson('/v1/attendance/mine')
             ->assertOk()
             ->assertJsonStructure(['data' => [
                 'records', 'month', 'employee_id',
@@ -91,7 +91,7 @@ final class MyAttendanceTest extends TestCase
         Employee::query()->whereKey($this->employee->id)->update(['branch_id' => null]);
 
         $this->withHeader('X-Employee-Token', $this->token)
-            ->getJson('/app/attendance/get_my_attendance.php')
+            ->getJson('/v1/attendance/mine')
             ->assertOk()
             ->assertJsonPath('data.attendance_config', null);
     }
@@ -99,7 +99,7 @@ final class MyAttendanceTest extends TestCase
     public function test_the_month_defaults_to_the_companys_current_month(): void
     {
         $this->withHeader('X-Employee-Token', $this->token)
-            ->getJson('/app/attendance/get_my_attendance.php')
+            ->getJson('/v1/attendance/mine')
             ->assertOk()
             ->assertJsonPath('data.month', TenantClock::now($this->employee->tenant_id)->format('Y-m'));
     }
@@ -118,7 +118,7 @@ final class MyAttendanceTest extends TestCase
         ]);
 
         $this->withHeader('X-Employee-Token', $this->token)
-            ->getJson('/app/attendance/get_my_attendance.php')
+            ->getJson('/v1/attendance/mine')
             ->assertOk()
             ->assertJsonPath('data.today_shift.is_rest_day', true)
             ->assertJsonPath('data.today_shift.start_time', null);
@@ -136,7 +136,7 @@ final class MyAttendanceTest extends TestCase
         ]);
 
         $this->withHeader('X-Employee-Token', $this->token)
-            ->getJson('/app/attendance/get_my_attendance.php')
+            ->getJson('/v1/attendance/mine')
             ->assertOk()
             ->assertJsonPath('data.today_shift.is_rest_day', false);
     }
@@ -163,7 +163,7 @@ final class MyAttendanceTest extends TestCase
         [, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/attendance/set_method_override.php', [
+            ->postJson('/v1/attendance/method-override', [
                 'scope_type' => 'employee',
                 'scope_id' => $this->employee->id,
                 'attendance_methods' => ['gps_only', 'face_selfie'],
@@ -185,7 +185,7 @@ final class MyAttendanceTest extends TestCase
             ->update(['attendance_methods' => json_encode(['gps_only'])]);
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/attendance/set_method_override.php', [
+            ->postJson('/v1/attendance/method-override', [
                 'scope_type' => 'employee',
                 'scope_id' => $this->employee->id,
                 'attendance_methods' => null,
@@ -199,7 +199,7 @@ final class MyAttendanceTest extends TestCase
         [, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/attendance/set_method_override.php', [
+            ->postJson('/v1/attendance/method-override', [
                 'scope_type' => 'employee',
                 'scope_id' => $this->employee->id,
                 'attendance_methods' => [],
@@ -211,7 +211,7 @@ final class MyAttendanceTest extends TestCase
         [, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/attendance/set_method_override.php', [
+            ->postJson('/v1/attendance/method-override', [
                 'scope_type' => 'employee',
                 'scope_id' => $this->employee->id,
                 'attendance_methods' => ['telepathy'],
@@ -224,7 +224,7 @@ final class MyAttendanceTest extends TestCase
         [, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/attendance/set_method_override.php', [
+            ->postJson('/v1/attendance/method-override', [
                 'scope_type' => 'employee',
                 'scope_id' => 999999,
                 'attendance_methods' => ['gps_only'],
@@ -236,7 +236,7 @@ final class MyAttendanceTest extends TestCase
         [, $token] = $this->admin('attendance');
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/attendance/set_method_override.php', [
+            ->postJson('/v1/attendance/method-override', [
                 'scope_type' => 'employee',
                 'scope_id' => $this->employee->id,
                 'attendance_methods' => ['gps_only'],
@@ -248,7 +248,7 @@ final class MyAttendanceTest extends TestCase
         [$admin, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/attendance/set_method_override.php', [
+            ->postJson('/v1/attendance/method-override', [
                 'scope_type' => 'employee',
                 'scope_id' => $this->employee->id,
                 'attendance_methods' => ['gps_only'],

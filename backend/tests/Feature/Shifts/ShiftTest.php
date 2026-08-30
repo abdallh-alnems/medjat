@@ -88,7 +88,7 @@ final class ShiftTest extends TestCase
      */
     private function created(array $overrides = []): int
     {
-        $response = $this->asAdmin()->postJson('/app/shifts/create.php', $overrides + [
+        $response = $this->asAdmin()->postJson('/v1/shifts', $overrides + [
             'name' => 'Morning',
             'start_time' => '08:00:00',
             'end_time' => '16:00:00',
@@ -102,7 +102,7 @@ final class ShiftTest extends TestCase
         $id = $this->created();
         DB::table('employees')->where('id', $this->employeeId)->update(['shift_id' => $id]);
 
-        $items = $this->asAdmin()->getJson('/app/shifts/list.php')->assertOk()->json('data.items');
+        $items = $this->asAdmin()->getJson('/v1/shifts')->assertOk()->json('data.items');
         $this->assertIsArray($items);
 
         foreach ($items as $shift) {
@@ -115,7 +115,7 @@ final class ShiftTest extends TestCase
 
     public function test_a_shift_without_hours_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/shifts/create.php', ['name' => 'Nameless'])
+        $this->asAdmin()->postJson('/v1/shifts', ['name' => 'Nameless'])
             ->assertStatus(422)->assertJsonPath('error_code', 'name_start_time_end_time');
     }
 
@@ -126,7 +126,7 @@ final class ShiftTest extends TestCase
         $companyWide = $this->created(['name' => 'Everywhere']);
         $branchOnly = $this->created(['name' => 'Here only', 'branch_id' => $this->branchId]);
 
-        $items = $this->asAdmin()->getJson('/app/shifts/list.php?branch_id='.$this->branchId)
+        $items = $this->asAdmin()->getJson('/v1/shifts?branch_id='.$this->branchId)
             ->assertOk()->json('data.items');
 
         $this->assertIsArray($items);
@@ -141,16 +141,16 @@ final class ShiftTest extends TestCase
         // Gating it on the permission that manages shifts left HR, branch
         // managers and viewers with a silently empty list.
         $this->withHeader('X-Firebase-Token', $this->viewerToken)
-            ->getJson('/app/shifts/list.php')->assertOk();
+            ->getJson('/v1/shifts')->assertOk();
 
         $this->withHeader('X-Firebase-Token', $this->attendanceToken)
-            ->getJson('/app/shifts/list.php')->assertOk();
+            ->getJson('/v1/shifts')->assertOk();
     }
 
     public function test_managing_shifts_stays_restricted(): void
     {
         $this->withHeader('X-Firebase-Token', $this->viewerToken)
-            ->postJson('/app/shifts/create.php', [
+            ->postJson('/v1/shifts', [
                 'name' => 'Nope', 'start_time' => '08:00', 'end_time' => '16:00',
             ])->assertForbidden();
     }
@@ -159,14 +159,14 @@ final class ShiftTest extends TestCase
     {
         $id = $this->created();
 
-        $this->asAdmin()->postJson('/app/shifts/assign.php', [
+        $this->asAdmin()->postJson('/v1/shifts/assign', [
             'shift_id' => $id,
             'employee_ids' => [$this->employeeId],
         ])->assertOk()->assertJsonPath('data.assigned', 1);
 
         $this->assertDatabaseHas('employees', ['id' => $this->employeeId, 'shift_id' => $id]);
 
-        $this->asAdmin()->postJson('/app/shifts/unassign.php', [
+        $this->asAdmin()->postJson('/v1/shifts/unassign', [
             'shift_id' => $id,
             'employee_ids' => [$this->employeeId],
         ])->assertOk()->assertJsonPath('data.unassigned', 1);
@@ -178,7 +178,7 @@ final class ShiftTest extends TestCase
     {
         $id = $this->created();
 
-        $this->asAdmin()->postJson('/app/shifts/assign.php', ['shift_id' => $id, 'employee_ids' => []])
+        $this->asAdmin()->postJson('/v1/shifts/assign', ['shift_id' => $id, 'employee_ids' => []])
             ->assertStatus(422)->assertJsonPath('error_code', 'shift_id_employee_ids_array');
     }
 
@@ -190,7 +190,7 @@ final class ShiftTest extends TestCase
         $id = $this->created(['start_time' => '07:00:00', 'end_time' => '15:00:00']);
         DB::table('employees')->where('id', $this->employeeId)->update(['shift_id' => $id]);
 
-        $this->asAdmin()->postJson('/app/shifts/delete.php', ['id' => $id])
+        $this->asAdmin()->postJson('/v1/shifts/delete', ['id' => $id])
             ->assertOk()
             ->assertJsonPath('data.action', 'kept_times')
             ->assertJsonPath('data.affected', 1);
@@ -209,7 +209,7 @@ final class ShiftTest extends TestCase
         $to = $this->created(['name' => 'Staying']);
         DB::table('employees')->where('id', $this->employeeId)->update(['shift_id' => $from]);
 
-        $this->asAdmin()->postJson('/app/shifts/delete.php', [
+        $this->asAdmin()->postJson('/v1/shifts/delete', [
             'id' => $from,
             'transfer_to_shift_id' => $to,
         ])->assertOk()->assertJsonPath('data.action', 'transferred');
@@ -231,7 +231,7 @@ final class ShiftTest extends TestCase
             'status' => 'published',
         ]);
 
-        $this->asAdmin()->postJson('/app/shifts/delete.php', [
+        $this->asAdmin()->postJson('/v1/shifts/delete', [
             'id' => $from,
             'transfer_to_shift_id' => $to,
         ])->assertOk()->assertJsonPath('data.schedule_moved', 1);
@@ -247,7 +247,7 @@ final class ShiftTest extends TestCase
     {
         $id = $this->created();
 
-        $this->asAdmin()->postJson('/app/shifts/delete.php', [
+        $this->asAdmin()->postJson('/v1/shifts/delete', [
             'id' => $id,
             'transfer_to_shift_id' => $id,
         ])->assertStatus(422)->assertJsonPath('error_code', 'cannot_transfer_employees_shift_being');
@@ -257,7 +257,7 @@ final class ShiftTest extends TestCase
     {
         $id = $this->created();
 
-        $this->asAdmin()->postJson('/app/shifts/delete.php', [
+        $this->asAdmin()->postJson('/v1/shifts/delete', [
             'id' => $id,
             'transfer_to_shift_id' => 9999999,
         ])->assertStatus(422)->assertJsonPath('error_code', 'target_shift_not_found');
@@ -273,7 +273,7 @@ final class ShiftTest extends TestCase
             'end_time' => '16:00:00',
         ]);
 
-        $this->asAdmin()->postJson('/app/shifts/update.php', ['id' => $stranger, 'name' => 'Mine now'])
+        $this->asAdmin()->postJson('/v1/shifts/update', ['id' => $stranger, 'name' => 'Mine now'])
             ->assertNotFound();
     }
 }

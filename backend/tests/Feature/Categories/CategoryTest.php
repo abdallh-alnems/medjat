@@ -75,7 +75,7 @@ final class CategoryTest extends TestCase
 
     private function created(string $name = 'Drivers'): int
     {
-        $response = $this->asAdmin()->postJson('/app/categories/create.php', ['name' => $name])
+        $response = $this->asAdmin()->postJson('/v1/categories', ['name' => $name])
             ->assertStatus(201);
 
         return Value::int($response->json('data.category_id'));
@@ -85,7 +85,7 @@ final class CategoryTest extends TestCase
     {
         $id = $this->created();
 
-        $categories = $this->asAdmin()->getJson('/app/categories/list.php')->assertOk()->json('data.categories');
+        $categories = $this->asAdmin()->getJson('/v1/categories')->assertOk()->json('data.categories');
         $this->assertIsArray($categories);
 
         $names = array_map(static fn (mixed $c): string => is_array($c) ? Value::string($c['name']) : '', $categories);
@@ -97,7 +97,7 @@ final class CategoryTest extends TestCase
     {
         $this->created();
 
-        $this->asAdmin()->postJson('/app/categories/create.php', ['name' => 'Drivers'])
+        $this->asAdmin()->postJson('/v1/categories', ['name' => 'Drivers'])
             ->assertStatus(409)->assertJsonPath('error_code', 'category_name_exists');
     }
 
@@ -106,7 +106,7 @@ final class CategoryTest extends TestCase
         $this->created('Drivers');
         $second = $this->created('Cleaners');
 
-        $this->asAdmin()->postJson('/app/categories/update.php', ['id' => $second, 'name' => 'Drivers'])
+        $this->asAdmin()->postJson('/v1/categories/update', ['id' => $second, 'name' => 'Drivers'])
             ->assertStatus(409)->assertJsonPath('error_code', 'category_name_exists');
     }
 
@@ -114,7 +114,7 @@ final class CategoryTest extends TestCase
     {
         $id = $this->created();
 
-        $this->asAdmin()->postJson('/app/categories/update.php', ['id' => $id, 'name' => 'Drivers'])->assertOk();
+        $this->asAdmin()->postJson('/v1/categories/update', ['id' => $id, 'name' => 'Drivers'])->assertOk();
     }
 
     public function test_the_headcount_counts_who_is_still_here(): void
@@ -132,7 +132,7 @@ final class CategoryTest extends TestCase
             ['employee_id' => $gone, 'category_id' => $id, 'tenant_id' => $this->tenantId],
         ]);
 
-        $categories = $this->asAdmin()->getJson('/app/categories/list.php')->assertOk()->json('data.categories');
+        $categories = $this->asAdmin()->getJson('/v1/categories')->assertOk()->json('data.categories');
         $this->assertIsArray($categories);
 
         foreach ($categories as $category) {
@@ -148,12 +148,12 @@ final class CategoryTest extends TestCase
         $first = $this->created('Drivers');
         $second = $this->created('Cleaners');
 
-        $this->asAdmin()->postJson('/app/categories/assign.php', [
+        $this->asAdmin()->postJson('/v1/categories/assign', [
             'employee_id' => $this->employeeId,
             'category_ids' => [$first],
         ])->assertOk();
 
-        $this->asAdmin()->postJson('/app/categories/assign.php', [
+        $this->asAdmin()->postJson('/v1/categories/assign', [
             'employee_id' => $this->employeeId,
             'category_ids' => [$second],
         ])->assertOk();
@@ -169,12 +169,12 @@ final class CategoryTest extends TestCase
     public function test_an_empty_list_clears_them(): void
     {
         $id = $this->created();
-        $this->asAdmin()->postJson('/app/categories/assign.php', [
+        $this->asAdmin()->postJson('/v1/categories/assign', [
             'employee_id' => $this->employeeId,
             'category_ids' => [$id],
         ])->assertOk();
 
-        $this->asAdmin()->postJson('/app/categories/assign.php', [
+        $this->asAdmin()->postJson('/v1/categories/assign', [
             'employee_id' => $this->employeeId,
             'category_ids' => [],
         ])->assertOk();
@@ -197,7 +197,7 @@ final class CategoryTest extends TestCase
             'tenant_id' => $this->tenantId,
         ]);
 
-        $this->asAdmin()->postJson('/app/categories/delete.php', ['id' => $id])
+        $this->asAdmin()->postJson('/v1/categories/delete', ['id' => $id])
             ->assertStatus(409)->assertJsonPath('error_code', 'category_cannot_delete');
     }
 
@@ -205,7 +205,7 @@ final class CategoryTest extends TestCase
     {
         $id = $this->created();
 
-        $this->asAdmin()->postJson('/app/categories/delete.php', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/categories/delete', ['id' => $id])->assertOk();
 
         $this->assertDatabaseMissing('employee_categories', ['id' => $id]);
     }
@@ -217,7 +217,7 @@ final class CategoryTest extends TestCase
         $id = $this->created();
 
         foreach ([true, false] as $choice) {
-            $this->asAdmin()->postJson('/app/categories/update_web_access.php', [
+            $this->asAdmin()->postJson('/v1/categories/web-access', [
                 'id' => $id,
                 'web_attendance_allowed' => $choice,
             ])->assertOk()->assertJsonPath('data.web_attendance_allowed', $choice);
@@ -225,7 +225,7 @@ final class CategoryTest extends TestCase
 
         // Null is the default, and the reason a company that simply turns the
         // channel on needs no category configuration at all.
-        $this->asAdmin()->postJson('/app/categories/update_web_access.php', [
+        $this->asAdmin()->postJson('/v1/categories/web-access', [
             'id' => $id,
             'web_attendance_allowed' => null,
         ])->assertOk()->assertJsonPath('data.web_attendance_allowed', null);
@@ -237,7 +237,7 @@ final class CategoryTest extends TestCase
     {
         $id = $this->created();
 
-        $this->asAdmin()->postJson('/app/categories/update_web_access.php', ['id' => $id])
+        $this->asAdmin()->postJson('/v1/categories/web-access', ['id' => $id])
             ->assertStatus(422)->assertJsonPath('error_code', 'web_attendance_allowed_required');
     }
 
@@ -248,11 +248,11 @@ final class CategoryTest extends TestCase
         $id = $this->created();
 
         $this->withHeader('X-Firebase-Token', $this->hrToken)
-            ->postJson('/app/categories/update.php', ['id' => $id, 'name' => 'Renamed'])
+            ->postJson('/v1/categories/update', ['id' => $id, 'name' => 'Renamed'])
             ->assertOk();
 
         $this->withHeader('X-Firebase-Token', $this->hrToken)
-            ->postJson('/app/categories/update_web_access.php', [
+            ->postJson('/v1/categories/web-access', [
                 'id' => $id,
                 'web_attendance_allowed' => true,
             ])->assertForbidden();
@@ -261,6 +261,6 @@ final class CategoryTest extends TestCase
     public function test_the_list_is_readable_by_the_roles_that_filter_by_it(): void
     {
         $this->withHeader('X-Firebase-Token', $this->viewerToken)
-            ->getJson('/app/categories/list.php')->assertOk();
+            ->getJson('/v1/categories')->assertOk();
     }
 }

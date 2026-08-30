@@ -69,13 +69,13 @@ final class AppControlTest extends TestCase
     private function save(array $payload, ?string $token = null): TestResponse
     {
         return $this->withHeader('Authorization', 'Bearer '.($token ?? $this->token))
-            ->postJson('/app/admin_app_control/set.php', $payload);
+            ->postJson('/v1/admin/app-control', $payload);
     }
 
     public function test_the_panel_lists_every_app_it_can_operate(): void
     {
         $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->getJson('/app/admin_app_control/get.php')
+            ->getJson('/v1/admin/app-control')
             ->assertOk()
             ->assertJsonCount(3, 'data.apps')
             ->assertJsonPath('data.apps.0.key', 'medjat_app');
@@ -169,15 +169,15 @@ final class AppControlTest extends TestCase
         $this->save(['app' => 'medjat_app', 'maintenance' => true], $token)->assertStatus(403);
 
         $this->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/app/admin_app_control/get.php')
+            ->getJson('/v1/admin/app-control')
             ->assertStatus(403);
     }
 
     public function test_a_request_with_no_session_is_refused(): void
     {
-        $this->getJson('/app/admin_app_control/get.php')->assertStatus(401);
+        $this->getJson('/v1/admin/app-control')->assertStatus(401);
         $this->withHeader('Authorization', 'Bearer not-a-token')
-            ->getJson('/app/admin_app_control/get.php')
+            ->getJson('/v1/admin/app-control')
             ->assertStatus(401);
     }
 
@@ -186,7 +186,7 @@ final class AppControlTest extends TestCase
         DB::table('super_admins')->where('id', $this->adminId)->update(['is_active' => 0]);
 
         $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->getJson('/app/admin_app_control/get.php')
+            ->getJson('/v1/admin/app-control')
             ->assertStatus(403);
     }
 
@@ -197,7 +197,7 @@ final class AppControlTest extends TestCase
             ->update(['expires_at' => DB::raw('DATE_SUB(NOW(), INTERVAL 1 HOUR)')]);
 
         $this->withHeader('Authorization', 'Bearer '.$this->token)
-            ->getJson('/app/admin_app_control/get.php')
+            ->getJson('/v1/admin/app-control')
             ->assertStatus(401);
 
         // A stale hash is exactly the thing worth not keeping.

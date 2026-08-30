@@ -74,7 +74,7 @@ final class SelfEnrollmentTest extends TestCase
     private function nonce(): string
     {
         $response = $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/attendance/face_challenge.php', ['purpose' => 'enroll'])
+            ->postJson('/v1/attendance/face-challenge', ['purpose' => 'enroll'])
             ->assertOk();
 
         return Value::string($response->json('data.nonce'));
@@ -87,7 +87,7 @@ final class SelfEnrollmentTest extends TestCase
     private function enroll(array $overrides = []): TestResponse
     {
         return $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/biometric/enroll_self.php', $overrides + [
+            ->postJson('/v1/biometric/self/face', $overrides + [
                 'embedding' => self::vector(),
                 'quality_score' => 0.9,
                 'face_nonce' => $this->nonce(),
@@ -112,7 +112,7 @@ final class SelfEnrollmentTest extends TestCase
         // Without the nonce a captured embedding could be submitted whenever
         // its holder liked — including one lifted from a photograph.
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/biometric/enroll_self.php', [
+            ->postJson('/v1/biometric/self/face', [
                 'embedding' => self::vector(),
                 'quality_score' => 0.9,
                 'liveness_passed' => true,
@@ -126,7 +126,7 @@ final class SelfEnrollmentTest extends TestCase
         $nonce = $this->nonce();
 
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/biometric/enroll_self.php', [
+            ->postJson('/v1/biometric/self/face', [
                 'embedding' => self::vector(),
                 'quality_score' => 0.9,
                 'face_nonce' => $nonce,
@@ -138,7 +138,7 @@ final class SelfEnrollmentTest extends TestCase
         ]);
 
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/biometric/enroll_self.php', [
+            ->postJson('/v1/biometric/self/face', [
                 'embedding' => self::vector(),
                 'quality_score' => 0.9,
                 'face_nonce' => $nonce,
@@ -152,13 +152,13 @@ final class SelfEnrollmentTest extends TestCase
             ->update(['face_embedding' => json_encode(self::vector())]);
 
         $response = $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/attendance/face_challenge.php', ['purpose' => 'check_in'])
+            ->postJson('/v1/attendance/face-challenge', ['purpose' => 'check_in'])
             ->assertOk();
 
         DB::table('employees')->where('id', $this->employeeId)->update(['face_embedding' => null]);
 
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/biometric/enroll_self.php', [
+            ->postJson('/v1/biometric/self/face', [
                 'embedding' => self::vector(),
                 'quality_score' => 0.9,
                 'face_nonce' => Value::string($response->json('data.nonce')),
@@ -222,7 +222,7 @@ final class SelfEnrollmentTest extends TestCase
     public function test_the_status_sends_an_unenrolled_employee_to_the_camera(): void
     {
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/biometric/my_status.php')
+            ->postJson('/v1/biometric/self/status')
             ->assertOk()
             ->assertJsonPath('data.enrolled', false)
             ->assertJsonPath('data.needs_reenrollment', false)
@@ -235,7 +235,7 @@ final class SelfEnrollmentTest extends TestCase
         $this->enroll()->assertStatus(201);
 
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/biometric/my_status.php')
+            ->postJson('/v1/biometric/self/status')
             ->assertOk()
             ->assertJsonPath('data.enrolled', true)
             ->assertJsonPath('data.needs_reenrollment', false);
@@ -249,7 +249,7 @@ final class SelfEnrollmentTest extends TestCase
             ->update(['face_model_version' => 'retired_v0']);
 
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/biometric/my_status.php')
+            ->postJson('/v1/biometric/self/status')
             ->assertOk()
             ->assertJsonPath('data.enrolled', false)
             ->assertJsonPath('data.needs_reenrollment', true);
@@ -260,7 +260,7 @@ final class SelfEnrollmentTest extends TestCase
         DB::table('branches')->where('id', $this->branchId)->update(['face_liveness_required' => 0]);
 
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/biometric/my_status.php')
+            ->postJson('/v1/biometric/self/status')
             ->assertOk()
             ->assertJsonPath('data.liveness_required', false);
 
@@ -269,6 +269,6 @@ final class SelfEnrollmentTest extends TestCase
 
     public function test_an_unauthenticated_request_is_refused(): void
     {
-        $this->postJson('/app/biometric/my_status.php')->assertStatus(401);
+        $this->postJson('/v1/biometric/self/status')->assertStatus(401);
     }
 }

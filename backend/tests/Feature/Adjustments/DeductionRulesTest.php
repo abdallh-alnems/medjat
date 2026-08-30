@@ -63,7 +63,7 @@ final class DeductionRulesTest extends TestCase
     private function save(array $payload, ?string $token = null): TestResponse
     {
         return $this->withHeader('X-Firebase-Token', $token ?? $this->adminToken)
-            ->postJson('/app/deductions/save_config.php', $payload);
+            ->postJson('/v1/deduction-rules', $payload);
     }
 
     /**
@@ -72,7 +72,7 @@ final class DeductionRulesTest extends TestCase
     private function read(): TestResponse
     {
         return $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/deductions/get_rules.php');
+            ->getJson('/v1/deduction-rules');
     }
 
     public function test_an_unconfigured_company_is_shown_what_payroll_actually_applies(): void
@@ -209,7 +209,7 @@ final class DeductionRulesTest extends TestCase
         // But they can still read it — every screen explaining a deduction
         // needs it.
         $this->withHeader('X-Firebase-Token', $token)
-            ->getJson('/app/deductions/get_rules.php')
+            ->getJson('/v1/deduction-rules')
             ->assertOk();
     }
 }

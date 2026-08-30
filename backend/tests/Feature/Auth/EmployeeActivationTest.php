@@ -59,7 +59,7 @@ final class EmployeeActivationTest extends TestCase
         $employee = $this->employee();
         $code = $this->activationCode($employee);
 
-        $response = $this->postJson('/app/auth/employee_activate_token.php', [
+        $response = $this->postJson('/v1/auth/employee/activate', [
             'token' => $code->token,
             'device_id' => 'device-a',
         ])->assertOk()->assertJsonPath('data.employee.id', $employee->id);
@@ -75,9 +75,9 @@ final class EmployeeActivationTest extends TestCase
         $code = $this->activationCode($employee);
         $payload = ['token' => $code->token, 'device_id' => 'device-a'];
 
-        $this->postJson('/app/auth/employee_activate_token.php', $payload)->assertOk();
+        $this->postJson('/v1/auth/employee/activate', $payload)->assertOk();
 
-        $this->postJson('/app/auth/employee_activate_token.php', $payload)
+        $this->postJson('/v1/auth/employee/activate', $payload)
             ->assertNotFound()
             ->assertJsonPath('error_code', 'join_link_invalid');
     }
@@ -88,7 +88,7 @@ final class EmployeeActivationTest extends TestCase
         $employee = $this->employee();
         $code = $this->activationCode($employee);
 
-        $this->postJson('/app/auth/employee_activate_token.php', [
+        $this->postJson('/v1/auth/employee/activate', [
             'token' => $code->token, 'device_id' => 'device-a',
         ])->assertOk();
 
@@ -100,7 +100,7 @@ final class EmployeeActivationTest extends TestCase
         $employee = $this->employee();
         $code = $this->activationCode($employee, ['expires_at' => now()->subMinute()]);
 
-        $this->postJson('/app/auth/employee_activate_token.php', [
+        $this->postJson('/v1/auth/employee/activate', [
             'token' => $code->token, 'device_id' => 'device-a',
         ])->assertNotFound()->assertJsonPath('error_code', 'join_link_invalid');
     }
@@ -112,7 +112,7 @@ final class EmployeeActivationTest extends TestCase
         $employee = $this->employee();
         Employee::query()->whereKey($employee->id)->update(['admin_id' => null, 'status' => 'pending_activation']);
 
-        $this->postJson('/app/auth/employee_activate_token.php', [
+        $this->postJson('/v1/auth/employee/activate', [
             'token' => $this->activationCode($employee)->token, 'device_id' => 'device-a',
         ])->assertOk();
 
@@ -124,7 +124,7 @@ final class EmployeeActivationTest extends TestCase
 
     public function test_missing_fields_are_refused(): void
     {
-        $this->postJson('/app/auth/employee_activate_token.php', ['token' => '', 'device_id' => ''])
+        $this->postJson('/v1/auth/employee/activate', ['token' => '', 'device_id' => ''])
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'missing_fields');
     }
@@ -137,7 +137,7 @@ final class EmployeeActivationTest extends TestCase
         DB::table('employee_web_credentials')->where('employee_id', $employee->id)->delete();
         $code = $this->activationCode($employee);
 
-        $response = $this->postJson('/app/auth/employee_web_activate.php', [
+        $response = $this->postJson('/v1/auth/employee/web/activate', [
             'phone' => $employee->phone,
             'activation_code' => $code->code,
             'pin' => '481920',
@@ -161,7 +161,7 @@ final class EmployeeActivationTest extends TestCase
         DB::table('employees')->where('id', $employee->id)->update(['admin_id' => null]);
         $code = $this->activationCode($employee);
 
-        $this->postJson('/app/auth/employee_web_activate.php', [
+        $this->postJson('/v1/auth/employee/web/activate', [
             'phone' => $employee->phone,
             'activation_code' => $code->code,
             'pin' => '481920',
@@ -191,7 +191,7 @@ final class EmployeeActivationTest extends TestCase
         DB::table('employee_web_credentials')->where('employee_id', $employee->id)->delete();
         $code = $this->activationCode($employee);
 
-        $this->postJson('/app/auth/employee_web_activate.php', [
+        $this->postJson('/v1/auth/employee/web/activate', [
             'phone' => $employee->phone,
             'activation_code' => $code->code,
             'pin' => '123456',
@@ -210,7 +210,7 @@ final class EmployeeActivationTest extends TestCase
         DB::table('employee_web_credentials')->where('employee_id', $employee->id)->delete();
         $digits = preg_replace('/\D/', '', (string) $employee->phone) ?? '';
 
-        $this->postJson('/app/auth/employee_web_activate.php', [
+        $this->postJson('/v1/auth/employee/web/activate', [
             'phone' => $employee->phone,
             'activation_code' => $this->activationCode($employee)->code,
             'pin' => substr($digits, -PinPolicy::LENGTH),
@@ -223,14 +223,14 @@ final class EmployeeActivationTest extends TestCase
         $employee = $this->employee();
         DB::table('employee_web_credentials')->where('employee_id', $employee->id)->delete();
 
-        $this->postJson('/app/auth/employee_web_activate.php', [
+        $this->postJson('/v1/auth/employee/web/activate', [
             'phone' => $employee->phone,
             'activation_code' => $this->activationCode($employee)->code,
             'pin' => '481920',
             'device_id' => 'browser-1',
         ])->assertOk();
 
-        $this->postJson('/app/auth/employee_web_activate.php', [
+        $this->postJson('/v1/auth/employee/web/activate', [
             'phone' => $employee->phone,
             'activation_code' => $this->activationCode($employee)->code,
             'pin' => '481920',
@@ -247,7 +247,7 @@ final class EmployeeActivationTest extends TestCase
         DB::table('tenants')->where('id', $employee->tenant_id)->update(['web_attendance_enabled' => 0]);
         $code = $this->activationCode($employee);
 
-        $this->postJson('/app/auth/employee_web_activate.php', [
+        $this->postJson('/v1/auth/employee/web/activate', [
             'phone' => $employee->phone,
             'activation_code' => $code->code,
             'pin' => '481920',
@@ -261,7 +261,7 @@ final class EmployeeActivationTest extends TestCase
     {
         $employee = $this->employee();
 
-        $this->postJson('/app/auth/employee_web_activate.php', [
+        $this->postJson('/v1/auth/employee/web/activate', [
             'phone' => '+201555444333',
             'activation_code' => $this->activationCode($employee)->code,
             'pin' => '481920',

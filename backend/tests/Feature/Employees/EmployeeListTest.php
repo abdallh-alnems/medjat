@@ -63,7 +63,7 @@ final class EmployeeListTest extends TestCase
         [, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->getJson('/app/employees/list.php')
+            ->getJson('/v1/employees')
             ->assertOk()
             ->assertJsonStructure(['data' => [
                 'items', 'page',
@@ -79,7 +79,7 @@ final class EmployeeListTest extends TestCase
             ->update(['face_embedding' => json_encode(array_fill(0, 192, 0.1))]);
 
         $items = $this->withHeader('X-Firebase-Token', $token)
-            ->getJson('/app/employees/list.php')
+            ->getJson('/v1/employees')
             ->assertOk()
             ->json('data.items');
 
@@ -105,7 +105,7 @@ final class EmployeeListTest extends TestCase
 
         $ids = array_column(
             (array) $this->withHeader('X-Firebase-Token', $token)
-                ->getJson('/app/employees/list.php')->json('data.items'),
+                ->getJson('/v1/employees')->json('data.items'),
             'id'
         );
 
@@ -117,7 +117,7 @@ final class EmployeeListTest extends TestCase
         [, $token] = $this->admin();
 
         $items = $this->withHeader('X-Firebase-Token', $token)
-            ->getJson('/app/employees/list.php?search='.urlencode((string) $this->employee->name))
+            ->getJson('/v1/employees?search='.urlencode((string) $this->employee->name))
             ->assertOk()
             ->json('data.items');
 
@@ -132,7 +132,7 @@ final class EmployeeListTest extends TestCase
         [, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->getJson('/app/employees/list.php?sort='.urlencode('name; DROP TABLE employees'))
+            ->getJson('/v1/employees?sort='.urlencode('name; DROP TABLE employees'))
             ->assertOk();
 
         $this->assertGreaterThan(0, Value::int(DB::table('employees')->count()));
@@ -143,7 +143,7 @@ final class EmployeeListTest extends TestCase
         [, $token] = $this->admin();
 
         $items = $this->withHeader('X-Firebase-Token', $token)
-            ->getJson('/app/employees/list.php?limit=5000')
+            ->getJson('/v1/employees?limit=5000')
             ->assertOk()
             ->json('data.items');
 
@@ -157,10 +157,10 @@ final class EmployeeListTest extends TestCase
         [, $token] = $this->admin();
 
         $unfiltered = $this->withHeader('X-Firebase-Token', $token)
-            ->getJson('/app/employees/list.php')->json('data.stats.total');
+            ->getJson('/v1/employees')->json('data.stats.total');
 
         $filtered = $this->withHeader('X-Firebase-Token', $token)
-            ->getJson('/app/employees/list.php?search=zzzzz-no-such-person')->json('data.stats.total');
+            ->getJson('/v1/employees?search=zzzzz-no-such-person')->json('data.stats.total');
 
         $this->assertSame($unfiltered, $filtered);
     }
@@ -170,7 +170,7 @@ final class EmployeeListTest extends TestCase
         [, $token] = $this->admin(['role' => 'attendance']);
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->getJson('/app/employees/list.php')
+            ->getJson('/v1/employees')
             ->assertForbidden()
             ->assertJsonPath('error_code', 'missing_permission');
     }
@@ -184,7 +184,7 @@ final class EmployeeListTest extends TestCase
 
         $ids = array_column(
             (array) $this->withHeader('X-Firebase-Token', $token)
-                ->getJson('/app/employees/list_terminated.php')->json('data.items'),
+                ->getJson('/v1/employees/terminated')->json('data.items'),
             'id'
         );
 
@@ -196,7 +196,7 @@ final class EmployeeListTest extends TestCase
         [, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->getJson('/app/employees/list_terminated.php')
+            ->getJson('/v1/employees/terminated')
             ->assertOk()
             ->assertJsonStructure(['data' => ['items', 'page', 'total', 'currency']]);
     }
@@ -219,7 +219,7 @@ final class EmployeeListTest extends TestCase
         ]);
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/employees/delete.php', ['employee_id' => $this->employee->id])
+            ->postJson('/v1/employees/delete', ['employee_id' => $this->employee->id])
             ->assertOk();
 
         $this->assertDatabaseHas('employees', ['id' => $this->employee->id, 'status' => 'terminated']);
@@ -236,7 +236,7 @@ final class EmployeeListTest extends TestCase
         }
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/employees/delete.php', ['employee_id' => $other->id])
+            ->postJson('/v1/employees/delete', ['employee_id' => $other->id])
             ->assertNotFound();
     }
 
@@ -245,7 +245,7 @@ final class EmployeeListTest extends TestCase
         [$admin, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/employees/delete.php', ['employee_id' => $this->employee->id])
+            ->postJson('/v1/employees/delete', ['employee_id' => $this->employee->id])
             ->assertOk();
 
         $this->assertDatabaseHas('audit_log', [
@@ -269,7 +269,7 @@ final class EmployeeListTest extends TestCase
         ]);
 
         $this->withHeader('X-Employee-Token', $plain)
-            ->getJson('/app/employees/my_profile.php')
+            ->getJson('/v1/employees/me')
             ->assertOk()
             ->assertJsonPath('data.employee.id', $this->employee->id)
             ->assertJsonStructure(['data' => [
@@ -305,7 +305,7 @@ final class EmployeeListTest extends TestCase
         ]);
 
         $remaining = $this->withHeader('X-Employee-Token', $plain)
-            ->getJson('/app/employees/my_profile.php')
+            ->getJson('/v1/employees/me')
             ->assertOk()
             ->json('data.leave_balance.remaining_days');
 

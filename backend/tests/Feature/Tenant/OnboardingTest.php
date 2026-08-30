@@ -91,7 +91,7 @@ final class OnboardingTest extends TestCase
 
     public function test_founding_a_company_makes_the_founder_a_general_manager(): void
     {
-        $response = $this->send('/app/tenant/create.php', [
+        $response = $this->send('/v1/tenants', [
             'token' => $this->newcomerToken,
             'company_name' => 'Brand new company',
         ])->assertOk()->assertJsonPath('data.user.role', 'general_manager');
@@ -108,7 +108,7 @@ final class OnboardingTest extends TestCase
     {
         // Builds already in the stores send nothing but the name, and those
         // companies must keep working.
-        $response = $this->send('/app/tenant/create.php', [
+        $response = $this->send('/v1/tenants', [
             'token' => $this->newcomerToken,
             'company_name' => 'Minimal company',
         ])->assertOk();
@@ -124,7 +124,7 @@ final class OnboardingTest extends TestCase
 
     public function test_choosing_a_timezone_marks_it_as_deliberate(): void
     {
-        $response = $this->send('/app/tenant/create.php', [
+        $response = $this->send('/v1/tenants', [
             'token' => $this->newcomerToken,
             'company_name' => 'Gulf company',
             'timezone' => 'Asia/Dubai',
@@ -146,19 +146,19 @@ final class OnboardingTest extends TestCase
 
     public function test_a_nonsense_timezone_or_currency_is_refused(): void
     {
-        $this->send('/app/tenant/create.php', [
+        $this->send('/v1/tenants', [
             'token' => $this->newcomerToken,
             'company_name' => 'Bad company',
             'timezone' => 'Mars/Olympus',
         ])->assertStatus(422);
 
-        $this->send('/app/tenant/create.php', [
+        $this->send('/v1/tenants', [
             'token' => $this->newcomerToken,
             'company_name' => 'Bad company',
             'currency' => 'Egyptian Pounds',
         ])->assertStatus(422);
 
-        $this->send('/app/tenant/create.php', [
+        $this->send('/v1/tenants', [
             'token' => $this->newcomerToken,
             'company_name' => 'Bad company',
             'cycle_start_day' => 31,
@@ -167,7 +167,7 @@ final class OnboardingTest extends TestCase
 
     public function test_a_nameless_company_is_refused(): void
     {
-        $this->send('/app/tenant/create.php', [
+        $this->send('/v1/tenants', [
             'token' => $this->newcomerToken,
             'company_name' => '   ',
         ])->assertStatus(422);
@@ -179,19 +179,19 @@ final class OnboardingTest extends TestCase
 
         // One person belongs to exactly one company; a second would leave every
         // tenant-scoped query with two answers.
-        $this->send('/app/tenant/create.php', [
+        $this->send('/v1/tenants', [
             'token' => $token, 'company_name' => 'Second company',
         ])->assertStatus(409);
     }
 
     public function test_a_request_with_no_token_is_refused(): void
     {
-        $this->send('/app/tenant/create.php', ['company_name' => 'Anonymous'])->assertStatus(400);
+        $this->send('/v1/tenants', ['company_name' => 'Anonymous'])->assertStatus(400);
     }
 
     public function test_a_token_for_somebody_who_never_signed_in_is_refused(): void
     {
-        $this->send('/app/tenant/create.php', [
+        $this->send('/v1/tenants', [
             'token' => $this->firebase->issue('uid-never-seen'),
             'company_name' => 'Ghost company',
         ])->assertStatus(401);
@@ -201,7 +201,7 @@ final class OnboardingTest extends TestCase
     {
         $code = $this->invite();
 
-        $this->send('/app/tenant/join.php', [
+        $this->send('/v1/tenants/join', [
             'token' => $this->newcomerToken, 'invite_code' => $code,
         ])->assertOk()
             ->assertJsonPath('data.user.role', 'hr')
@@ -216,13 +216,13 @@ final class OnboardingTest extends TestCase
     {
         $code = $this->invite();
 
-        $this->send('/app/tenant/join.php', [
+        $this->send('/v1/tenants/join', [
             'token' => $this->newcomerToken, 'invite_code' => $code,
         ])->assertOk();
 
         [, $second] = $this->person('newcomer@example.com');
 
-        $this->send('/app/tenant/join.php', [
+        $this->send('/v1/tenants/join', [
             'token' => $second, 'invite_code' => $code,
         ])->assertStatus(410);
     }
@@ -234,7 +234,7 @@ final class OnboardingTest extends TestCase
             ->where('token_hash', ManagerInvitation::hash($code))->value('id'));
         ManagerInvitation::cancel($id, $this->hostTenantId);
 
-        $this->send('/app/tenant/join.php', [
+        $this->send('/v1/tenants/join', [
             'token' => $this->newcomerToken, 'invite_code' => $code,
         ])->assertStatus(410);
     }
@@ -250,14 +250,14 @@ final class OnboardingTest extends TestCase
             [ManagerInvitation::hash($code)],
         );
 
-        $this->send('/app/tenant/join.php', [
+        $this->send('/v1/tenants/join', [
             'token' => $this->newcomerToken, 'invite_code' => $code,
         ])->assertStatus(410);
     }
 
     public function test_an_unknown_code_is_refused(): void
     {
-        $this->send('/app/tenant/join.php', [
+        $this->send('/v1/tenants/join', [
             'token' => $this->newcomerToken, 'invite_code' => 'NOTACODE',
         ])->assertStatus(404);
     }
@@ -266,7 +266,7 @@ final class OnboardingTest extends TestCase
     {
         $code = $this->invite(email: 'someone.else@example.com');
 
-        $this->send('/app/tenant/join.php', [
+        $this->send('/v1/tenants/join', [
             'token' => $this->newcomerToken, 'invite_code' => $code,
         ])->assertStatus(403);
 
@@ -277,7 +277,7 @@ final class OnboardingTest extends TestCase
     {
         $code = $this->invite(permissions: ['manage_attendance', 'view_reports']);
 
-        $this->send('/app/tenant/join.php', [
+        $this->send('/v1/tenants/join', [
             'token' => $this->newcomerToken, 'invite_code' => $code,
         ])->assertOk();
 
@@ -292,7 +292,7 @@ final class OnboardingTest extends TestCase
         // code would have been.
         $this->invite();
 
-        $this->send('/app/tenant/accept_invitation.php', ['token' => $this->newcomerToken])
+        $this->send('/v1/tenants/accept-invitation', ['token' => $this->newcomerToken])
             ->assertOk()
             ->assertJsonPath('data.user.role', 'hr');
     }
@@ -311,14 +311,14 @@ final class OnboardingTest extends TestCase
         $first = Value::int(DB::table('manager_invitations')
             ->where('email', 'newcomer@example.com')->where('role', 'attendance')->value('id'));
 
-        $this->send('/app/tenant/accept_invitation.php', [
+        $this->send('/v1/tenants/accept-invitation', [
             'token' => $this->newcomerToken, 'invitation_id' => $first,
         ])->assertOk()->assertJsonPath('data.user.role', 'attendance');
     }
 
     public function test_accepting_with_no_invitation_waiting_is_a_404(): void
     {
-        $this->send('/app/tenant/accept_invitation.php', ['token' => $this->newcomerToken])
+        $this->send('/v1/tenants/accept-invitation', ['token' => $this->newcomerToken])
             ->assertStatus(404);
     }
 
@@ -326,7 +326,7 @@ final class OnboardingTest extends TestCase
     {
         [, $token] = $this->person(null);
 
-        $this->send('/app/tenant/accept_invitation.php', ['token' => $token])->assertStatus(404);
+        $this->send('/v1/tenants/accept-invitation', ['token' => $token])->assertStatus(404);
     }
 
     public function test_the_token_may_arrive_in_the_header_instead(): void
@@ -336,7 +336,7 @@ final class OnboardingTest extends TestCase
         $this->invite();
 
         $this->withHeader('X-Firebase-Token', $this->newcomerToken)
-            ->postJson('/app/tenant/accept_invitation.php', [])
+            ->postJson('/v1/tenants/accept-invitation', [])
             ->assertOk();
     }
 }

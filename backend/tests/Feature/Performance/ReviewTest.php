@@ -86,7 +86,7 @@ final class ReviewTest extends TestCase
      */
     private function create(array $overrides = [], ?string $token = null): TestResponse
     {
-        return $this->send('/app/performance/review_create.php', $overrides + [
+        return $this->send('/v1/performance/reviews', $overrides + [
             'employee_id' => $this->employeeId,
             'rating' => 4,
             'review' => 'Solid quarter',
@@ -153,7 +153,7 @@ final class ReviewTest extends TestCase
         $this->create(['review' => 'Second'])->assertStatus(201);
 
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/performance/review_list.php?employee_id='.$this->employeeId)
+            ->getJson('/v1/performance/reviews?employee_id='.$this->employeeId)
             ->assertOk()
             ->assertJsonCount(2, 'data.items');
     }
@@ -163,7 +163,7 @@ final class ReviewTest extends TestCase
         $this->create()->assertStatus(201);
 
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/performance/review_list.php?employee_id='.$this->employeeId)
+            ->getJson('/v1/performance/reviews?employee_id='.$this->employeeId)
             ->assertOk()
             ->assertJsonPath('data.items.0.reviewer_name', 'Admin general_manager');
     }
@@ -181,7 +181,7 @@ final class ReviewTest extends TestCase
         $this->create()->assertStatus(201);
 
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/performance/review_list.php?employee_id='.$this->employeeId.'&cycle_id='.$cycleId)
+            ->getJson('/v1/performance/reviews?employee_id='.$this->employeeId.'&cycle_id='.$cycleId)
             ->assertOk()
             ->assertJsonCount(1, 'data.items');
     }
@@ -190,14 +190,14 @@ final class ReviewTest extends TestCase
     {
         $id = Value::int($this->create()->assertStatus(201)->json('data.id'));
 
-        $this->send('/app/performance/review_delete.php', ['id' => $id])->assertOk();
+        $this->send('/v1/performance/reviews/delete', ['id' => $id])->assertOk();
 
         $this->assertDatabaseMissing('performance_reviews', ['id' => $id]);
     }
 
     public function test_deleting_an_unknown_review_is_a_404(): void
     {
-        $this->send('/app/performance/review_delete.php', ['id' => 99999999])->assertStatus(404);
+        $this->send('/v1/performance/reviews/delete', ['id' => 99999999])->assertStatus(404);
     }
 
     public function test_a_branch_manager_cannot_review_outside_their_branch(): void
@@ -210,7 +210,7 @@ final class ReviewTest extends TestCase
         $this->create([], $token)->assertStatus(403);
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->getJson('/app/performance/review_list.php?employee_id='.$this->employeeId)
+            ->getJson('/v1/performance/reviews?employee_id='.$this->employeeId)
             ->assertStatus(403);
     }
 
@@ -223,7 +223,7 @@ final class ReviewTest extends TestCase
         ]);
 
         // The branch check follows the review's subject, not the review.
-        $this->send('/app/performance/review_delete.php', ['id' => $id], $this->admin('branch_manager', $otherBranch))
+        $this->send('/v1/performance/reviews/delete', ['id' => $id], $this->admin('branch_manager', $otherBranch))
             ->assertStatus(403);
 
         $this->assertDatabaseHas('performance_reviews', ['id' => $id]);
@@ -250,7 +250,7 @@ final class ReviewTest extends TestCase
         $token = $this->admin('viewer');
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->getJson('/app/performance/review_list.php?employee_id='.$this->employeeId)
+            ->getJson('/v1/performance/reviews?employee_id='.$this->employeeId)
             ->assertStatus(403);
 
         $this->create([], $token)->assertStatus(403);

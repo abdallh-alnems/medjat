@@ -71,7 +71,7 @@ final class EmployeeStatusTest extends TestCase
         // that cannot be reconstructed afterwards.
         Employee::query()->whereKey($this->employee->id)->update(['status' => 'on_leave']);
 
-        $this->send('/app/employees/suspend.php', [
+        $this->send('/v1/employees/suspend', [
             'employee_id' => $this->employee->id,
             'reason' => 'Under investigation',
         ])->assertOk();
@@ -87,11 +87,11 @@ final class EmployeeStatusTest extends TestCase
     {
         Employee::query()->whereKey($this->employee->id)->update(['status' => 'on_leave']);
 
-        $this->send('/app/employees/suspend.php', [
+        $this->send('/v1/employees/suspend', [
             'employee_id' => $this->employee->id, 'reason' => 'Investigation',
         ])->assertOk();
 
-        $this->send('/app/employees/end_suspension.php', ['employee_id' => $this->employee->id])
+        $this->send('/v1/employees/end-suspension', ['employee_id' => $this->employee->id])
             ->assertOk()
             ->assertJsonPath('data.restored_status', 'on_leave');
 
@@ -100,7 +100,7 @@ final class EmployeeStatusTest extends TestCase
 
     public function test_a_reason_is_required(): void
     {
-        $this->send('/app/employees/suspend.php', ['employee_id' => $this->employee->id])
+        $this->send('/v1/employees/suspend', ['employee_id' => $this->employee->id])
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'missing_fields');
     }
@@ -110,7 +110,7 @@ final class EmployeeStatusTest extends TestCase
         // Zero is 'unpaid' and a hundred is 'full'; storing either here would be
         // the same thing said two ways.
         foreach ([0, 100, -5, 150] as $percentage) {
-            $this->send('/app/employees/suspend.php', [
+            $this->send('/v1/employees/suspend', [
                 'employee_id' => $this->employee->id,
                 'reason' => 'Investigation',
                 'pay_mode' => 'partial',
@@ -123,7 +123,7 @@ final class EmployeeStatusTest extends TestCase
     {
         Employee::query()->whereKey($this->employee->id)->update(['status' => 'terminated']);
 
-        $this->send('/app/employees/suspend.php', [
+        $this->send('/v1/employees/suspend', [
             'employee_id' => $this->employee->id, 'reason' => 'Investigation',
         ])->assertStatus(422)->assertJsonPath('error_code', 'cannot_suspend_terminated_employee');
     }
@@ -132,15 +132,15 @@ final class EmployeeStatusTest extends TestCase
     {
         $body = ['employee_id' => $this->employee->id, 'reason' => 'Investigation'];
 
-        $this->send('/app/employees/suspend.php', $body)->assertOk();
-        $this->send('/app/employees/suspend.php', $body)
+        $this->send('/v1/employees/suspend', $body)->assertOk();
+        $this->send('/v1/employees/suspend', $body)
             ->assertStatus(409)
             ->assertJsonPath('error_code', 'employee_already_active_suspension');
     }
 
     public function test_an_end_date_before_the_start_is_refused(): void
     {
-        $this->send('/app/employees/suspend.php', [
+        $this->send('/v1/employees/suspend', [
             'employee_id' => $this->employee->id,
             'reason' => 'Investigation',
             'start_date' => '2026-06-01',
@@ -165,7 +165,7 @@ final class EmployeeStatusTest extends TestCase
         ]);
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->getJson('/app/employees/get_suspensions.php?employee_id='.$this->employee->id)
+            ->getJson('/v1/employees/suspensions?employee_id='.$this->employee->id)
             ->assertOk()
             ->assertJsonPath('data.active', null);
 
@@ -187,7 +187,7 @@ final class EmployeeStatusTest extends TestCase
         ]);
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->getJson('/app/employees/get_suspensions.php?employee_id='.$this->employee->id)
+            ->getJson('/v1/employees/suspensions?employee_id='.$this->employee->id)
             ->assertOk();
 
         $this->assertSame('terminated', DB::table('employees')->where('id', $this->employee->id)->value('status'));
@@ -202,7 +202,7 @@ final class EmployeeStatusTest extends TestCase
         Employee::query()->whereKey($this->employee->id)
             ->update(['status' => 'terminated', 'terminated_at' => now()]);
 
-        $this->send('/app/employees/reactivate.php', ['employee_id' => $this->employee->id])
+        $this->send('/v1/employees/reactivate', ['employee_id' => $this->employee->id])
             ->assertOk()
             ->assertJsonStructure(['data' => ['message', 'activation_code', 'expires_at']]);
 
@@ -225,14 +225,14 @@ final class EmployeeStatusTest extends TestCase
             'status' => 'draft',
         ]);
 
-        $this->send('/app/employees/reactivate.php', ['employee_id' => $this->employee->id])->assertOk();
+        $this->send('/v1/employees/reactivate', ['employee_id' => $this->employee->id])->assertOk();
 
         $this->assertDatabaseMissing('employee_settlements', ['employee_id' => $this->employee->id]);
     }
 
     public function test_somebody_still_employed_cannot_be_re_hired(): void
     {
-        $this->send('/app/employees/reactivate.php', ['employee_id' => $this->employee->id])
+        $this->send('/v1/employees/reactivate', ['employee_id' => $this->employee->id])
             ->assertStatus(409)
             ->assertJsonPath('error_code', 'not_terminated');
     }
@@ -242,7 +242,7 @@ final class EmployeeStatusTest extends TestCase
     public function test_an_absent_key_is_refused_rather_than_treated_as_clearing(): void
     {
         // "Leave it alone" and "clear it" are different requests.
-        $this->send('/app/employees/set_crew_supervisor.php', ['employee_id' => $this->employee->id])
+        $this->send('/v1/employees/crew-supervisor', ['employee_id' => $this->employee->id])
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'supervisor_id_required');
     }
@@ -251,7 +251,7 @@ final class EmployeeStatusTest extends TestCase
     {
         Employee::query()->whereKey($this->employee->id)->update(['crew_supervisor_id' => $this->employee->id]);
 
-        $this->send('/app/employees/set_crew_supervisor.php', [
+        $this->send('/v1/employees/crew-supervisor', [
             'employee_id' => $this->employee->id, 'supervisor_id' => null,
         ])->assertOk();
 
@@ -260,7 +260,7 @@ final class EmployeeStatusTest extends TestCase
 
     public function test_somebody_cannot_supervise_themselves(): void
     {
-        $this->send('/app/employees/set_crew_supervisor.php', [
+        $this->send('/v1/employees/crew-supervisor', [
             'employee_id' => $this->employee->id, 'supervisor_id' => $this->employee->id,
         ])->assertStatus(422)->assertJsonPath('error_code', 'supervisor_cycle');
     }
@@ -273,7 +273,7 @@ final class EmployeeStatusTest extends TestCase
 
         Employee::query()->whereKey($b->id)->update(['crew_supervisor_id' => $this->employee->id]);
 
-        $this->send('/app/employees/set_crew_supervisor.php', [
+        $this->send('/v1/employees/crew-supervisor', [
             'employee_id' => $this->employee->id, 'supervisor_id' => $b->id,
         ])->assertStatus(422)->assertJsonPath('error_code', 'supervisor_cycle');
     }
@@ -287,7 +287,7 @@ final class EmployeeStatusTest extends TestCase
             $this->markTestSkipped('needs a second company');
         }
 
-        $this->send('/app/employees/set_crew_supervisor.php', [
+        $this->send('/v1/employees/crew-supervisor', [
             'employee_id' => $this->employee->id, 'supervisor_id' => $other->id,
         ])->assertNotFound();
     }
@@ -298,7 +298,7 @@ final class EmployeeStatusTest extends TestCase
             ->where('tenant_id', $this->tenantId)->firstOrFail();
         Employee::query()->whereKey($b->id)->update(['status' => 'terminated']);
 
-        $this->send('/app/employees/set_crew_supervisor.php', [
+        $this->send('/v1/employees/crew-supervisor', [
             'employee_id' => $this->employee->id, 'supervisor_id' => $b->id,
         ])->assertStatus(422)->assertJsonPath('error_code', 'supervisor_terminated');
     }
@@ -320,7 +320,7 @@ final class EmployeeStatusTest extends TestCase
             'pin_set_at' => now(),
         ]);
 
-        $this->send('/app/employees/reset_web_pin.php', ['employee_id' => $this->employee->id])
+        $this->send('/v1/employees/reset-web-pin', ['employee_id' => $this->employee->id])
             ->assertOk()
             ->assertJsonStructure(['data' => ['message', 'activation_code', 'expires_at']]);
 
@@ -332,14 +332,14 @@ final class EmployeeStatusTest extends TestCase
     {
         $phone = EmployeeAuthToken::issue($this->tenantId, $this->employee->id, 'handset', null, 'android', null);
 
-        $this->send('/app/employees/reset_web_pin.php', ['employee_id' => $this->employee->id])->assertOk();
+        $this->send('/v1/employees/reset-web-pin', ['employee_id' => $this->employee->id])->assertOk();
 
         $this->assertNotNull(EmployeeAuthToken::findActiveByPlain($phone));
     }
 
     public function test_the_reset_is_audited(): void
     {
-        $this->send('/app/employees/reset_web_pin.php', ['employee_id' => $this->employee->id])->assertOk();
+        $this->send('/v1/employees/reset-web-pin', ['employee_id' => $this->employee->id])->assertOk();
 
         $this->assertDatabaseHas('audit_log', [
             'admin_id' => $this->admin->id,
@@ -355,6 +355,6 @@ final class EmployeeStatusTest extends TestCase
             $this->markTestSkipped('needs a second company');
         }
 
-        $this->send('/app/employees/reset_web_pin.php', ['employee_id' => $other->id])->assertNotFound();
+        $this->send('/v1/employees/reset-web-pin', ['employee_id' => $other->id])->assertNotFound();
     }
 }

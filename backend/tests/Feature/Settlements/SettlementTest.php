@@ -83,7 +83,7 @@ final class SettlementTest extends TestCase
      */
     private function save(array $overrides = []): TestResponse
     {
-        return $this->send('/app/settlements/save.php', $overrides + [
+        return $this->send('/v1/settlements', $overrides + [
             'employee_id' => $this->employeeId,
             'reason' => 'resignation',
             'last_working_day' => self::LAST_DAY,
@@ -144,7 +144,7 @@ final class SettlementTest extends TestCase
         ]])->assertOk();
 
         $response = $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/settlements/get.php?employee_id='.$this->employeeId)
+            ->getJson('/v1/settlements?employee_id='.$this->employeeId)
             ->assertOk();
 
         $this->assertCount(1, (array) $response->json('data.settlement.line_items'));
@@ -186,7 +186,7 @@ final class SettlementTest extends TestCase
     {
         $this->save()->assertOk();
 
-        $this->send('/app/settlements/approve.php', ['employee_id' => $this->employeeId])
+        $this->send('/v1/settlements/approve', ['employee_id' => $this->employeeId])
             ->assertOk()
             ->assertJsonPath('data.settlement.status', 'approved');
 
@@ -206,7 +206,7 @@ final class SettlementTest extends TestCase
     public function test_the_snapshot_does_not_freeze_an_administrators_name(): void
     {
         $this->save()->assertOk();
-        $this->send('/app/settlements/approve.php', ['employee_id' => $this->employeeId])->assertOk();
+        $this->send('/v1/settlements/approve', ['employee_id' => $this->employeeId])->assertOk();
 
         $frozen = DB::table('employee_settlements')->where('employee_id', $this->employeeId)->first();
         $breakdown = json_decode(Value::string($frozen?->breakdown), true);
@@ -229,19 +229,19 @@ final class SettlementTest extends TestCase
         ]);
 
         $this->save()->assertOk();
-        $this->send('/app/settlements/approve.php', ['employee_id' => $this->employeeId])->assertOk();
+        $this->send('/v1/settlements/approve', ['employee_id' => $this->employeeId])->assertOk();
 
         // Otherwise the app keeps showing a former employer's roster until the
         // token happens to expire.
         $this->withHeader('X-Employee-Token', $plain)
-            ->postJson('/app/biometric/my_status.php')
+            ->postJson('/v1/biometric/self/status')
             ->assertStatus(401);
     }
 
     public function test_an_approved_settlement_cannot_be_edited(): void
     {
         $this->save()->assertOk();
-        $this->send('/app/settlements/approve.php', ['employee_id' => $this->employeeId])->assertOk();
+        $this->send('/v1/settlements/approve', ['employee_id' => $this->employeeId])->assertOk();
 
         $this->save(['pending_salary' => 99999])->assertStatus(422);
     }
@@ -249,15 +249,15 @@ final class SettlementTest extends TestCase
     public function test_approving_twice_is_refused(): void
     {
         $this->save()->assertOk();
-        $this->send('/app/settlements/approve.php', ['employee_id' => $this->employeeId])->assertOk();
+        $this->send('/v1/settlements/approve', ['employee_id' => $this->employeeId])->assertOk();
 
-        $this->send('/app/settlements/approve.php', ['employee_id' => $this->employeeId])
+        $this->send('/v1/settlements/approve', ['employee_id' => $this->employeeId])
             ->assertStatus(409);
     }
 
     public function test_approving_without_a_saved_settlement_is_refused(): void
     {
-        $this->send('/app/settlements/approve.php', ['employee_id' => $this->employeeId])
+        $this->send('/v1/settlements/approve', ['employee_id' => $this->employeeId])
             ->assertStatus(404);
     }
 
@@ -265,12 +265,12 @@ final class SettlementTest extends TestCase
     {
         $this->save()->assertOk();
 
-        $this->send('/app/settlements/mark_paid.php', ['employee_id' => $this->employeeId])
+        $this->send('/v1/settlements/mark-paid', ['employee_id' => $this->employeeId])
             ->assertStatus(409);
 
-        $this->send('/app/settlements/approve.php', ['employee_id' => $this->employeeId])->assertOk();
+        $this->send('/v1/settlements/approve', ['employee_id' => $this->employeeId])->assertOk();
 
-        $this->send('/app/settlements/mark_paid.php', ['employee_id' => $this->employeeId])
+        $this->send('/v1/settlements/mark-paid', ['employee_id' => $this->employeeId])
             ->assertOk()
             ->assertJsonPath('data.settlement.status', 'paid');
     }
@@ -278,17 +278,17 @@ final class SettlementTest extends TestCase
     public function test_paying_twice_is_refused(): void
     {
         $this->save()->assertOk();
-        $this->send('/app/settlements/approve.php', ['employee_id' => $this->employeeId])->assertOk();
-        $this->send('/app/settlements/mark_paid.php', ['employee_id' => $this->employeeId])->assertOk();
+        $this->send('/v1/settlements/approve', ['employee_id' => $this->employeeId])->assertOk();
+        $this->send('/v1/settlements/mark-paid', ['employee_id' => $this->employeeId])->assertOk();
 
-        $this->send('/app/settlements/mark_paid.php', ['employee_id' => $this->employeeId])
+        $this->send('/v1/settlements/mark-paid', ['employee_id' => $this->employeeId])
             ->assertStatus(409);
     }
 
     public function test_the_page_is_prefilled_with_a_computed_suggestion(): void
     {
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/settlements/get.php?employee_id='.$this->employeeId)
+            ->getJson('/v1/settlements?employee_id='.$this->employeeId)
             ->assertOk()
             ->assertJsonPath('data.employee.id', $this->employeeId)
             ->assertJsonPath('data.settlement', null)
@@ -299,12 +299,12 @@ final class SettlementTest extends TestCase
     public function test_the_preview_recomputes_for_a_different_leaving_date(): void
     {
         $earlier = $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/settlements/preview.php?employee_id='.$this->employeeId
+            ->getJson('/v1/settlements/preview?employee_id='.$this->employeeId
                 .'&last_working_day=2024-05-01')
             ->assertOk();
 
         $later = $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/settlements/preview.php?employee_id='.$this->employeeId
+            ->getJson('/v1/settlements/preview?employee_id='.$this->employeeId
                 .'&last_working_day=2030-05-01')
             ->assertOk();
 
@@ -322,7 +322,7 @@ final class SettlementTest extends TestCase
     public function test_the_preview_refuses_a_malformed_date(): void
     {
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/settlements/preview.php?employee_id='.$this->employeeId
+            ->getJson('/v1/settlements/preview?employee_id='.$this->employeeId
                 .'&last_working_day=next-friday')
             ->assertStatus(422);
     }
@@ -356,7 +356,7 @@ final class SettlementTest extends TestCase
             'hire_date' => '2022-01-01',
         ]);
 
-        $this->send('/app/settlements/save.php', [
+        $this->send('/v1/settlements', [
             'employee_id' => $stranger,
             'last_working_day' => self::LAST_DAY,
         ])->assertStatus(404);
@@ -366,7 +366,7 @@ final class SettlementTest extends TestCase
     {
         $this->save([])->assertOk();
 
-        $this->send('/app/settlements/approve.php', ['employee_id' => $this->employeeId], $this->admin('viewer'))
+        $this->send('/v1/settlements/approve', ['employee_id' => $this->employeeId], $this->admin('viewer'))
             ->assertStatus(403);
     }
 }

@@ -107,7 +107,7 @@ final class LoanTest extends TestCase
      */
     private function created(array $overrides = []): int
     {
-        $response = $this->asAdmin()->postJson('/app/loans/create.php', $overrides + [
+        $response = $this->asAdmin()->postJson('/v1/loans', $overrides + [
             'employee_id' => $this->employeeId,
             'type' => 'loan',
             'total_amount' => 1200,
@@ -142,7 +142,7 @@ final class LoanTest extends TestCase
 
     public function test_a_zero_amount_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/loans/create.php', [
+        $this->asAdmin()->postJson('/v1/loans', [
             'employee_id' => $this->employeeId,
             'total_amount' => 0,
             'installments_count' => 4,
@@ -151,7 +151,7 @@ final class LoanTest extends TestCase
 
     public function test_a_malformed_start_month_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/loans/create.php', [
+        $this->asAdmin()->postJson('/v1/loans', [
             'employee_id' => $this->employeeId,
             'total_amount' => 100,
             'installments_count' => 1,
@@ -165,7 +165,7 @@ final class LoanTest extends TestCase
     {
         $id = $this->created();
 
-        $this->asAdmin()->postJson('/app/loans/approve.php', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/loans/approve', ['id' => $id])->assertOk();
 
         $this->assertDatabaseHas('employee_loans', ['id' => $id, 'status' => 'active']);
         $this->assertSame(12, DB::table('loan_installments')->where('loan_id', $id)->count());
@@ -182,7 +182,7 @@ final class LoanTest extends TestCase
         // collecting a few piastres more or less than it lent.
         $id = $this->created(['total_amount' => 100, 'installments_count' => 3]);
 
-        $this->asAdmin()->postJson('/app/loans/approve.php', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/loans/approve', ['id' => $id])->assertOk();
 
         $amounts = DB::table('loan_installments')->where('loan_id', $id)->orderBy('seq')
             ->pluck('amount')->map(static fn (mixed $a): string => Value::string($a))->all();
@@ -194,7 +194,7 @@ final class LoanTest extends TestCase
     {
         $id = $this->created(['total_amount' => 300, 'installments_count' => 3, 'start_month' => '2026-11']);
 
-        $this->asAdmin()->postJson('/app/loans/approve.php', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/loans/approve', ['id' => $id])->assertOk();
 
         $months = DB::table('loan_installments')->where('loan_id', $id)->orderBy('seq')
             ->pluck('month')->map(static fn (mixed $m): string => Value::string($m))->all();
@@ -206,7 +206,7 @@ final class LoanTest extends TestCase
     {
         $id = $this->created();
 
-        $this->asAdmin()->postJson('/app/loans/approve.php', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/loans/approve', ['id' => $id])->assertOk();
 
         $this->assertDatabaseHas('notifications', [
             'employee_id' => $this->employeeId,
@@ -219,7 +219,7 @@ final class LoanTest extends TestCase
     {
         $id = $this->created(['type' => 'advance']);
 
-        $this->asAdmin()->postJson('/app/loans/approve.php', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/loans/approve', ['id' => $id])->assertOk();
 
         $this->assertDatabaseHas('notifications', [
             'employee_id' => $this->employeeId,
@@ -230,9 +230,9 @@ final class LoanTest extends TestCase
     public function test_a_loan_cannot_be_approved_twice(): void
     {
         $id = $this->created();
-        $this->asAdmin()->postJson('/app/loans/approve.php', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/loans/approve', ['id' => $id])->assertOk();
 
-        $this->asAdmin()->postJson('/app/loans/approve.php', ['id' => $id])
+        $this->asAdmin()->postJson('/v1/loans/approve', ['id' => $id])
             ->assertStatus(409)->assertJsonPath('error_code', 'only_pending_loans_can_approved');
 
         $this->assertSame(12, DB::table('loan_installments')->where('loan_id', $id)->count());
@@ -246,7 +246,7 @@ final class LoanTest extends TestCase
         // withdrawal.
         $id = $this->created();
 
-        $this->asAdmin()->postJson('/app/loans/cancel.php', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/loans/cancel', ['id' => $id])->assertOk();
 
         $this->assertDatabaseHas('employee_loans', ['id' => $id, 'status' => 'rejected']);
         $this->assertDatabaseHas('notifications', [
@@ -258,12 +258,12 @@ final class LoanTest extends TestCase
     public function test_stopping_a_running_loan_drops_what_is_still_unpaid(): void
     {
         $id = $this->created(['total_amount' => 300, 'installments_count' => 3]);
-        $this->asAdmin()->postJson('/app/loans/approve.php', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/loans/approve', ['id' => $id])->assertOk();
 
         DB::table('loan_installments')->where('loan_id', $id)->where('seq', 1)
             ->update(['status' => 'paid']);
 
-        $this->asAdmin()->postJson('/app/loans/cancel.php', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/loans/cancel', ['id' => $id])->assertOk();
 
         $this->assertDatabaseHas('employee_loans', ['id' => $id, 'status' => 'cancelled']);
         // What was actually deducted stays; what was not is gone.
@@ -276,7 +276,7 @@ final class LoanTest extends TestCase
         $id = $this->created();
         DB::table('employee_loans')->where('id', $id)->update(['status' => 'completed']);
 
-        $this->asAdmin()->postJson('/app/loans/cancel.php', ['id' => $id])
+        $this->asAdmin()->postJson('/v1/loans/cancel', ['id' => $id])
             ->assertStatus(409)->assertJsonPath('error_code', 'loan_cannot_cancelled_its_current');
     }
 
@@ -285,9 +285,9 @@ final class LoanTest extends TestCase
     public function test_a_loan_reads_back_with_its_schedule(): void
     {
         $id = $this->created(['total_amount' => 200, 'installments_count' => 2]);
-        $this->asAdmin()->postJson('/app/loans/approve.php', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/loans/approve', ['id' => $id])->assertOk();
 
-        $this->asAdmin()->getJson('/app/loans/get.php?id='.$id)
+        $this->asAdmin()->getJson('/v1/loans/show?id='.$id)
             ->assertOk()
             ->assertJsonPath('data.loan.employee_name', 'Borrower')
             ->assertJsonCount(2, 'data.loan.installments');
@@ -304,7 +304,7 @@ final class LoanTest extends TestCase
         $this->created();
         $this->created(['employee_id' => $stranger]);
 
-        $items = $this->asAdmin()->getJson('/app/loans/list.php?employee_id='.$this->employeeId)
+        $items = $this->asAdmin()->getJson('/v1/loans?employee_id='.$this->employeeId)
             ->assertOk()->json('data.items');
 
         $this->assertIsArray($items);
@@ -331,20 +331,20 @@ final class LoanTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $this->asAdmin()->getJson('/app/loans/get.php?id='.$id)->assertNotFound();
+        $this->asAdmin()->getJson('/v1/loans/show?id='.$id)->assertNotFound();
     }
 
     public function test_loans_are_closed_without_the_payroll_permission(): void
     {
         $this->withHeader('X-Firebase-Token', $this->viewerToken)
-            ->getJson('/app/loans/list.php')->assertForbidden();
+            ->getJson('/v1/loans')->assertForbidden();
     }
 
     // ── An employee asking ───────────────────────────────────────────────
 
     public function test_an_employee_asks_for_an_advance(): void
     {
-        $this->asEmployee()->postJson('/app/loans/request.php', [
+        $this->asEmployee()->postJson('/v1/loans/request', [
             'total_amount' => 500,
             'installments_count' => 5,
         ])->assertOk();
@@ -361,9 +361,9 @@ final class LoanTest extends TestCase
 
     public function test_it_lands_in_the_same_queue_the_managers_already_watch(): void
     {
-        $this->asEmployee()->postJson('/app/loans/request.php', ['total_amount' => 500])->assertOk();
+        $this->asEmployee()->postJson('/v1/loans/request', ['total_amount' => 500])->assertOk();
 
-        $items = $this->asAdmin()->getJson('/app/loans/list.php?status=pending')->assertOk()->json('data.items');
+        $items = $this->asAdmin()->getJson('/v1/loans?status=pending')->assertOk()->json('data.items');
 
         $this->assertIsArray($items);
         $this->assertNotEmpty($items);
@@ -372,7 +372,7 @@ final class LoanTest extends TestCase
 
     public function test_a_deduction_cannot_start_in_a_month_that_has_passed(): void
     {
-        $this->asEmployee()->postJson('/app/loans/request.php', [
+        $this->asEmployee()->postJson('/v1/loans/request', [
             'total_amount' => 500,
             'start_month' => '2020-01',
         ])->assertStatus(422)->assertJsonPath('error_code', 'start_month_in_past');
@@ -381,30 +381,30 @@ final class LoanTest extends TestCase
     public function test_a_fourth_undecided_request_is_refused(): void
     {
         for ($i = 0; $i < Loans::PENDING_LIMIT; $i++) {
-            $this->asEmployee()->postJson('/app/loans/request.php', ['total_amount' => 100])->assertOk();
+            $this->asEmployee()->postJson('/v1/loans/request', ['total_amount' => 100])->assertOk();
         }
 
-        $this->asEmployee()->postJson('/app/loans/request.php', ['total_amount' => 100])
+        $this->asEmployee()->postJson('/v1/loans/request', ['total_amount' => 100])
             ->assertStatus(409)->assertJsonPath('error_code', 'advance_pending_limit');
     }
 
     public function test_an_employee_withdraws_their_own_undecided_request(): void
     {
-        $response = $this->asEmployee()->postJson('/app/loans/request.php', ['total_amount' => 500])->assertOk();
+        $response = $this->asEmployee()->postJson('/v1/loans/request', ['total_amount' => 500])->assertOk();
         $id = Value::int($response->json('data.id'));
 
-        $this->asEmployee()->postJson('/app/loans/cancel_request.php', ['loan_id' => $id])->assertOk();
+        $this->asEmployee()->postJson('/v1/loans/cancel-request', ['loan_id' => $id])->assertOk();
 
         $this->assertDatabaseHas('employee_loans', ['id' => $id, 'status' => 'cancelled']);
     }
 
     public function test_an_approved_advance_cannot_be_withdrawn(): void
     {
-        $response = $this->asEmployee()->postJson('/app/loans/request.php', ['total_amount' => 500])->assertOk();
+        $response = $this->asEmployee()->postJson('/v1/loans/request', ['total_amount' => 500])->assertOk();
         $id = Value::int($response->json('data.id'));
-        $this->asAdmin()->postJson('/app/loans/approve.php', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/loans/approve', ['id' => $id])->assertOk();
 
-        $this->asEmployee()->postJson('/app/loans/cancel_request.php', ['loan_id' => $id])
+        $this->asEmployee()->postJson('/v1/loans/cancel-request', ['loan_id' => $id])
             ->assertStatus(409)->assertJsonPath('error_code', 'not_pending');
     }
 
@@ -418,7 +418,7 @@ final class LoanTest extends TestCase
         ]);
         $id = $this->created(['employee_id' => $stranger]);
 
-        $this->asEmployee()->postJson('/app/loans/cancel_request.php', ['loan_id' => $id])->assertNotFound();
+        $this->asEmployee()->postJson('/v1/loans/cancel-request', ['loan_id' => $id])->assertNotFound();
     }
 
     public function test_an_employee_sees_only_their_own(): void
@@ -430,9 +430,9 @@ final class LoanTest extends TestCase
             'base_salary' => 1000,
         ]);
         $this->created(['employee_id' => $stranger]);
-        $this->asEmployee()->postJson('/app/loans/request.php', ['total_amount' => 500])->assertOk();
+        $this->asEmployee()->postJson('/v1/loans/request', ['total_amount' => 500])->assertOk();
 
-        $loans = $this->asEmployee()->getJson('/app/loans/my_list.php')->assertOk()->json('data.loans');
+        $loans = $this->asEmployee()->getJson('/v1/loans/mine')->assertOk()->json('data.loans');
 
         $this->assertIsArray($loans);
         $this->assertCount(1, $loans);

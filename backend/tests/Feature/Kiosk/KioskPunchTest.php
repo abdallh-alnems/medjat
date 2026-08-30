@@ -127,7 +127,7 @@ final class KioskPunchTest extends TestCase
     private function nonce(): string
     {
         return Value::string(
-            $this->asKiosk()->postJson('/app/kiosk/challenge.php')->assertOk()->json('data.nonce')
+            $this->asKiosk()->postJson('/v1/kiosk/challenge')->assertOk()->json('data.nonce')
         );
     }
 
@@ -137,7 +137,7 @@ final class KioskPunchTest extends TestCase
      */
     private function identify(array $overrides = []): TestResponse
     {
-        return $this->asKiosk()->postJson('/app/kiosk/identify.php', $overrides + [
+        return $this->asKiosk()->postJson('/v1/kiosk/identify', $overrides + [
             'nonce' => $this->nonce(),
             'embedding' => self::vector(0.01),
             'model_version' => FaceEmbedding::MODEL_VERSION,
@@ -149,7 +149,7 @@ final class KioskPunchTest extends TestCase
 
     public function test_a_kiosk_reports_in_and_is_told_how_to_behave(): void
     {
-        $this->asKiosk()->postJson('/app/kiosk/heartbeat.php', ['app_version' => '1.0.0'])
+        $this->asKiosk()->postJson('/v1/kiosk/heartbeat', ['app_version' => '1.0.0'])
             ->assertOk()
             ->assertJsonPath('data.station_status', 'active')
             ->assertJsonPath('data.branch.name', 'Punch branch')
@@ -161,7 +161,7 @@ final class KioskPunchTest extends TestCase
     {
         $this->gate->set('medjat_kiosk', '2.0.0');
 
-        $this->asKiosk()->postJson('/app/kiosk/heartbeat.php', ['app_version' => '1.0.0'])
+        $this->asKiosk()->postJson('/v1/kiosk/heartbeat', ['app_version' => '1.0.0'])
             ->assertStatus(426)
             ->assertJsonPath('error_code', 'kiosk_update_required')
             ->assertJsonPath('meta.min_version', '2.0.0');
@@ -171,7 +171,7 @@ final class KioskPunchTest extends TestCase
     {
         $this->gate->set('medjat_kiosk', '0.0.0', maintenance: true);
 
-        $this->asKiosk()->postJson('/app/kiosk/heartbeat.php')
+        $this->asKiosk()->postJson('/v1/kiosk/heartbeat')
             ->assertStatus(503)
             ->assertJsonPath('error_code', 'kiosk_maintenance');
     }
@@ -180,14 +180,14 @@ final class KioskPunchTest extends TestCase
     {
         DB::table('branches')->where('id', $this->branchId)->update(['station_enabled' => 0]);
 
-        $this->asKiosk()->postJson('/app/kiosk/heartbeat.php')
+        $this->asKiosk()->postJson('/v1/kiosk/heartbeat')
             ->assertForbidden()
             ->assertJsonPath('error_code', 'kiosk_pair_branch_disabled');
     }
 
     public function test_a_kiosk_needs_a_token(): void
     {
-        $this->postJson('/app/kiosk/heartbeat.php')->assertUnauthorized();
+        $this->postJson('/v1/kiosk/heartbeat')->assertUnauthorized();
     }
 
     // ── Identification ───────────────────────────────────────────────────
@@ -237,10 +237,10 @@ final class KioskPunchTest extends TestCase
             'liveness_passed' => true,
         ];
 
-        $this->asKiosk()->postJson('/app/kiosk/identify.php', $payload)
+        $this->asKiosk()->postJson('/v1/kiosk/identify', $payload)
             ->assertOk()->assertJsonPath('data.outcome', 'matched');
 
-        $this->asKiosk()->postJson('/app/kiosk/identify.php', $payload)
+        $this->asKiosk()->postJson('/v1/kiosk/identify', $payload)
             ->assertStatus(410)->assertJsonPath('error_code', 'kiosk_nonce_spent');
     }
 
@@ -306,7 +306,7 @@ final class KioskPunchTest extends TestCase
     {
         $code = KioskEmployeeCode::issueFor($this->employeeId, $this->tenantId, $this->branchId);
 
-        $this->asKiosk()->postJson('/app/kiosk/identify_by_code.php', ['code' => $code])
+        $this->asKiosk()->postJson('/v1/kiosk/identify-by-code', ['code' => $code])
             ->assertOk()
             ->assertJsonPath('data.outcome', 'matched')
             ->assertJsonPath('data.method', 'code')
@@ -329,7 +329,7 @@ final class KioskPunchTest extends TestCase
         ]);
         $code = KioskEmployeeCode::issueFor($stranger, $this->tenantId, $otherBranch);
 
-        $this->asKiosk()->postJson('/app/kiosk/identify_by_code.php', ['code' => $code])
+        $this->asKiosk()->postJson('/v1/kiosk/identify-by-code', ['code' => $code])
             ->assertOk()
             ->assertJsonPath('data.outcome', 'no_match');
     }
@@ -338,7 +338,7 @@ final class KioskPunchTest extends TestCase
     {
         DB::table('branches')->where('id', $this->branchId)->update(['station_code_fallback_enabled' => 0]);
 
-        $this->asKiosk()->postJson('/app/kiosk/identify_by_code.php', ['code' => '123456'])
+        $this->asKiosk()->postJson('/v1/kiosk/identify-by-code', ['code' => '123456'])
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'kiosk_code_disabled');
     }
@@ -348,10 +348,10 @@ final class KioskPunchTest extends TestCase
         // A person cannot type ten wrong six-digit codes in five minutes by
         // accident, so it is recorded as a security event rather than a mistake.
         for ($attempt = 0; $attempt < 10; $attempt++) {
-            $this->asKiosk()->postJson('/app/kiosk/identify_by_code.php', ['code' => '000000'])->assertOk();
+            $this->asKiosk()->postJson('/v1/kiosk/identify-by-code', ['code' => '000000'])->assertOk();
         }
 
-        $this->asKiosk()->postJson('/app/kiosk/identify_by_code.php', ['code' => '000000'])
+        $this->asKiosk()->postJson('/v1/kiosk/identify-by-code', ['code' => '000000'])
             ->assertStatus(429)
             ->assertJsonPath('error_code', 'kiosk_code_throttled');
 
@@ -393,7 +393,7 @@ final class KioskPunchTest extends TestCase
     {
         $issued = $this->ticket();
 
-        $this->asKiosk()->postJson('/app/kiosk/punch.php', [
+        $this->asKiosk()->postJson('/v1/kiosk/punch', [
             'punch_ticket' => $issued['ticket'],
             'idempotency_key' => 'key-1',
             'direction' => 'check_in',
@@ -413,12 +413,12 @@ final class KioskPunchTest extends TestCase
     {
         $issued = $this->ticket();
 
-        $this->asKiosk()->postJson('/app/kiosk/punch.php', [
+        $this->asKiosk()->postJson('/v1/kiosk/punch', [
             'punch_ticket' => $issued['ticket'],
             'idempotency_key' => 'key-1',
         ])->assertOk();
 
-        $this->asKiosk()->postJson('/app/kiosk/punch.php', [
+        $this->asKiosk()->postJson('/v1/kiosk/punch', [
             'punch_ticket' => $issued['ticket'],
             'idempotency_key' => 'key-2',
         ])->assertStatus(410)->assertJsonPath('error_code', 'kiosk_ticket_spent');
@@ -430,12 +430,12 @@ final class KioskPunchTest extends TestCase
         // than any duplicate, so the key is checked before the ticket.
         $issued = $this->ticket();
 
-        $first = $this->asKiosk()->postJson('/app/kiosk/punch.php', [
+        $first = $this->asKiosk()->postJson('/v1/kiosk/punch', [
             'punch_ticket' => $issued['ticket'],
             'idempotency_key' => 'key-retry',
         ])->assertOk();
 
-        $this->asKiosk()->postJson('/app/kiosk/punch.php', [
+        $this->asKiosk()->postJson('/v1/kiosk/punch', [
             'punch_ticket' => $issued['ticket'],
             'idempotency_key' => 'key-retry',
         ])
@@ -449,7 +449,7 @@ final class KioskPunchTest extends TestCase
         // A null is honest; a face claim would be evidence that does not exist.
         $issued = $this->ticket();
 
-        $this->asKiosk()->postJson('/app/kiosk/punch.php', [
+        $this->asKiosk()->postJson('/v1/kiosk/punch', [
             'punch_ticket' => $issued['ticket'],
             'idempotency_key' => 'key-3',
             'recognition_log_id' => 999999,
@@ -468,10 +468,10 @@ final class KioskPunchTest extends TestCase
         $code = KioskEmployeeCode::issueFor($this->employeeId, $this->tenantId, $this->branchId);
 
         $response = $this->asKiosk()
-            ->postJson('/app/kiosk/identify_by_code.php', ['code' => $code])
+            ->postJson('/v1/kiosk/identify-by-code', ['code' => $code])
             ->assertOk();
 
-        $this->asKiosk()->postJson('/app/kiosk/punch.php', [
+        $this->asKiosk()->postJson('/v1/kiosk/punch', [
             'punch_ticket' => Value::string($response->json('data.punch_ticket')),
             'idempotency_key' => 'key-4',
             'recognition_log_id' => Value::int($response->json('data.recognition_log_id')),
@@ -495,7 +495,7 @@ final class KioskPunchTest extends TestCase
         ]);
         DB::table('employees')->where('id', $this->employeeId)->update(['branch_id' => $otherBranch]);
 
-        $this->asKiosk()->postJson('/app/kiosk/punch.php', [
+        $this->asKiosk()->postJson('/v1/kiosk/punch', [
             'punch_ticket' => $issued['ticket'],
             'idempotency_key' => 'key-5',
         ])->assertForbidden()->assertJsonPath('error_code', 'kiosk_out_of_branch');
@@ -506,7 +506,7 @@ final class KioskPunchTest extends TestCase
         // So a disputed row can be traced back to the scores behind it.
         $issued = $this->ticket();
 
-        $response = $this->asKiosk()->postJson('/app/kiosk/punch.php', [
+        $response = $this->asKiosk()->postJson('/v1/kiosk/punch', [
             'punch_ticket' => $issued['ticket'],
             'idempotency_key' => 'key-6',
             'recognition_log_id' => $issued['log_id'],
@@ -522,7 +522,7 @@ final class KioskPunchTest extends TestCase
     {
         $issued = $this->ticket();
 
-        $this->asKiosk()->postJson('/app/kiosk/punch.php', [
+        $this->asKiosk()->postJson('/v1/kiosk/punch', [
             'punch_ticket' => $issued['ticket'],
             'idempotency_key' => 'key-7',
         ])->assertOk();
@@ -539,12 +539,12 @@ final class KioskPunchTest extends TestCase
     {
         $code = Value::string(
             $this->withHeader('X-Firebase-Token', $this->adminToken)
-                ->postJson('/app/kiosk/create_access_code.php', ['station_id' => $this->stationId])
+                ->postJson('/v1/kiosk/access-code', ['station_id' => $this->stationId])
                 ->assertOk()->json('data.code')
         );
 
         return Value::string(
-            $this->asKiosk()->postJson('/app/kiosk/open_admin.php', ['code' => $code])
+            $this->asKiosk()->postJson('/v1/kiosk/open-admin', ['code' => $code])
                 ->assertOk()->json('data.admin_session')
         );
     }
@@ -560,7 +560,7 @@ final class KioskPunchTest extends TestCase
         ]);
 
         $this->asKiosk()
-            ->postJson('/app/kiosk/admin/roster.php', ['admin_session' => $this->adminSession()])
+            ->postJson('/v1/kiosk/admin/roster', ['admin_session' => $this->adminSession()])
             ->assertOk()
             ->assertJsonPath('data.employees.0.id', $unenrolled)
             ->assertJsonPath('data.employees.0.face_enrolled', false);
@@ -576,7 +576,7 @@ final class KioskPunchTest extends TestCase
             'branch_id' => $this->branchId,
         ]);
 
-        $this->asKiosk()->postJson('/app/kiosk/admin/enroll.php', [
+        $this->asKiosk()->postJson('/v1/kiosk/admin/enroll', [
             'admin_session' => $this->adminSession(),
             'employee_id' => $newcomer,
             'embedding' => self::vector(0.9),
@@ -596,7 +596,7 @@ final class KioskPunchTest extends TestCase
     {
         // A blurry enrollment does not fail loudly — it quietly stops matching
         // its owner and starts resembling other people.
-        $this->asKiosk()->postJson('/app/kiosk/admin/enroll.php', [
+        $this->asKiosk()->postJson('/v1/kiosk/admin/enroll', [
             'admin_session' => $this->adminSession(),
             'employee_id' => $this->employeeId,
             'embedding' => self::vector(0.5),
@@ -616,7 +616,7 @@ final class KioskPunchTest extends TestCase
     {
         // Without this, a second person enrolled onto an existing employee is a
         // silent overwrite, and afterwards nothing distinguishes it.
-        $this->asKiosk()->postJson('/app/kiosk/admin/enroll.php', [
+        $this->asKiosk()->postJson('/v1/kiosk/admin/enroll', [
             'admin_session' => $this->adminSession(),
             'employee_id' => $this->employeeId,
             'embedding' => self::vector(0.9),
@@ -639,7 +639,7 @@ final class KioskPunchTest extends TestCase
             'branch_id' => $otherBranch,
         ]);
 
-        $this->asKiosk()->postJson('/app/kiosk/admin/enroll.php', [
+        $this->asKiosk()->postJson('/v1/kiosk/admin/enroll', [
             'admin_session' => $this->adminSession(),
             'employee_id' => $stranger,
             'embedding' => self::vector(0.9),
@@ -654,12 +654,12 @@ final class KioskPunchTest extends TestCase
         // thirty people without being thrown out mid-enrollment.
         $session = $this->adminSession();
 
-        $this->asKiosk()->postJson('/app/kiosk/admin/roster.php', ['admin_session' => $session])->assertOk();
+        $this->asKiosk()->postJson('/v1/kiosk/admin/roster', ['admin_session' => $session])->assertOk();
 
         DB::table('attendance_stations')->where('id', $this->stationId)
             ->update(['admin_session_expires_at' => DB::raw('DATE_ADD(NOW(), INTERVAL 5 SECOND)')]);
 
-        $this->asKiosk()->postJson('/app/kiosk/admin/roster.php', ['admin_session' => $session])->assertOk();
+        $this->asKiosk()->postJson('/v1/kiosk/admin/roster', ['admin_session' => $session])->assertOk();
 
         // Compared in SQL: PHP runs UTC and MySQL runs the server zone, so
         // subtracting a PHP timestamp from a stored one is hours out.

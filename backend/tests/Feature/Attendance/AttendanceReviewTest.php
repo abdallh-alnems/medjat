@@ -78,7 +78,7 @@ final class AttendanceReviewTest extends TestCase
         DB::table('attendance')->where('date', $today)->where('tenant_id', $this->tenantId)->delete();
 
         $response = $this->withHeader('X-Firebase-Token', $token)
-            ->getJson('/app/attendance/get_branch_attendance.php?date='.$today)
+            ->getJson('/v1/attendance/branch?date='.$today)
             ->assertOk();
 
         $records = $response->json('data.records');
@@ -106,7 +106,7 @@ final class AttendanceReviewTest extends TestCase
         ]);
 
         $body = (string) $this->withHeader('X-Firebase-Token', $token)
-            ->getJson('/app/attendance/get_branch_attendance.php?date='.$today)
+            ->getJson('/v1/attendance/branch?date='.$today)
             ->assertOk()
             ->assertJsonFragment(['has_check_in_photo' => true])
             ->getContent();
@@ -125,7 +125,7 @@ final class AttendanceReviewTest extends TestCase
         Employee::query()->whereKey($this->employee->id)->update(['weekly_off_days' => '']);
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->getJson('/app/attendance/get_branch_attendance.php?date='.$past)
+            ->getJson('/v1/attendance/branch?date='.$past)
             ->assertOk();
 
         $this->assertDatabaseHas('attendance', [
@@ -200,7 +200,7 @@ final class AttendanceReviewTest extends TestCase
         ]);
 
         $response = $this->withHeader('X-Firebase-Token', $token)
-            ->get('/app/attendance/punch_photo.php?attendance_id='.$id.'&which=check_in')
+            ->get('/v1/attendance/photo?attendance_id='.$id.'&which=check_in')
             ->assertOk()
             ->assertHeader('X-Content-Type-Options', 'nosniff');
 
@@ -222,7 +222,7 @@ final class AttendanceReviewTest extends TestCase
         ]);
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->get('/app/attendance/punch_photo.php?attendance_id='.$id)
+            ->get('/v1/attendance/photo?attendance_id='.$id)
             ->assertNotFound();
     }
 
@@ -236,7 +236,7 @@ final class AttendanceReviewTest extends TestCase
         }
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->get('/app/attendance/punch_photo.php?attendance_id='.Value::int($other))
+            ->get('/v1/attendance/photo?attendance_id='.Value::int($other))
             ->assertNotFound();
     }
 
@@ -248,7 +248,7 @@ final class AttendanceReviewTest extends TestCase
         [, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/attendance/face_logs.php', ['view' => 'distribution', 'days' => 30])
+            ->postJson('/v1/attendance/face-logs', ['view' => 'distribution', 'days' => 30])
             ->assertOk()
             ->assertJsonStructure(['data' => ['days', 'threshold', 'buckets']])
             ->assertJsonPath('data.days', 30);
@@ -261,7 +261,7 @@ final class AttendanceReviewTest extends TestCase
         [, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/attendance/face_logs.php', ['view' => 'distribution', 'days' => 99999])
+            ->postJson('/v1/attendance/face-logs', ['view' => 'distribution', 'days' => 99999])
             ->assertOk()
             ->assertJsonPath('data.days', 365);
     }
@@ -282,7 +282,7 @@ final class AttendanceReviewTest extends TestCase
         ]);
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/attendance/face_logs.php', ['employee_id' => $this->employee->id])
+            ->postJson('/v1/attendance/face-logs', ['employee_id' => $this->employee->id])
             ->assertOk()
             ->assertJsonPath('data.logs.0.result', 'below_threshold')
             ->assertJsonPath('data.logs.0.match_score', 0.31);
@@ -298,7 +298,7 @@ final class AttendanceReviewTest extends TestCase
         DB::table('branches')->where('id', $this->branchId)->update(['rotating_qr_enabled' => 1]);
 
         $response = $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/attendance/branch_qr_code.php', ['branch_id' => $this->branchId])
+            ->postJson('/v1/attendance/branch-qr', ['branch_id' => $this->branchId])
             ->assertOk()
             ->assertJsonStructure(['data' => ['nonce', 'expires_in', 'rotate_in']]);
 
@@ -317,7 +317,7 @@ final class AttendanceReviewTest extends TestCase
         DB::table('branches')->where('id', $this->branchId)->update(['rotating_qr_enabled' => 0]);
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/attendance/branch_qr_code.php', ['branch_id' => $this->branchId])
+            ->postJson('/v1/attendance/branch-qr', ['branch_id' => $this->branchId])
             ->assertStatus(409)
             ->assertJsonPath('error_code', 'ROTATING_QR_DISABLED');
     }
@@ -328,7 +328,7 @@ final class AttendanceReviewTest extends TestCase
         DB::table('branches')->where('id', $this->branchId)->update(['rotating_qr_enabled' => 1]);
 
         $nonce = $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/app/attendance/branch_qr_code.php', ['branch_id' => $this->branchId])
+            ->postJson('/v1/attendance/branch-qr', ['branch_id' => $this->branchId])
             ->json('data.nonce');
 
         $this->assertTrue(

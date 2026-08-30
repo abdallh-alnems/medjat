@@ -43,9 +43,11 @@ Each subproject has its own `README.md` (and `medjat_app` its own `CLAUDE.md`) w
 
 ## Two backends, for now
 
-`backend/` is a complete Laravel port of `backend-legacy/`: all 287 endpoints,
-both deep-link pages, the association files and the terminal protocol, with
-every legacy `.php` URL preserved alongside a `v1/` one. It has **never been
+`backend/` is a complete Laravel rewrite: every endpoint of `backend-legacy/`,
+both deep-link pages, the association files and the terminal protocol — all of
+it under a single `/v1` surface. The legacy `.php` URLs were carried for a
+while and then removed: the app builds they existed for turned out to be
+pre-release, so there was no installed base to protect. It has **never been
 deployed**.
 
 `backend-legacy/` is what is running in production and serving every customer,

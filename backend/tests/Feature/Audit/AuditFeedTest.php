@@ -78,7 +78,7 @@ final class AuditFeedTest extends TestCase
     private function feed(string $query = '', ?string $token = null): TestResponse
     {
         return $this->withHeader('X-Firebase-Token', $token ?? $this->adminToken)
-            ->getJson('/app/audit/list.php'.$query);
+            ->getJson('/v1/audit'.$query);
     }
 
     public function test_the_feed_names_the_subject_rather_than_an_id(): void

@@ -141,7 +141,7 @@ final class LeaveRequestTest extends TestCase
 
     public function test_an_employee_can_ask_for_leave(): void
     {
-        $this->asEmployee()->postJson('/app/leaves/apply.php', [
+        $this->asEmployee()->postJson('/v1/leaves/apply', [
             'date' => $this->future,
             'start_date' => $this->future,
             'end_date' => $this->farFuture,
@@ -160,7 +160,7 @@ final class LeaveRequestTest extends TestCase
 
     public function test_the_managers_are_told_a_request_is_waiting(): void
     {
-        $this->asEmployee()->postJson('/app/leaves/apply.php', [
+        $this->asEmployee()->postJson('/v1/leaves/apply', [
             'date' => $this->future,
             'type' => 'annual',
         ])->assertOk();
@@ -175,7 +175,7 @@ final class LeaveRequestTest extends TestCase
 
     public function test_leave_cannot_start_in_the_past(): void
     {
-        $this->asEmployee()->postJson('/app/leaves/apply.php', [
+        $this->asEmployee()->postJson('/v1/leaves/apply', [
             'date' => '2020-01-01',
             'type' => 'annual',
         ])->assertStatus(422)->assertJsonPath('error_code', 'leave_past_date');
@@ -185,7 +185,7 @@ final class LeaveRequestTest extends TestCase
     {
         $this->existingLeave($this->future, $this->farFuture, 'approved');
 
-        $this->asEmployee()->postJson('/app/leaves/apply.php', [
+        $this->asEmployee()->postJson('/v1/leaves/apply', [
             'date' => $this->shift(12),
             'start_date' => $this->shift(12),
             'end_date' => $this->shift(16),
@@ -199,7 +199,7 @@ final class LeaveRequestTest extends TestCase
         // somebody has to untangle by hand.
         $this->existingLeave($this->future, $this->farFuture, 'pending');
 
-        $this->asEmployee()->postJson('/app/leaves/apply.php', [
+        $this->asEmployee()->postJson('/v1/leaves/apply', [
             'date' => $this->future,
             'type' => 'annual',
         ])->assertStatus(409)->assertJsonPath('error_code', 'leave_overlap');
@@ -209,7 +209,7 @@ final class LeaveRequestTest extends TestCase
     {
         DB::table('employees')->where('id', $this->employeeId)->update(['annual_leave_days' => 3]);
 
-        $this->asEmployee()->postJson('/app/leaves/apply.php', [
+        $this->asEmployee()->postJson('/v1/leaves/apply', [
             'date' => $this->future,
             'start_date' => $this->future,
             'end_date' => $this->shift(20),
@@ -226,7 +226,7 @@ final class LeaveRequestTest extends TestCase
     {
         DB::table('employees')->where('id', $this->employeeId)->update(['annual_leave_days' => 0]);
 
-        $this->asEmployee()->postJson('/app/leaves/apply.php', [
+        $this->asEmployee()->postJson('/v1/leaves/apply', [
             'date' => $this->future,
             'start_date' => $this->future,
             'end_date' => $this->shift(20),
@@ -239,7 +239,7 @@ final class LeaveRequestTest extends TestCase
         $this->existingLeave($this->shift(30), $this->shift(31));
         $this->existingLeave($this->shift(40), $this->shift(41));
 
-        $this->asEmployee()->postJson('/app/leaves/apply.php', [
+        $this->asEmployee()->postJson('/v1/leaves/apply', [
             'date' => $this->future,
             'type' => 'annual',
         ])->assertStatus(422)->assertJsonPath('error_code', 'leave_pending_limit');
@@ -247,7 +247,7 @@ final class LeaveRequestTest extends TestCase
 
     public function test_an_unknown_leave_type_is_refused(): void
     {
-        $this->asEmployee()->postJson('/app/leaves/apply.php', [
+        $this->asEmployee()->postJson('/v1/leaves/apply', [
             'date' => $this->future,
             'type' => 'sabbatical',
         ])->assertStatus(422)->assertJsonPath('error_code', 'invalid_type');
@@ -259,7 +259,7 @@ final class LeaveRequestTest extends TestCase
     {
         $this->existingLeave($this->future, $this->farFuture);
 
-        $this->asEmployee()->getJson('/app/leaves/my_leaves.php')
+        $this->asEmployee()->getJson('/v1/leaves/mine')
             ->assertOk()
             ->assertJsonPath('data.items.0.days', 5)
             ->assertJsonPath('data.items.0.status', 'pending');
@@ -283,7 +283,7 @@ final class LeaveRequestTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $items = $this->asEmployee()->getJson('/app/leaves/my_leaves.php')->assertOk()->json('data.items');
+        $items = $this->asEmployee()->getJson('/v1/leaves/mine')->assertOk()->json('data.items');
 
         $this->assertIsArray($items);
         $this->assertSame([], $items);
@@ -291,7 +291,7 @@ final class LeaveRequestTest extends TestCase
 
     public function test_an_employee_reads_their_own_balance(): void
     {
-        $this->asEmployee()->getJson('/app/leaves/my_balance.php?year=2026')
+        $this->asEmployee()->getJson('/v1/leaves/my-balance?year=2026')
             ->assertOk()
             ->assertJsonPath('data.entitlement_days', 21)
             ->assertJsonPath('data.year', 2026);
@@ -303,7 +303,7 @@ final class LeaveRequestTest extends TestCase
     {
         $id = $this->existingLeave($this->future, $this->farFuture);
 
-        $this->asEmployee()->postJson('/app/leaves/cancel.php', ['leave_id' => $id])->assertOk();
+        $this->asEmployee()->postJson('/v1/leaves/cancel', ['leave_id' => $id])->assertOk();
 
         $this->assertDatabaseMissing('leaves', ['id' => $id]);
     }
@@ -312,7 +312,7 @@ final class LeaveRequestTest extends TestCase
     {
         $id = $this->existingLeave($this->future, $this->farFuture, 'approved');
 
-        $this->asEmployee()->postJson('/app/leaves/cancel.php', ['leave_id' => $id])
+        $this->asEmployee()->postJson('/v1/leaves/cancel', ['leave_id' => $id])
             ->assertStatus(409)->assertJsonPath('error_code', 'leave_not_cancellable');
 
         $this->assertDatabaseHas('leaves', ['id' => $id]);
@@ -336,7 +336,7 @@ final class LeaveRequestTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $this->asEmployee()->postJson('/app/leaves/cancel.php', ['leave_id' => $id])->assertStatus(409);
+        $this->asEmployee()->postJson('/v1/leaves/cancel', ['leave_id' => $id])->assertStatus(409);
         $this->assertDatabaseHas('leaves', ['id' => $id]);
     }
 
@@ -344,7 +344,7 @@ final class LeaveRequestTest extends TestCase
     {
         $id = $this->existingLeave($this->future, $this->farFuture);
 
-        $this->asEmployee()->postJson('/app/leaves/update.php', [
+        $this->asEmployee()->postJson('/v1/leaves/update', [
             'leave_id' => $id,
             'type' => 'sick',
             'start_date' => $this->shift(11),
@@ -366,7 +366,7 @@ final class LeaveRequestTest extends TestCase
         // the overlap check takes an id to ignore.
         $id = $this->existingLeave($this->future, $this->farFuture);
 
-        $this->asEmployee()->postJson('/app/leaves/update.php', [
+        $this->asEmployee()->postJson('/v1/leaves/update', [
             'leave_id' => $id,
             'type' => 'annual',
             'start_date' => $this->future,
@@ -378,7 +378,7 @@ final class LeaveRequestTest extends TestCase
     {
         $id = $this->existingLeave($this->future, $this->farFuture);
 
-        $this->asEmployee()->postJson('/app/leaves/update.php', [
+        $this->asEmployee()->postJson('/v1/leaves/update', [
             'leave_id' => $id,
             'type' => 'annual',
             'start_date' => $this->shift(14),
@@ -390,7 +390,7 @@ final class LeaveRequestTest extends TestCase
     {
         $id = $this->existingLeave($this->future, $this->farFuture, 'approved');
 
-        $this->asEmployee()->postJson('/app/leaves/update.php', [
+        $this->asEmployee()->postJson('/v1/leaves/update', [
             'leave_id' => $id,
             'type' => 'sick',
             'start_date' => $this->future,
@@ -403,7 +403,7 @@ final class LeaveRequestTest extends TestCase
     public function test_leave_management_is_closed_without_the_permission(): void
     {
         $this->withHeader('X-Firebase-Token', $this->viewerToken)
-            ->getJson('/app/leaves/list.php')
+            ->getJson('/v1/leaves')
             ->assertForbidden();
     }
 
@@ -411,7 +411,7 @@ final class LeaveRequestTest extends TestCase
     {
         $this->existingLeave($this->future, $this->farFuture);
 
-        $this->asAdmin()->getJson('/app/leaves/list.php?branch_id='.$this->branchId)
+        $this->asAdmin()->getJson('/v1/leaves?branch_id='.$this->branchId)
             ->assertOk()
             ->assertJsonPath('data.items.0.employee_name', 'Leave applicant')
             ->assertJsonPath('data.items.0.branch_name', 'Leave branch');
@@ -421,7 +421,7 @@ final class LeaveRequestTest extends TestCase
     {
         $id = $this->existingLeave($this->future, $this->farFuture);
 
-        $this->asAdmin()->postJson('/app/leaves/approve.php', ['leave_id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/leaves/approve', ['leave_id' => $id])->assertOk();
 
         $this->assertDatabaseHas('leaves', ['id' => $id, 'status' => 'approved']);
         $this->assertDatabaseHas('notifications', [
@@ -438,7 +438,7 @@ final class LeaveRequestTest extends TestCase
         // should have done differently.
         $id = $this->existingLeave($this->future, $this->farFuture);
 
-        $this->asAdmin()->postJson('/app/leaves/reject.php', [
+        $this->asAdmin()->postJson('/v1/leaves/reject', [
             'leave_id' => $id,
             'rejection_reason' => 'Peak season',
         ])->assertOk();
@@ -456,7 +456,7 @@ final class LeaveRequestTest extends TestCase
 
     public function test_a_manager_records_leave_on_somebodys_behalf_and_can_approve_it_outright(): void
     {
-        $this->asAdmin()->postJson('/app/leaves/create.php', [
+        $this->asAdmin()->postJson('/v1/leaves', [
             'employee_id' => $this->employeeId,
             'type' => 'annual',
             'start_date' => $this->future,
@@ -477,7 +477,7 @@ final class LeaveRequestTest extends TestCase
         // recording it as one over-long annual leave would overdraw the balance.
         DB::table('employees')->where('id', $this->employeeId)->update(['annual_leave_days' => 3]);
 
-        $this->asAdmin()->postJson('/app/leaves/create.php', [
+        $this->asAdmin()->postJson('/v1/leaves', [
             'employee_id' => $this->employeeId,
             'type' => 'annual',
             'start_date' => $this->future,
@@ -507,7 +507,7 @@ final class LeaveRequestTest extends TestCase
     {
         DB::table('employees')->where('id', $this->employeeId)->update(['annual_leave_days' => 3]);
 
-        $this->asAdmin()->postJson('/app/leaves/create.php', [
+        $this->asAdmin()->postJson('/v1/leaves', [
             'employee_id' => $this->employeeId,
             'type' => 'annual',
             'start_date' => $this->future,
@@ -520,7 +520,7 @@ final class LeaveRequestTest extends TestCase
 
     public function test_a_manager_reads_somebody_elses_balance(): void
     {
-        $this->asAdmin()->getJson('/app/leaves/get_balance.php?employee_id='.$this->employeeId.'&year=2026')
+        $this->asAdmin()->getJson('/v1/leaves/balance?employee_id='.$this->employeeId.'&year=2026')
             ->assertOk()
             ->assertJsonPath('data.entitlement_days', 21);
     }
@@ -528,13 +528,13 @@ final class LeaveRequestTest extends TestCase
     public function test_reading_somebody_elses_balance_needs_the_permission(): void
     {
         $this->withHeader('X-Firebase-Token', $this->viewerToken)
-            ->getJson('/app/leaves/get_balance.php?employee_id='.$this->employeeId)
+            ->getJson('/v1/leaves/balance?employee_id='.$this->employeeId)
             ->assertForbidden();
     }
 
     public function test_a_recurring_weekly_day_off_can_be_set_for_a_branch(): void
     {
-        $this->asAdmin()->postJson('/app/leaves/create_recurring.php', [
+        $this->asAdmin()->postJson('/v1/leaves/recurring', [
             'day_of_week' => 'friday',
             'branch_id' => $this->branchId,
         ])->assertOk();
@@ -549,7 +549,7 @@ final class LeaveRequestTest extends TestCase
 
     public function test_an_invalid_day_of_week_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/leaves/create_recurring.php', ['day_of_week' => 'caturday'])
+        $this->asAdmin()->postJson('/v1/leaves/recurring', ['day_of_week' => 'caturday'])
             ->assertStatus(422)->assertJsonPath('error_code', 'invalid_day_of_week');
     }
 }

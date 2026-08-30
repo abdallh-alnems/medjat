@@ -21,7 +21,7 @@ final class WordExportTest extends TestCase
 {
     use DatabaseTransactions;
 
-    private const ENDPOINT = '/app/reports/export_word.php';
+    private const ENDPOINT = '/v1/reports/export.docx';
 
     private int $tenantId;
 

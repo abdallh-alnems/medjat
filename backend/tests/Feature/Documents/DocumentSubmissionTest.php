@@ -84,7 +84,7 @@ final class DocumentSubmissionTest extends TestCase
     public function test_an_employee_can_submit_a_required_document(): void
     {
         $this->withHeader('X-Employee-Token', $this->employeeToken)
-            ->post('/app/employees/submit_document.php', [
+            ->post('/v1/employees/documents/submit', [
                 'document_type_id' => $this->requiredId,
                 'file' => UploadedFile::fake()->create('passport.pdf', 100, 'application/pdf'),
             ])
@@ -105,7 +105,7 @@ final class DocumentSubmissionTest extends TestCase
         // A filename chosen by the uploader is a path; the original is kept as
         // a label for the interface.
         $this->withHeader('X-Employee-Token', $this->employeeToken)
-            ->post('/app/employees/submit_document.php', [
+            ->post('/v1/employees/documents/submit', [
                 'document_type_id' => $this->requiredId,
                 'file' => UploadedFile::fake()->create('../../etc/passwd.pdf', 10, 'application/pdf'),
             ])->assertOk();
@@ -139,7 +139,7 @@ final class DocumentSubmissionTest extends TestCase
         ]);
 
         $this->withHeader('X-Employee-Token', $this->employeeToken)
-            ->post('/app/employees/submit_document.php', [
+            ->post('/v1/employees/documents/submit', [
                 'document_type_id' => $scoped,
                 'file' => UploadedFile::fake()->create('x.pdf', 10, 'application/pdf'),
             ])->assertForbidden()->assertJsonPath('error_code', 'document_not_required');
@@ -148,7 +148,7 @@ final class DocumentSubmissionTest extends TestCase
     public function test_a_disallowed_file_type_is_refused(): void
     {
         $this->withHeader('X-Employee-Token', $this->employeeToken)
-            ->post('/app/employees/submit_document.php', [
+            ->post('/v1/employees/documents/submit', [
                 'document_type_id' => $this->requiredId,
                 'file' => UploadedFile::fake()->create('payload.php', 10, 'application/x-php'),
             ])->assertStatus(400)->assertJsonPath('error_code', 'file_type_not_allowed');
@@ -157,7 +157,7 @@ final class DocumentSubmissionTest extends TestCase
     public function test_an_oversized_file_is_refused(): void
     {
         $this->withHeader('X-Employee-Token', $this->employeeToken)
-            ->post('/app/employees/submit_document.php', [
+            ->post('/v1/employees/documents/submit', [
                 'document_type_id' => $this->requiredId,
                 'file' => UploadedFile::fake()->create('huge.pdf', 6000, 'application/pdf'),
             ])->assertStatus(400)->assertJsonPath('error_code', 'file_size_exceeds_limit');
@@ -166,7 +166,7 @@ final class DocumentSubmissionTest extends TestCase
     public function test_no_file_is_refused(): void
     {
         $this->withHeader('X-Employee-Token', $this->employeeToken)
-            ->post('/app/employees/submit_document.php', ['document_type_id' => $this->requiredId])
+            ->post('/v1/employees/documents/submit', ['document_type_id' => $this->requiredId])
             ->assertStatus(400)
             ->assertJsonPath('error_code', 'no_file');
     }
@@ -174,7 +174,7 @@ final class DocumentSubmissionTest extends TestCase
     public function test_the_managers_are_told_a_document_is_waiting(): void
     {
         $this->withHeader('X-Employee-Token', $this->employeeToken)
-            ->post('/app/employees/submit_document.php', [
+            ->post('/v1/employees/documents/submit', [
                 'document_type_id' => $this->requiredId,
                 'file' => UploadedFile::fake()->create('passport.pdf', 10, 'application/pdf'),
             ])->assertOk();
@@ -193,7 +193,7 @@ final class DocumentSubmissionTest extends TestCase
         // The management app opens the submissions screen for one document
         // *type*, so the uploaded row id alone is not enough.
         $this->withHeader('X-Employee-Token', $this->employeeToken)
-            ->post('/app/employees/submit_document.php', [
+            ->post('/v1/employees/documents/submit', [
                 'document_type_id' => $this->requiredId,
                 'file' => UploadedFile::fake()->create('passport.pdf', 10, 'application/pdf'),
             ])->assertOk();
@@ -206,7 +206,7 @@ final class DocumentSubmissionTest extends TestCase
     public function test_an_administrator_can_file_on_somebodys_behalf(): void
     {
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->post('/app/employees/upload_document.php', [
+            ->post('/v1/employees/documents/upload', [
                 'employee_id' => $this->employee->id,
                 'document_type_id' => $this->requiredId,
                 'file' => UploadedFile::fake()->create('scan.jpg', 10, 'image/jpeg'),
@@ -230,7 +230,7 @@ final class DocumentSubmissionTest extends TestCase
         ]);
 
         $this->withHeader('X-Employee-Token', $this->employeeToken)
-            ->get('/app/employees/my_document_view.php?id='.$id)
+            ->get('/v1/employees/documents/mine?id='.$id)
             ->assertOk()
             ->assertHeader('Content-Type', 'application/pdf')
             ->assertHeader('X-Content-Type-Options', 'nosniff');
@@ -254,7 +254,7 @@ final class DocumentSubmissionTest extends TestCase
         ]);
 
         $this->withHeader('X-Employee-Token', $this->employeeToken)
-            ->get('/app/employees/my_document_view.php?id='.$id)
+            ->get('/v1/employees/documents/mine?id='.$id)
             ->assertNotFound();
     }
 
@@ -263,7 +263,7 @@ final class DocumentSubmissionTest extends TestCase
     public function test_a_custom_request_applies_to_that_person_only(): void
     {
         $response = $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->postJson('/app/employees/request_document.php', [
+            ->postJson('/v1/employees/documents/request', [
                 'employee_id' => $this->employee->id,
                 'name' => 'Driving licence',
             ])->assertOk()->assertJsonPath('data.custom', true);
@@ -282,7 +282,7 @@ final class DocumentSubmissionTest extends TestCase
         // Saying so beats silently creating a second copy of a requirement they
         // already have.
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->postJson('/app/employees/request_document.php', [
+            ->postJson('/v1/employees/documents/request', [
                 'employee_id' => $this->employee->id,
                 'required_document_id' => $this->requiredId,
             ])->assertOk()->assertJsonPath('data.already_requested', true);
@@ -302,7 +302,7 @@ final class DocumentSubmissionTest extends TestCase
         ]);
 
         $response = $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->postJson('/app/employees/request_document.php', [
+            ->postJson('/v1/employees/documents/request', [
                 'employee_id' => $this->employee->id,
                 'required_document_id' => $branchScoped,
             ])->assertOk()->assertJsonPath('data.already_requested', false);
@@ -317,7 +317,7 @@ final class DocumentSubmissionTest extends TestCase
     public function test_an_unknown_catalogue_type_is_not_found(): void
     {
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->postJson('/app/employees/request_document.php', [
+            ->postJson('/v1/employees/documents/request', [
                 'employee_id' => $this->employee->id,
                 'required_document_id' => 999999,
             ])->assertNotFound();

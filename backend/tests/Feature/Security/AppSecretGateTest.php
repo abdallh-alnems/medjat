@@ -43,7 +43,7 @@ final class AppSecretGateTest extends TestCase
     {
         // The API must not be callable with curl by anybody who reads a URL out
         // of an app bundle.
-        $this->getJson('/app/settings/company.php')
+        $this->getJson('/v1/settings/company')
             ->assertStatus(401)
             ->assertJsonPath('message', 'Unauthorized');
     }
@@ -51,7 +51,7 @@ final class AppSecretGateTest extends TestCase
     public function test_a_wrong_secret_is_refused(): void
     {
         $this->withBasicAuth(self::USER, 'not-the-key')
-            ->getJson('/app/settings/company.php')
+            ->getJson('/v1/settings/company')
             ->assertStatus(401);
     }
 
@@ -60,7 +60,7 @@ final class AppSecretGateTest extends TestCase
         // 400 for a missing token, not 401 for a missing secret: the request
         // got past this gate and was refused by the one that authenticates.
         $this->withBasicAuth(self::USER, self::KEY)
-            ->getJson('/app/settings/company.php')
+            ->getJson('/v1/settings/company')
             ->assertStatus(400);
     }
 
@@ -69,7 +69,7 @@ final class AppSecretGateTest extends TestCase
         // PHP_AUTH_* needs CGIPassAuth or a rewrite to reach PHP, and one of
         // the two is missing often enough to be worth handling.
         $this->withHeader('Authorization', 'Basic '.base64_encode(self::USER.':'.self::KEY))
-            ->getJson('/app/settings/company.php')
+            ->getJson('/v1/settings/company')
             ->assertStatus(400);
     }
 
@@ -80,19 +80,19 @@ final class AppSecretGateTest extends TestCase
         Config::set('medjat.app_secret.user', '');
         Config::set('medjat.app_secret.key', '');
 
-        $this->getJson('/app/settings/company.php')->assertStatus(400);
+        $this->getJson('/v1/settings/company')->assertStatus(400);
     }
 
     public function test_the_scheduled_jobs_present_their_own_secret_instead(): void
     {
         // They are called by curl from the crontab, which has no app bundle to
         // take a secret from.
-        $this->getJson('/app/cron/run_alerts.php?key='.self::CRON_SECRET)->assertOk();
+        $this->getJson('/v1/cron/run-alerts?key='.self::CRON_SECRET)->assertOk();
     }
 
     public function test_a_cron_url_without_either_secret_is_still_refused(): void
     {
-        $this->getJson('/app/cron/run_alerts.php')->assertStatus(401);
+        $this->getJson('/v1/cron/run-alerts')->assertStatus(401);
     }
 
     public function test_a_terminal_is_exempt_because_the_firmware_cannot_send_one(): void
@@ -100,7 +100,7 @@ final class AppSecretGateTest extends TestCase
         $serial = 'ZKGATE'.bin2hex(random_bytes(3));
 
         // Its serial number is the whole authorisation model.
-        $this->call('GET', '/device/iclock.php?SN='.$serial.'&action=cdata')
+        $this->call('GET', '/iclock/cdata?SN='.$serial)
             ->assertOk()
             ->assertHeader('Content-Type', 'text/plain; charset=utf-8');
 
@@ -128,14 +128,14 @@ final class AppSecretGateTest extends TestCase
 
         $this->assertGreaterThan(0, $id);
 
-        $this->getJson('/admin/tenants/list.php')->assertStatus(401);
+        $this->getJson('/v1/admin/tenants')->assertStatus(401);
     }
 
     public function test_the_secret_is_compared_in_full(): void
     {
         // A prefix must not pass.
         $this->withBasicAuth(self::USER, Value::string(substr(self::KEY, 0, 5)))
-            ->getJson('/app/settings/company.php')
+            ->getJson('/v1/settings/company')
             ->assertStatus(401);
     }
 }

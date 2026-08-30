@@ -47,7 +47,7 @@ final class EmployeeAuthenticationTest extends TestCase
         $plain = $this->makeToken();
 
         $response = $this->withHeader('X-Employee-Token', $plain)
-            ->postJson('/app/auth/employee_logout.php');
+            ->postJson('/v1/auth/employee/logout');
 
         $response->assertOk()->assertJson(['status' => 'success', 'data' => ['success' => true]]);
 
@@ -61,11 +61,11 @@ final class EmployeeAuthenticationTest extends TestCase
     {
         $plain = $this->makeToken();
 
-        $this->withHeader('X-Employee-Token', $plain)->postJson('/app/auth/employee_logout.php');
+        $this->withHeader('X-Employee-Token', $plain)->postJson('/v1/auth/employee/logout');
         $first = DB::table('employee_auth_tokens')
             ->where('token_hash', EmployeeAuthToken::hash($plain))->value('revoked_at');
 
-        $this->withHeader('X-Employee-Token', $plain)->postJson('/app/auth/employee_logout.php')->assertOk();
+        $this->withHeader('X-Employee-Token', $plain)->postJson('/v1/auth/employee/logout')->assertOk();
         $second = DB::table('employee_auth_tokens')
             ->where('token_hash', EmployeeAuthToken::hash($plain))->value('revoked_at');
 
@@ -76,7 +76,7 @@ final class EmployeeAuthenticationTest extends TestCase
     {
         // An app holding an already-dead session still has to be able to sign
         // out, or it keeps that session on the device forever.
-        $this->postJson('/app/auth/employee_logout.php')->assertOk();
+        $this->postJson('/v1/auth/employee/logout')->assertOk();
     }
 
     public function test_the_legacy_and_v1_routes_are_the_same_endpoint(): void
@@ -111,7 +111,7 @@ final class EmployeeAuthenticationTest extends TestCase
     {
         // The apps and the RTL web UI display these strings directly; Laravel
         // would emit \uXXXX without the explicit JSON flags.
-        $response = $this->postJson('/app/auth/employee_logout.php');
+        $response = $this->postJson('/v1/auth/employee/logout');
 
         $this->assertStringNotContainsString('\u', $response->getContent() ?: '');
     }

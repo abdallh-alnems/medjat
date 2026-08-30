@@ -255,7 +255,7 @@ final class LeaveRolloverTest extends TestCase
         $this->policy(['carryover_max_days' => 4]);
 
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->postJson('/app/leaves/rollover.php', ['from_year' => self::FROM_YEAR])
+            ->postJson('/v1/leaves/rollover', ['from_year' => self::FROM_YEAR])
             ->assertOk()
             ->assertJsonPath('data.to_year', self::FROM_YEAR + 1)
             ->assertJsonPath('data.total_carried', 4);
@@ -269,7 +269,7 @@ final class LeaveRolloverTest extends TestCase
     public function test_a_nonsense_year_is_refused(): void
     {
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->postJson('/app/leaves/rollover.php', ['from_year' => 99])
+            ->postJson('/v1/leaves/rollover', ['from_year' => 99])
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'from_year_valid_year');
     }
@@ -282,7 +282,7 @@ final class LeaveRolloverTest extends TestCase
         ]);
 
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->postJson('/app/leaves/carryover_policy_save.php', [
+            ->postJson('/v1/leaves/carryover-policies', [
                 'scope_type' => 'branch',
                 'scope_id' => $branchId,
                 'carryover_enabled' => true,
@@ -291,7 +291,7 @@ final class LeaveRolloverTest extends TestCase
             ])->assertOk();
 
         $listed = $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/leaves/carryover_policies_list.php')
+            ->getJson('/v1/leaves/carryover-policies')
             ->assertOk()
             ->json('data.policies');
 
@@ -307,7 +307,7 @@ final class LeaveRolloverTest extends TestCase
         $this->assertSame(7, Value::int($saved['carryover_max_days']));
 
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->postJson('/app/leaves/carryover_policy_delete.php', ['id' => Value::int($saved['id'])])
+            ->postJson('/v1/leaves/carryover-policies/delete', ['id' => Value::int($saved['id'])])
             ->assertOk();
 
         $this->assertDatabaseMissing('leave_carryover_policies', ['id' => Value::int($saved['id'])]);
@@ -318,7 +318,7 @@ final class LeaveRolloverTest extends TestCase
         // It belongs to the leave settings screen; two ways to write one row is
         // how the two screens end up disagreeing.
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->postJson('/app/leaves/carryover_policy_save.php', [
+            ->postJson('/v1/leaves/carryover-policies', [
                 'scope_type' => 'tenant',
                 'scope_id' => 1,
                 'carryover_enabled' => true,
@@ -330,7 +330,7 @@ final class LeaveRolloverTest extends TestCase
     public function test_an_out_of_range_cap_is_refused(): void
     {
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->postJson('/app/leaves/carryover_policy_save.php', [
+            ->postJson('/v1/leaves/carryover-policies', [
                 'scope_type' => 'employee',
                 'scope_id' => $this->employeeId,
                 'carryover_enabled' => true,
@@ -353,7 +353,7 @@ final class LeaveRolloverTest extends TestCase
         ]);
 
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/leaves/encashments_list.php?status=pending')
+            ->getJson('/v1/leaves/encashments?status=pending')
             ->assertOk()
             ->assertJsonPath('data.encashments.0.employee_name', 'Rollover fixture')
             ->assertJsonPath('data.encashments.0.days', 5);

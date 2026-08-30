@@ -116,7 +116,7 @@ final class RosterTest extends TestCase
      */
     private function assign(array $overrides = [], ?string $token = null): TestResponse
     {
-        return $this->send('/app/schedule/assign.php', $overrides + [
+        return $this->send('/v1/schedule/assign', $overrides + [
             'employee_ids' => [$this->employeeId],
             'dates' => [self::WEEK, '2026-05-03'],
             'shift_id' => $this->shiftId,
@@ -145,7 +145,7 @@ final class RosterTest extends TestCase
     public function test_editing_a_published_cell_knocks_it_back_to_draft(): void
     {
         $this->assign()->assertOk();
-        $this->send('/app/schedule/publish.php', ['week_start' => self::WEEK])->assertOk();
+        $this->send('/v1/schedule/publish', ['week_start' => self::WEEK])->assertOk();
 
         $this->assign(['shift_id' => null])->assertOk();
 
@@ -156,7 +156,7 @@ final class RosterTest extends TestCase
 
     public function test_omitting_the_shift_records_a_rest_day(): void
     {
-        $this->send('/app/schedule/assign.php', [
+        $this->send('/v1/schedule/assign', [
             'employee_ids' => [$this->employeeId],
             'dates' => [self::WEEK],
             'shift_id' => null,
@@ -203,7 +203,7 @@ final class RosterTest extends TestCase
     {
         $this->assign()->assertOk();
 
-        $this->send('/app/schedule/clear.php', [
+        $this->send('/v1/schedule/clear', [
             'employee_id' => $this->employeeId, 'work_date' => self::WEEK,
         ])->assertOk();
 
@@ -220,7 +220,7 @@ final class RosterTest extends TestCase
     {
         $this->assign()->assertOk();
 
-        $this->send('/app/schedule/publish.php', ['week_start' => self::WEEK])
+        $this->send('/v1/schedule/publish', ['week_start' => self::WEEK])
             ->assertOk()
             ->assertJsonPath('data.published', 2);
 
@@ -232,7 +232,7 @@ final class RosterTest extends TestCase
     {
         $this->assign(['dates' => [self::WEEK, self::NEXT_WEEK]])->assertOk();
 
-        $this->send('/app/schedule/publish.php', ['week_start' => self::WEEK])
+        $this->send('/v1/schedule/publish', ['week_start' => self::WEEK])
             ->assertOk()
             ->assertJsonPath('data.published', 1);
 
@@ -243,13 +243,13 @@ final class RosterTest extends TestCase
 
     public function test_publishing_one_branch_leaves_another_in_draft(): void
     {
-        $this->send('/app/schedule/assign.php', [
+        $this->send('/v1/schedule/assign', [
             'employee_ids' => [$this->employeeId, $this->elsewhere],
             'dates' => [self::WEEK],
             'shift_id' => $this->shiftId,
         ])->assertOk();
 
-        $this->send('/app/schedule/publish.php', [
+        $this->send('/v1/schedule/publish', [
             'week_start' => self::WEEK, 'branch_id' => $this->branchId,
         ])->assertOk()->assertJsonPath('data.published', 1);
 
@@ -262,7 +262,7 @@ final class RosterTest extends TestCase
     {
         $this->assign(['dates' => ['2026-05-04']])->assertOk();
 
-        $this->send('/app/schedule/copy_week.php', [
+        $this->send('/v1/schedule/copy-week', [
             'from_week_start' => self::WEEK,
             'to_week_start' => self::NEXT_WEEK,
         ])->assertOk()->assertJsonPath('data.copied', 1);
@@ -278,9 +278,9 @@ final class RosterTest extends TestCase
     public function test_a_copied_week_arrives_as_a_draft(): void
     {
         $this->assign(['dates' => [self::WEEK]])->assertOk();
-        $this->send('/app/schedule/publish.php', ['week_start' => self::WEEK])->assertOk();
+        $this->send('/v1/schedule/publish', ['week_start' => self::WEEK])->assertOk();
 
-        $this->send('/app/schedule/copy_week.php', [
+        $this->send('/v1/schedule/copy-week', [
             'from_week_start' => self::WEEK, 'to_week_start' => self::NEXT_WEEK,
         ])->assertOk();
 
@@ -291,15 +291,15 @@ final class RosterTest extends TestCase
 
     public function test_copying_an_empty_week_copies_nothing(): void
     {
-        $this->send('/app/schedule/copy_week.php', [
+        $this->send('/v1/schedule/copy-week', [
             'from_week_start' => self::WEEK, 'to_week_start' => self::NEXT_WEEK,
         ])->assertOk()->assertJsonPath('data.copied', 0);
     }
 
     public function test_a_malformed_week_start_is_refused(): void
     {
-        $this->send('/app/schedule/publish.php', ['week_start' => 'next week'])->assertStatus(422);
-        $this->send('/app/schedule/copy_week.php', [
+        $this->send('/v1/schedule/publish', ['week_start' => 'next week'])->assertStatus(422);
+        $this->send('/v1/schedule/copy-week', [
             'from_week_start' => self::WEEK, 'to_week_start' => 'soon',
         ])->assertStatus(422);
     }
@@ -309,7 +309,7 @@ final class RosterTest extends TestCase
         $this->assign()->assertOk();
 
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/schedule/week.php?week_start='.self::WEEK)
+            ->getJson('/v1/schedule/week?week_start='.self::WEEK)
             ->assertOk()
             ->assertJsonPath('data.week_start', self::WEEK)
             ->assertJsonPath('data.week_end', '2026-05-08')
@@ -323,7 +323,7 @@ final class RosterTest extends TestCase
         // The client may send whichever day the user is looking at; the grid
         // has to line up regardless.
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/schedule/week.php?week_start=2026-05-06')
+            ->getJson('/v1/schedule/week?week_start=2026-05-06')
             ->assertOk()
             ->assertJsonPath('data.week_start', self::WEEK);
     }
@@ -334,7 +334,7 @@ final class RosterTest extends TestCase
         DB::table('tenants')->where('id', $this->tenantId)->update(['week_start_day' => 1]);
 
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/schedule/week.php?week_start=2026-05-06')
+            ->getJson('/v1/schedule/week?week_start=2026-05-06')
             ->assertOk()
             ->assertJsonPath('data.week_start', '2026-05-04')
             ->assertJsonPath('data.week_start_day', 1);
@@ -342,14 +342,14 @@ final class RosterTest extends TestCase
 
     public function test_the_grid_can_be_narrowed_to_one_branch(): void
     {
-        $this->send('/app/schedule/assign.php', [
+        $this->send('/v1/schedule/assign', [
             'employee_ids' => [$this->employeeId, $this->elsewhere],
             'dates' => [self::WEEK],
             'shift_id' => $this->shiftId,
         ])->assertOk();
 
         $response = $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/schedule/week.php?week_start='.self::WEEK.'&branch_id='.$this->branchId)
+            ->getJson('/v1/schedule/week?week_start='.self::WEEK.'&branch_id='.$this->branchId)
             ->assertOk()
             ->assertJsonCount(1, 'data.cells');
 
@@ -361,7 +361,7 @@ final class RosterTest extends TestCase
         $leaver = $this->employee($this->branchId, 'terminated');
 
         $response = $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/schedule/week.php?week_start='.self::WEEK.'&branch_id='.$this->branchId)
+            ->getJson('/v1/schedule/week?week_start='.self::WEEK.'&branch_id='.$this->branchId)
             ->assertOk();
 
         /** @var list<array<string, mixed>> $employees */
@@ -377,7 +377,7 @@ final class RosterTest extends TestCase
         $token = $this->admin('viewer');
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->getJson('/app/schedule/week.php?week_start='.self::WEEK)
+            ->getJson('/v1/schedule/week?week_start='.self::WEEK)
             ->assertStatus(403);
 
         $this->assign([], $token)->assertStatus(403);

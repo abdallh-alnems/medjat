@@ -68,7 +68,7 @@ final class MyNotificationsTest extends TestCase
     private function bell(string $query = ''): TestResponse
     {
         return $this->withHeader('X-Employee-Token', $this->token)
-            ->getJson('/app/notifications/list.php'.$query);
+            ->getJson('/v1/notifications'.$query);
     }
 
     public function test_an_employee_with_no_linked_admin_account_still_sees_their_notifications(): void
@@ -161,7 +161,7 @@ final class MyNotificationsTest extends TestCase
         $id = Value::int(DB::table('notifications')->where('employee_id', $this->employeeId)->value('id'));
 
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/notifications/read.php', ['id' => $id])
+            ->postJson('/v1/notifications/read', ['id' => $id])
             ->assertOk();
 
         $this->bell()->assertOk()->assertJsonPath('data.unread_count', 0);
@@ -173,12 +173,12 @@ final class MyNotificationsTest extends TestCase
         $id = Value::int(DB::table('notifications')->where('employee_id', $this->employeeId)->value('id'));
 
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/notifications/read.php', ['id' => $id])->assertOk();
+            ->postJson('/v1/notifications/read', ['id' => $id])->assertOk();
 
         $first = DB::table('notifications')->where('id', $id)->value('read_at');
 
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/notifications/read.php', ['id' => $id])->assertOk();
+            ->postJson('/v1/notifications/read', ['id' => $id])->assertOk();
 
         // When it was seen, not when it was last clicked.
         $this->assertSame($first, DB::table('notifications')->where('id', $id)->value('read_at'));
@@ -201,7 +201,7 @@ final class MyNotificationsTest extends TestCase
         $id = Value::int(DB::table('notifications')->where('employee_id', $other)->value('id'));
 
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/notifications/read.php', ['id' => $id])
+            ->postJson('/v1/notifications/read', ['id' => $id])
             ->assertStatus(404);
 
         $this->assertNull(DB::table('notifications')->where('id', $id)->value('read_at'));
@@ -210,12 +210,12 @@ final class MyNotificationsTest extends TestCase
     public function test_a_missing_id_is_refused(): void
     {
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/notifications/read.php', [])
+            ->postJson('/v1/notifications/read', [])
             ->assertStatus(400);
     }
 
     public function test_an_unauthenticated_request_is_refused(): void
     {
-        $this->getJson('/app/notifications/list.php')->assertStatus(401);
+        $this->getJson('/v1/notifications')->assertStatus(401);
     }
 }

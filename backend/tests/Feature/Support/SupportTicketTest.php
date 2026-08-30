@@ -84,7 +84,7 @@ final class SupportTicketTest extends TestCase
 
     private function opened(string $subject = 'Cannot print payslips'): int
     {
-        $response = $this->asAdmin()->postJson('/app/support/create.php', [
+        $response = $this->asAdmin()->postJson('/v1/support/tickets', [
             'subject' => $subject,
             'body' => 'The download button does nothing.',
             'category' => 'technical',
@@ -122,16 +122,16 @@ final class SupportTicketTest extends TestCase
 
     public function test_a_ticket_needs_a_subject_and_a_body(): void
     {
-        $this->asAdmin()->postJson('/app/support/create.php', ['body' => 'No subject'])
+        $this->asAdmin()->postJson('/v1/support/tickets', ['body' => 'No subject'])
             ->assertStatus(422)->assertJsonPath('error_code', 'subject_required');
 
-        $this->asAdmin()->postJson('/app/support/create.php', ['subject' => 'No body'])
+        $this->asAdmin()->postJson('/v1/support/tickets', ['subject' => 'No body'])
             ->assertStatus(422)->assertJsonPath('error_code', 'body_required');
     }
 
     public function test_an_unknown_category_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/support/create.php', [
+        $this->asAdmin()->postJson('/v1/support/tickets', [
             'subject' => 'Hello',
             'body' => 'Hi',
             'category' => 'philosophy',
@@ -147,7 +147,7 @@ final class SupportTicketTest extends TestCase
         $id = $this->opened();
         DB::table('support_tickets')->where('id', $id)->update(['status' => 'pending_user']);
 
-        $this->asAdmin()->postJson('/app/support/reply.php', ['ticket_id' => $id, 'body' => 'Still broken'])
+        $this->asAdmin()->postJson('/v1/support/reply', ['ticket_id' => $id, 'body' => 'Still broken'])
             ->assertOk();
 
         $this->assertDatabaseHas('support_tickets', [
@@ -162,7 +162,7 @@ final class SupportTicketTest extends TestCase
     {
         $id = $this->opened();
 
-        $this->asAdmin()->postJson('/app/support/reply.php', ['ticket_id' => $id, 'body' => '   '])
+        $this->asAdmin()->postJson('/v1/support/reply', ['ticket_id' => $id, 'body' => '   '])
             ->assertStatus(422)->assertJsonPath('error_code', 'body_required');
     }
 
@@ -170,7 +170,7 @@ final class SupportTicketTest extends TestCase
     {
         $id = $this->opened();
 
-        $this->asAdmin()->postJson('/app/support/reply.php', [
+        $this->asAdmin()->postJson('/v1/support/reply', [
             'ticket_id' => $id,
             'attachment' => $this->png(),
             'attachment_name' => 'broken.png',
@@ -191,7 +191,7 @@ final class SupportTicketTest extends TestCase
     {
         $id = $this->opened();
 
-        $this->asAdmin()->postJson('/app/support/reply.php', [
+        $this->asAdmin()->postJson('/v1/support/reply', [
             'ticket_id' => $id,
             'attachment' => 'data:text/plain;base64,'.base64_encode('not an image'),
         ])->assertStatus(422)->assertJsonPath('error_code', 'attachment_rejected');
@@ -202,7 +202,7 @@ final class SupportTicketTest extends TestCase
         // A filename supplied by a client must never become a path.
         $id = $this->opened();
 
-        $this->asAdmin()->postJson('/app/support/reply.php', [
+        $this->asAdmin()->postJson('/v1/support/reply', [
             'ticket_id' => $id,
             'attachment' => $this->png(),
             'attachment_name' => '../../etc/passwd',
@@ -225,9 +225,9 @@ final class SupportTicketTest extends TestCase
         // The conversation is plainly not over, and making somebody open a
         // second ticket to say one more thing loses the history.
         $id = $this->opened();
-        $this->asAdmin()->postJson('/app/support/close.php', ['ticket_id' => $id, 'action' => 'close'])->assertOk();
+        $this->asAdmin()->postJson('/v1/support/close', ['ticket_id' => $id, 'action' => 'close'])->assertOk();
 
-        $this->asAdmin()->postJson('/app/support/reply.php', ['ticket_id' => $id, 'body' => 'It happened again'])
+        $this->asAdmin()->postJson('/v1/support/reply', ['ticket_id' => $id, 'body' => 'It happened again'])
             ->assertOk();
 
         $this->assertDatabaseHas('support_tickets', ['id' => $id, 'status' => 'pending_support']);
@@ -240,13 +240,13 @@ final class SupportTicketTest extends TestCase
         $lastId = Value::int(DB::table('support_messages')->where('ticket_id', $id)->value('id'));
         DB::table('support_tickets')->where('id', $id)->update(['unread_for_user' => 1]);
 
-        $this->asAdmin()->getJson('/app/support/messages.php?ticket_id='.$id.'&after_id='.$lastId)
+        $this->asAdmin()->getJson('/v1/support/messages?ticket_id='.$id.'&after_id='.$lastId)
             ->assertOk()
             ->assertJsonPath('data.messages', []);
 
         $this->assertDatabaseHas('support_tickets', ['id' => $id, 'unread_for_user' => 1]);
 
-        $this->asAdmin()->getJson('/app/support/messages.php?ticket_id='.$id)
+        $this->asAdmin()->getJson('/v1/support/messages?ticket_id='.$id)
             ->assertOk()
             ->assertJsonPath('data.last_id', $lastId);
 
@@ -259,10 +259,10 @@ final class SupportTicketTest extends TestCase
     {
         $id = $this->opened();
 
-        $this->asAdmin()->postJson('/app/support/close.php', ['ticket_id' => $id, 'action' => 'close'])
+        $this->asAdmin()->postJson('/v1/support/close', ['ticket_id' => $id, 'action' => 'close'])
             ->assertOk()->assertJsonPath('data.status', 'closed');
 
-        $this->asAdmin()->postJson('/app/support/close.php', ['ticket_id' => $id, 'action' => 'reopen'])
+        $this->asAdmin()->postJson('/v1/support/close', ['ticket_id' => $id, 'action' => 'reopen'])
             ->assertOk()->assertJsonPath('data.status', 'pending_support');
     }
 
@@ -270,7 +270,7 @@ final class SupportTicketTest extends TestCase
     {
         $id = $this->opened();
 
-        $this->asAdmin()->postJson('/app/support/close.php', ['ticket_id' => $id, 'action' => 'burn'])
+        $this->asAdmin()->postJson('/v1/support/close', ['ticket_id' => $id, 'action' => 'burn'])
             ->assertStatus(400)->assertJsonPath('error_code', 'invalid_action_close_reopen');
     }
 
@@ -285,7 +285,7 @@ final class SupportTicketTest extends TestCase
         DB::table('support_tickets')->whereIn('id', [$open, $closed])->update(['unread_for_user' => 1]);
         DB::table('support_tickets')->where('id', $closed)->update(['status' => 'closed']);
 
-        $this->asAdmin()->getJson('/app/support/list.php')
+        $this->asAdmin()->getJson('/v1/support/tickets')
             ->assertOk()
             ->assertJsonPath('data.unread_total', 1);
     }
@@ -295,7 +295,7 @@ final class SupportTicketTest extends TestCase
         [$otherTenant, $otherAdmin] = $this->otherCompany();
         $id = SupportTickets::create($otherTenant, $otherAdmin, 'Elsewhere', 'other', 'normal', 'Body');
 
-        $this->asAdmin()->getJson('/app/support/messages.php?ticket_id='.$id)->assertNotFound();
+        $this->asAdmin()->getJson('/v1/support/messages?ticket_id='.$id)->assertNotFound();
     }
 
     public function test_an_attachment_belonging_to_another_company_is_not_served(): void
@@ -310,13 +310,13 @@ final class SupportTicketTest extends TestCase
             ->update(['attachment_url' => 'uploads/support/theirs.png', 'attachment_name' => 'theirs.png']);
         Storage::disk('uploads')->put('support/theirs.png', 'not yours');
 
-        $this->asAdmin()->getJson('/app/support/attachment.php?message_id='.$messageId)->assertNotFound();
+        $this->asAdmin()->getJson('/v1/support/attachment?message_id='.$messageId)->assertNotFound();
     }
 
     public function test_an_attachment_is_served_to_the_company_that_owns_it(): void
     {
         $id = $this->opened();
-        $this->asAdmin()->postJson('/app/support/reply.php', [
+        $this->asAdmin()->postJson('/v1/support/reply', [
             'ticket_id' => $id,
             'attachment' => $this->png(),
             'attachment_name' => 'shot.png',
@@ -326,7 +326,7 @@ final class SupportTicketTest extends TestCase
             DB::table('support_messages')->where('ticket_id', $id)->orderByDesc('id')->value('id')
         );
 
-        $this->asAdmin()->get('/app/support/attachment.php?message_id='.$messageId)
+        $this->asAdmin()->get('/v1/support/attachment?message_id='.$messageId)
             ->assertOk()
             ->assertHeader('Content-Type', 'image/png')
             ->assertHeader('X-Content-Type-Options', 'nosniff');
@@ -335,6 +335,6 @@ final class SupportTicketTest extends TestCase
     public function test_support_is_closed_without_the_permission(): void
     {
         $this->withHeader('X-Firebase-Token', $this->viewerToken)
-            ->getJson('/app/support/list.php')->assertForbidden();
+            ->getJson('/v1/support/tickets')->assertForbidden();
     }
 }

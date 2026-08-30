@@ -79,7 +79,7 @@ final class BranchTest extends TestCase
     {
         // So a poster can be printed the moment the branch exists, rather than
         // after somebody remembers to ask for one.
-        $response = $this->asAdmin()->postJson('/app/branches/create.php', [
+        $response = $this->asAdmin()->postJson('/v1/branches', [
             'name' => 'New site',
             'latitude' => 30.1,
             'longitude' => 31.3,
@@ -101,7 +101,7 @@ final class BranchTest extends TestCase
                 'base_salary' => 1000, 'branch_id' => $this->branchId],
         ]);
 
-        $branches = $this->asAdmin()->getJson('/app/branches/list.php')->assertOk()->json('data.branches');
+        $branches = $this->asAdmin()->getJson('/v1/branches')->assertOk()->json('data.branches');
         $this->assertIsArray($branches);
 
         foreach ($branches as $branch) {
@@ -116,13 +116,13 @@ final class BranchTest extends TestCase
         // Every screen with a branch picker needs it; gating it would break
         // navigation for roles that can legitimately reach those screens.
         $this->withHeader('X-Firebase-Token', $this->viewerToken)
-            ->getJson('/app/branches/list.php')->assertOk();
+            ->getJson('/v1/branches')->assertOk();
     }
 
     public function test_changing_a_branch_needs_the_settings_permission(): void
     {
         $this->withHeader('X-Firebase-Token', $this->viewerToken)
-            ->postJson('/app/branches/update.php', ['branch_id' => $this->branchId, 'name' => 'Nope'])
+            ->postJson('/v1/branches/update', ['branch_id' => $this->branchId, 'name' => 'Nope'])
             ->assertForbidden();
     }
 
@@ -130,7 +130,7 @@ final class BranchTest extends TestCase
 
     public function test_a_branch_can_override_the_pay_cycle_or_inherit_it(): void
     {
-        $this->asAdmin()->postJson('/app/branches/update.php', [
+        $this->asAdmin()->postJson('/v1/branches/update', [
             'branch_id' => $this->branchId,
             'cycle_start_day' => 26,
         ])->assertOk();
@@ -139,7 +139,7 @@ final class BranchTest extends TestCase
 
         // Null means inherit the company's, which is different from choosing
         // the first of the month.
-        $this->asAdmin()->postJson('/app/branches/update.php', [
+        $this->asAdmin()->postJson('/v1/branches/update', [
             'branch_id' => $this->branchId,
             'cycle_start_day' => null,
         ])->assertOk();
@@ -149,7 +149,7 @@ final class BranchTest extends TestCase
 
     public function test_a_cycle_day_past_the_end_of_february_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/branches/update.php', [
+        $this->asAdmin()->postJson('/v1/branches/update', [
             'branch_id' => $this->branchId,
             'cycle_start_day' => 30,
         ])->assertStatus(422)->assertJsonPath('error_code', 'cycle_start_day_between_1');
@@ -157,7 +157,7 @@ final class BranchTest extends TestCase
 
     public function test_an_absurd_geofence_radius_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/branches/update.php', [
+        $this->asAdmin()->postJson('/v1/branches/update', [
             'branch_id' => $this->branchId,
             'gps_radius_meters' => 99999,
         ])->assertStatus(422)->assertJsonPath('error_code', 'gps_radius_meters_between_5');
@@ -166,19 +166,19 @@ final class BranchTest extends TestCase
     public function test_a_qr_payload_is_kept_unless_regeneration_is_asked_for(): void
     {
         $first = Value::string(
-            $this->asAdmin()->postJson('/app/branches/generate_qr.php', ['branch_id' => $this->branchId])
+            $this->asAdmin()->postJson('/v1/branches/generate-qr', ['branch_id' => $this->branchId])
                 ->assertOk()->json('data.qr_code')
         );
 
         $again = Value::string(
-            $this->asAdmin()->postJson('/app/branches/generate_qr.php', ['branch_id' => $this->branchId])
+            $this->asAdmin()->postJson('/v1/branches/generate-qr', ['branch_id' => $this->branchId])
                 ->assertOk()->json('data.qr_code')
         );
 
         $this->assertSame($first, $again);
 
         $forced = Value::string(
-            $this->asAdmin()->postJson('/app/branches/generate_qr.php', [
+            $this->asAdmin()->postJson('/v1/branches/generate-qr', [
                 'branch_id' => $this->branchId,
                 'force' => 1,
             ])->assertOk()->json('data.qr_code')
@@ -191,7 +191,7 @@ final class BranchTest extends TestCase
 
     public function test_a_branch_can_set_its_own_methods(): void
     {
-        $this->asAdmin()->postJson('/app/branches/update_attendance_method.php', [
+        $this->asAdmin()->postJson('/v1/branches/attendance-method', [
             'branch_id' => $this->branchId,
             'attendance_methods' => ['gps_only', 'face_selfie'],
             'gps_radius_meters' => 150,
@@ -206,7 +206,7 @@ final class BranchTest extends TestCase
     {
         // It would mean nobody can record attendance at all, which is never
         // what somebody meant to say.
-        $this->asAdmin()->postJson('/app/branches/update_attendance_method.php', [
+        $this->asAdmin()->postJson('/v1/branches/attendance-method', [
             'branch_id' => $this->branchId,
             'attendance_methods' => [],
         ])->assertStatus(400)->assertJsonPath('error_code', 'attendance_methods_cannot_empty_null');
@@ -214,7 +214,7 @@ final class BranchTest extends TestCase
 
     public function test_an_unknown_method_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/branches/update_attendance_method.php', [
+        $this->asAdmin()->postJson('/v1/branches/attendance-method', [
             'branch_id' => $this->branchId,
             'attendance_methods' => ['telepathy'],
         ])->assertStatus(422)->assertJsonPath('error_code', 'invalid_attendance_method');
@@ -224,7 +224,7 @@ final class BranchTest extends TestCase
     {
         // A switch that silently does nothing is worse than one that explains
         // itself.
-        $this->asAdmin()->postJson('/app/branches/update_attendance_method.php', [
+        $this->asAdmin()->postJson('/v1/branches/attendance-method', [
             'branch_id' => $this->branchId,
             'attendance_methods' => ['gps_only'],
             'rotating_qr_enabled' => true,
@@ -233,7 +233,7 @@ final class BranchTest extends TestCase
 
     public function test_rotating_qr_is_allowed_on_a_branch_that_uses_qr(): void
     {
-        $this->asAdmin()->postJson('/app/branches/update_attendance_method.php', [
+        $this->asAdmin()->postJson('/v1/branches/attendance-method', [
             'branch_id' => $this->branchId,
             'attendance_methods' => ['qr_gps'],
             'rotating_qr_enabled' => true,
@@ -245,7 +245,7 @@ final class BranchTest extends TestCase
     public function test_a_branch_inheriting_the_company_methods_may_still_enable_rotating_qr(): void
     {
         // Null methods means inherit, and the company is on qr_gps.
-        $this->asAdmin()->postJson('/app/branches/update_attendance_method.php', [
+        $this->asAdmin()->postJson('/v1/branches/attendance-method', [
             'branch_id' => $this->branchId,
             'attendance_methods' => null,
             'rotating_qr_enabled' => true,
@@ -254,7 +254,7 @@ final class BranchTest extends TestCase
 
     public function test_a_face_threshold_outside_the_usable_band_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/branches/update_attendance_method.php', [
+        $this->asAdmin()->postJson('/v1/branches/attendance-method', [
             'branch_id' => $this->branchId,
             'face_match_threshold' => 0.99,
         ])->assertStatus(422)->assertJsonPath('error_code', 'face_match_threshold_range');
@@ -264,7 +264,7 @@ final class BranchTest extends TestCase
 
     public function test_capturing_a_network_from_inside_the_branch_approves_it(): void
     {
-        $this->asAdmin()->postJson('/app/branches/capture_network.php', [
+        $this->asAdmin()->postJson('/v1/branches/networks/capture', [
             'branch_id' => $this->branchId,
             'bssid' => 'AA:BB:CC:DD:EE:01',
             'ssid' => 'Office',
@@ -284,7 +284,7 @@ final class BranchTest extends TestCase
     {
         // If an administrator captured their home router, that home would
         // become the branch's valid location and the office would be locked out.
-        $this->asAdmin()->postJson('/app/branches/capture_network.php', [
+        $this->asAdmin()->postJson('/v1/branches/networks/capture', [
             'branch_id' => $this->branchId,
             'bssid' => 'AA:BB:CC:DD:EE:02',
             'latitude' => 31.5,
@@ -298,7 +298,7 @@ final class BranchTest extends TestCase
     {
         // The remaining access points still need discovering before enforcement
         // makes sense.
-        $this->asAdmin()->postJson('/app/branches/capture_network.php', [
+        $this->asAdmin()->postJson('/v1/branches/networks/capture', [
             'branch_id' => $this->branchId,
             'bssid' => 'AA:BB:CC:DD:EE:03',
             'latitude' => 30.0444,
@@ -310,7 +310,7 @@ final class BranchTest extends TestCase
 
     public function test_capturing_without_a_network_says_so(): void
     {
-        $this->asAdmin()->postJson('/app/branches/capture_network.php', [
+        $this->asAdmin()->postJson('/v1/branches/networks/capture', [
             'branch_id' => $this->branchId,
             'latitude' => 30.0444,
             'longitude' => 31.2357,
@@ -319,7 +319,7 @@ final class BranchTest extends TestCase
 
     public function test_a_batch_of_networks_is_approved(): void
     {
-        $this->asAdmin()->postJson('/app/branches/approve_networks.php', [
+        $this->asAdmin()->postJson('/v1/branches/networks/approve', [
             'branch_id' => $this->branchId,
             'approve' => [
                 ['kind' => 'bssid', 'value' => 'AA:BB:CC:DD:EE:04', 'label' => '2.4 GHz'],
@@ -334,7 +334,7 @@ final class BranchTest extends TestCase
 
     public function test_an_invalid_address_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/branches/approve_networks.php', [
+        $this->asAdmin()->postJson('/v1/branches/networks/approve', [
             'branch_id' => $this->branchId,
             'approve' => [['kind' => 'bssid', 'value' => 'not-a-bssid']],
         ])->assertStatus(422)->assertJsonPath('error_code', 'invalid_bssid');
@@ -342,7 +342,7 @@ final class BranchTest extends TestCase
 
     public function test_an_invalid_subnet_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/branches/approve_networks.php', [
+        $this->asAdmin()->postJson('/v1/branches/networks/approve', [
             'branch_id' => $this->branchId,
             'approve' => [['kind' => 'ip_cidr', 'value' => '10.0.0.0/64']],
         ])->assertStatus(422)->assertJsonPath('error_code', 'invalid_cidr');
@@ -350,21 +350,21 @@ final class BranchTest extends TestCase
 
     public function test_re_approving_revives_a_network_that_was_switched_off(): void
     {
-        $this->asAdmin()->postJson('/app/branches/approve_networks.php', [
+        $this->asAdmin()->postJson('/v1/branches/networks/approve', [
             'branch_id' => $this->branchId,
             'approve' => [['kind' => 'bssid', 'value' => 'AA:BB:CC:DD:EE:06']],
         ])->assertOk();
 
         $id = Value::int(DB::table('branch_networks')->where('value', 'aa:bb:cc:dd:ee:06')->value('id'));
 
-        $this->asAdmin()->postJson('/app/branches/approve_networks.php', [
+        $this->asAdmin()->postJson('/v1/branches/networks/approve', [
             'branch_id' => $this->branchId,
             'deactivate' => [$id],
         ])->assertOk()->assertJsonPath('data.deactivated', 1);
 
         $this->assertDatabaseHas('branch_networks', ['id' => $id, 'is_active' => 0]);
 
-        $this->asAdmin()->postJson('/app/branches/approve_networks.php', [
+        $this->asAdmin()->postJson('/v1/branches/networks/approve', [
             'branch_id' => $this->branchId,
             'approve' => [['kind' => 'bssid', 'value' => 'AA:BB:CC:DD:EE:06']],
         ])->assertOk();
@@ -376,7 +376,7 @@ final class BranchTest extends TestCase
     public function test_enforcement_cannot_be_switched_on_with_nothing_approved(): void
     {
         // It would lock every employee out of the branch on the next shift.
-        $this->asAdmin()->postJson('/app/branches/approve_networks.php', [
+        $this->asAdmin()->postJson('/v1/branches/networks/approve', [
             'branch_id' => $this->branchId,
             'wifi_mode' => 'enforcing',
         ])->assertStatus(422)->assertJsonPath('error_code', 'no_approved_networks');
@@ -384,7 +384,7 @@ final class BranchTest extends TestCase
 
     public function test_enforcement_is_allowed_once_something_is_approved(): void
     {
-        $this->asAdmin()->postJson('/app/branches/approve_networks.php', [
+        $this->asAdmin()->postJson('/v1/branches/networks/approve', [
             'branch_id' => $this->branchId,
             'approve' => [['kind' => 'bssid', 'value' => 'AA:BB:CC:DD:EE:07']],
             'wifi_mode' => 'enforcing',
@@ -417,12 +417,12 @@ final class BranchTest extends TestCase
             }
         }
 
-        $this->asAdmin()->postJson('/app/branches/approve_networks.php', [
+        $this->asAdmin()->postJson('/v1/branches/networks/approve', [
             'branch_id' => $this->branchId,
             'approve' => [['kind' => 'bssid', 'value' => 'aa:bb:cc:dd:ee:10']],
         ])->assertOk();
 
-        $this->asAdmin()->postJson('/app/branches/network_sightings.php', ['branch_id' => $this->branchId])
+        $this->asAdmin()->postJson('/v1/branches/networks/sightings', ['branch_id' => $this->branchId])
             ->assertOk()
             ->assertJsonPath('data.total_sightings', 10)
             ->assertJsonPath('data.coverage_percent', 80)

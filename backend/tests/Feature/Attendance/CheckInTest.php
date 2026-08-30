@@ -25,7 +25,7 @@ final class CheckInTest extends TestCase
 {
     use DatabaseTransactions;
 
-    private const ENDPOINT = '/app/attendance/check_in.php';
+    private const ENDPOINT = '/v1/attendance/check-in';
 
     private const BRANCH_LAT = 30.0444;
 

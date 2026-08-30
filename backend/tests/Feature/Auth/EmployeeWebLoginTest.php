@@ -25,7 +25,7 @@ final class EmployeeWebLoginTest extends TestCase
 {
     use DatabaseTransactions;
 
-    private const ENDPOINT = '/app/auth/employee_web_login.php';
+    private const ENDPOINT = '/v1/auth/employee/web/login';
 
     protected function setUp(): void
     {
@@ -264,7 +264,7 @@ final class EmployeeWebLoginTest extends TestCase
         $this->assertIsString($token);
 
         $this->withHeader('X-Employee-Token', $token)
-            ->postJson('/app/auth/employee_web_logout.php')
+            ->postJson('/v1/auth/employee/web/logout')
             ->assertOk();
 
         $this->assertNull(EmployeeAuthToken::findActiveByPlain($token));
@@ -272,7 +272,7 @@ final class EmployeeWebLoginTest extends TestCase
 
     public function test_logout_without_a_session_still_succeeds(): void
     {
-        $this->postJson('/app/auth/employee_web_logout.php')->assertOk();
+        $this->postJson('/v1/auth/employee/web/logout')->assertOk();
     }
 
     /**

@@ -28,7 +28,7 @@ final class SetDayStatusTest extends TestCase
 {
     use DatabaseTransactions;
 
-    private const ENDPOINT = '/app/attendance/set_day_status.php';
+    private const ENDPOINT = '/v1/attendance/day-status';
 
     private Employee $employee;
 

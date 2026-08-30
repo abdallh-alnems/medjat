@@ -79,7 +79,7 @@ final class WarningTest extends TestCase
      */
     private function issue(array $overrides = [], ?string $token = null): TestResponse
     {
-        return $this->send('/app/warnings/add.php', $overrides + [
+        return $this->send('/v1/warnings', $overrides + [
             'employee_id' => $this->employeeId,
             'type' => 'verbal',
             'reason' => 'Repeated lateness',
@@ -121,7 +121,7 @@ final class WarningTest extends TestCase
     {
         $id = Value::int($this->issue()->assertOk()->json('data.id'));
 
-        $this->send('/app/warnings/delete.php', ['id' => $id])->assertOk();
+        $this->send('/v1/warnings/delete', ['id' => $id])->assertOk();
 
         $this->assertDatabaseMissing('warnings', ['id' => $id]);
     }
@@ -137,7 +137,7 @@ final class WarningTest extends TestCase
             'reason' => 'Signed in from a new device',
         ]);
 
-        $this->send('/app/warnings/delete.php', ['id' => $id])->assertStatus(403);
+        $this->send('/v1/warnings/delete', ['id' => $id])->assertStatus(403);
 
         $this->assertDatabaseHas('warnings', ['id' => $id]);
     }
@@ -162,7 +162,7 @@ final class WarningTest extends TestCase
         ]);
 
         $this->issue(['employee_id' => $stranger])->assertStatus(404);
-        $this->send('/app/warnings/delete.php', ['id' => $foreign])->assertStatus(404);
+        $this->send('/v1/warnings/delete', ['id' => $foreign])->assertStatus(404);
     }
 
     public function test_a_viewer_cannot_warn_anybody(): void

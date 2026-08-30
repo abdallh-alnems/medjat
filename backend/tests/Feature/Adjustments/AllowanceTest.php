@@ -71,7 +71,7 @@ final class AllowanceTest extends TestCase
      */
     private function create(array $overrides = []): int
     {
-        $response = $this->send('/app/allowances/create.php', $overrides + [
+        $response = $this->send('/v1/allowances', $overrides + [
             'employee_id' => $this->employeeId,
             'type' => 'housing',
             'amount' => 800,
@@ -102,7 +102,7 @@ final class AllowanceTest extends TestCase
         $this->create();
 
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/allowances/list.php?employee_id='.$this->employeeId)
+            ->getJson('/v1/allowances?employee_id='.$this->employeeId)
             ->assertOk()
             ->assertJsonPath('data.allowances.0.type', 'housing')
             // The screen and the payslip must not disagree about what this is
@@ -115,14 +115,14 @@ final class AllowanceTest extends TestCase
         $this->create(['type' => 'other', 'label' => 'بدل طبيعة عمل']);
 
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/allowances/list.php?employee_id='.$this->employeeId)
+            ->getJson('/v1/allowances?employee_id='.$this->employeeId)
             ->assertOk()
             ->assertJsonPath('data.allowances.0.display_label', 'بدل طبيعة عمل');
     }
 
     public function test_an_unknown_type_is_refused(): void
     {
-        $this->send('/app/allowances/create.php', [
+        $this->send('/v1/allowances', [
             'employee_id' => $this->employeeId,
             'type' => 'yacht',
             'amount' => 800,
@@ -132,7 +132,7 @@ final class AllowanceTest extends TestCase
 
     public function test_a_window_that_ends_before_it_starts_is_refused(): void
     {
-        $this->send('/app/allowances/create.php', [
+        $this->send('/v1/allowances', [
             'employee_id' => $this->employeeId,
             'type' => 'transport',
             'amount' => 300,
@@ -143,7 +143,7 @@ final class AllowanceTest extends TestCase
 
     public function test_a_malformed_month_is_refused(): void
     {
-        $this->send('/app/allowances/create.php', [
+        $this->send('/v1/allowances', [
             'employee_id' => $this->employeeId,
             'type' => 'transport',
             'amount' => 300,
@@ -155,7 +155,7 @@ final class AllowanceTest extends TestCase
     {
         $id = $this->create();
 
-        $this->send('/app/allowances/update.php', [
+        $this->send('/v1/allowances/update', [
             'id' => $id,
             'type' => 'housing',
             'amount' => 800,
@@ -170,7 +170,7 @@ final class AllowanceTest extends TestCase
     {
         $id = $this->create();
 
-        $this->send('/app/allowances/delete.php', ['id' => $id])->assertOk();
+        $this->send('/v1/allowances/delete', ['id' => $id])->assertOk();
 
         $this->assertDatabaseMissing('employee_allowances', ['id' => $id]);
     }
@@ -197,7 +197,7 @@ final class AllowanceTest extends TestCase
             'start_month' => '2026-01',
         ]);
 
-        $this->send('/app/allowances/delete.php', ['id' => $foreign])->assertStatus(404);
+        $this->send('/v1/allowances/delete', ['id' => $foreign])->assertStatus(404);
         $this->assertDatabaseHas('employee_allowances', ['id' => $foreign]);
     }
 }

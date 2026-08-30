@@ -32,7 +32,7 @@ final class SendAuthActionTest extends TestCase
     {
         $this->accounts->register('someone@example.com');
 
-        $this->postJson('/app/auth/send_password_reset.php', ['email' => 'someone@example.com'])
+        $this->postJson('/v1/auth/password-reset', ['email' => 'someone@example.com'])
             ->assertOk()
             ->assertJsonPath('data.success', true);
 
@@ -42,7 +42,7 @@ final class SendAuthActionTest extends TestCase
     public function test_an_unregistered_address_gets_the_same_response_and_no_email(): void
     {
         // The whole point: a caller cannot learn which addresses have accounts.
-        $registered = $this->postJson('/app/auth/send_password_reset.php', ['email' => 'nobody@example.com']);
+        $registered = $this->postJson('/v1/auth/password-reset', ['email' => 'nobody@example.com']);
 
         $registered->assertOk()->assertJsonPath('data.success', true);
         Mail::assertNothingSent();
@@ -52,8 +52,8 @@ final class SendAuthActionTest extends TestCase
     {
         $this->accounts->register('known@example.com');
 
-        $known = $this->postJson('/app/auth/send_password_reset.php', ['email' => 'known@example.com']);
-        $unknown = $this->postJson('/app/auth/send_password_reset.php', ['email' => 'unknown@example.com']);
+        $known = $this->postJson('/v1/auth/password-reset', ['email' => 'known@example.com']);
+        $unknown = $this->postJson('/v1/auth/password-reset', ['email' => 'unknown@example.com']);
 
         $this->assertSame($known->getContent(), $unknown->getContent());
         $this->assertSame($known->getStatusCode(), $unknown->getStatusCode());
@@ -63,7 +63,7 @@ final class SendAuthActionTest extends TestCase
     {
         $this->accounts->register('newuser@example.com');
 
-        $this->postJson('/app/auth/send_verification.php', ['email' => 'newuser@example.com'])->assertOk();
+        $this->postJson('/v1/auth/verification', ['email' => 'newuser@example.com'])->assertOk();
 
         Mail::assertSent(AuthActionMail::class, 1);
     }
@@ -72,14 +72,14 @@ final class SendAuthActionTest extends TestCase
     {
         // A client bug rather than an account that may or may not exist, so
         // saying so leaks nothing.
-        $this->postJson('/app/auth/send_password_reset.php', ['email' => 'not-an-address'])
+        $this->postJson('/v1/auth/password-reset', ['email' => 'not-an-address'])
             ->assertStatus(400)
             ->assertJsonPath('error_code', 'invalid_email');
     }
 
     public function test_a_missing_address_is_refused(): void
     {
-        $this->postJson('/app/auth/send_password_reset.php', [])
+        $this->postJson('/v1/auth/password-reset', [])
             ->assertStatus(400)
             ->assertJsonPath('error_code', 'invalid_email');
     }
@@ -88,7 +88,7 @@ final class SendAuthActionTest extends TestCase
     {
         $this->accounts->register('mixed@example.com');
 
-        $this->postJson('/app/auth/send_password_reset.php', ['email' => '  Mixed@Example.COM '])
+        $this->postJson('/v1/auth/password-reset', ['email' => '  Mixed@Example.COM '])
             ->assertOk();
 
         Mail::assertSent(AuthActionMail::class, 1);
@@ -100,7 +100,7 @@ final class SendAuthActionTest extends TestCase
         // that makes the link work at all.
         $this->accounts->register('branded@example.com', 'https://firebase.test/x?mode=resetPassword&oobCode=XYZ&apiKey=K');
 
-        $this->postJson('/app/auth/send_password_reset.php', ['email' => 'branded@example.com'])->assertOk();
+        $this->postJson('/v1/auth/password-reset', ['email' => 'branded@example.com'])->assertOk();
 
         Mail::assertSent(AuthActionMail::class, function (AuthActionMail $mail): bool {
             $rendered = $mail->render();
@@ -114,7 +114,7 @@ final class SendAuthActionTest extends TestCase
     {
         $this->accounts->register('lang@example.com');
 
-        $this->postJson('/app/auth/send_password_reset.php', ['email' => 'lang@example.com', 'lang' => 'fr'])
+        $this->postJson('/v1/auth/password-reset', ['email' => 'lang@example.com', 'lang' => 'fr'])
             ->assertOk();
 
         Mail::assertSent(AuthActionMail::class, function (AuthActionMail $mail): bool {
@@ -126,7 +126,7 @@ final class SendAuthActionTest extends TestCase
     {
         $this->accounts->register('en@example.com');
 
-        $this->postJson('/app/auth/send_password_reset.php', ['email' => 'en@example.com', 'lang' => 'en'])
+        $this->postJson('/v1/auth/password-reset', ['email' => 'en@example.com', 'lang' => 'en'])
             ->assertOk();
 
         Mail::assertSent(AuthActionMail::class, function (AuthActionMail $mail): bool {

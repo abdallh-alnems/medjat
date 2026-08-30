@@ -108,7 +108,7 @@ final class DashboardTest extends TestCase
     private function board(?string $token = null): TestResponse
     {
         return $this->withHeader('X-Firebase-Token', $token ?? $this->adminToken)
-            ->getJson('/app/dashboard/live_attendance.php');
+            ->getJson('/v1/dashboard/live-attendance');
     }
 
     /**
@@ -117,7 +117,7 @@ final class DashboardTest extends TestCase
     private function overview(?string $token = null): TestResponse
     {
         return $this->withHeader('X-Firebase-Token', $token ?? $this->adminToken)
-            ->getJson('/app/dashboard/overview.php');
+            ->getJson('/v1/dashboard/overview');
     }
 
     public function test_somebody_who_has_not_punched_still_appears(): void
@@ -240,7 +240,7 @@ final class DashboardTest extends TestCase
         ]);
 
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->getJson('/app/dashboard/live_attendance.php?branch_id='.$this->branchId)
+            ->getJson('/v1/dashboard/live-attendance?branch_id='.$this->branchId)
             ->assertOk()
             ->assertJsonPath('data.summary.total', 1);
     }

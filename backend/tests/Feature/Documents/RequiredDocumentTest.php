@@ -91,7 +91,7 @@ final class RequiredDocumentTest extends TestCase
     private function createType(array $overrides = []): int
     {
         $response = $this->asAdmin()
-            ->postJson('/app/documents/create_required.php', $overrides + [
+            ->postJson('/v1/documents/required', $overrides + [
                 'name' => 'Passport',
                 'category' => 'identity',
                 'is_required' => 1,
@@ -107,7 +107,7 @@ final class RequiredDocumentTest extends TestCase
     {
         $id = $this->createType();
 
-        $this->asAdmin()->getJson('/app/documents/get_required.php')
+        $this->asAdmin()->getJson('/v1/documents/required')
             ->assertOk()
             ->assertJsonPath('data.required_documents.0.id', $id)
             ->assertJsonPath('data.required_documents.0.name', 'Passport')
@@ -116,7 +116,7 @@ final class RequiredDocumentTest extends TestCase
 
     public function test_an_unknown_category_is_refused(): void
     {
-        $this->asAdmin()->postJson('/app/documents/create_required.php', [
+        $this->asAdmin()->postJson('/v1/documents/required', [
             'name' => 'Nonsense',
             'category' => 'astrology',
         ])->assertStatus(422)->assertJsonPath('error_code', 'invalid_category');
@@ -132,7 +132,7 @@ final class RequiredDocumentTest extends TestCase
 
     public function test_a_branch_scope_needs_a_branch(): void
     {
-        $this->asAdmin()->postJson('/app/documents/create_required.php', [
+        $this->asAdmin()->postJson('/v1/documents/required', [
             'name' => 'Branch thing',
             'scope_type' => 'branch',
         ])->assertStatus(422)->assertJsonPath('error_code', 'scope_branch_id_required');
@@ -140,7 +140,7 @@ final class RequiredDocumentTest extends TestCase
 
     public function test_naming_people_requires_naming_at_least_one(): void
     {
-        $this->asAdmin()->postJson('/app/documents/create_required.php', [
+        $this->asAdmin()->postJson('/v1/documents/required', [
             'name' => 'Named thing',
             'scope_type' => 'employees',
             'scope_employee_ids' => [],
@@ -157,7 +157,7 @@ final class RequiredDocumentTest extends TestCase
             'scope_employee_ids' => [$this->employeeId],
         ]);
 
-        $this->asAdmin()->getJson('/app/documents/get_required.php')
+        $this->asAdmin()->getJson('/v1/documents/required')
             ->assertOk()
             ->assertJsonPath('data.required_documents.0.id', $id)
             ->assertJsonPath('data.required_documents.0.scope_employees.0.name', 'Docs employee')
@@ -173,7 +173,7 @@ final class RequiredDocumentTest extends TestCase
             'scope_employee_ids' => [$this->employeeId],
         ]);
 
-        $this->asAdmin()->postJson('/app/documents/update_required.php', [
+        $this->asAdmin()->postJson('/v1/documents/required/update', [
             'id' => $id,
             'scope_type' => 'all',
         ])->assertOk();
@@ -196,7 +196,7 @@ final class RequiredDocumentTest extends TestCase
             'scope_employee_ids' => [$this->employeeId],
         ]);
 
-        $this->asAdmin()->postJson('/app/documents/update_required.php', [
+        $this->asAdmin()->postJson('/v1/documents/required/update', [
             'id' => $id,
             'scope_employee_ids' => [$other],
         ])->assertOk();
@@ -213,7 +213,7 @@ final class RequiredDocumentTest extends TestCase
     {
         $id = $this->createType();
 
-        $this->asAdmin()->postJson('/app/documents/toggle_required.php', ['id' => $id])
+        $this->asAdmin()->postJson('/v1/documents/required/toggle', ['id' => $id])
             ->assertOk()
             ->assertJsonPath('data.is_active', false);
 
@@ -224,7 +224,7 @@ final class RequiredDocumentTest extends TestCase
     {
         $id = $this->createType();
 
-        $this->asAdmin()->postJson('/app/documents/delete_required.php', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/documents/required/delete', ['id' => $id])->assertOk();
 
         $this->assertDatabaseMissing('required_documents', ['id' => $id]);
     }
@@ -238,7 +238,7 @@ final class RequiredDocumentTest extends TestCase
             'scope_type' => 'all',
         ]);
 
-        $this->asAdmin()->postJson('/app/documents/delete_required.php', ['id' => $stranger])
+        $this->asAdmin()->postJson('/v1/documents/required/delete', ['id' => $stranger])
             ->assertNotFound();
         $this->assertDatabaseHas('required_documents', ['id' => $stranger]);
     }
@@ -247,7 +247,7 @@ final class RequiredDocumentTest extends TestCase
     {
         // Reading and changing are deliberately different permissions.
         $this->withHeader('X-Firebase-Token', $this->viewerToken)
-            ->postJson('/app/documents/create_required.php', ['name' => 'Nope'])
+            ->postJson('/v1/documents/required', ['name' => 'Nope'])
             ->assertForbidden();
     }
 
@@ -257,7 +257,7 @@ final class RequiredDocumentTest extends TestCase
     {
         $id = $this->createType();
 
-        $this->asAdmin()->getJson('/app/documents/get_required_submissions.php?required_document_id='.$id)
+        $this->asAdmin()->getJson('/v1/documents/required/submissions?required_document_id='.$id)
             ->assertOk()
             ->assertJsonPath('data.required_document.name', 'Passport')
             ->assertJsonPath('data.submissions.0.employee_name', 'Docs employee')
@@ -277,7 +277,7 @@ final class RequiredDocumentTest extends TestCase
             'status' => 'uploaded',
         ]);
 
-        $this->asAdmin()->getJson('/app/documents/get_required_submissions.php?required_document_id='.$id)
+        $this->asAdmin()->getJson('/v1/documents/required/submissions?required_document_id='.$id)
             ->assertOk()
             ->assertJsonPath('data.submissions.0.document.status', 'uploaded')
             ->assertJsonPath('data.submissions.0.document.original_name', 'passport.pdf');
@@ -296,7 +296,7 @@ final class RequiredDocumentTest extends TestCase
         ]);
 
         $submissions = $this->asAdmin()
-            ->getJson('/app/documents/get_required_submissions.php?required_document_id='.$id)
+            ->getJson('/v1/documents/required/submissions?required_document_id='.$id)
             ->assertOk()
             ->json('data.submissions');
 
@@ -309,7 +309,7 @@ final class RequiredDocumentTest extends TestCase
     {
         $this->createType();
 
-        $this->asAdmin()->getJson('/app/documents/reports_missing.php')
+        $this->asAdmin()->getJson('/v1/documents/reports/missing')
             ->assertOk()
             ->assertJsonPath('data.missing_documents.0.employee_name', 'Docs employee')
             ->assertJsonPath('data.missing_documents.0.document_name', 'Passport');
@@ -321,7 +321,7 @@ final class RequiredDocumentTest extends TestCase
         // the ones that matter.
         $this->createType(['is_required' => 0]);
 
-        $missing = $this->asAdmin()->getJson('/app/documents/reports_missing.php')
+        $missing = $this->asAdmin()->getJson('/v1/documents/reports/missing')
             ->assertOk()->json('data.missing_documents');
 
         $this->assertSame([], $missing);
@@ -330,9 +330,9 @@ final class RequiredDocumentTest extends TestCase
     public function test_a_switched_off_type_is_not_chased_either(): void
     {
         $id = $this->createType();
-        $this->asAdmin()->postJson('/app/documents/toggle_required.php', ['id' => $id])->assertOk();
+        $this->asAdmin()->postJson('/v1/documents/required/toggle', ['id' => $id])->assertOk();
 
-        $missing = $this->asAdmin()->getJson('/app/documents/reports_missing.php')
+        $missing = $this->asAdmin()->getJson('/v1/documents/reports/missing')
             ->assertOk()->json('data.missing_documents');
 
         $this->assertSame([], $missing);
@@ -350,7 +350,7 @@ final class RequiredDocumentTest extends TestCase
             'expires_at' => DB::raw('DATE_ADD(CURDATE(), INTERVAL 10 DAY)'),
         ]);
 
-        $this->asAdmin()->getJson('/app/documents/reports_expiring_soon.php?days_ahead=30')
+        $this->asAdmin()->getJson('/v1/documents/reports/expiring-soon?days_ahead=30')
             ->assertOk()
             ->assertJsonPath('data.documents.0.employee_name', 'Docs employee');
     }
@@ -367,7 +367,7 @@ final class RequiredDocumentTest extends TestCase
             'expires_at' => DB::raw('DATE_ADD(CURDATE(), INTERVAL 90 DAY)'),
         ]);
 
-        $documents = $this->asAdmin()->getJson('/app/documents/reports_expiring_soon.php?days_ahead=30')
+        $documents = $this->asAdmin()->getJson('/v1/documents/reports/expiring-soon?days_ahead=30')
             ->assertOk()->json('data.documents');
 
         $this->assertSame([], $documents);
@@ -387,7 +387,7 @@ final class RequiredDocumentTest extends TestCase
             'expires_at' => DB::raw('DATE_SUB(CURDATE(), INTERVAL 5 DAY)'),
         ]);
 
-        $this->asAdmin()->getJson('/app/documents/reports_expired.php')
+        $this->asAdmin()->getJson('/v1/documents/reports/expired')
             ->assertOk()
             ->assertJsonPath('data.documents.0.employee_name', 'Docs employee');
     }
@@ -404,7 +404,7 @@ final class RequiredDocumentTest extends TestCase
             'expires_at' => DB::raw('DATE_SUB(CURDATE(), INTERVAL 5 DAY)'),
         ]);
 
-        $this->asAdmin()->postJson('/app/documents/mark_expired.php')
+        $this->asAdmin()->postJson('/v1/documents/mark-expired')
             ->assertOk()
             ->assertJsonPath('data.marked_expired', 1);
 
@@ -419,7 +419,7 @@ final class RequiredDocumentTest extends TestCase
         $this->createType();
         $this->createType(['name' => 'Contract', 'category' => 'contract']);
 
-        $this->asAdmin()->getJson('/app/documents/reports_stats.php')
+        $this->asAdmin()->getJson('/v1/documents/reports/stats')
             ->assertOk()
             ->assertJsonPath('data.stats.total_required', 2)
             ->assertJsonPath('data.stats.total_missing', 2)
@@ -429,7 +429,7 @@ final class RequiredDocumentTest extends TestCase
     public function test_reading_the_reports_needs_the_reports_permission(): void
     {
         $this->withHeader('X-Firebase-Token', $this->viewerToken)
-            ->getJson('/app/documents/reports_stats.php')
+            ->getJson('/v1/documents/reports/stats')
             ->assertForbidden();
     }
 }

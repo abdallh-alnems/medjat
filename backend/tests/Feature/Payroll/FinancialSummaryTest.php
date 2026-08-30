@@ -21,7 +21,7 @@ final class FinancialSummaryTest extends TestCase
 {
     use DatabaseTransactions;
 
-    private const ENDPOINT = '/app/employees/get_financial_summary.php';
+    private const ENDPOINT = '/v1/employees/financial-summary';
 
     private const MONTH = '2026-02';
 

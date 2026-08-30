@@ -61,7 +61,7 @@ final class AttendanceSupportTest extends TestCase
         $this->enrol();
 
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/attendance/face_challenge.php', ['purpose' => 'check_in'])
+            ->postJson('/v1/attendance/face-challenge', ['purpose' => 'check_in'])
             ->assertOk()
             ->assertJsonStructure(['data' => ['nonce', 'challenge', 'expires_in', 'liveness_required', 'model_version']])
             ->assertJsonPath('data.model_version', FaceEmbedding::MODEL_VERSION);
@@ -74,7 +74,7 @@ final class AttendanceSupportTest extends TestCase
 
         for ($i = 0; $i < 3; $i++) {
             $this->withHeader('X-Employee-Token', $this->token)
-                ->postJson('/app/attendance/face_challenge.php', ['purpose' => 'check_in'])
+                ->postJson('/v1/attendance/face-challenge', ['purpose' => 'check_in'])
                 ->assertOk();
         }
 
@@ -91,7 +91,7 @@ final class AttendanceSupportTest extends TestCase
         $this->enrol();
 
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/attendance/face_challenge.php', ['purpose' => 'check_in'])
+            ->postJson('/v1/attendance/face-challenge', ['purpose' => 'check_in'])
             ->assertOk();
 
         $this->assertTrue(
@@ -108,7 +108,7 @@ final class AttendanceSupportTest extends TestCase
         Employee::query()->whereKey($this->employee->id)->update(['face_embedding' => null]);
 
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/attendance/face_challenge.php', ['purpose' => 'check_in'])
+            ->postJson('/v1/attendance/face-challenge', ['purpose' => 'check_in'])
             ->assertStatus(400)
             ->assertJsonPath('error_code', 'FACE_NOT_ENROLLED');
     }
@@ -118,14 +118,14 @@ final class AttendanceSupportTest extends TestCase
         Employee::query()->whereKey($this->employee->id)->update(['face_embedding' => null]);
 
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/attendance/face_challenge.php', ['purpose' => 'enroll'])
+            ->postJson('/v1/attendance/face-challenge', ['purpose' => 'enroll'])
             ->assertOk();
     }
 
     public function test_an_unknown_purpose_is_refused(): void
     {
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/attendance/face_challenge.php', ['purpose' => 'whatever'])
+            ->postJson('/v1/attendance/face-challenge', ['purpose' => 'whatever'])
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'invalid_purpose');
     }
@@ -137,7 +137,7 @@ final class AttendanceSupportTest extends TestCase
         // The two are the same state by construction rather than two flags that
         // can disagree.
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/attendance/crew_list.php')
+            ->postJson('/v1/attendance/crew')
             ->assertOk()
             ->assertJsonPath('data.is_supervisor', false)
             ->assertJsonPath('data.members', []);
@@ -164,7 +164,7 @@ final class AttendanceSupportTest extends TestCase
         ]);
 
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/attendance/crew_list.php')
+            ->postJson('/v1/attendance/crew')
             ->assertOk()
             ->assertJsonPath('data.is_supervisor', true)
             ->assertJsonPath('data.members.0.id', $member->id)
@@ -184,7 +184,7 @@ final class AttendanceSupportTest extends TestCase
             ->update(['crew_supervisor_id' => $this->employee->id, 'status' => 'terminated']);
 
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/attendance/crew_list.php')
+            ->postJson('/v1/attendance/crew')
             ->assertOk()
             ->assertJsonPath('data.is_supervisor', false);
     }
@@ -194,7 +194,7 @@ final class AttendanceSupportTest extends TestCase
     public function test_a_recognised_reason_is_recorded(): void
     {
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/attendance/security_log.php', ['reason' => 'rooted'])
+            ->postJson('/v1/attendance/security-log', ['reason' => 'rooted'])
             ->assertOk()
             ->assertJsonPath('data.logged', true);
 
@@ -210,7 +210,7 @@ final class AttendanceSupportTest extends TestCase
         // Everything here is client-asserted, so the reason is matched against a
         // literal list rather than written as sent.
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/attendance/security_log.php', ['reason' => "'; DROP TABLE attendance; --"])
+            ->postJson('/v1/attendance/security-log', ['reason' => "'; DROP TABLE attendance; --"])
             ->assertStatus(400)
             ->assertJsonPath('error_code', 'invalid_reason');
 

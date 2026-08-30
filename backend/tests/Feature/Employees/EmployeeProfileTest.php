@@ -69,7 +69,7 @@ final class EmployeeProfileTest extends TestCase
         ]);
 
         $employee = $this->withHeader('X-Firebase-Token', $this->token)
-            ->getJson('/app/employees/get_profile.php?id='.$this->employee->id)
+            ->getJson('/v1/employees/profile?id='.$this->employee->id)
             ->assertOk()
             ->json('data.employee');
 
@@ -86,7 +86,7 @@ final class EmployeeProfileTest extends TestCase
     public function test_the_profile_carries_the_supporting_blocks(): void
     {
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->getJson('/app/employees/get_profile.php?id='.$this->employee->id)
+            ->getJson('/v1/employees/profile?id='.$this->employee->id)
             ->assertOk()
             ->assertJsonStructure(['data' => [
                 'employee', 'documents', 'warnings', 'leave_balance',
@@ -111,7 +111,7 @@ final class EmployeeProfileTest extends TestCase
         ]);
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->getJson('/app/employees/get_profile.php?id='.$this->employee->id)
+            ->getJson('/v1/employees/profile?id='.$this->employee->id)
             ->assertOk()
             ->assertJsonPath('data.employee.status', 'active')
             ->assertJsonPath('data.active_suspension', null);
@@ -125,7 +125,7 @@ final class EmployeeProfileTest extends TestCase
         }
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->getJson('/app/employees/get_profile.php?id='.$other->id)
+            ->getJson('/v1/employees/profile?id='.$other->id)
             ->assertNotFound();
     }
 
@@ -142,7 +142,7 @@ final class EmployeeProfileTest extends TestCase
         ]);
 
         $items = $this->withHeader('X-Firebase-Token', $this->token)
-            ->getJson('/app/employees/expiring_compliance.php?days=30')
+            ->getJson('/v1/employees/expiring-compliance?days=30')
             ->assertOk()
             ->json('data.items');
 
@@ -162,7 +162,7 @@ final class EmployeeProfileTest extends TestCase
         ]);
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->getJson('/app/employees/expiring_compliance.php?days=30&include_expired=0')
+            ->getJson('/v1/employees/expiring-compliance?days=30&include_expired=0')
             ->assertOk()
             ->assertJsonPath('data.expired_count', 0);
     }
@@ -176,7 +176,7 @@ final class EmployeeProfileTest extends TestCase
         ]);
 
         $items = $this->withHeader('X-Firebase-Token', $this->token)
-            ->getJson('/app/employees/expiring_compliance.php?days=30')
+            ->getJson('/v1/employees/expiring-compliance?days=30')
             ->assertOk()
             ->json('data.items');
 
@@ -188,7 +188,7 @@ final class EmployeeProfileTest extends TestCase
     public function test_the_window_is_clamped(): void
     {
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->getJson('/app/employees/expiring_compliance.php?days=99999')
+            ->getJson('/v1/employees/expiring-compliance?days=99999')
             ->assertOk()
             ->assertJsonPath('data.days', 365);
     }
@@ -213,7 +213,7 @@ final class EmployeeProfileTest extends TestCase
         ]);
 
         $totals = $this->withHeader('X-Firebase-Token', $this->token)
-            ->getJson('/app/employees/get_year_to_date.php?employee_id='.$this->employee->id)
+            ->getJson('/v1/employees/year-to-date?employee_id='.$this->employee->id)
             ->assertOk()
             ->json('data.totals');
 
@@ -228,7 +228,7 @@ final class EmployeeProfileTest extends TestCase
     public function test_an_impossible_year_is_refused(): void
     {
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->getJson('/app/employees/get_year_to_date.php?employee_id='.$this->employee->id.'&year=1800')
+            ->getJson('/v1/employees/year-to-date?employee_id='.$this->employee->id.'&year=1800')
             ->assertStatus(422)
             ->assertJsonPath('error_code', 'invalid_year');
     }
@@ -241,7 +241,7 @@ final class EmployeeProfileTest extends TestCase
         EmployeeAuthToken::issue($this->tenantId, $this->employee->id, 'device-a', 'Pixel 8', 'android', '1.2.3');
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->getJson('/app/employees/activation_code.php?id='.$this->employee->id)
+            ->getJson('/v1/employees/activation-code?id='.$this->employee->id)
             ->assertOk()
             ->assertJsonPath('data.device_bound', true)
             ->assertJsonPath('data.device.device_model', 'Pixel 8')
@@ -255,7 +255,7 @@ final class EmployeeProfileTest extends TestCase
         EmployeeAuthToken::issueWeb($this->tenantId, $this->employee->id, 'browser-1', 3600);
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->getJson('/app/employees/activation_code.php?id='.$this->employee->id)
+            ->getJson('/v1/employees/activation-code?id='.$this->employee->id)
             ->assertOk()
             ->assertJsonPath('data.device_bound', false);
     }
@@ -269,7 +269,7 @@ final class EmployeeProfileTest extends TestCase
         $old = EmployeeAuthToken::issue($this->tenantId, $this->employee->id, 'device-a', null, 'android', null);
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/activation_code.php', ['id' => $this->employee->id])
+            ->postJson('/v1/employees/activation-code', ['id' => $this->employee->id])
             ->assertOk()
             ->assertJsonPath('data.device_revoked', true);
 
@@ -289,7 +289,7 @@ final class EmployeeProfileTest extends TestCase
         Employee::query()->whereKey($this->employee->id)->update(['status' => 'pending_activation']);
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/activation_code.php', ['id' => $this->employee->id])
+            ->postJson('/v1/employees/activation-code', ['id' => $this->employee->id])
             ->assertOk()
             ->assertJsonPath('data.device_revoked', false);
 
@@ -304,7 +304,7 @@ final class EmployeeProfileTest extends TestCase
         Employee::query()->whereKey($this->employee->id)->update(['status' => 'terminated']);
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/activation_code.php', ['id' => $this->employee->id])
+            ->postJson('/v1/employees/activation-code', ['id' => $this->employee->id])
             ->assertStatus(409)
             ->assertJsonPath('error_code', 'cannot_generate_code_terminated_employee');
     }
@@ -314,7 +314,7 @@ final class EmployeeProfileTest extends TestCase
         $first = ActivationCode::generateFor($this->tenantId, $this->employee->id);
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/app/employees/activation_code.php', ['id' => $this->employee->id])
+            ->postJson('/v1/employees/activation-code', ['id' => $this->employee->id])
             ->assertOk();
 
         $this->assertNull(

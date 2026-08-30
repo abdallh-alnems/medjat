@@ -97,7 +97,7 @@ final class CrewAndOfflineTest extends TestCase
     private function crew(array $body = []): TestResponse
     {
         return $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/attendance/crew_check_in.php', array_merge([
+            ->postJson('/v1/attendance/crew/punch', array_merge([
                 'employee_ids' => [$this->member->id],
                 'latitude' => self::BRANCH_LAT,
                 'longitude' => self::BRANCH_LNG,
@@ -245,7 +245,7 @@ final class CrewAndOfflineTest extends TestCase
     private function sync(array $overrides = []): TestResponse
     {
         return $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/attendance/sync_offline.php', ['records' => [array_merge([
+            ->postJson('/v1/attendance/sync-offline', ['records' => [array_merge([
                 'client_record_id' => 'r1',
                 'branch_id' => $this->branchId,
                 'date' => TenantClock::date($this->tenantId),
@@ -335,7 +335,7 @@ final class CrewAndOfflineTest extends TestCase
         $today = TenantClock::date($this->tenantId);
 
         $response = $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/attendance/sync_offline.php', ['records' => [
+            ->postJson('/v1/attendance/sync-offline', ['records' => [
                 ['client_record_id' => 'bad', 'branch_id' => 0],
                 [
                     'client_record_id' => 'good',
@@ -358,7 +358,7 @@ final class CrewAndOfflineTest extends TestCase
     public function test_an_empty_queue_is_refused(): void
     {
         $this->withHeader('X-Employee-Token', $this->token)
-            ->postJson('/app/attendance/sync_offline.php', ['records' => []])
+            ->postJson('/v1/attendance/sync-offline', ['records' => []])
             ->assertStatus(400)
             ->assertJsonPath('error_code', 'records_required');
     }

@@ -83,7 +83,7 @@ final class CompanySettingsTest extends TestCase
     private function save(array $payload, ?string $token = null): TestResponse
     {
         return $this->withHeader('X-Firebase-Token', $token ?? $this->adminToken)
-            ->postJson('/app/settings/company.php', $payload);
+            ->postJson('/v1/settings/company', $payload);
     }
 
     /**
@@ -92,7 +92,7 @@ final class CompanySettingsTest extends TestCase
     private function read(?string $token = null): TestResponse
     {
         return $this->withHeader('X-Firebase-Token', $token ?? $this->adminToken)
-            ->getJson('/app/settings/company.php');
+            ->getJson('/v1/settings/company');
     }
 
     public function test_the_screen_returns_the_whole_resolution_chain(): void
