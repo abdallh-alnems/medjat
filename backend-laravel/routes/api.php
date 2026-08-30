@@ -77,6 +77,9 @@ use App\Http\Controllers\Payroll\MySlipController;
 use App\Http\Controllers\Payroll\OverrideLineController;
 use App\Http\Controllers\Payroll\PayslipPdfController;
 use App\Http\Controllers\Payroll\RevertController;
+use App\Http\Controllers\Team\AdminPermissionsController;
+use App\Http\Controllers\Team\InvitationController;
+use App\Http\Controllers\Team\TeamController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -752,6 +755,63 @@ Route::middleware('throttle:api')->group(function (): void {
             ->middleware('can.do:documents_view_reports')->name('legacy.documents.reports.expired');
         Route::get('app/documents/reports_stats.php', [DocumentReportsController::class, 'stats'])
             ->middleware('can.do:documents_view_reports')->name('legacy.documents.reports.stats');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | The management team
+    |--------------------------------------------------------------------------
+    |
+    | add_managers throughout, except the permission catalogue, which the
+    | reports screens read to render names for permissions they display.
+    |
+    */
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:add_managers'])->group(function (): void {
+        Route::get('v1/team', [TeamController::class, 'index'])->name('team.list');
+        Route::post('v1/team/update', [TeamController::class, 'update'])->name('team.update');
+        Route::post('v1/team/set-active', [TeamController::class, 'setActive'])->name('team.set-active');
+        Route::post('v1/team/remove', [TeamController::class, 'remove'])->name('team.remove');
+
+        Route::get('v1/team/permissions', [AdminPermissionsController::class, 'show'])->name('team.permissions');
+        Route::post('v1/team/permissions', [AdminPermissionsController::class, 'update'])
+            ->name('team.permissions.update');
+        Route::post('v1/team/permissions/reset', [AdminPermissionsController::class, 'reset'])
+            ->name('team.permissions.reset');
+
+        Route::get('v1/team/invitations', [InvitationController::class, 'index'])->name('team.invitations');
+        Route::post('v1/team/invitations', [InvitationController::class, 'invite'])->name('team.invite');
+        Route::get('v1/team/invitations/cancel', [InvitationController::class, 'cancel'])->name('team.invite.cancel');
+        Route::post('v1/team/invitations/resend', [InvitationController::class, 'resend'])->name('team.invite.resend');
+
+        Route::get('app/managers/list_admins.php', [TeamController::class, 'index'])->name('legacy.team.list');
+        Route::post('app/managers/update_admin.php', [TeamController::class, 'update'])->name('legacy.team.update');
+        Route::post('app/managers/set_admin_active.php', [TeamController::class, 'setActive'])
+            ->name('legacy.team.set-active');
+        Route::post('app/managers/remove_admin.php', [TeamController::class, 'remove'])->name('legacy.team.remove');
+
+        Route::get('app/managers/get_admin_permissions.php', [AdminPermissionsController::class, 'show'])
+            ->name('legacy.team.permissions');
+        Route::post('app/managers/update_admin_permissions.php', [AdminPermissionsController::class, 'update'])
+            ->name('legacy.team.permissions.update');
+        Route::post('app/managers/reset_admin_permissions.php', [AdminPermissionsController::class, 'reset'])
+            ->name('legacy.team.permissions.reset');
+
+        Route::get('app/managers/list_invitations.php', [InvitationController::class, 'index'])
+            ->name('legacy.team.invitations');
+        Route::post('app/managers/invite.php', [InvitationController::class, 'invite'])->name('legacy.team.invite');
+        // A GET that mutates, kept as it is: the published apps call it this way.
+        Route::get('app/managers/cancel_invitation.php', [InvitationController::class, 'cancel'])
+            ->name('legacy.team.invite.cancel');
+        Route::post('app/managers/resend_invitation.php', [InvitationController::class, 'resend'])
+            ->name('legacy.team.invite.resend');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:view_reports'])->group(function (): void {
+        Route::get('v1/roles/permissions', [AdminPermissionsController::class, 'catalogue'])
+            ->name('roles.permissions');
+        Route::get('app/roles/list_permissions.php', [AdminPermissionsController::class, 'catalogue'])
+            ->name('legacy.roles.permissions');
     });
 
 });

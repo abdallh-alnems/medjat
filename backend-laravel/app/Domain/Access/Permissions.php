@@ -24,6 +24,51 @@ final class Permissions
     public const ALL = '*';
 
     /**
+     * Every permission that exists, for the screen that hands them out.
+     *
+     * One list, deliberately. The original kept a second, staler catalogue for
+     * granting — fourteen entries, missing the kiosk, biometric, analytics,
+     * scheduling and approval permissions that the middleware had grown. That
+     * gap was not cosmetic: an administrator holding a custom role built from
+     * the small list could invite somebody into a *role*, and the invitee would
+     * receive the middleware's larger set — permissions the inviter did not
+     * hold. Equal-or-lower only means something if both sides are measured
+     * against the same list.
+     *
+     * @var list<string>
+     */
+    public const CATALOGUE = [
+        'manage_employees',
+        'manage_attendance',
+        'manage_schedule',
+        'manage_leaves',
+        'manage_payroll',
+        'manage_deduction_rules',
+        'manage_assets',
+        'manage_documents',
+        'documents_manage_types',
+        'documents_verify',
+        'documents_view_reports',
+        'manage_recruitment',
+        'manage_performance',
+        'manage_engagement',
+        'manage_approvals',
+        'biometric_enroll',
+        'biometric_delete',
+        'kiosk_devices',
+        'kiosk_access',
+        'kiosk_evidence',
+        'view_reports',
+        'view_analytics',
+        'add_managers',
+        'manage_company_settings',
+        'manage_support',
+    ];
+
+    /** The roles that belong on a company's team page. */
+    public const MANAGEMENT_ROLES = ['general_manager', 'hr', 'branch_manager', 'attendance', 'viewer'];
+
+    /**
      * @var array<string, string|list<string>>
      */
     private const ROLE_DEFAULTS = [
@@ -54,6 +99,16 @@ final class Permissions
 
         'employee' => [],
     ];
+
+    /**
+     * What a role grants before anybody customises it.
+     *
+     * @return list<string>|self::ALL
+     */
+    public static function defaultsFor(string $role): array|string
+    {
+        return self::ROLE_DEFAULTS[$role] ?? [];
+    }
 
     /**
      * The permissions this administrator actually holds: a custom role if one
