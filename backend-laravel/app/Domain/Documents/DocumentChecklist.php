@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domain\Documents;
 
-use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
 
@@ -26,7 +25,7 @@ final class DocumentChecklist
      */
     public static function forEmployee(int $employeeId, int $tenantId): array
     {
-        $rows = DB::table('required_documents as rd')
+        $query = DB::table('required_documents as rd')
             ->join('employees as e', function (JoinClause $join) use ($employeeId, $tenantId): void {
                 $join->where('e.id', '=', $employeeId)->where('e.tenant_id', '=', $tenantId);
             })
@@ -36,37 +35,11 @@ final class DocumentChecklist
                     ->on('ed.tenant_id', '=', 'rd.tenant_id');
             })
             ->where('rd.tenant_id', $tenantId)
-            ->where('rd.is_active', 1)
-            ->where(function (QueryBuilder $scope) use ($tenantId): void {
-                $scope->where('rd.scope_type', 'all')
-                    ->orWhere(function (QueryBuilder $branch): void {
-                        $branch->where('rd.scope_type', 'branch')
-                            ->whereColumn('rd.scope_branch_id', 'e.branch_id');
-                    })
-                    ->orWhere(function (QueryBuilder $named): void {
-                        $named->where('rd.scope_type', 'employees')
-                            ->whereExists(function (QueryBuilder $sub): void {
-                                $sub->select(DB::raw(1))
-                                    ->from('required_document_employees as rde')
-                                    ->whereColumn('rde.required_document_id', 'rd.id')
-                                    ->whereColumn('rde.employee_id', 'e.id');
-                            });
-                    })
-                    ->orWhere(function (QueryBuilder $category) use ($tenantId): void {
-                        $category->where('rd.scope_type', 'category')
-                            ->whereExists(function (QueryBuilder $sub) use ($tenantId): void {
-                                $sub->select(DB::raw(1))
-                                    ->from('required_document_categories as rdc')
-                                    ->join('employee_category_assignments as eca', function (JoinClause $join): void {
-                                        $join->on('eca.category_id', '=', 'rdc.category_id')
-                                            ->on('eca.tenant_id', '=', 'rdc.tenant_id');
-                                    })
-                                    ->whereColumn('rdc.required_document_id', 'rd.id')
-                                    ->whereColumn('eca.employee_id', 'e.id')
-                                    ->where('rdc.tenant_id', $tenantId);
-                            });
-                    });
-            })
+            ->where('rd.is_active', 1);
+
+        DocumentScope::constrain($query, $tenantId);
+
+        $rows = $query
             ->orderBy('rd.sort_order')
             ->orderBy('rd.name')
             ->get([

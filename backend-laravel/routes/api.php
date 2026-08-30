@@ -33,11 +33,14 @@ use App\Http\Controllers\Auth\NotificationPrefsController;
 use App\Http\Controllers\Auth\SendAuthActionController;
 use App\Http\Controllers\Auth\UpdateFcmTokenController;
 use App\Http\Controllers\Auth\UpdateProfileController;
+use App\Http\Controllers\Documents\DocumentReportsController;
 use App\Http\Controllers\Documents\EmployeeDocumentsController;
 use App\Http\Controllers\Documents\MyDocumentController;
 use App\Http\Controllers\Documents\RequestDocumentController;
+use App\Http\Controllers\Documents\RequiredDocumentController;
 use App\Http\Controllers\Documents\ReviewDocumentController;
 use App\Http\Controllers\Documents\UploadDocumentController;
+use App\Http\Controllers\Documents\ViewDocumentController;
 use App\Http\Controllers\Employees\ActivationCodeController;
 use App\Http\Controllers\Employees\AttendanceHistoryController;
 use App\Http\Controllers\Employees\CreateEmployeeController;
@@ -681,6 +684,74 @@ Route::middleware('throttle:api')->group(function (): void {
             ->middleware('can.do:manage_attendance')->name('legacy.kiosk.recognition-logs');
         Route::post('app/kiosk/capture.php', [KioskFleetController::class, 'capture'])
             ->middleware('can.do:kiosk_evidence')->name('legacy.kiosk.capture');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Document catalogue and compliance
+    |--------------------------------------------------------------------------
+    |
+    | Three permissions, because these are three different jobs: changing what
+    | the company asks for, reading somebody's file, and reading the compliance
+    | numbers. manage_documents implies all three for anybody who held it
+    | before they were split apart.
+    |
+    */
+
+    Route::middleware(['auth.admin', 'tenant'])->group(function (): void {
+        Route::get('v1/documents/required', [RequiredDocumentController::class, 'index'])
+            ->middleware('can.do:manage_documents')->name('documents.required');
+        Route::get('v1/documents/required/submissions', [RequiredDocumentController::class, 'submissions'])
+            ->middleware('can.do:manage_documents')->name('documents.required.submissions');
+        Route::get('v1/documents/view', ViewDocumentController::class)
+            ->middleware('can.do:manage_documents')->name('documents.view');
+
+        Route::post('v1/documents/required', [RequiredDocumentController::class, 'create'])
+            ->middleware('can.do:documents_manage_types')->name('documents.required.create');
+        Route::post('v1/documents/required/update', [RequiredDocumentController::class, 'update'])
+            ->middleware('can.do:documents_manage_types')->name('documents.required.update');
+        Route::post('v1/documents/required/delete', [RequiredDocumentController::class, 'delete'])
+            ->middleware('can.do:documents_manage_types')->name('documents.required.delete');
+        Route::post('v1/documents/required/toggle', [RequiredDocumentController::class, 'toggle'])
+            ->middleware('can.do:documents_manage_types')->name('documents.required.toggle');
+        Route::post('v1/documents/mark-expired', [DocumentReportsController::class, 'markExpired'])
+            ->middleware('can.do:documents_manage_types')->name('documents.mark-expired');
+
+        Route::get('v1/documents/reports/missing', [DocumentReportsController::class, 'missing'])
+            ->middleware('can.do:documents_view_reports')->name('documents.reports.missing');
+        Route::get('v1/documents/reports/expiring-soon', [DocumentReportsController::class, 'expiringSoon'])
+            ->middleware('can.do:documents_view_reports')->name('documents.reports.expiring-soon');
+        Route::get('v1/documents/reports/expired', [DocumentReportsController::class, 'expired'])
+            ->middleware('can.do:documents_view_reports')->name('documents.reports.expired');
+        Route::get('v1/documents/reports/stats', [DocumentReportsController::class, 'stats'])
+            ->middleware('can.do:documents_view_reports')->name('documents.reports.stats');
+
+        Route::get('app/documents/get_required.php', [RequiredDocumentController::class, 'index'])
+            ->middleware('can.do:manage_documents')->name('legacy.documents.required');
+        Route::get('app/documents/get_required_submissions.php', [RequiredDocumentController::class, 'submissions'])
+            ->middleware('can.do:manage_documents')->name('legacy.documents.required.submissions');
+        Route::get('app/documents/view.php', ViewDocumentController::class)
+            ->middleware('can.do:manage_documents')->name('legacy.documents.view');
+
+        Route::post('app/documents/create_required.php', [RequiredDocumentController::class, 'create'])
+            ->middleware('can.do:documents_manage_types')->name('legacy.documents.required.create');
+        Route::post('app/documents/update_required.php', [RequiredDocumentController::class, 'update'])
+            ->middleware('can.do:documents_manage_types')->name('legacy.documents.required.update');
+        Route::post('app/documents/delete_required.php', [RequiredDocumentController::class, 'delete'])
+            ->middleware('can.do:documents_manage_types')->name('legacy.documents.required.delete');
+        Route::post('app/documents/toggle_required.php', [RequiredDocumentController::class, 'toggle'])
+            ->middleware('can.do:documents_manage_types')->name('legacy.documents.required.toggle');
+        Route::post('app/documents/mark_expired.php', [DocumentReportsController::class, 'markExpired'])
+            ->middleware('can.do:documents_manage_types')->name('legacy.documents.mark-expired');
+
+        Route::get('app/documents/reports_missing.php', [DocumentReportsController::class, 'missing'])
+            ->middleware('can.do:documents_view_reports')->name('legacy.documents.reports.missing');
+        Route::get('app/documents/reports_expiring_soon.php', [DocumentReportsController::class, 'expiringSoon'])
+            ->middleware('can.do:documents_view_reports')->name('legacy.documents.reports.expiring-soon');
+        Route::get('app/documents/reports_expired.php', [DocumentReportsController::class, 'expired'])
+            ->middleware('can.do:documents_view_reports')->name('legacy.documents.reports.expired');
+        Route::get('app/documents/reports_stats.php', [DocumentReportsController::class, 'stats'])
+            ->middleware('can.do:documents_view_reports')->name('legacy.documents.reports.stats');
     });
 
 });
