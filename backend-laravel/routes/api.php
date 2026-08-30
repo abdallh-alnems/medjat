@@ -50,6 +50,9 @@ use App\Http\Controllers\Employees\ListTerminatedController;
 use App\Http\Controllers\Employees\MyProfileController;
 use App\Http\Controllers\Employees\SuspensionController;
 use App\Http\Controllers\Employees\UpdateEmployeeController;
+use App\Http\Controllers\Leave\CarryoverController;
+use App\Http\Controllers\Leave\LeaveAdminController;
+use App\Http\Controllers\Leave\MyLeaveController;
 use App\Http\Controllers\Payroll\ApproveController;
 use App\Http\Controllers\Payroll\AuditLogController as PayrollAuditLogController;
 use App\Http\Controllers\Payroll\BankFileController;
@@ -511,6 +514,86 @@ Route::middleware('throttle:api')->group(function (): void {
         Route::post('app/payroll/override_line.php', OverrideLineController::class)
             ->name('legacy.payroll.override-line');
         Route::post('app/payroll/bulk_adjust.php', BulkAdjustController::class)->name('legacy.payroll.bulk-adjust');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Leave
+    |--------------------------------------------------------------------------
+    |
+    | An employee's own requests need no permission beyond being signed in —
+    | they are scoped to the token holder. Everything on the management side
+    | needs manage_leaves, except the two endpoints whose gate depends on the
+    | request itself and check inside the controller.
+    |
+    */
+
+    Route::middleware(['auth.employee', 'tenant'])->group(function (): void {
+        Route::post('v1/leaves/apply', [MyLeaveController::class, 'apply'])->name('leaves.apply');
+        Route::get('v1/leaves/mine', [MyLeaveController::class, 'index'])->name('leaves.mine');
+        Route::get('v1/leaves/my-balance', [MyLeaveController::class, 'balance'])->name('leaves.my-balance');
+        Route::post('v1/leaves/cancel', [MyLeaveController::class, 'cancel'])->name('leaves.cancel');
+        Route::post('v1/leaves/update', [MyLeaveController::class, 'update'])->name('leaves.update');
+
+        Route::post('app/leaves/apply.php', [MyLeaveController::class, 'apply'])->name('legacy.leaves.apply');
+        Route::get('app/leaves/my_leaves.php', [MyLeaveController::class, 'index'])->name('legacy.leaves.mine');
+        Route::get('app/leaves/my_balance.php', [MyLeaveController::class, 'balance'])
+            ->name('legacy.leaves.my-balance');
+        Route::post('app/leaves/cancel.php', [MyLeaveController::class, 'cancel'])->name('legacy.leaves.cancel');
+        Route::post('app/leaves/update.php', [MyLeaveController::class, 'update'])->name('legacy.leaves.update');
+    });
+
+    Route::middleware(['auth.admin', 'tenant'])->group(function (): void {
+        // The gate depends on whose balance is asked for, so it is checked in
+        // the controller rather than on the route.
+        Route::get('v1/leaves/balance', [LeaveAdminController::class, 'balance'])->name('leaves.balance');
+        Route::get('app/leaves/get_balance.php', [LeaveAdminController::class, 'balance'])
+            ->name('legacy.leaves.balance');
+
+        // Needs both manage_leaves and manage_attendance: it cancels leave and
+        // writes attendance.
+        Route::post('v1/leaves/convert-to-absence', [LeaveAdminController::class, 'convertToAbsence'])
+            ->name('leaves.convert-to-absence');
+        Route::post('app/leaves/convert_to_absence.php', [LeaveAdminController::class, 'convertToAbsence'])
+            ->name('legacy.leaves.convert-to-absence');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:manage_leaves'])->group(function (): void {
+        Route::get('v1/leaves', [LeaveAdminController::class, 'index'])->name('leaves.list');
+        Route::post('v1/leaves', [LeaveAdminController::class, 'create'])->name('leaves.create');
+        Route::post('v1/leaves/approve', [LeaveAdminController::class, 'approve'])->name('leaves.approve');
+        Route::post('v1/leaves/reject', [LeaveAdminController::class, 'reject'])->name('leaves.reject');
+        Route::post('v1/leaves/recurring', [LeaveAdminController::class, 'createRecurring'])
+            ->name('leaves.recurring');
+
+        Route::get('v1/leaves/carryover-policies', [CarryoverController::class, 'index'])
+            ->name('leaves.carryover-policies');
+        Route::post('v1/leaves/carryover-policies', [CarryoverController::class, 'save'])
+            ->name('leaves.carryover-policy-save');
+        Route::post('v1/leaves/carryover-policies/delete', [CarryoverController::class, 'delete'])
+            ->name('leaves.carryover-policy-delete');
+        Route::post('v1/leaves/rollover', [CarryoverController::class, 'rollover'])->name('leaves.rollover');
+        Route::get('v1/leaves/encashments', [CarryoverController::class, 'encashments'])
+            ->name('leaves.encashments');
+
+        Route::get('app/leaves/list.php', [LeaveAdminController::class, 'index'])->name('legacy.leaves.list');
+        Route::post('app/leaves/create.php', [LeaveAdminController::class, 'create'])->name('legacy.leaves.create');
+        Route::post('app/leaves/approve.php', [LeaveAdminController::class, 'approve'])
+            ->name('legacy.leaves.approve');
+        Route::post('app/leaves/reject.php', [LeaveAdminController::class, 'reject'])->name('legacy.leaves.reject');
+        Route::post('app/leaves/create_recurring.php', [LeaveAdminController::class, 'createRecurring'])
+            ->name('legacy.leaves.recurring');
+
+        Route::get('app/leaves/carryover_policies_list.php', [CarryoverController::class, 'index'])
+            ->name('legacy.leaves.carryover-policies');
+        Route::post('app/leaves/carryover_policy_save.php', [CarryoverController::class, 'save'])
+            ->name('legacy.leaves.carryover-policy-save');
+        Route::post('app/leaves/carryover_policy_delete.php', [CarryoverController::class, 'delete'])
+            ->name('legacy.leaves.carryover-policy-delete');
+        Route::post('app/leaves/rollover.php', [CarryoverController::class, 'rollover'])
+            ->name('legacy.leaves.rollover');
+        Route::get('app/leaves/encashments_list.php', [CarryoverController::class, 'encashments'])
+            ->name('legacy.leaves.encashments');
     });
 
 });

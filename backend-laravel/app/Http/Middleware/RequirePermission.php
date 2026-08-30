@@ -22,19 +22,6 @@ use Symfony\Component\HttpFoundation\Response;
 final class RequirePermission
 {
     /**
-     * Permissions that come free with a broader one.
-     *
-     * Documents were split into sub-permissions after the fact; anyone who could
-     * already manage documents kept everything that used to be one permission,
-     * rather than silently losing access on the day of the split.
-     *
-     * @var array<string, list<string>>
-     */
-    private const IMPLIED = [
-        'manage_documents' => ['documents_manage_types', 'documents_verify', 'documents_view_reports'],
-    ];
-
-    /**
      * @param  Closure(Request): Response  $next
      */
     public function handle(Request $request, Closure $next, string $permission): Response
@@ -47,28 +34,10 @@ final class RequirePermission
 
         $held = Permissions::effectiveFor($admin->id, $admin->tenant_id ?? 0, $admin->role);
 
-        if ($held === Permissions::ALL || $this->covers($held, $permission)) {
+        if ($held === Permissions::ALL || Permissions::covers($held, $permission)) {
             return $next($request);
         }
 
         throw new ApiFailure("Missing permission: {$permission}", 403, 'missing_permission');
-    }
-
-    /**
-     * @param  list<string>  $held
-     */
-    private function covers(array $held, string $permission): bool
-    {
-        if (in_array($permission, $held, true)) {
-            return true;
-        }
-
-        foreach (self::IMPLIED as $broader => $implied) {
-            if (in_array($broader, $held, true) && in_array($permission, $implied, true)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

@@ -78,6 +78,51 @@ final class Permissions
     }
 
     /**
+     * Permissions that come free with a broader one.
+     *
+     * Documents were split into sub-permissions after the fact; anyone who
+     * could already manage documents kept everything that used to be one
+     * permission, rather than silently losing access on the day of the split.
+     *
+     * @var array<string, list<string>>
+     */
+    private const IMPLIED = [
+        'manage_documents' => ['documents_manage_types', 'documents_verify', 'documents_view_reports'],
+    ];
+
+    /**
+     * Does this administrator hold this permission, directly or by implication?
+     *
+     * The same question the middleware asks. Endpoints whose gate depends on
+     * the request — reading somebody else's balance, or an action that needs
+     * two permissions at once — ask it here rather than reimplementing it.
+     */
+    public static function holds(int $adminId, int $tenantId, string $role, string $permission): bool
+    {
+        $held = self::effectiveFor($adminId, $tenantId, $role);
+
+        return $held === self::ALL || self::covers($held, $permission);
+    }
+
+    /**
+     * @param  list<string>  $held
+     */
+    public static function covers(array $held, string $permission): bool
+    {
+        if (in_array($permission, $held, true)) {
+            return true;
+        }
+
+        foreach (self::IMPLIED as $broader => $implied) {
+            if (in_array($broader, $held, true) && in_array($permission, $implied, true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * True when every permission in $granted is covered by $owner. Used to stop
      * an administrator granting a role or permission higher than their own.
      *
