@@ -1,0 +1,82 @@
+# Paths never pushed to the live server.
+#
+# Same two categories as the legacy backend's list, because the same rsync
+# --delete is what makes them matter:
+#
+#   1. Things the server owns and must keep. --delete removes anything on the
+#      server that is absent here, so a missing entry does not fail loudly — it
+#      quietly deletes production data.
+#   2. Things that are ours alone and have no business in a deployment.
+#
+# Laravel's list differs from the legacy one in one way worth knowing: the
+# docroot is public/, not the application root, so nothing outside public/ is
+# reachable by URL even if it lands. That makes leakage less dangerous here and
+# deletion exactly as dangerous.
+
+# --- server-owned: never overwrite, never delete ---
+
+# Live secrets. The server's own .env is hand-written and holds the database
+# password, the Firebase path and the app secret. Overwriting it with a
+# developer's takes the site down; deleting it takes it down harder.
+.env
+.env.backup
+.env.production
+
+# The test suite's database credentials. Nothing reads it in production, and it
+# names a database that does not exist there.
+.env.testing
+
+# Employee evidence — payslips, identity documents, face and punch captures.
+# Whether these sit here depends on UPLOADS_PATH, and if they do, --delete
+# without this line erases every one of them. Listed unconditionally: the cost
+# of an unnecessary exclusion is nothing, the cost of a missing one is
+# unrecoverable.
+uploads/
+storage/app/uploads/
+
+# Runtime state the server writes and we never should: logs, sessions, the
+# framework's compiled views, queue and cache files.
+storage/logs/
+storage/framework/
+storage/app/
+*.log
+
+# Compiled config, routes and services. These embed absolute paths from
+# whichever machine built them, so a local copy points at /Users/... and the
+# application will not boot. Regenerated on the server by `artisan config:cache`.
+bootstrap/cache/
+
+# Installed on the server with `composer install --no-dev --optimize-autoloader`.
+# Shipping a local vendor/ also ships dev dependencies — phpunit, phpstan and
+# their transitive tree — into production.
+vendor/
+
+# Service-account JSON. Server-owned, and pointed at by FIREBASE_CREDENTIALS_PATH.
+firebase_credentials.json
+*.serviceaccount.json
+
+# --- ours alone: no place in a deployment ---
+tests/
+phpunit.xml
+phpstan.neon
+pint.json
+.phpunit.result.cache
+.phpunit.cache/
+node_modules/
+package.json
+package-lock.json
+.git/
+.gitignore
+.gitattributes
+.editorconfig
+.npmrc
+.DS_Store
+.idea/
+.vscode/
+.claude/
+AGENTS.md
+CLAUDE.md
+*.bak
+*.bak-*
+backup_*.sql
+.deployignore
