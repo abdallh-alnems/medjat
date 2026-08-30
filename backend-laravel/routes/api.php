@@ -50,6 +50,12 @@ use App\Http\Controllers\Employees\ListTerminatedController;
 use App\Http\Controllers\Employees\MyProfileController;
 use App\Http\Controllers\Employees\SuspensionController;
 use App\Http\Controllers\Employees\UpdateEmployeeController;
+use App\Http\Controllers\Kiosk\IdentifyController;
+use App\Http\Controllers\Kiosk\KioskAdminController;
+use App\Http\Controllers\Kiosk\KioskFleetController;
+use App\Http\Controllers\Kiosk\KioskSessionController;
+use App\Http\Controllers\Kiosk\PairingController;
+use App\Http\Controllers\Kiosk\PunchController;
 use App\Http\Controllers\Leave\CarryoverController;
 use App\Http\Controllers\Leave\LeaveAdminController;
 use App\Http\Controllers\Leave\MyLeaveController;
@@ -594,6 +600,87 @@ Route::middleware('throttle:api')->group(function (): void {
             ->name('legacy.leaves.rollover');
         Route::get('app/leaves/encashments_list.php', [CarryoverController::class, 'encashments'])
             ->name('legacy.leaves.encashments');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Branch kiosk
+    |--------------------------------------------------------------------------
+    |
+    | Three groups, because a kiosk is a third authentication principal. The
+    | management app configures the fleet as a person; the tablet itself
+    | authenticates as a branch; and pairing is the one door that is not behind
+    | a token at all, because the pairing code IS the credential there.
+    |
+    */
+
+    // The only kiosk endpoint that accepts an unauthenticated request.
+    Route::post('v1/kiosk/pair', [PairingController::class, 'pair'])->name('kiosk.pair');
+    Route::post('app/kiosk/pair.php', [PairingController::class, 'pair'])->name('legacy.kiosk.pair');
+
+    Route::middleware('auth.kiosk')->group(function (): void {
+        Route::post('v1/kiosk/heartbeat', [KioskSessionController::class, 'heartbeat'])->name('kiosk.heartbeat');
+        Route::post('v1/kiosk/challenge', [KioskSessionController::class, 'challenge'])->name('kiosk.challenge');
+        Route::post('v1/kiosk/identify', [IdentifyController::class, 'byFace'])->name('kiosk.identify');
+        Route::post('v1/kiosk/identify-by-code', [IdentifyController::class, 'byCode'])
+            ->name('kiosk.identify-by-code');
+        Route::post('v1/kiosk/punch', PunchController::class)->name('kiosk.punch');
+        Route::post('v1/kiosk/open-admin', [PairingController::class, 'openAdmin'])->name('kiosk.open-admin');
+        Route::post('v1/kiosk/admin/roster', [KioskAdminController::class, 'roster'])->name('kiosk.admin.roster');
+        Route::post('v1/kiosk/admin/enroll', [KioskAdminController::class, 'enroll'])->name('kiosk.admin.enroll');
+        Route::post('v1/kiosk/admin/close', [KioskAdminController::class, 'close'])->name('kiosk.admin.close');
+
+        Route::post('app/kiosk/heartbeat.php', [KioskSessionController::class, 'heartbeat'])
+            ->name('legacy.kiosk.heartbeat');
+        Route::post('app/kiosk/challenge.php', [KioskSessionController::class, 'challenge'])
+            ->name('legacy.kiosk.challenge');
+        Route::post('app/kiosk/identify.php', [IdentifyController::class, 'byFace'])->name('legacy.kiosk.identify');
+        Route::post('app/kiosk/identify_by_code.php', [IdentifyController::class, 'byCode'])
+            ->name('legacy.kiosk.identify-by-code');
+        Route::post('app/kiosk/punch.php', PunchController::class)->name('legacy.kiosk.punch');
+        Route::post('app/kiosk/open_admin.php', [PairingController::class, 'openAdmin'])
+            ->name('legacy.kiosk.open-admin');
+        Route::post('app/kiosk/admin/roster.php', [KioskAdminController::class, 'roster'])
+            ->name('legacy.kiosk.admin.roster');
+        Route::post('app/kiosk/admin/enroll.php', [KioskAdminController::class, 'enroll'])
+            ->name('legacy.kiosk.admin.enroll');
+        Route::post('app/kiosk/admin/close.php', [KioskAdminController::class, 'close'])
+            ->name('legacy.kiosk.admin.close');
+    });
+
+    Route::middleware(['auth.admin', 'tenant'])->group(function (): void {
+        // Pairing and unpairing hardware, versus issuing an access code to
+        // enrol faces: deliberately different permissions, because somebody who
+        // can enrol should not thereby be able to unpair the fleet.
+        Route::post('v1/kiosk/stations', [KioskFleetController::class, 'index'])
+            ->middleware('can.do:kiosk_devices')->name('kiosk.stations');
+        Route::post('v1/kiosk/pairing-code', [PairingController::class, 'createPairingCode'])
+            ->middleware('can.do:kiosk_devices')->name('kiosk.pairing-code');
+        Route::post('v1/kiosk/revoke', [PairingController::class, 'revoke'])
+            ->middleware('can.do:kiosk_devices')->name('kiosk.revoke');
+        Route::post('v1/kiosk/access-code', [PairingController::class, 'createAccessCode'])
+            ->middleware('can.do:kiosk_access')->name('kiosk.access-code');
+        Route::post('v1/kiosk/set-pin', [KioskFleetController::class, 'setPin'])
+            ->middleware('can.do:manage_employees')->name('kiosk.set-pin');
+        Route::post('v1/kiosk/recognition-logs', [KioskFleetController::class, 'recognitionLogs'])
+            ->middleware('can.do:manage_attendance')->name('kiosk.recognition-logs');
+        Route::post('v1/kiosk/capture', [KioskFleetController::class, 'capture'])
+            ->middleware('can.do:kiosk_evidence')->name('kiosk.capture');
+
+        Route::post('app/kiosk/list.php', [KioskFleetController::class, 'index'])
+            ->middleware('can.do:kiosk_devices')->name('legacy.kiosk.stations');
+        Route::post('app/kiosk/create_pairing_code.php', [PairingController::class, 'createPairingCode'])
+            ->middleware('can.do:kiosk_devices')->name('legacy.kiosk.pairing-code');
+        Route::post('app/kiosk/revoke.php', [PairingController::class, 'revoke'])
+            ->middleware('can.do:kiosk_devices')->name('legacy.kiosk.revoke');
+        Route::post('app/kiosk/create_access_code.php', [PairingController::class, 'createAccessCode'])
+            ->middleware('can.do:kiosk_access')->name('legacy.kiosk.access-code');
+        Route::post('app/kiosk/set_pin.php', [KioskFleetController::class, 'setPin'])
+            ->middleware('can.do:manage_employees')->name('legacy.kiosk.set-pin');
+        Route::post('app/kiosk/recognition_logs.php', [KioskFleetController::class, 'recognitionLogs'])
+            ->middleware('can.do:manage_attendance')->name('legacy.kiosk.recognition-logs');
+        Route::post('app/kiosk/capture.php', [KioskFleetController::class, 'capture'])
+            ->middleware('can.do:kiosk_evidence')->name('legacy.kiosk.capture');
     });
 
 });

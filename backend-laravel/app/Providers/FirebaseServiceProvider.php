@@ -12,11 +12,14 @@ use App\Services\Auth\KreaitFirebaseAccountManager;
 use App\Services\Auth\KreaitFirebaseCustomTokenMinter;
 use App\Services\Auth\KreaitFirebaseTokenVerifier;
 use App\Services\Notifications\FirebasePushSender;
+use App\Services\RemoteConfig\FirebaseRemoteConfigGate;
+use App\Services\RemoteConfig\RemoteConfigGate;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
 use Kreait\Firebase\Contract\Auth as FirebaseAuth;
 use Kreait\Firebase\Contract\Messaging;
+use Kreait\Firebase\Contract\RemoteConfig;
 use Kreait\Firebase\Factory;
 use RuntimeException;
 
@@ -67,6 +70,21 @@ final class FirebaseServiceProvider extends ServiceProvider
         $this->app->bind(
             FirebaseAccountManager::class,
             fn (Application $app): FirebaseAccountManager => new KreaitFirebaseAccountManager($app->make(FirebaseAuth::class)),
+        );
+
+        $this->app->singleton(RemoteConfig::class, function (): RemoteConfig {
+            $path = Config::string('medjat.firebase.credentials_path');
+
+            if ($path === '' || ! is_file($path)) {
+                throw new RuntimeException("Firebase credentials not found at: {$path}");
+            }
+
+            return (new Factory)->withServiceAccount($path)->createRemoteConfig();
+        });
+
+        $this->app->bind(
+            RemoteConfigGate::class,
+            fn (Application $app): RemoteConfigGate => new FirebaseRemoteConfigGate($app->make(RemoteConfig::class)),
         );
     }
 }

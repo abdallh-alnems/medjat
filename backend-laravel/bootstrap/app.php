@@ -23,6 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.employee' => App\Http\Middleware\AuthenticateEmployee::class,
             'auth.admin' => App\Http\Middleware\AuthenticateAdmin::class,
             'auth.either' => App\Http\Middleware\AuthenticateEmployeeOrAdmin::class,
+            // A kiosk authenticates as a branch, not as a person — the third
+            // principal, and the reason it is a guard of its own.
+            'auth.kiosk' => App\Http\Middleware\AuthenticateKiosk::class,
             'tenant' => App\Http\Middleware\RequireTenant::class,
             'can.do' => App\Http\Middleware\RequirePermission::class,
         ]);
