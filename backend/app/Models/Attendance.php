@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Domain\Time\TenantClock;
 use App\Exceptions\ApiFailure;
+use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;

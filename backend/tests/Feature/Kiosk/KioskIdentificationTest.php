@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Kiosk;
 
-use App\Domain\Kiosk\KioskIdentifier;
+use App\Modules\Kiosk\Domain\KioskIdentifier;
 use Tests\TestCase;
 
 /**

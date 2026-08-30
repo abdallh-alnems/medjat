@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Auth;
 
-use App\Domain\Access\PinPolicy;
 use App\Models\ActivationCode;
 use App\Models\Employee;
 use App\Models\EmployeeAuthToken;
 use App\Models\EmployeeWebCredential;
+use App\Shared\Access\PinPolicy;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

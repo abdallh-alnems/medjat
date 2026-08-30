@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Auth;
 
 use App\Mail\AuthActionMail;
-use App\Services\Auth\FirebaseAccountManager;
+use App\Modules\Auth\Services\FirebaseAccountManager;
 use Illuminate\Support\Facades\Mail;
 use Tests\Support\FakeFirebaseAccountManager;
 use Tests\TestCase;

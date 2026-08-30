@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Kiosk;
 
-use App\Domain\Kiosk\KioskPairing;
-use App\Domain\Notifications\PushSender;
-use App\Services\Auth\FirebaseTokenVerifier;
-use App\Services\RemoteConfig\RemoteConfigGate;
+use App\Modules\Auth\Services\FirebaseTokenVerifier;
+use App\Modules\Kiosk\Domain\KioskPairing;
+use App\Modules\Notifications\Domain\PushSender;
+use App\Shared\RemoteConfig\RemoteConfigGate;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

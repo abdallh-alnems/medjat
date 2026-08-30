@@ -8,7 +8,7 @@ use App\Models\ActivationCode;
 use App\Models\Admin;
 use App\Models\Employee;
 use App\Models\EmployeeAuthToken;
-use App\Services\Auth\FirebaseTokenVerifier;
+use App\Modules\Auth\Services\FirebaseTokenVerifier;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\FakeFirebaseTokenVerifier;

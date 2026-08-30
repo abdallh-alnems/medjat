@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Biometric;
 
-use App\Domain\Face\FaceEmbedding;
 use App\Models\EmployeeAuthToken;
+use App\Shared\Face\FaceEmbedding;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

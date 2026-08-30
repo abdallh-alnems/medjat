@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Support;
 
-use App\Services\Auth\FirebaseAccountManager;
-use App\Services\Auth\FirebaseCustomTokenMinter;
+use App\Modules\Auth\Services\FirebaseAccountManager;
+use App\Modules\Auth\Services\FirebaseCustomTokenMinter;
 
 /**
  * Firebase account operations, recorded rather than performed.

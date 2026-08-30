@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use App\Domain\Access\Permissions;
 use App\Exceptions\ApiFailure;
 use App\Models\Admin;
+use App\Shared\Access\Permissions;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;

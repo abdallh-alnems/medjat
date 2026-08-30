@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Devices;
 
-use App\Domain\Devices\AttendanceDevice;
-use App\Domain\Notifications\PushSender;
-use App\Domain\Time\TenantClock;
-use App\Services\Auth\FirebaseTokenVerifier;
+use App\Modules\Auth\Services\FirebaseTokenVerifier;
+use App\Modules\Devices\Domain\AttendanceDevice;
+use App\Modules\Notifications\Domain\PushSender;
+use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;

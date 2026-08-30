@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Payroll;
 
-use App\Domain\Payroll\PayrollLedger;
+use App\Modules\Payroll\Domain\PayrollLedger;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

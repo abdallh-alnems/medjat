@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Payroll;
 
-use App\Domain\Payroll\PayLineOverrides;
-use App\Domain\Payroll\PayrollCalculator;
+use App\Modules\Payroll\Domain\PayLineOverrides;
+use App\Modules\Payroll\Domain\PayrollCalculator;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

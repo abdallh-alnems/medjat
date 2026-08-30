@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use App\Domain\SuperAdmin\SuperAdminSession;
 use App\Exceptions\ApiFailure;
+use App\Modules\SuperAdmin\Domain\SuperAdminSession;
 use App\Support\Value;
 use Closure;
 use Illuminate\Http\Request;

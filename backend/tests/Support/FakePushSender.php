@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Support;
 
-use App\Domain\Notifications\PushSender;
+use App\Modules\Notifications\Domain\PushSender;
 
 /**
  * Records pushes instead of sending them, so every endpoint that notifies

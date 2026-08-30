@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Mail;
 
-use App\Domain\Notifications\EmployeeActivationAlert;
-use App\Domain\Notifications\LoginAlert;
-use App\Domain\Notifications\PushSender;
-use App\Domain\Team\ManagerInvitation;
 use App\Mail\NewDeviceLoginMail;
 use App\Mail\TeamInvitationMail;
 use App\Models\Admin;
 use App\Models\Employee;
+use App\Modules\Notifications\Domain\EmployeeActivationAlert;
+use App\Modules\Notifications\Domain\LoginAlert;
+use App\Modules\Notifications\Domain\PushSender;
+use App\Modules\Team\Domain\ManagerInvitation;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

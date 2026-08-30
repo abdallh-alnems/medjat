@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Auth;
 
 use App\Models\Admin;
-use App\Services\Auth\FirebaseTokenVerifier;
+use App\Modules\Auth\Services\FirebaseTokenVerifier;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\FakeFirebaseTokenVerifier;

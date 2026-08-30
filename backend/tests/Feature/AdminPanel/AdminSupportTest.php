@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\AdminPanel;
 
-use App\Domain\Notifications\PushSender;
-use App\Domain\SuperAdmin\SuperAdminSession;
-use App\Domain\Support\SupportTickets;
+use App\Modules\Notifications\Domain\PushSender;
+use App\Modules\SuperAdmin\Domain\SuperAdminSession;
+use App\Modules\Support\Domain\SupportTickets;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

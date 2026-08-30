@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Cron;
 
-use App\Domain\Notifications\PushSender;
-use App\Domain\Time\TenantClock;
+use App\Modules\Notifications\Domain\PushSender;
+use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Config;

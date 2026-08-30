@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Settlements;
 
-use App\Domain\Notifications\PushSender;
-use App\Domain\Settlements\SettlementCalculator;
 use App\Models\EmployeeAuthToken;
-use App\Services\Auth\FirebaseTokenVerifier;
+use App\Modules\Auth\Services\FirebaseTokenVerifier;
+use App\Modules\Notifications\Domain\PushSender;
+use App\Modules\Settlements\Domain\SettlementCalculator;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

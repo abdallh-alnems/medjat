@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Schedule;
 
-use App\Domain\Notifications\PushSender;
-use App\Domain\Schedule\WeeklyRoster;
-use App\Services\Auth\FirebaseTokenVerifier;
+use App\Modules\Auth\Services\FirebaseTokenVerifier;
+use App\Modules\Notifications\Domain\PushSender;
+use App\Modules\Schedule\Domain\WeeklyRoster;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Leave;
 
-use App\Domain\Leave\CarryoverPolicy;
-use App\Domain\Leave\LeaveBalanceCalculator;
+use App\Modules\Leave\Domain\CarryoverPolicy;
+use App\Modules\Leave\Domain\LeaveBalanceCalculator;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

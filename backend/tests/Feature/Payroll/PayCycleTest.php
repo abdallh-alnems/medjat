@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Payroll;
 
-use App\Domain\Payroll\PayCycle;
+use App\Modules\Payroll\Domain\PayCycle;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

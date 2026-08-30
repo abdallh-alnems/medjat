@@ -6,9 +6,9 @@ namespace Tests\Feature\Auth;
 
 use App\Models\Admin;
 use App\Models\DesktopAuthCode;
-use App\Services\Auth\FirebaseAccountManager;
-use App\Services\Auth\FirebaseCustomTokenMinter;
-use App\Services\Auth\FirebaseTokenVerifier;
+use App\Modules\Auth\Services\FirebaseAccountManager;
+use App\Modules\Auth\Services\FirebaseCustomTokenMinter;
+use App\Modules\Auth\Services\FirebaseTokenVerifier;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

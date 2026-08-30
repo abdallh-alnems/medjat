@@ -6,7 +6,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\Admin;
 use App\Models\CustomRole;
-use App\Services\Auth\FirebaseTokenVerifier;
+use App\Modules\Auth\Services\FirebaseTokenVerifier;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

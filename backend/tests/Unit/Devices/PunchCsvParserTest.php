@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Devices;
 
-use App\Domain\Devices\PunchCsvParser;
+use App\Modules\Devices\Domain\PunchCsvParser;
 use PHPUnit\Framework\TestCase;
 
 /**

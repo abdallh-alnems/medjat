@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Services\Cron\RunDailyAlerts;
+use App\Modules\Cron\Services\RunDailyAlerts;
 use Illuminate\Console\Command;
 
 /**

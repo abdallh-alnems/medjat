@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Tenant;
 
-use App\Domain\Notifications\PushSender;
-use App\Domain\Team\ManagerInvitation;
-use App\Services\Auth\FirebaseTokenVerifier;
+use App\Modules\Auth\Services\FirebaseTokenVerifier;
+use App\Modules\Notifications\Domain\PushSender;
+use App\Modules\Team\Domain\ManagerInvitation;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

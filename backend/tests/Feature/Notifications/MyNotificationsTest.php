@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Notifications;
 
-use App\Domain\Notifications\Notifier;
-use App\Domain\Notifications\PushSender;
 use App\Models\EmployeeAuthToken;
+use App\Modules\Notifications\Domain\Notifier;
+use App\Modules\Notifications\Domain\PushSender;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

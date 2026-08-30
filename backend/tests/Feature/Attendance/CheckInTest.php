@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Attendance;
 
-use App\Domain\Time\TenantClock;
 use App\Models\Employee;
 use App\Models\EmployeeAuthToken;
+use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

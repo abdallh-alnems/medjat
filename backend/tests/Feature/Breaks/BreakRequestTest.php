@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Breaks;
 
-use App\Domain\Breaks\BreakRequests;
-use App\Domain\Notifications\PushSender;
-use App\Domain\Time\TenantClock;
 use App\Models\EmployeeAuthToken;
-use App\Services\Auth\FirebaseTokenVerifier;
+use App\Modules\Auth\Services\FirebaseTokenVerifier;
+use App\Modules\Breaks\Domain\BreakRequests;
+use App\Modules\Notifications\Domain\PushSender;
+use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

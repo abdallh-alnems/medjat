@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Domain\Attendance\Geofence;
+use App\Modules\Attendance\Domain\Geofence;
 use App\Support\Value;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;

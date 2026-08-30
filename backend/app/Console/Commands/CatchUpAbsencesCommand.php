@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Services\Cron\CatchUpAbsences;
+use App\Modules\Cron\Services\CatchUpAbsences;
 use Illuminate\Console\Command;
 
 /**

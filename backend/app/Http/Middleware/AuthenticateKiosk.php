@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use App\Domain\Kiosk\KioskStation;
-use App\Domain\Kiosk\KioskToken;
 use App\Http\ApiResponse;
+use App\Modules\Kiosk\Domain\KioskStation;
+use App\Modules\Kiosk\Domain\KioskToken;
 use App\Support\Value;
 use Closure;
 use Illuminate\Http\Request;

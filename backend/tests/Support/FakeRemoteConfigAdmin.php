@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Support;
 
-use App\Services\RemoteConfig\RemoteConfigAdmin;
+use App\Shared\RemoteConfig\RemoteConfigAdmin;
 
 /**
  * An in-memory gate, so the app-control endpoints are testable without Firebase

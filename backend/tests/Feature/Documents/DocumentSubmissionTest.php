@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Documents;
 
-use App\Domain\Notifications\PushSender;
 use App\Models\Admin;
 use App\Models\Employee;
 use App\Models\EmployeeAuthToken;
-use App\Services\Auth\FirebaseTokenVerifier;
+use App\Modules\Auth\Services\FirebaseTokenVerifier;
+use App\Modules\Notifications\Domain\PushSender;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;

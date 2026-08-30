@@ -7,7 +7,7 @@ namespace Tests\Feature\Employees;
 use App\Models\Admin;
 use App\Models\Employee;
 use App\Models\EmployeeAuthToken;
-use App\Services\Auth\FirebaseTokenVerifier;
+use App\Modules\Auth\Services\FirebaseTokenVerifier;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

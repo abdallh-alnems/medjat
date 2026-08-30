@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Support;
 
-use App\Services\RemoteConfig\AppGate;
-use App\Services\RemoteConfig\RemoteConfigGate;
+use App\Shared\RemoteConfig\AppGate;
+use App\Shared\RemoteConfig\RemoteConfigGate;
 
 /**
  * Stands in for Firebase Remote Config in tests and in CI.

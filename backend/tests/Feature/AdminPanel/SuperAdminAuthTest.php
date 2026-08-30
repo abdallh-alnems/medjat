@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\AdminPanel;
 
-use App\Domain\SuperAdmin\SuperAdminSession;
-use App\Services\Auth\FirebaseTokenVerifier;
+use App\Modules\Auth\Services\FirebaseTokenVerifier;
+use App\Modules\SuperAdmin\Domain\SuperAdminSession;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

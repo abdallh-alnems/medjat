@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\AdminPanel;
 
-use App\Domain\Notifications\PushSender;
-use App\Domain\SuperAdmin\SuperAdminSession;
-use App\Domain\Team\ManagerInvitation;
-use App\Services\Auth\FirebaseAccountManager;
-use App\Services\Auth\FirebaseCustomTokenMinter;
+use App\Modules\Auth\Services\FirebaseAccountManager;
+use App\Modules\Auth\Services\FirebaseCustomTokenMinter;
+use App\Modules\Notifications\Domain\PushSender;
+use App\Modules\SuperAdmin\Domain\SuperAdminSession;
+use App\Modules\Team\Domain\ManagerInvitation;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

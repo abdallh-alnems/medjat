@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Services\Cron\PurgeKioskCaptures;
+use App\Modules\Cron\Services\PurgeKioskCaptures;
 use Illuminate\Console\Command;
 
 /**

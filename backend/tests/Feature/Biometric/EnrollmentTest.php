@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Biometric;
 
-use App\Domain\Face\FaceEmbedding;
-use App\Domain\Notifications\PushSender;
-use App\Services\Auth\FirebaseTokenVerifier;
+use App\Modules\Auth\Services\FirebaseTokenVerifier;
+use App\Modules\Notifications\Domain\PushSender;
+use App\Shared\Face\FaceEmbedding;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

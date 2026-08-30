@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Audit;
 
-use App\Domain\Audit\AuditFeed;
-use App\Domain\Audit\AuditLog;
-use App\Domain\Notifications\PushSender;
-use App\Services\Auth\FirebaseTokenVerifier;
+use App\Modules\Audit\Domain\AuditFeed;
+use App\Modules\Audit\Domain\AuditLog;
+use App\Modules\Auth\Services\FirebaseTokenVerifier;
+use App\Modules\Notifications\Domain\PushSender;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tests\Support;
 
 use App\Exceptions\ApiFailure;
-use App\Services\Auth\FirebaseTokenVerifier;
-use App\Services\Auth\VerifiedFirebaseUser;
+use App\Modules\Auth\Services\FirebaseTokenVerifier;
+use App\Modules\Auth\Services\VerifiedFirebaseUser;
 
 /**
  * Stands in for Firebase in tests and in CI.

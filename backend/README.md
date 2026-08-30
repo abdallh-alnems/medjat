@@ -23,31 +23,53 @@ on any schedule we control.
 
 ## Layout
 
+Organised by **subject**, not by technical layer. Everything about payroll — the
+rules, the endpoints, the multi-step actions — lives in one directory, because
+that is the unit work actually arrives in. "Fix the overtime rounding" should
+not mean opening three trees.
+
 ```
 app/
-├── Domain/          The rules. One directory per subject — Payroll, Leave,
-│                    Attendance, Kiosk, Devices, Face … Framework-free where it
-│                    can be, so a rule can be read without reading a request.
-├── Http/
-│   ├── Controllers/ One class per screen or action. They validate, delegate,
-│   │                and shape a response; the deciding happens in Domain.
-│   ├── Middleware/  The four principals and the two gates (see below).
-│   └── Requests/    Form requests where validation is worth naming.
-├── Models/          Eloquent, for the handful of tables with real behaviour.
-├── Services/        Multi-step actions and anything talking to the outside
-│                    world — Firebase, FCM, Remote Config, the cron jobs.
-├── Mail/            Transactional mail.
-├── Console/         The scheduled jobs, also reachable over HTTP.
-└── Support/         Value: narrowing `mixed` from query rows at level max.
+├── Modules/<Subject>/       one per business subject (33 of them)
+│   ├── Domain/              the rules. Framework-free where it can be, so a
+│   │                        rule can be read without reading a request.
+│   ├── Http/
+│   │   ├── Controllers/     one class per screen or action
+│   │   └── Requests/        validation worth naming
+│   └── Services/            multi-step actions and anything talking outward
+│
+├── Shared/                  used by several modules, owned by none
+│   ├── Access/              the permission catalogue
+│   ├── Approvals/           the approval chain
+│   ├── Face/                embeddings and matching — Attendance, Biometric
+│   │                        and Kiosk all reach for it
+│   ├── Security/            the log of blocked and flagged attempts
+│   ├── Time/                TenantClock: "now" in the company's own zone
+│   ├── RemoteConfig/        the version and maintenance gate
+│   ├── Crew/  Contact/
+│   └── Http/                the API request base class
+│
+├── Http/Middleware/         the four principals and the two gates
+├── Models/                  Eloquent, for tables with real behaviour
+├── Console/Commands/        the scheduled jobs
+├── Mail/                    transactional mail
+├── Providers/  Exceptions/
+└── Support/                 Value: narrowing `mixed` from query rows
+```
 
-routes/api.php       Every route, grouped by module, gate visible on each.
-config/medjat.php    Everything this application configures.
-resources/
-├── views/mail/      Transactional email.
-├── views/landing/   Deep-link fallback pages.
-└── well-known/      App Links / Universal Links association files.
-lang/{ar,en}/        Arabic first; the apps are Arabic-first and RTL.
-tests/Feature/       One directory per module, mirroring app/Domain.
+**The rule that decides where something goes:** a subject with an HTTP surface
+is a Module; a subject without one, reached only by other subjects, is Shared.
+Applied mechanically, so nobody has to argue about it. Modules may depend on
+Shared and on each other; nothing in Shared reaches back into a Module.
+
+```
+routes/api.php            every route, grouped by module, gate visible on each
+config/medjat.php         everything this application configures
+resources/views/mail/     transactional email
+resources/views/landing/  deep-link fallback pages
+resources/well-known/     App Links / Universal Links association files
+lang/{ar,en}/             Arabic first; the apps are Arabic-first and RTL
+tests/Feature/            one directory per module
 ```
 
 ## Who can call what
