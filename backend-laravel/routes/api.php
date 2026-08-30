@@ -74,16 +74,20 @@ use App\Http\Controllers\Leave\LeaveAdminController;
 use App\Http\Controllers\Leave\MyLeaveController;
 use App\Http\Controllers\Loans\LoanController;
 use App\Http\Controllers\Loans\MyAdvanceController;
+use App\Http\Controllers\Payroll\AllowanceController;
 use App\Http\Controllers\Payroll\ApproveController;
 use App\Http\Controllers\Payroll\AuditLogController as PayrollAuditLogController;
 use App\Http\Controllers\Payroll\BankFileController;
 use App\Http\Controllers\Payroll\BulkAdjustController;
+use App\Http\Controllers\Payroll\BulkAdjustmentBatchController;
 use App\Http\Controllers\Payroll\CalculateController;
+use App\Http\Controllers\Payroll\DeductionRulesController;
 use App\Http\Controllers\Payroll\DisburseController;
 use App\Http\Controllers\Payroll\EosbController;
 use App\Http\Controllers\Payroll\GenerateController;
 use App\Http\Controllers\Payroll\ListSlipsController;
 use App\Http\Controllers\Payroll\LiveController;
+use App\Http\Controllers\Payroll\ManualAdjustmentController;
 use App\Http\Controllers\Payroll\MarkPaidController;
 use App\Http\Controllers\Payroll\MySlipController;
 use App\Http\Controllers\Payroll\OverrideLineController;
@@ -541,6 +545,97 @@ Route::middleware('throttle:api')->group(function (): void {
         Route::post('app/payroll/override_line.php', OverrideLineController::class)
             ->name('legacy.payroll.override-line');
         Route::post('app/payroll/bulk_adjust.php', BulkAdjustController::class)->name('legacy.payroll.bulk-adjust');
+
+        Route::post('v1/deductions/manual', [ManualAdjustmentController::class, 'addDeduction'])
+            ->name('deductions.manual.add');
+        Route::post('v1/deductions/manual/update', [ManualAdjustmentController::class, 'updateDeduction'])
+            ->name('deductions.manual.update');
+        Route::post('v1/deductions/manual/delete', [ManualAdjustmentController::class, 'deleteDeduction'])
+            ->name('deductions.manual.delete');
+        Route::post('v1/bonuses/manual', [ManualAdjustmentController::class, 'addBonus'])
+            ->name('bonuses.manual.add');
+        Route::post('v1/bonuses/manual/update', [ManualAdjustmentController::class, 'updateBonus'])
+            ->name('bonuses.manual.update');
+        Route::post('v1/bonuses/manual/delete', [ManualAdjustmentController::class, 'deleteBonus'])
+            ->name('bonuses.manual.delete');
+
+        Route::post('app/deductions/add_manual.php', [ManualAdjustmentController::class, 'addDeduction'])
+            ->name('legacy.deductions.manual.add');
+        Route::post('app/deductions/update_manual.php', [ManualAdjustmentController::class, 'updateDeduction'])
+            ->name('legacy.deductions.manual.update');
+        Route::post('app/deductions/delete_manual.php', [ManualAdjustmentController::class, 'deleteDeduction'])
+            ->name('legacy.deductions.manual.delete');
+        Route::post('app/bonuses/add_manual.php', [ManualAdjustmentController::class, 'addBonus'])
+            ->name('legacy.bonuses.manual.add');
+        Route::post('app/bonuses/update_manual.php', [ManualAdjustmentController::class, 'updateBonus'])
+            ->name('legacy.bonuses.manual.update');
+        Route::post('app/bonuses/delete_manual.php', [ManualAdjustmentController::class, 'deleteBonus'])
+            ->name('legacy.bonuses.manual.delete');
+
+        Route::get('v1/allowances', [AllowanceController::class, 'index'])->name('allowances.index');
+        Route::post('v1/allowances', [AllowanceController::class, 'create'])->name('allowances.create');
+        Route::post('v1/allowances/update', [AllowanceController::class, 'update'])->name('allowances.update');
+        Route::post('v1/allowances/delete', [AllowanceController::class, 'delete'])->name('allowances.delete');
+
+        Route::get('app/allowances/list.php', [AllowanceController::class, 'index'])
+            ->name('legacy.allowances.index');
+        Route::post('app/allowances/create.php', [AllowanceController::class, 'create'])
+            ->name('legacy.allowances.create');
+        Route::post('app/allowances/update.php', [AllowanceController::class, 'update'])
+            ->name('legacy.allowances.update');
+        Route::post('app/allowances/delete.php', [AllowanceController::class, 'delete'])
+            ->name('legacy.allowances.delete');
+
+        Route::get('v1/bulk-adjustments', [BulkAdjustmentBatchController::class, 'index'])
+            ->name('bulk-adjustments.index');
+        Route::get('v1/bulk-adjustments/get', [BulkAdjustmentBatchController::class, 'show'])
+            ->name('bulk-adjustments.show');
+        Route::post('v1/bulk-adjustments', [BulkAdjustmentBatchController::class, 'create'])
+            ->name('bulk-adjustments.create');
+        Route::post('v1/bulk-adjustments/update', [BulkAdjustmentBatchController::class, 'update'])
+            ->name('bulk-adjustments.update');
+        Route::post('v1/bulk-adjustments/delete', [BulkAdjustmentBatchController::class, 'delete'])
+            ->name('bulk-adjustments.delete');
+        Route::post('v1/bulk-adjustments/remove-member', [BulkAdjustmentBatchController::class, 'removeMember'])
+            ->name('bulk-adjustments.remove-member');
+
+        Route::get('app/bulk_adjustments/list.php', [BulkAdjustmentBatchController::class, 'index'])
+            ->name('legacy.bulk-adjustments.index');
+        Route::get('app/bulk_adjustments/get.php', [BulkAdjustmentBatchController::class, 'show'])
+            ->name('legacy.bulk-adjustments.show');
+        Route::post('app/bulk_adjustments/create.php', [BulkAdjustmentBatchController::class, 'create'])
+            ->name('legacy.bulk-adjustments.create');
+        Route::post('app/bulk_adjustments/update.php', [BulkAdjustmentBatchController::class, 'update'])
+            ->name('legacy.bulk-adjustments.update');
+        Route::post('app/bulk_adjustments/delete.php', [BulkAdjustmentBatchController::class, 'delete'])
+            ->name('legacy.bulk-adjustments.delete');
+        Route::post('app/bulk_adjustments/remove_member.php', [BulkAdjustmentBatchController::class, 'removeMember'])
+            ->name('legacy.bulk-adjustments.remove-member');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Deduction rules
+    |--------------------------------------------------------------------------
+    |
+    | Saving the ladder is a separate permission from running payroll: deciding
+    | what lateness costs is a policy decision, and the clerk who enters this
+    | month's bonuses is not necessarily the person who sets it. Reading it is
+    | ungated beyond tenancy, as it was — every screen that shows an employee
+    | why they were docked needs it.
+    |
+    */
+
+    Route::middleware(['auth.admin', 'tenant'])->group(function (): void {
+        Route::get('v1/deduction-rules', [DeductionRulesController::class, 'show'])->name('deduction-rules.show');
+        Route::get('app/deductions/get_rules.php', [DeductionRulesController::class, 'show'])
+            ->name('legacy.deduction-rules.show');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:manage_deduction_rules'])->group(function (): void {
+        Route::post('v1/deduction-rules', [DeductionRulesController::class, 'save'])->name('deduction-rules.save');
+        Route::post('app/deductions/save_config.php', [DeductionRulesController::class, 'save'])
+            ->name('legacy.deduction-rules.save');
     });
 
     /*
