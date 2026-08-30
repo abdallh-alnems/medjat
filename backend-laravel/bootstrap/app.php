@@ -20,6 +20,11 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
+            // The shared secret the published app bundles carry. Not
+            // authentication — that is the guards below — but the difference
+            // between our clients reaching an endpoint and everything reaching
+            // it.
+            'app.secret' => App\Http\Middleware\RequireAppSecret::class,
             'auth.employee' => App\Http\Middleware\AuthenticateEmployee::class,
             'auth.admin' => App\Http\Middleware\AuthenticateAdmin::class,
             'auth.either' => App\Http\Middleware\AuthenticateEmployeeOrAdmin::class,

@@ -147,7 +147,31 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('throttle:api')->group(function (): void {
+/*
+|--------------------------------------------------------------------------
+| Attendance terminals
+|--------------------------------------------------------------------------
+|
+| The one door not opened by a signed-in human. A ZKTeco terminal cannot
+| send any credential the firmware knows about — what it sends is its serial
+| number, and a serial no company has claimed can do nothing here.
+|
+| Both shapes are registered: /iclock/<action>, which is what the firmware
+| derives from its server setting, and the direct filename the old
+| deployment used. Every verb, because the protocol uses GET for the
+| handshake and POST for uploads and does not always agree with itself.
+|
+| Reached over plain HTTP on port 8090 straight to the origin: old ZK
+| firmware has weak or no TLS and sends no SNI, so it cannot pass Cloudflare.
+|
+*/
+
+Route::any('device/iclock.php', IclockController::class)->name('legacy.terminal.iclock');
+Route::any('iclock/{action}', IclockController::class)
+    ->where('action', '[A-Za-z]+')
+    ->name('terminal.iclock');
+
+Route::middleware(['app.secret', 'throttle:api'])->group(function (): void {
 
     // ── Employee sessions ────────────────────────────────────────────────
     Route::post('v1/auth/employee/activate', EmployeeActivateTokenController::class)
@@ -1133,30 +1157,6 @@ Route::middleware('throttle:api')->group(function (): void {
         Route::post('admin/admins/impersonate.php', [AdminAccountController::class, 'impersonate'])
             ->name('legacy.super.company-admins.impersonate');
     });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Attendance terminals
-    |--------------------------------------------------------------------------
-    |
-    | The one door not opened by a signed-in human. A ZKTeco terminal cannot
-    | send any credential the firmware knows about — what it sends is its serial
-    | number, and a serial no company has claimed can do nothing here.
-    |
-    | Both shapes are registered: /iclock/<action>, which is what the firmware
-    | derives from its server setting, and the direct filename the old
-    | deployment used. Every verb, because the protocol uses GET for the
-    | handshake and POST for uploads and does not always agree with itself.
-    |
-    | Reached over plain HTTP on port 8090 straight to the origin: old ZK
-    | firmware has weak or no TLS and sends no SNI, so it cannot pass Cloudflare.
-    |
-    */
-
-    Route::any('device/iclock.php', IclockController::class)->name('legacy.terminal.iclock');
-    Route::any('iclock/{action}', IclockController::class)
-        ->where('action', '[A-Za-z]+')
-        ->name('terminal.iclock');
 
     /*
     |--------------------------------------------------------------------------

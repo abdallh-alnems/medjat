@@ -23,6 +23,14 @@ return [
         'max_bytes' => (int) env('UPLOAD_MAX_SIZE', 5242880),
     ],
 
+    'app_secret' => [
+        // The HTTP Basic credential the published app bundles carry. Unset
+        // disables the gate, which is how local development runs — the
+        // alternative makes a fresh checkout answer 401 to everything.
+        'user' => (string) env('SECURITY_USER', ''),
+        'key' => (string) env('SECURITY_KEY', ''),
+    ],
+
     'cron' => [
         // The shared secret the scheduled jobs authenticate with. No default:
         // an empty secret must refuse every request rather than accept one,
