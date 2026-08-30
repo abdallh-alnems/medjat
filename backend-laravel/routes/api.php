@@ -96,6 +96,7 @@ use App\Http\Controllers\Payroll\OverrideLineController;
 use App\Http\Controllers\Payroll\PayslipPdfController;
 use App\Http\Controllers\Payroll\RevertController;
 use App\Http\Controllers\Reports\ReportController;
+use App\Http\Controllers\Schedule\RosterController;
 use App\Http\Controllers\Settlements\SettlementController;
 use App\Http\Controllers\Shifts\ShiftController;
 use App\Http\Controllers\Support\SupportController;
@@ -728,6 +729,35 @@ Route::middleware('throttle:api')->group(function (): void {
             ->name('legacy.settlements.approve');
         Route::post('app/settlements/mark_paid.php', [SettlementController::class, 'markPaid'])
             ->name('legacy.settlements.mark-paid');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rotating-shift roster
+    |--------------------------------------------------------------------------
+    |
+    | Reading and editing the grid both sit behind manage_company_settings, as
+    | they did: deciding who works when is a scheduling decision, not an
+    | attendance one.
+    |
+    */
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:manage_company_settings'])->group(function (): void {
+        Route::get('v1/schedule/week', [RosterController::class, 'week'])->name('schedule.week');
+        Route::post('v1/schedule/assign', [RosterController::class, 'assign'])->name('schedule.assign');
+        Route::post('v1/schedule/clear', [RosterController::class, 'clear'])->name('schedule.clear');
+        Route::post('v1/schedule/copy-week', [RosterController::class, 'copyWeek'])->name('schedule.copy-week');
+        Route::post('v1/schedule/publish', [RosterController::class, 'publish'])->name('schedule.publish');
+
+        Route::get('app/schedule/week.php', [RosterController::class, 'week'])->name('legacy.schedule.week');
+        Route::post('app/schedule/assign.php', [RosterController::class, 'assign'])
+            ->name('legacy.schedule.assign');
+        Route::post('app/schedule/clear.php', [RosterController::class, 'clear'])
+            ->name('legacy.schedule.clear');
+        Route::post('app/schedule/copy_week.php', [RosterController::class, 'copyWeek'])
+            ->name('legacy.schedule.copy-week');
+        Route::post('app/schedule/publish.php', [RosterController::class, 'publish'])
+            ->name('legacy.schedule.publish');
     });
 
     /*
