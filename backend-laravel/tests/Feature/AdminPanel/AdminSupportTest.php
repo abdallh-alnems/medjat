@@ -285,6 +285,75 @@ final class AdminSupportTest extends TestCase
         $this->read('/app/admin_support/attachment.php?message_id='.$messageId)->assertStatus(404);
     }
 
+    public function test_a_device_registers_its_push_token(): void
+    {
+        $this->send('/app/admin/devices/register.php', [
+            'fcm_token' => 'token-abc',
+            'platform' => 'android',
+            'device_id' => 'pixel-9',
+            'device_model' => 'Pixel 9',
+            'app_version' => '1.2.0',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('super_admin_devices', [
+            'admin_id' => $this->operatorId, 'device_id' => 'pixel-9', 'fcm_token' => 'token-abc',
+        ]);
+    }
+
+    public function test_re_registering_the_same_device_replaces_its_token(): void
+    {
+        $this->send('/app/admin/devices/register.php', [
+            'fcm_token' => 'old-token', 'device_id' => 'pixel-9',
+        ])->assertOk();
+
+        $this->send('/app/admin/devices/register.php', [
+            'fcm_token' => 'new-token', 'device_id' => 'pixel-9',
+        ])->assertOk();
+
+        $this->assertSame(1, DB::table('super_admin_devices')
+            ->where('admin_id', $this->operatorId)->count());
+        $this->assertDatabaseHas('super_admin_devices', [
+            'admin_id' => $this->operatorId, 'fcm_token' => 'new-token',
+        ]);
+    }
+
+    public function test_a_client_that_sends_no_device_id_reuses_one_slot(): void
+    {
+        // Otherwise it accumulates a row per sign-in, and every push goes out
+        // as many times as the operator has ever logged in.
+        $this->send('/app/admin/devices/register.php', ['fcm_token' => 'first'])->assertOk();
+        $this->send('/app/admin/devices/register.php', ['fcm_token' => 'second'])->assertOk();
+
+        $this->assertSame(1, DB::table('super_admin_devices')
+            ->where('admin_id', $this->operatorId)->count());
+    }
+
+    public function test_re_registering_revives_a_deactivated_device(): void
+    {
+        $this->send('/app/admin/devices/register.php', [
+            'fcm_token' => 'token', 'device_id' => 'pixel-9',
+        ])->assertOk();
+
+        DB::table('super_admin_devices')->where('admin_id', $this->operatorId)->update(['is_active' => 0]);
+
+        $this->send('/app/admin/devices/register.php', [
+            'fcm_token' => 'token', 'device_id' => 'pixel-9',
+        ])->assertOk();
+
+        // The app is plainly installed and signed in again.
+        $this->assertDatabaseHas('super_admin_devices', [
+            'admin_id' => $this->operatorId, 'is_active' => 1,
+        ]);
+    }
+
+    public function test_a_registration_with_no_token_or_a_bad_platform_is_refused(): void
+    {
+        $this->send('/app/admin/devices/register.php', ['fcm_token' => '  '])->assertStatus(422);
+        $this->send('/app/admin/devices/register.php', [
+            'fcm_token' => 'token', 'platform' => 'blackberry',
+        ])->assertStatus(422);
+    }
+
     public function test_a_readonly_operator_cannot_reply(): void
     {
         [, $token] = $this->operator('readonly');

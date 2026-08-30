@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AdminSupport\AdminDeviceController;
 use App\Http\Controllers\AdminSupport\AdminSupportController;
 use App\Http\Controllers\AppControl\AppControlController;
 use App\Http\Controllers\Assets\AssetController;
@@ -104,6 +105,7 @@ use App\Http\Controllers\Payroll\PayslipPdfController;
 use App\Http\Controllers\Payroll\RevertController;
 use App\Http\Controllers\Performance\ReviewController;
 use App\Http\Controllers\Reports\ReportController;
+use App\Http\Controllers\Reports\WordExportController;
 use App\Http\Controllers\Schedule\RosterController;
 use App\Http\Controllers\Settings\CompanySettingsController;
 use App\Http\Controllers\Settings\LeaveSettingsController;
@@ -991,6 +993,10 @@ Route::middleware('throttle:api')->group(function (): void {
             ->name('legacy.admin.support.reply');
         Route::post('app/admin_support/status.php', [AdminSupportController::class, 'setStatus'])
             ->name('legacy.admin.support.status');
+
+        Route::post('v1/admin/devices', AdminDeviceController::class)->name('admin.devices.register');
+        Route::post('app/admin/devices/register.php', AdminDeviceController::class)
+            ->name('legacy.admin.devices.register');
     });
 
     Route::middleware('auth.super:superadmin')->group(function (): void {
@@ -1596,6 +1602,13 @@ Route::middleware('throttle:api')->group(function (): void {
         Route::get('app/reports/overtime_late.php', [ReportController::class, 'overtimeAndLate'])
             ->name('legacy.reports.overtime-late');
         Route::get('app/reports/payroll.php', [ReportController::class, 'payroll'])->name('legacy.reports.payroll');
+
+        // POST because the client sends the finished table it already has on
+        // screen, rather than the server re-deriving figures that could then
+        // disagree with it.
+        Route::post('v1/reports/export.docx', WordExportController::class)->name('reports.export-word');
+        Route::post('app/reports/export_word.php', WordExportController::class)
+            ->name('legacy.reports.export-word');
     });
 
     Route::middleware(['auth.admin', 'tenant', 'can.do:manage_support'])->group(function (): void {
