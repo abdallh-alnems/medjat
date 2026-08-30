@@ -2,9 +2,34 @@
 
 declare(strict_types=1);
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function (): void {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+/*
+|--------------------------------------------------------------------------
+| Scheduled jobs
+|--------------------------------------------------------------------------
+|
+| Mirrors what /etc/cron.d/medjat currently invokes over HTTP, so the server
+| can switch to `schedule:run` without deciding the times again. Africa/Cairo,
+| matching the crontab, because the alert digest is meant to land before the
+| working day rather than at some hour of UTC.
+|
+| withoutOverlapping because the alert run walks every company: a slow run must
+| queue behind itself rather than doubling up and racing its own dedupe.
+|
+*/
+
+Schedule::command('medjat:run-alerts')
+    ->dailyAt('07:00')
+    ->timezone('Africa/Cairo')
+    ->withoutOverlapping();
+
+Schedule::command('medjat:catch-up-absences')
+    ->dailyAt('23:50')
+    ->timezone('Africa/Cairo')
+    ->withoutOverlapping();
+
+Schedule::command('medjat:purge-kiosk-captures')
+    ->dailyAt('03:30')
+    ->timezone('Africa/Cairo')
+    ->withoutOverlapping();

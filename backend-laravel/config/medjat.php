@@ -23,6 +23,13 @@ return [
         'max_bytes' => (int) env('UPLOAD_MAX_SIZE', 5242880),
     ],
 
+    'cron' => [
+        // The shared secret the scheduled jobs authenticate with. No default:
+        // an empty secret must refuse every request rather than accept one,
+        // since these endpoints terminate employees and delete photographs.
+        'secret' => (string) env('CRON_SECRET', ''),
+    ],
+
     'join' => [
         // Must be a domain that hosts the App Links / Universal Links association
         // files, or the link opens a web page instead of the app.

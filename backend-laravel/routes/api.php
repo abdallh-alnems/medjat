@@ -43,6 +43,7 @@ use App\Http\Controllers\Branches\BranchNetworkController;
 use App\Http\Controllers\Breaks\BreakDecisionsController;
 use App\Http\Controllers\Breaks\MyBreaksController;
 use App\Http\Controllers\Categories\CategoryController;
+use App\Http\Controllers\Cron\CronController;
 use App\Http\Controllers\Dashboard\LiveAttendanceController;
 use App\Http\Controllers\Dashboard\OverviewController;
 use App\Http\Controllers\Devices\DeviceFleetController;
@@ -918,6 +919,37 @@ Route::middleware('throttle:api')->group(function (): void {
             ->name('legacy.notifications.index');
         Route::post('app/notifications/read.php', [MyNotificationsController::class, 'markRead'])
             ->name('legacy.notifications.read');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Scheduled jobs
+    |--------------------------------------------------------------------------
+    |
+    | Reachable over HTTP because that is how the installed crontab calls them,
+    | authenticating with a shared secret rather than as any of the three
+    | principals. The work lives in App\Services\Cron and is also exposed as
+    | artisan commands, so the server can move to the scheduler without a code
+    | change here.
+    |
+    | GET, as the crontab issues, even though these write.
+    |
+    */
+
+    Route::middleware('auth.cron')->group(function (): void {
+        Route::match(['get', 'post'], 'v1/cron/catch-up-absences', [CronController::class, 'catchUpAbsences'])
+            ->name('cron.catch-up-absences');
+        Route::match(['get', 'post'], 'v1/cron/run-alerts', [CronController::class, 'runAlerts'])
+            ->name('cron.run-alerts');
+        Route::match(['get', 'post'], 'v1/cron/purge-kiosk-captures', [CronController::class, 'purgeKioskCaptures'])
+            ->name('cron.purge-kiosk-captures');
+
+        Route::match(['get', 'post'], 'app/cron/catchup_absences.php', [CronController::class, 'catchUpAbsences'])
+            ->name('legacy.cron.catch-up-absences');
+        Route::match(['get', 'post'], 'app/cron/run_alerts.php', [CronController::class, 'runAlerts'])
+            ->name('legacy.cron.run-alerts');
+        Route::match(['get', 'post'], 'app/cron/purge_kiosk_captures.php', [CronController::class, 'purgeKioskCaptures'])
+            ->name('legacy.cron.purge-kiosk-captures');
     });
 
     /*

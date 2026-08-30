@@ -28,6 +28,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth.kiosk' => App\Http\Middleware\AuthenticateKiosk::class,
             'tenant' => App\Http\Middleware\RequireTenant::class,
             'can.do' => App\Http\Middleware\RequirePermission::class,
+            // The scheduled jobs, which authenticate with a shared secret
+            // rather than as any of the three principals.
+            'auth.cron' => App\Http\Middleware\AuthenticateCron::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

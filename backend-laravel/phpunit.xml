@@ -18,6 +18,14 @@
         </include>
     </source>
     <php>
+        <!--
+            The whole suite runs in one process against a real MySQL dump, so
+            peak memory grows with the number of tests rather than staying flat.
+            512M is generous for what it holds; the alternative is process
+            isolation, which would multiply a 40-second run by an order of
+            magnitude.
+        -->
+        <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>

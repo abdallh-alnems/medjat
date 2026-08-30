@@ -128,4 +128,23 @@ final class BranchQrChallenge
             'rotate_in' => self::ROTATE_SECONDS,
         ];
     }
+
+    /**
+     * Removes challenges that stopped being valid a day ago.
+     *
+     * About volume, not secrecy — a row holds a random string and a timestamp.
+     * But a branch display asks for a code every thirty seconds all day: one
+     * screen writes roughly 2,900 rows a day, ten screens close to a million a
+     * year, plus a use row per punch. The day of slack means a punch disputed
+     * this morning can still be traced to the code that produced it.
+     *
+     * branch_qr_uses follows its parent by ON DELETE CASCADE, so deleting the
+     * challenge is the whole job.
+     */
+    public static function purgeExpired(): int
+    {
+        return DB::table('branch_qr_challenges')
+            ->whereRaw('expires_at < DATE_SUB(NOW(), INTERVAL 1 DAY)')
+            ->delete();
+    }
 }
