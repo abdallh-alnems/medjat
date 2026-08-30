@@ -171,6 +171,9 @@ Route::get('join_team', [JoinLinkController::class, 'team'])->name('landing.join
 Route::get('join.php', [JoinLinkController::class, 'employee'])->name('legacy.landing.join');
 Route::get('join_team.php', [JoinLinkController::class, 'team'])->name('legacy.landing.join-team');
 
+Route::get('well_known.php', [WellKnownController::class, 'legacy'])
+    ->name('legacy.landing.well-known');
+
 Route::get('.well-known/{file}', WellKnownController::class)
     ->where('file', 'assetlinks\.json|apple-app-site-association')
     ->name('landing.well-known');

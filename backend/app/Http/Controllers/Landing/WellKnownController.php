@@ -70,6 +70,24 @@ final class WellKnownController
         ]);
     }
 
+    /**
+     * The legacy entry point: well_known.php?f=assetlinks|aasa.
+     *
+     * nginx aliases /.well-known/* straight at the files, so nothing is known
+     * to call this — but it was a reachable URL on the old backend, and a URL
+     * that used to answer is not something to retire on a guess.
+     */
+    public function legacy(Request $request): Response
+    {
+        $file = match ($request->query('f')) {
+            'assetlinks' => 'assetlinks.json',
+            'aasa' => 'apple-app-site-association',
+            default => '',
+        };
+
+        return $this($request, $file);
+    }
+
     private function pairFor(Request $request): string
     {
         return str_starts_with($request->getHost(), 'api.') ? 'api' : 'default';

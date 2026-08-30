@@ -114,6 +114,23 @@ final class DeepLinkTest extends TestCase
             ->assertSee('applinks', false);
     }
 
+    public function test_the_legacy_well_known_entry_point_still_answers(): void
+    {
+        // nginx aliases /.well-known/* straight at the files, so nothing is
+        // known to call this — but it answered on the old backend, and a URL
+        // that used to answer is not retired on a guess.
+        $this->get('http://api.medjatapp.com/well_known.php?f=assetlinks')
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/json')
+            ->assertSee('medjat_central', false);
+
+        $this->get('http://api.medjatapp.com/well_known.php?f=aasa')
+            ->assertOk()
+            ->assertSee('applinks', false);
+
+        $this->get('/well_known.php?f=nonsense')->assertNotFound();
+    }
+
     public function test_nothing_else_under_well_known_is_served(): void
     {
         $this->get('/.well-known/security.txt')->assertNotFound();
