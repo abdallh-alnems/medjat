@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Attendance\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
 use App\Models\Employee;
+use App\Shared\Http\ApiResponse;
 use App\Shared\Security\AttendanceSecurityLog;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;

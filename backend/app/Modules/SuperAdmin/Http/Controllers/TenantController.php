@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\SuperAdmin\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
 use App\Models\SuperAdmin;
 use App\Modules\Attendance\Domain\AttendanceMethod;
 use App\Modules\SuperAdmin\Domain\SuperAdminAudit;
 use App\Modules\Team\Domain\ManagerInvitation;
+use App\Shared\Http\ApiResponse;
 use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Database\Query\Builder as QueryBuilder;

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Employees\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
-use App\Http\Middleware\RequireBranchAccess;
 use App\Models\Admin;
 use App\Modules\Employees\Services\CreateEmployeeAction;
+use App\Shared\Http\ApiResponse;
+use App\Shared\Http\Middleware\RequireBranchAccess;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

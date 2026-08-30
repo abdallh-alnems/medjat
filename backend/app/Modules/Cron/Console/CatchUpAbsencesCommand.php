@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Console\Commands;
+namespace App\Modules\Cron\Console;
 
 use App\Modules\Cron\Services\CatchUpAbsences;
 use Illuminate\Console\Command;

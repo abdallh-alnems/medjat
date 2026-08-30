@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Auth\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
 use App\Models\ActivationCode;
 use App\Models\Employee;
 use App\Models\EmployeeWebCredential;
@@ -15,6 +14,7 @@ use App\Modules\Auth\Services\PhoneNumber;
 use App\Modules\Auth\Services\WebSessionService;
 use App\Modules\Employees\Domain\EmployeeAccount;
 use App\Shared\Access\PinPolicy;
+use App\Shared\Http\ApiResponse;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;

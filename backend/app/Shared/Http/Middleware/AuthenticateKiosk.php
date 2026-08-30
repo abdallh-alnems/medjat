@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Middleware;
+namespace App\Shared\Http\Middleware;
 
-use App\Http\ApiResponse;
 use App\Modules\Kiosk\Domain\KioskStation;
 use App\Modules\Kiosk\Domain\KioskToken;
+use App\Shared\Http\ApiResponse;
 use App\Support\Value;
 use Closure;
 use Illuminate\Http\Request;

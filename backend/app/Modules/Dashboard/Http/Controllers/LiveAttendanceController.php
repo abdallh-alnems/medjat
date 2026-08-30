@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Dashboard\Http\Controllers;
 
-use App\Http\ApiResponse;
 use App\Modules\Dashboard\Domain\LiveBoard;
 use App\Modules\Leave\Domain\LeaveRequests;
+use App\Shared\Http\ApiResponse;
 use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;

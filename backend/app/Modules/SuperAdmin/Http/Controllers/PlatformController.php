@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\SuperAdmin\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
 use App\Models\SuperAdmin;
 use App\Modules\Notifications\Domain\PushSender;
 use App\Modules\SuperAdmin\Domain\SuperAdminAudit;
+use App\Shared\Http\ApiResponse;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

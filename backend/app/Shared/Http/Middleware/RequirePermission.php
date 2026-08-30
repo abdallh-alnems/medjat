@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Middleware;
+namespace App\Shared\Http\Middleware;
 
 use App\Exceptions\ApiFailure;
 use App\Models\Admin;

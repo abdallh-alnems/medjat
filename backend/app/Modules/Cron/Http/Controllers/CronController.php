@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Cron\Http\Controllers;
 
-use App\Http\ApiResponse;
 use App\Modules\Cron\Services\CatchUpAbsences;
 use App\Modules\Cron\Services\PurgeKioskCaptures;
 use App\Modules\Cron\Services\RunDailyAlerts;
+use App\Shared\Http\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 /**

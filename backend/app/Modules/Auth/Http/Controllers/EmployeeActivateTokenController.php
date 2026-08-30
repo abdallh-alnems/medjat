@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Auth\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
 use App\Models\ActivationCode;
 use App\Models\Employee;
 use App\Modules\Auth\Http\Requests\EmployeeActivateTokenRequest;
 use App\Modules\Auth\Services\EmployeeLoginAction;
 use App\Modules\Notifications\Domain\EmployeeActivationAlert;
+use App\Shared\Http\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Config;
 

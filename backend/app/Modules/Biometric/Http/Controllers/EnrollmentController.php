@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Modules\Biometric\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
-use App\Http\Middleware\RequireBranchAccess;
 use App\Models\Admin;
 use App\Models\Employee;
 use App\Modules\Audit\Domain\AuditLog;
 use App\Modules\Biometric\Domain\BiometricEnrollment;
 use App\Shared\Face\FaceEmbedding;
 use App\Shared\Face\FaceEnrollment;
+use App\Shared\Http\ApiResponse;
+use App\Shared\Http\Middleware\RequireBranchAccess;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

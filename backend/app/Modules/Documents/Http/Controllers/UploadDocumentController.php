@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Documents\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
 use App\Models\Admin;
 use App\Models\Employee;
 use App\Modules\Audit\Domain\AuditLog;
 use App\Modules\Documents\Domain\DocumentChecklist;
 use App\Modules\Documents\Domain\DocumentUpload;
 use App\Modules\Notifications\Domain\ManagerAlert;
+use App\Shared\Http\ApiResponse;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

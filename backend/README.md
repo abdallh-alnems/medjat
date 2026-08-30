@@ -36,6 +36,7 @@ app/
 │   ├── Http/
 │   │   ├── Controllers/     one class per screen or action
 │   │   └── Requests/        validation worth naming
+│   ├── Console/             CLI entry points, where the subject has any
 │   └── Services/            multi-step actions and anything talking outward
 │
 ├── Shared/                  used by several modules, owned by none
@@ -47,15 +48,21 @@ app/
 │   ├── Time/                TenantClock: "now" in the company's own zone
 │   ├── RemoteConfig/        the version and maintenance gate
 │   ├── Crew/  Contact/
-│   └── Http/                the API request base class
+│   └── Http/                the request and response envelope, and the
+│                            middleware: the four principals and the two gates
 │
-├── Http/Middleware/         the four principals and the two gates
 ├── Models/                  Eloquent, for tables with real behaviour
-├── Console/Commands/        the scheduled jobs
 ├── Mail/                    transactional mail
 ├── Providers/  Exceptions/
 └── Support/                 Value: narrowing `mixed` from query rows
 ```
+
+A subject owns *all* its entry points. The scheduled jobs are the clearest
+case: `medjat:run-alerts` on the command line and `/app/cron/run_alerts.php`
+over HTTP are two doors into one piece of work, so the commands live in
+`Modules/Cron/Console/` beside the code they run rather than in Laravel's
+default `app/Console/Commands`. That costs one explicit registration in
+`bootstrap/app.php` and buys a subject you can read in one directory.
 
 **The rule that decides where something goes:** a subject with an HTTP surface
 is a Module; a subject without one, reached only by other subjects, is Shared.

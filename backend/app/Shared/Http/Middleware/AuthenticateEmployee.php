@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Http\Middleware;
+namespace App\Shared\Http\Middleware;
 
-use App\Http\ApiResponse;
 use App\Models\Employee;
 use App\Models\EmployeeAuthToken;
+use App\Shared\Http\ApiResponse;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;

@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Loans\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
 use App\Models\Admin;
 use App\Modules\Audit\Domain\AuditLog;
 use App\Modules\Loans\Domain\Loans;
 use App\Modules\Notifications\Domain\Notifier;
+use App\Shared\Http\ApiResponse;
 use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;

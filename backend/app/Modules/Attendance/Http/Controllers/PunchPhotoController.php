@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Attendance\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\Middleware\RequireBranchAccess;
 use App\Models\Admin;
+use App\Shared\Http\Middleware\RequireBranchAccess;
 use App\Support\Value;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;

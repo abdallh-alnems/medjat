@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Modules\Branches\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
-use App\Http\Middleware\RequireBranchAccess;
 use App\Models\Branch;
 use App\Modules\Attendance\Domain\GeofenceCheck;
 use App\Modules\Attendance\Domain\NetworkVerifier;
 use App\Modules\Audit\Domain\AuditLog;
 use App\Modules\Branches\Domain\Branches;
 use App\Modules\Branches\Domain\BranchNetworks;
+use App\Shared\Http\ApiResponse;
+use App\Shared\Http\Middleware\RequireBranchAccess;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Auth\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
 use App\Mail\AuthActionMail;
 use App\Modules\Auth\Domain\AuthActionLink;
 use App\Modules\Auth\Services\FirebaseAccountManager;
+use App\Shared\Http\ApiResponse;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

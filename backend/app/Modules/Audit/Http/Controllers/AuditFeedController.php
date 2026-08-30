@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Audit\Http\Controllers;
 
-use App\Http\ApiResponse;
 use App\Modules\Audit\Domain\AuditFeed;
+use App\Shared\Http\ApiResponse;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

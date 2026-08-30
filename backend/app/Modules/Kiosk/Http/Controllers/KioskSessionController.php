@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Kiosk\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
 use App\Models\Branch;
 use App\Modules\Kiosk\Domain\KioskStation;
 use App\Shared\Face\FaceEmbedding;
 use App\Shared\Face\FaceMatcher;
+use App\Shared\Http\ApiResponse;
 use App\Shared\RemoteConfig\RemoteConfigGate;
 use App\Shared\Time\TenantClock;
 use App\Support\Value;

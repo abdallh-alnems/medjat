@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\SuperAdmin\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
+use App\Shared\Http\ApiResponse;
 use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Database\Query\Builder as QueryBuilder;

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Attendance\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
 use App\Models\Attendance;
 use App\Models\Branch;
 use App\Models\Employee;
@@ -13,6 +12,7 @@ use App\Modules\Attendance\Domain\AttendanceMethod;
 use App\Modules\Attendance\Domain\NetworkVerifier;
 use App\Modules\Attendance\Domain\WebAccessPolicy;
 use App\Modules\Auth\Services\WebSessionService;
+use App\Shared\Http\ApiResponse;
 use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;

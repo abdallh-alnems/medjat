@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Tenant\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
 use App\Models\Admin;
 use App\Modules\Audit\Domain\AuditLog;
 use App\Modules\Auth\Services\FirebaseTokenVerifier;
 use App\Modules\Team\Domain\ManagerInvitation;
+use App\Shared\Http\ApiResponse;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

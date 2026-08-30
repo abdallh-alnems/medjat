@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Auth\Http\Controllers;
 
-use App\Http\ApiResponse;
 use App\Modules\Auth\Http\Requests\EmployeeLoginRequest;
 use App\Modules\Auth\Services\EmployeeLoginAction;
 use App\Modules\Notifications\Domain\EmployeeActivationAlert;
+use App\Shared\Http\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 /**

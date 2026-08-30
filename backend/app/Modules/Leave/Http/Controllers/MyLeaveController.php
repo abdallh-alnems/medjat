@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Leave\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
 use App\Models\Employee;
 use App\Modules\Leave\Domain\LeaveBalanceCalculator;
 use App\Modules\Leave\Domain\LeaveRequests;
 use App\Modules\Leave\Services\ApplyForLeaveAction;
 use App\Shared\Approvals\ApprovalRouter;
+use App\Shared\Http\ApiResponse;
 use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;

@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Documents\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
 use App\Models\Admin;
 use App\Modules\Audit\Domain\AuditLog;
 use App\Modules\Documents\Domain\DocumentScope;
 use App\Modules\Documents\Domain\RequiredDocument;
+use App\Shared\Http\ApiResponse;
 use App\Support\Value;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\JsonResponse;

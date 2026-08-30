@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Schedule\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
 use App\Models\Admin;
 use App\Modules\Audit\Domain\AuditLog;
 use App\Modules\Schedule\Domain\WeeklyRoster;
 use App\Modules\Shifts\Domain\Shifts;
+use App\Shared\Http\ApiResponse;
 use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;

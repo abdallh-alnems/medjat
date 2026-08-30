@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Auth\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
 use App\Models\Employee;
 use App\Models\EmployeeWebCredential;
 use App\Modules\Attendance\Domain\WebAccessPolicy;
 use App\Modules\Auth\Http\Requests\EmployeeWebLoginRequest;
 use App\Modules\Auth\Services\PhoneNumber;
 use App\Modules\Auth\Services\WebSessionService;
+use App\Shared\Http\ApiResponse;
 use App\Shared\Security\AttendanceSecurityLog;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;

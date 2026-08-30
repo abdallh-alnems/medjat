@@ -18,27 +18,36 @@ return Application::configure(basePath: dirname(__DIR__))
         apiPrefix: '',
         api: __DIR__.'/../routes/api.php',
     )
+    // Registered by hand because the commands live with the module they serve
+    // rather than in app/Console/Commands, which is the only place Laravel
+    // discovers them. Both entry points to the scheduled work — the CLI and
+    // the cron URL — now sit in one directory with the code they run.
+    ->withCommands([
+        App\Modules\Cron\Console\CatchUpAbsencesCommand::class,
+        App\Modules\Cron\Console\PurgeKioskCapturesCommand::class,
+        App\Modules\Cron\Console\RunDailyAlertsCommand::class,
+    ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             // The shared secret the published app bundles carry. Not
             // authentication — that is the guards below — but the difference
             // between our clients reaching an endpoint and everything reaching
             // it.
-            'app.secret' => App\Http\Middleware\RequireAppSecret::class,
-            'auth.employee' => App\Http\Middleware\AuthenticateEmployee::class,
-            'auth.admin' => App\Http\Middleware\AuthenticateAdmin::class,
-            'auth.either' => App\Http\Middleware\AuthenticateEmployeeOrAdmin::class,
+            'app.secret' => App\Shared\Http\Middleware\RequireAppSecret::class,
+            'auth.employee' => App\Shared\Http\Middleware\AuthenticateEmployee::class,
+            'auth.admin' => App\Shared\Http\Middleware\AuthenticateAdmin::class,
+            'auth.either' => App\Shared\Http\Middleware\AuthenticateEmployeeOrAdmin::class,
             // A kiosk authenticates as a branch, not as a person — the third
             // principal, and the reason it is a guard of its own.
-            'auth.kiosk' => App\Http\Middleware\AuthenticateKiosk::class,
-            'tenant' => App\Http\Middleware\RequireTenant::class,
-            'can.do' => App\Http\Middleware\RequirePermission::class,
+            'auth.kiosk' => App\Shared\Http\Middleware\AuthenticateKiosk::class,
+            'tenant' => App\Shared\Http\Middleware\RequireTenant::class,
+            'can.do' => App\Shared\Http\Middleware\RequirePermission::class,
             // The support desk: the fourth principal, and the only one not
             // scoped to a company.
-            'auth.super' => App\Http\Middleware\AuthenticateSuperAdmin::class,
+            'auth.super' => App\Shared\Http\Middleware\AuthenticateSuperAdmin::class,
             // The scheduled jobs, which authenticate with a shared secret
             // rather than as any of the principals.
-            'auth.cron' => App\Http\Middleware\AuthenticateCron::class,
+            'auth.cron' => App\Shared\Http\Middleware\AuthenticateCron::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Payroll\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
 use App\Models\Admin;
 use App\Modules\Audit\Domain\AuditLog;
 use App\Modules\Payroll\Domain\PayLineOverrides;
 use App\Modules\Payroll\Domain\PayrollCache;
+use App\Shared\Http\ApiResponse;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Settings\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
 use App\Models\Admin;
 use App\Modules\Attendance\Domain\AttendanceMethod;
 use App\Modules\Audit\Domain\AuditLog;
 use App\Modules\Branches\Domain\BranchNetworks;
 use App\Modules\Categories\Domain\EmployeeCategories;
 use App\Shared\Face\FaceMatcher;
+use App\Shared\Http\ApiResponse;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

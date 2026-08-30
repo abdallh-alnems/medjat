@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Employees\Http\Controllers;
 
-use App\Http\ApiResponse;
+use App\Shared\Http\ApiResponse;
 use App\Support\Value;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Query\JoinClause;

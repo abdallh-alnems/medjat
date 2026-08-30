@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Dashboard\Http\Controllers;
 
-use App\Http\ApiResponse;
 use App\Modules\Attendance\Domain\AbsenceBackfill;
 use App\Modules\Dashboard\Domain\LiveBoard;
 use App\Modules\Employees\Domain\ComplianceExpiry;
 use App\Modules\Leave\Domain\LeaveRequests;
 use App\Modules\Payroll\Domain\PayrollLedger;
+use App\Shared\Http\ApiResponse;
 use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\SuperAdmin\Http\Controllers;
 
 use App\Exceptions\ApiFailure;
-use App\Http\ApiResponse;
 use App\Mail\AuthActionMail;
 use App\Models\SuperAdmin;
 use App\Modules\Audit\Domain\AuditLog;
@@ -14,6 +13,7 @@ use App\Modules\Auth\Services\FirebaseAccountManager;
 use App\Modules\Auth\Services\FirebaseCustomTokenMinter;
 use App\Modules\SuperAdmin\Domain\SuperAdminAudit;
 use App\Modules\Team\Domain\ManagerInvitation;
+use App\Shared\Http\ApiResponse;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

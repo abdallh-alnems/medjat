@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Auth\Http\Controllers;
 
-use App\Http\ApiResponse;
 use App\Modules\Auth\Http\Requests\AdminLoginRequest;
 use App\Modules\Auth\Services\AdminLoginAction;
 use App\Modules\Notifications\Domain\LoginAlert;
+use App\Shared\Http\ApiResponse;
 use Illuminate\Http\JsonResponse;
 
 /**
