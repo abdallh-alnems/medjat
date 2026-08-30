@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Branches;
 
 use App\Support\Value;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
 
@@ -67,6 +68,45 @@ final class BranchNetworks
         return DB::table('branch_networks')
             ->where('tenant_id', $tenantId)->where('branch_id', $branchId)->whereIn('id', $ids)
             ->update(['is_active' => 0]);
+    }
+
+    /**
+     * Branches whose only network control is BSSID-based.
+     *
+     * Named specifically rather than counted, because on the browser channel a
+     * BSSID rule is no control at all — a page cannot see an access point — and
+     * a warning that says which branches is actionable where a number is not.
+     *
+     * @return list<array{id: int, name: string}>
+     */
+    public static function branchesWithoutIpControl(int $tenantId): array
+    {
+        $rows = DB::table('branches as b')
+            ->where('b.tenant_id', $tenantId)
+            ->whereNotExists(function (QueryBuilder $query): void {
+                $query->select(DB::raw(1))
+                    ->from('branch_networks as bn')
+                    ->whereColumn('bn.tenant_id', 'b.tenant_id')
+                    ->whereColumn('bn.branch_id', 'b.id')
+                    ->where('bn.is_active', 1)
+                    ->whereIn('bn.kind', ['ip_v4', 'ip_cidr']);
+            })
+            ->orderBy('b.name')
+            ->get(['b.id', 'b.name'])
+            ->all();
+
+        return array_values(array_map(
+            static function (mixed $row): array {
+                /** @var array<string, mixed> $columns */
+                $columns = (array) $row;
+
+                return [
+                    'id' => Value::int($columns['id'] ?? null),
+                    'name' => Value::string($columns['name'] ?? null),
+                ];
+            },
+            $rows,
+        ));
     }
 
     /**

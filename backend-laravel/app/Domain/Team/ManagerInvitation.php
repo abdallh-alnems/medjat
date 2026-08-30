@@ -135,6 +135,76 @@ final class ManagerInvitation
             ->exists();
     }
 
+    /**
+     * The live invitation matching this code, or null.
+     *
+     * The expiry is compared in SQL. PHP runs UTC while MySQL runs the server
+     * zone, so a PHP-side `strtotime($expires) < time()` — which is what the
+     * join endpoint used to do — judges every invitation by a clock hours away
+     * from the one that stamped it.
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function redeemable(string $code): ?array
+    {
+        $row = DB::table('manager_invitations')
+            ->where('token_hash', self::hash($code))
+            ->first([
+                'id', 'tenant_id', 'email', 'name', 'role', 'branch_id', 'permissions',
+                'accepted_at', 'cancelled_at',
+                DB::raw('expires_at < NOW() AS is_expired'),
+            ]);
+
+        if ($row === null) {
+            return null;
+        }
+
+        /** @var array<string, mixed> $invitation */
+        $invitation = (array) $row;
+
+        return $invitation;
+    }
+
+    /**
+     * The most recent live invitation addressed to this email.
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function pendingForEmail(string $email, ?int $invitationId = null): ?array
+    {
+        $row = DB::table('manager_invitations')
+            ->where('email', $email)
+            ->whereNull('cancelled_at')->whereNull('accepted_at')
+            ->whereRaw('expires_at > NOW()')
+            ->when($invitationId !== null, fn (QueryBuilder $q): QueryBuilder => $q->where('id', $invitationId))
+            ->orderByDesc('created_at')
+            ->first(['id', 'tenant_id', 'email', 'name', 'role', 'branch_id', 'permissions']);
+
+        if ($row === null) {
+            return null;
+        }
+
+        /** @var array<string, mixed> $invitation */
+        $invitation = (array) $row;
+
+        return $invitation;
+    }
+
+    /**
+     * Claims the invitation for this administrator.
+     *
+     * The unclaimed guard lives inside the UPDATE, so two people racing the
+     * same code cannot both be let into the company on one invitation.
+     */
+    public static function claim(int $invitationId, int $adminId): bool
+    {
+        return DB::table('manager_invitations')
+            ->where('id', $invitationId)
+            ->whereNull('accepted_at')->whereNull('cancelled_at')
+            ->whereRaw('expires_at > NOW()')
+            ->update(['accepted_at' => DB::raw('NOW()'), 'accepted_admin_id' => $adminId]) > 0;
+    }
+
     private static function expiryOf(int $invitationId): string
     {
         return Value::string(DB::table('manager_invitations')->where('id', $invitationId)->value('expires_at'));

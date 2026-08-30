@@ -118,6 +118,69 @@ final readonly class CarryoverPolicy
      * Whole months of service; zero when unknown, or when the hire date is in
      * the future — a start date that has not arrived is not seniority.
      */
+    /**
+     * Writes the company-wide policy, updating the existing row if there is one.
+     *
+     * Deliberately not an upsert on the table's unique key. That key covers
+     * (tenant_id, scope_type, scope_id, min_seniority_months), and the
+     * company-wide row has a NULL scope_id — which MySQL treats as distinct
+     * from every other NULL, so ON DUPLICATE KEY never fires. The original
+     * relied on it and therefore inserted a *new* row on every save; the
+     * resolver reads with LIMIT 1 and no ordering, so a company that edited its
+     * carryover twice got whichever row the storage engine happened to return,
+     * and their edit looked like it had silently reverted.
+     *
+     * @param  array<string, mixed>  $fields
+     */
+    public static function saveTenantPolicy(int $tenantId, array $fields): void
+    {
+        $updated = DB::table('leave_carryover_policies')
+            ->where('tenant_id', $tenantId)
+            ->where('scope_type', 'tenant')
+            ->whereNull('scope_id')
+            ->where('min_seniority_months', 0)
+            ->update($fields);
+
+        if ($updated > 0) {
+            return;
+        }
+
+        DB::table('leave_carryover_policies')->insert($fields + [
+            'tenant_id' => $tenantId,
+            'scope_type' => 'tenant',
+            'scope_id' => null,
+            'min_seniority_months' => 0,
+        ]);
+    }
+
+    /**
+     * The company-wide policy row, or null when none has been saved.
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function tenantPolicy(int $tenantId): ?array
+    {
+        $row = DB::table('leave_carryover_policies')
+            ->where('tenant_id', $tenantId)
+            ->where('scope_type', 'tenant')
+            ->whereNull('scope_id')
+            ->where('min_seniority_months', 0)
+            // Oldest first, so a company left with duplicates by the original's
+            // broken upsert keeps reading the row it has been reading, rather
+            // than appearing to change policy the day this is deployed.
+            ->orderBy('id')
+            ->first();
+
+        if ($row === null) {
+            return null;
+        }
+
+        /** @var array<string, mixed> $policy */
+        $policy = (array) $row;
+
+        return $policy;
+    }
+
     public static function tenureMonths(?string $hireDate): int
     {
         if ($hireDate === null || $hireDate === '') {

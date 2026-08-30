@@ -95,14 +95,19 @@ use App\Http\Controllers\Payroll\MySlipController;
 use App\Http\Controllers\Payroll\OverrideLineController;
 use App\Http\Controllers\Payroll\PayslipPdfController;
 use App\Http\Controllers\Payroll\RevertController;
+use App\Http\Controllers\Performance\ReviewController;
 use App\Http\Controllers\Reports\ReportController;
 use App\Http\Controllers\Schedule\RosterController;
+use App\Http\Controllers\Settings\CompanySettingsController;
+use App\Http\Controllers\Settings\LeaveSettingsController;
+use App\Http\Controllers\Settings\StatutoryPayrollController;
 use App\Http\Controllers\Settlements\SettlementController;
 use App\Http\Controllers\Shifts\ShiftController;
 use App\Http\Controllers\Support\SupportController;
 use App\Http\Controllers\Team\AdminPermissionsController;
 use App\Http\Controllers\Team\InvitationController;
 use App\Http\Controllers\Team\TeamController;
+use App\Http\Controllers\Tenant\OnboardingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -758,6 +763,104 @@ Route::middleware('throttle:api')->group(function (): void {
             ->name('legacy.schedule.copy-week');
         Route::post('app/schedule/publish.php', [RosterController::class, 'publish'])
             ->name('legacy.schedule.publish');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Acquiring a company
+    |--------------------------------------------------------------------------
+    |
+    | These run before there is a tenant to authenticate against, so they take a
+    | Firebase token directly rather than going through the tenant middleware.
+    | Each refuses an administrator who already belongs somewhere: one person
+    | belongs to exactly one company, and a second would leave every
+    | tenant-scoped query with two possible answers.
+    |
+    */
+
+    Route::post('v1/tenants', [OnboardingController::class, 'create'])->name('tenants.create');
+    Route::post('v1/tenants/join', [OnboardingController::class, 'join'])->name('tenants.join');
+    Route::post('v1/tenants/accept-invitation', [OnboardingController::class, 'acceptInvitation'])
+        ->name('tenants.accept-invitation');
+
+    Route::post('app/tenant/create.php', [OnboardingController::class, 'create'])
+        ->name('legacy.tenants.create');
+    Route::post('app/tenant/join.php', [OnboardingController::class, 'join'])
+        ->name('legacy.tenants.join');
+    Route::post('app/tenant/accept_invitation.php', [OnboardingController::class, 'acceptInvitation'])
+        ->name('legacy.tenants.accept-invitation');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Company settings
+    |--------------------------------------------------------------------------
+    |
+    | Reading is open to anybody signed in: the attendance rules, the currency
+    | and the week start are what half the other screens render themselves
+    | against, so gating the read would break screens their own permission
+    | already allows. Writing needs manage_company_settings — except the
+    | statutory payroll figures, which are payroll's, not the office manager's.
+    |
+    | The originals answered GET and POST/PUT on one URL. Both verbs are kept on
+    | the legacy paths because published app bundles use them.
+    |
+    */
+
+    Route::middleware(['auth.admin', 'tenant'])->group(function (): void {
+        Route::get('v1/settings/company', [CompanySettingsController::class, 'show'])
+            ->name('settings.company.show');
+        Route::get('v1/settings/leave', [LeaveSettingsController::class, 'show'])
+            ->name('settings.leave.show');
+
+        Route::get('app/settings/company.php', [CompanySettingsController::class, 'show'])
+            ->name('legacy.settings.company.show');
+        Route::get('app/settings/leave_settings.php', [LeaveSettingsController::class, 'show'])
+            ->name('legacy.settings.leave.show');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:manage_company_settings'])->group(function (): void {
+        Route::post('v1/settings/company', [CompanySettingsController::class, 'save'])
+            ->name('settings.company.save');
+        Route::post('v1/settings/leave', [LeaveSettingsController::class, 'save'])
+            ->name('settings.leave.save');
+
+        Route::match(['post', 'put'], 'app/settings/company.php', [CompanySettingsController::class, 'save'])
+            ->name('legacy.settings.company.save');
+        Route::match(['post', 'put'], 'app/settings/leave_settings.php', [LeaveSettingsController::class, 'save'])
+            ->name('legacy.settings.leave.save');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:manage_payroll'])->group(function (): void {
+        Route::get('v1/settings/statutory-payroll', [StatutoryPayrollController::class, 'show'])
+            ->name('settings.statutory.show');
+        Route::post('v1/settings/statutory-payroll', [StatutoryPayrollController::class, 'save'])
+            ->name('settings.statutory.save');
+
+        Route::get('app/settings/statutory_payroll.php', [StatutoryPayrollController::class, 'show'])
+            ->name('legacy.settings.statutory.show');
+        Route::match(['post', 'put'], 'app/settings/statutory_payroll.php', [StatutoryPayrollController::class, 'save'])
+            ->name('legacy.settings.statutory.save');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Performance reviews
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:manage_performance'])->group(function (): void {
+        Route::get('v1/performance/reviews', [ReviewController::class, 'index'])->name('performance.reviews');
+        Route::post('v1/performance/reviews', [ReviewController::class, 'create'])
+            ->name('performance.reviews.create');
+        Route::post('v1/performance/reviews/delete', [ReviewController::class, 'delete'])
+            ->name('performance.reviews.delete');
+
+        Route::get('app/performance/review_list.php', [ReviewController::class, 'index'])
+            ->name('legacy.performance.reviews');
+        Route::post('app/performance/review_create.php', [ReviewController::class, 'create'])
+            ->name('legacy.performance.reviews.create');
+        Route::post('app/performance/review_delete.php', [ReviewController::class, 'delete'])
+            ->name('legacy.performance.reviews.delete');
     });
 
     /*
