@@ -65,6 +65,9 @@ pint.json
 node_modules/
 package.json
 package-lock.json
+# The asset pipeline's config. This API renders three Blade pages and builds no
+# assets, and without package.json beside it the file does nothing anyway.
+vite.config.js
 .git/
 .gitignore
 .gitattributes
