@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Attendance;
 
+use App\Domain\Leave\LeaveRequests;
 use App\Support\Value;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Query\JoinClause;
@@ -60,9 +61,10 @@ final class AbsenceBackfill
             return 0;
         }
 
-        $onLeave = DB::table('leaves')
-            ->where('tenant_id', $tenantId)->where('date', $date)->where('status', 'approved')
-            ->pluck('employee_id')->flip();
+        // Matched against the leave's whole range. The `date` column holds only
+        // the start of the request, so matching on it wrote an absence for
+        // every day of an approved week off except the first.
+        $onLeave = LeaveRequests::employeesOnLeave($tenantId, $date);
 
         [$holidayEverywhere, $holidayBranches] = self::scope(
             DB::table('holidays')->where('tenant_id', $tenantId)->where('date', $date)->pluck('branch_id')->values()->all()
@@ -80,7 +82,7 @@ final class AbsenceBackfill
             $employeeId = Value::int($employee->id);
             $branchId = Value::nullableInt($employee->branch_id);
 
-            if ($onLeave->has($employeeId)) {
+            if (isset($onLeave[$employeeId])) {
                 continue;
             }
 

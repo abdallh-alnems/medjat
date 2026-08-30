@@ -21,6 +21,7 @@ use App\Http\Controllers\Attendance\SetMethodOverrideController;
 use App\Http\Controllers\Attendance\SyncOfflineController;
 use App\Http\Controllers\Attendance\UpdateNoteController;
 use App\Http\Controllers\Attendance\WebStatusController;
+use App\Http\Controllers\Audit\AuditFeedController;
 use App\Http\Controllers\Auth\AdminLoginController;
 use App\Http\Controllers\Auth\AdminLogoutController;
 use App\Http\Controllers\Auth\DeleteAccountController;
@@ -42,6 +43,8 @@ use App\Http\Controllers\Branches\BranchNetworkController;
 use App\Http\Controllers\Breaks\BreakDecisionsController;
 use App\Http\Controllers\Breaks\MyBreaksController;
 use App\Http\Controllers\Categories\CategoryController;
+use App\Http\Controllers\Dashboard\LiveAttendanceController;
+use App\Http\Controllers\Dashboard\OverviewController;
 use App\Http\Controllers\Devices\DeviceFleetController;
 use App\Http\Controllers\Devices\DeviceUsersController;
 use App\Http\Controllers\Devices\ImportPunchesController;
@@ -76,6 +79,7 @@ use App\Http\Controllers\Leave\LeaveAdminController;
 use App\Http\Controllers\Leave\MyLeaveController;
 use App\Http\Controllers\Loans\LoanController;
 use App\Http\Controllers\Loans\MyAdvanceController;
+use App\Http\Controllers\Notifications\MyNotificationsController;
 use App\Http\Controllers\Payroll\AllowanceController;
 use App\Http\Controllers\Payroll\ApproveController;
 use App\Http\Controllers\Payroll\AuditLogController as PayrollAuditLogController;
@@ -108,6 +112,7 @@ use App\Http\Controllers\Team\AdminPermissionsController;
 use App\Http\Controllers\Team\InvitationController;
 use App\Http\Controllers\Team\TeamController;
 use App\Http\Controllers\Tenant\OnboardingController;
+use App\Http\Controllers\Warnings\WarningController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -861,6 +866,58 @@ Route::middleware('throttle:api')->group(function (): void {
             ->name('legacy.performance.reviews.create');
         Route::post('app/performance/review_delete.php', [ReviewController::class, 'delete'])
             ->name('legacy.performance.reviews.delete');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dashboard, activity log, warnings, notifications
+    |--------------------------------------------------------------------------
+    |
+    | The overview is ungated beyond tenancy, as it was — it is the screen the
+    | app opens on, and everybody who can sign in sees a version of it. The live
+    | board needs view_reports; the activity log needs the settings permission,
+    | because it exposes every management action in the company.
+    |
+    */
+
+    Route::middleware(['auth.admin', 'tenant'])->group(function (): void {
+        Route::get('v1/dashboard/overview', OverviewController::class)->name('dashboard.overview');
+        Route::get('app/dashboard/overview.php', OverviewController::class)
+            ->name('legacy.dashboard.overview');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:view_reports'])->group(function (): void {
+        Route::get('v1/dashboard/live-attendance', LiveAttendanceController::class)
+            ->name('dashboard.live-attendance');
+        Route::get('app/dashboard/live_attendance.php', LiveAttendanceController::class)
+            ->name('legacy.dashboard.live-attendance');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:manage_company_settings'])->group(function (): void {
+        Route::get('v1/audit', AuditFeedController::class)->name('audit.index');
+        Route::get('app/audit/list.php', AuditFeedController::class)->name('legacy.audit.index');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:manage_employees'])->group(function (): void {
+        Route::post('v1/warnings', [WarningController::class, 'create'])->name('warnings.create');
+        Route::post('v1/warnings/delete', [WarningController::class, 'delete'])->name('warnings.delete');
+
+        Route::post('app/warnings/add.php', [WarningController::class, 'create'])
+            ->name('legacy.warnings.create');
+        Route::post('app/warnings/delete.php', [WarningController::class, 'delete'])
+            ->name('legacy.warnings.delete');
+    });
+
+    Route::middleware(['auth.employee', 'tenant'])->group(function (): void {
+        Route::get('v1/notifications', [MyNotificationsController::class, 'index'])
+            ->name('notifications.index');
+        Route::post('v1/notifications/read', [MyNotificationsController::class, 'markRead'])
+            ->name('notifications.read');
+
+        Route::get('app/notifications/list.php', [MyNotificationsController::class, 'index'])
+            ->name('legacy.notifications.index');
+        Route::post('app/notifications/read.php', [MyNotificationsController::class, 'markRead'])
+            ->name('legacy.notifications.read');
     });
 
     /*

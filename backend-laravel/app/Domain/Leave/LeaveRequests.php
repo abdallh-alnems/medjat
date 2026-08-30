@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Leave;
 
+use App\Support\Value;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 
@@ -21,6 +22,60 @@ final class LeaveRequests
 
     /** How many decisions one person may have outstanding at a time. */
     public const PENDING_LIMIT = 2;
+
+    /**
+     * Everybody on approved leave on a given day.
+     *
+     * Matched against the range, not the `date` column. `date` holds the start
+     * of the request, so matching on it recognises only the first day of a
+     * week off: the original did that in both the dashboard and the absence
+     * backfill, which meant an approved five-day leave produced four 'absent'
+     * rows — and, through the deduction rules, four days of docked pay against
+     * somebody whose balance had already been debited for them.
+     *
+     * @return array<int, true>
+     */
+    public static function employeesOnLeave(int $tenantId, string $date): array
+    {
+        $ids = DB::table('leaves')
+            ->where('tenant_id', $tenantId)
+            ->where('status', 'approved')
+            ->whereDate('start_date', '<=', $date)
+            ->whereDate('end_date', '>=', $date)
+            ->pluck('employee_id')
+            ->all();
+
+        /** @var array<int, true> $flags */
+        $flags = [];
+
+        foreach ($ids as $id) {
+            $flags[Value::int($id)] = true;
+        }
+
+        return $flags;
+    }
+
+    /**
+     * Why somebody is off, for the board: their own words if they gave any,
+     * otherwise the leave type.
+     */
+    public static function reasonOn(int $employeeId, int $tenantId, string $date): ?string
+    {
+        $row = DB::table('leaves')
+            ->where('employee_id', $employeeId)->where('tenant_id', $tenantId)
+            ->where('status', 'approved')
+            ->whereDate('start_date', '<=', $date)
+            ->whereDate('end_date', '>=', $date)
+            ->first(['type', 'reason']);
+
+        if ($row === null) {
+            return null;
+        }
+
+        $reason = trim(Value::string($row->reason));
+
+        return $reason !== '' ? $reason : Value::nullableString($row->type);
+    }
 
     public function open(
         int $employeeId,
