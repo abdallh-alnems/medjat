@@ -243,6 +243,101 @@ final class PunchIngestor
     }
 
     /**
+     * Stores and applies an ATTLOG upload.
+     *
+     * @param  array<string, mixed>  $device
+     * @return int How many lines were accepted.
+     */
+    public function ingestPunches(array $device, string $body): int
+    {
+        $deviceId = Value::int($device['id'] ?? null);
+        $tenantId = Value::nullableInt($device['tenant_id'] ?? null);
+        $offset = Value::int($device['clock_offset_minutes'] ?? null);
+        $now = self::now($device);
+
+        $accepted = 0;
+
+        foreach (preg_split('/\r\n|\n|\r/', $body) ?: [] as $line) {
+            $parsed = ZktecoProtocol::parsePunch($line);
+
+            if ($parsed === null) {
+                continue;
+            }
+
+            $punchedAt = self::applyClockOffset($parsed['punched_at'], $offset);
+
+            $stored = DevicePunches::record(
+                $deviceId,
+                $tenantId,
+                $parsed['pin'],
+                $punchedAt,
+                $parsed['status'],
+                $parsed['verify'],
+                $parsed['work_code'],
+                $parsed['raw'],
+            );
+
+            // Counted even when it is a repeat: the device is asking whether we
+            // received the line, and we did.
+            $accepted++;
+
+            if ($stored['duplicate'] === true) {
+                continue;
+            }
+
+            DeviceUsers::ensure($deviceId, $tenantId, $parsed['pin']);
+            DeviceUsers::touchPunch($deviceId, $parsed['pin'], $punchedAt);
+            AttendanceDevice::touchPunch($deviceId, $punchedAt);
+
+            $this->apply($device, [
+                'id' => $stored['id'],
+                'punched_at' => $punchedAt,
+                'device_user_id' => $parsed['pin'],
+                'status_code' => $parsed['status'],
+                'verify_mode' => $parsed['verify'],
+            ], $now);
+        }
+
+        return $accepted;
+    }
+
+    /**
+     * Reads an OPERLOG upload, which is how a terminal tells us about its own
+     * enrolled users.
+     *
+     * @param  array<string, mixed>  $device
+     * @return int How many users it described.
+     */
+    public function ingestOperations(array $device, string $body): int
+    {
+        $deviceId = Value::int($device['id'] ?? null);
+        $tenantId = Value::nullableInt($device['tenant_id'] ?? null);
+
+        $seen = 0;
+
+        foreach (preg_split('/\r\n|\n|\r/', $body) ?: [] as $line) {
+            $parsed = ZktecoProtocol::parseOperation($line);
+
+            if ($parsed === null || $parsed['kind'] !== 'user') {
+                continue;
+            }
+
+            DeviceUsers::ensure(
+                $deviceId,
+                $tenantId,
+                $parsed['pin'] ?? '',
+                $parsed['name'] ?? null,
+                $parsed['card'] ?? null,
+                $parsed['privilege'] ?? null,
+            );
+
+            $seen++;
+        }
+
+        return $seen;
+    }
+
+    /**
      * The company's local time, which is the same wall clock the terminal reads.
      *
      * @param  array<string, mixed>  $device

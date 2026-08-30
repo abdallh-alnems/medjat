@@ -96,4 +96,29 @@ final class SuperAdminSession
             DB::table('super_admin_sessions')->where('token_hash', self::hash($token))->value('expires_at')
         );
     }
+
+    /**
+     * Signs out every other device for this account.
+     *
+     * Used on a password change: one that leaves the old sessions alive
+     * protects nothing, because whoever prompted the change still holds a
+     * working token. The session making the change is kept, so the operator is
+     * not signed out of the screen they are standing on.
+     */
+    public static function closeOthers(int $adminId, string $keepToken): int
+    {
+        return DB::table('super_admin_sessions')
+            ->where('admin_id', $adminId)
+            ->where('token_hash', '!=', self::hash($keepToken))
+            ->delete();
+    }
+
+    /** How many live sessions this account has, for the account screen. */
+    public static function activeCount(int $adminId): int
+    {
+        return DB::table('super_admin_sessions')
+            ->where('admin_id', $adminId)
+            ->whereRaw('expires_at > NOW()')
+            ->count();
+    }
 }

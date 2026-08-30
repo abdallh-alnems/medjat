@@ -41,6 +41,61 @@ final class AttendanceDevice
     }
 
     /**
+     * Marks a terminal as seen, creating its row on first contact.
+     *
+     * A serial nobody has claimed still gets a row: that is how a device
+     * appears in the "unclaimed" list for somebody to attach to a company. It
+     * can do nothing else until then, which is the whole authorisation model —
+     * the firmware has nowhere to put a credential.
+     *
+     * @return array<string, mixed>
+     */
+    public static function recordContact(string $serial, ?string $ip): array
+    {
+        DB::insert(
+            "INSERT INTO attendance_devices (serial_number, status, first_seen_at, last_seen_at, last_ip)
+             VALUES (?, 'unclaimed', NOW(), NOW(), ?)
+             ON DUPLICATE KEY UPDATE last_seen_at = NOW(), last_ip = VALUES(last_ip)",
+            [$serial, $ip],
+        );
+
+        $device = self::findBySerial($serial);
+
+        if ($device === null) {
+            throw new RuntimeException('Device row vanished for serial '.$serial);
+        }
+
+        return $device;
+    }
+
+    /**
+     * Stores whatever the device volunteered about itself.
+     *
+     * Only non-empty values: a handshake that omits the firmware version must
+     * not erase the one we already knew.
+     *
+     * @param  array<string, mixed>  $info
+     */
+    public static function updateInfo(int $deviceId, array $info): void
+    {
+        $fields = [];
+
+        foreach (['model', 'firmware', 'user_count'] as $column) {
+            $value = $info[$column] ?? null;
+
+            if ($value !== null && $value !== '') {
+                $fields[$column] = $value;
+            }
+        }
+
+        if ($fields === []) {
+            return;
+        }
+
+        DB::table('attendance_devices')->where('id', $deviceId)->update($fields);
+    }
+
+    /**
      * @return array<string, mixed>|null
      */
     public static function findBySerial(string $serial): ?array

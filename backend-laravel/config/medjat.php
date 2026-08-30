@@ -30,6 +30,12 @@ return [
         'secret' => (string) env('CRON_SECRET', ''),
     ],
 
+    'web' => [
+        // Where the management web app lives, for links the panel hands an
+        // operator (impersonation, and anything else that opens a real session).
+        'base_url' => (string) env('CENTRAL_WEB_URL', 'https://app.medjatapp.com'),
+    ],
+
     'join' => [
         // Must be a domain that hosts the App Links / Universal Links association
         // files, or the link opens a web page instead of the app.

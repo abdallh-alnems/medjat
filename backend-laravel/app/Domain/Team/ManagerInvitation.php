@@ -6,6 +6,7 @@ namespace App\Domain\Team;
 
 use App\Support\Value;
 use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -203,6 +204,19 @@ final class ManagerInvitation
             ->whereNull('accepted_at')->whereNull('cancelled_at')
             ->whereRaw('expires_at > NOW()')
             ->update(['accepted_at' => DB::raw('NOW()'), 'accepted_admin_id' => $adminId]) > 0;
+    }
+
+    /**
+     * The page an invitee opens to redeem a code.
+     *
+     * Built from configuration rather than reconstructed from the request the
+     * way the original did — it derived the backend root by cutting SCRIPT_NAME
+     * at '/api/', which produced the wrong host the moment anything sat behind
+     * a proxy or the endpoint moved.
+     */
+    public static function joinUrl(string $code): string
+    {
+        return rtrim(Config::string('medjat.join.base_url'), '/').'/join_team?code='.rawurlencode($code);
     }
 
     private static function expiryOf(int $invitationId): string

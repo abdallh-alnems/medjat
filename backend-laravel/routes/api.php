@@ -112,11 +112,18 @@ use App\Http\Controllers\Settings\LeaveSettingsController;
 use App\Http\Controllers\Settings\StatutoryPayrollController;
 use App\Http\Controllers\Settlements\SettlementController;
 use App\Http\Controllers\Shifts\ShiftController;
+use App\Http\Controllers\SuperAdmin\AdminAccountController;
+use App\Http\Controllers\SuperAdmin\AuthController as SuperAdminAuthController;
+use App\Http\Controllers\SuperAdmin\DiagnosticsController;
+use App\Http\Controllers\SuperAdmin\DirectoryController;
+use App\Http\Controllers\SuperAdmin\PlatformController;
+use App\Http\Controllers\SuperAdmin\TenantController as SuperAdminTenantController;
 use App\Http\Controllers\Support\SupportController;
 use App\Http\Controllers\Team\AdminPermissionsController;
 use App\Http\Controllers\Team\InvitationController;
 use App\Http\Controllers\Team\TeamController;
 use App\Http\Controllers\Tenant\OnboardingController;
+use App\Http\Controllers\Terminal\IclockController;
 use App\Http\Controllers\Warnings\WarningController;
 use Illuminate\Support\Facades\Route;
 
@@ -1010,6 +1017,146 @@ Route::middleware('throttle:api')->group(function (): void {
         Route::post('app/admin_app_control/set.php', [AppControlController::class, 'save'])
             ->name('legacy.admin.app-control.save');
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | The internal admin panel
+    |--------------------------------------------------------------------------
+    |
+    | Three rungs. `readonly` sees everything and changes nothing; `admin` acts
+    | on companies and their people; `superadmin` does the things that cannot be
+    | undone from a phone call — creating a company, adding an operator, raising
+    | the update floor, and signing in as a customer.
+    |
+    */
+
+    Route::post('v1/admin/auth/login', [SuperAdminAuthController::class, 'login'])
+        ->name('super.auth.login');
+    Route::post('admin/auth/login.php', [SuperAdminAuthController::class, 'login'])
+        ->name('legacy.super.auth.login');
+
+    Route::middleware('auth.super:readonly')->group(function (): void {
+        Route::post('v1/admin/auth/logout', [SuperAdminAuthController::class, 'logout'])
+            ->name('super.auth.logout');
+        Route::get('v1/admin/auth/me', [SuperAdminAuthController::class, 'me'])->name('super.auth.me');
+        Route::post('v1/admin/auth/password', [SuperAdminAuthController::class, 'changePassword'])
+            ->name('super.auth.password');
+
+        Route::get('v1/admin/dashboard', [PlatformController::class, 'overview'])
+            ->name('super.dashboard');
+        Route::get('v1/admin/tenants', [SuperAdminTenantController::class, 'index'])
+            ->name('super.tenants.index');
+        Route::get('v1/admin/tenants/detail', [SuperAdminTenantController::class, 'show'])
+            ->name('super.tenants.show');
+        Route::get('v1/admin/tenants/diagnostics', DiagnosticsController::class)
+            ->name('super.tenants.diagnostics');
+        Route::get('v1/admin/company-admins', [DirectoryController::class, 'admins'])
+            ->name('super.company-admins');
+        Route::get('v1/admin/audit', [DirectoryController::class, 'audit'])->name('super.audit');
+
+        Route::match(['get', 'post'], 'admin/auth/logout.php', [SuperAdminAuthController::class, 'logout'])
+            ->name('legacy.super.auth.logout');
+        Route::get('admin/auth/me.php', [SuperAdminAuthController::class, 'me'])->name('legacy.super.auth.me');
+        Route::post('admin/auth/change_password.php', [SuperAdminAuthController::class, 'changePassword'])
+            ->name('legacy.super.auth.password');
+
+        Route::get('admin/dashboard/overview.php', [PlatformController::class, 'overview'])
+            ->name('legacy.super.dashboard');
+        Route::get('admin/tenants/list.php', [SuperAdminTenantController::class, 'index'])
+            ->name('legacy.super.tenants.index');
+        Route::get('admin/tenants/detail.php', [SuperAdminTenantController::class, 'show'])
+            ->name('legacy.super.tenants.show');
+        Route::get('admin/tenants/diagnostics.php', DiagnosticsController::class)
+            ->name('legacy.super.tenants.diagnostics');
+        Route::get('admin/users/list.php', [DirectoryController::class, 'admins'])
+            ->name('legacy.super.company-admins');
+        Route::get('admin/audit/list.php', [DirectoryController::class, 'audit'])
+            ->name('legacy.super.audit');
+    });
+
+    Route::middleware('auth.super:admin')->group(function (): void {
+        Route::post('v1/admin/tenants/update', [SuperAdminTenantController::class, 'update'])
+            ->name('super.tenants.update');
+        Route::post('v1/admin/tenants/activate', [SuperAdminTenantController::class, 'activate'])
+            ->name('super.tenants.activate');
+        Route::post('v1/admin/tenants/deactivate', [SuperAdminTenantController::class, 'deactivate'])
+            ->name('super.tenants.deactivate');
+
+        Route::post('v1/admin/company-admins/invite', [AdminAccountController::class, 'invite'])
+            ->name('super.company-admins.invite');
+        Route::post('v1/admin/company-admins/reset-password', [AdminAccountController::class, 'resetPassword'])
+            ->name('super.company-admins.reset-password');
+        Route::post('v1/admin/company-admins/set-active', [AdminAccountController::class, 'setActive'])
+            ->name('super.company-admins.set-active');
+
+        Route::post('v1/admin/announcements/all', [PlatformController::class, 'announceToAll'])
+            ->name('super.announcements.all');
+        Route::post('v1/admin/announcements/tenant', [PlatformController::class, 'announceToTenant'])
+            ->name('super.announcements.tenant');
+
+        Route::post('admin/tenants/update.php', [SuperAdminTenantController::class, 'update'])
+            ->name('legacy.super.tenants.update');
+        Route::match(['get', 'post'], 'admin/tenants/activate.php', [SuperAdminTenantController::class, 'activate'])
+            ->name('legacy.super.tenants.activate');
+        Route::match(['get', 'post'], 'admin/tenants/deactivate.php', [SuperAdminTenantController::class, 'deactivate'])
+            ->name('legacy.super.tenants.deactivate');
+
+        Route::post('admin/admins/invite.php', [AdminAccountController::class, 'invite'])
+            ->name('legacy.super.company-admins.invite');
+        Route::post('admin/admins/reset_password.php', [AdminAccountController::class, 'resetPassword'])
+            ->name('legacy.super.company-admins.reset-password');
+        Route::post('admin/admins/set_active.php', [AdminAccountController::class, 'setActive'])
+            ->name('legacy.super.company-admins.set-active');
+
+        Route::post('admin/notifications/send_all.php', [PlatformController::class, 'announceToAll'])
+            ->name('legacy.super.announcements.all');
+        Route::post('admin/notifications/send_tenant.php', [PlatformController::class, 'announceToTenant'])
+            ->name('legacy.super.announcements.tenant');
+    });
+
+    Route::middleware('auth.super:superadmin')->group(function (): void {
+        Route::post('v1/admin/tenants', [SuperAdminTenantController::class, 'create'])
+            ->name('super.tenants.create');
+        Route::post('v1/admin/operators', [DirectoryController::class, 'createOperator'])
+            ->name('super.operators.create');
+        Route::post('v1/admin/force-update', [PlatformController::class, 'forceUpdate'])
+            ->name('super.force-update');
+        Route::post('v1/admin/company-admins/impersonate', [AdminAccountController::class, 'impersonate'])
+            ->name('super.company-admins.impersonate');
+
+        Route::match(['get', 'post'], 'admin/tenants/create.php', [SuperAdminTenantController::class, 'create'])
+            ->name('legacy.super.tenants.create');
+        Route::match(['get', 'post'], 'admin/users/create.php', [DirectoryController::class, 'createOperator'])
+            ->name('legacy.super.operators.create');
+        Route::match(['get', 'post'], 'admin/force_update/trigger.php', [PlatformController::class, 'forceUpdate'])
+            ->name('legacy.super.force-update');
+        Route::post('admin/admins/impersonate.php', [AdminAccountController::class, 'impersonate'])
+            ->name('legacy.super.company-admins.impersonate');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Attendance terminals
+    |--------------------------------------------------------------------------
+    |
+    | The one door not opened by a signed-in human. A ZKTeco terminal cannot
+    | send any credential the firmware knows about — what it sends is its serial
+    | number, and a serial no company has claimed can do nothing here.
+    |
+    | Both shapes are registered: /iclock/<action>, which is what the firmware
+    | derives from its server setting, and the direct filename the old
+    | deployment used. Every verb, because the protocol uses GET for the
+    | handshake and POST for uploads and does not always agree with itself.
+    |
+    | Reached over plain HTTP on port 8090 straight to the origin: old ZK
+    | firmware has weak or no TLS and sends no SNI, so it cannot pass Cloudflare.
+    |
+    */
+
+    Route::any('device/iclock.php', IclockController::class)->name('legacy.terminal.iclock');
+    Route::any('iclock/{action}', IclockController::class)
+        ->where('action', '[A-Za-z]+')
+        ->name('terminal.iclock');
 
     /*
     |--------------------------------------------------------------------------
