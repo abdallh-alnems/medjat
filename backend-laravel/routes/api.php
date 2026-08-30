@@ -39,6 +39,7 @@ use App\Http\Controllers\Branches\BranchController;
 use App\Http\Controllers\Branches\BranchNetworkController;
 use App\Http\Controllers\Breaks\BreakDecisionsController;
 use App\Http\Controllers\Breaks\MyBreaksController;
+use App\Http\Controllers\Categories\CategoryController;
 use App\Http\Controllers\Devices\DeviceFleetController;
 use App\Http\Controllers\Devices\DeviceUsersController;
 use App\Http\Controllers\Devices\ImportPunchesController;
@@ -88,6 +89,9 @@ use App\Http\Controllers\Payroll\MySlipController;
 use App\Http\Controllers\Payroll\OverrideLineController;
 use App\Http\Controllers\Payroll\PayslipPdfController;
 use App\Http\Controllers\Payroll\RevertController;
+use App\Http\Controllers\Reports\ReportController;
+use App\Http\Controllers\Shifts\ShiftController;
+use App\Http\Controllers\Support\SupportController;
 use App\Http\Controllers\Team\AdminPermissionsController;
 use App\Http\Controllers\Team\InvitationController;
 use App\Http\Controllers\Team\TeamController;
@@ -1046,6 +1050,107 @@ Route::middleware('throttle:api')->group(function (): void {
             ->name('legacy.assets.approve-return');
         Route::post('app/assets/reject_return.php', [AssetController::class, 'rejectReturn'])
             ->name('legacy.assets.reject-return');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Shifts, categories, reports and support
+    |--------------------------------------------------------------------------
+    |
+    | Reading a shift or a category list accepts several permissions: both are
+    | filter dimensions on screens that many roles can reach, and gating them
+    | on the permission that *manages* them left those screens silently empty.
+    | Managing either stays where it was.
+    |
+    */
+
+    Route::middleware(['auth.admin', 'tenant'])->group(function (): void {
+        Route::get('v1/shifts', [ShiftController::class, 'index'])
+            ->middleware('can.do:manage_company_settings|manage_employees|manage_attendance|manage_schedule|view_reports')
+            ->name('shifts.list');
+        Route::get('app/shifts/list.php', [ShiftController::class, 'index'])
+            ->middleware('can.do:manage_company_settings|manage_employees|manage_attendance|manage_schedule|view_reports')
+            ->name('legacy.shifts.list');
+
+        Route::get('v1/categories', [CategoryController::class, 'index'])
+            ->middleware('can.do:manage_employees|view_reports|manage_company_settings')
+            ->name('categories.list');
+        Route::get('app/categories/list.php', [CategoryController::class, 'index'])
+            ->middleware('can.do:manage_employees|view_reports|manage_company_settings')
+            ->name('legacy.categories.list');
+
+        // The browser-attendance exception is the company switch at a finer
+        // grain, so it costs the same permission the switch does — not the one
+        // that merely renames a category.
+        Route::post('v1/categories/web-access', [CategoryController::class, 'updateWebAccess'])
+            ->middleware('can.do:manage_company_settings')->name('categories.web-access');
+        Route::post('app/categories/update_web_access.php', [CategoryController::class, 'updateWebAccess'])
+            ->middleware('can.do:manage_company_settings')->name('legacy.categories.web-access');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:manage_company_settings'])->group(function (): void {
+        Route::post('v1/shifts', [ShiftController::class, 'create'])->name('shifts.create');
+        Route::post('v1/shifts/update', [ShiftController::class, 'update'])->name('shifts.update');
+        Route::post('v1/shifts/delete', [ShiftController::class, 'delete'])->name('shifts.delete');
+        Route::post('v1/shifts/assign', [ShiftController::class, 'assign'])->name('shifts.assign');
+        Route::post('v1/shifts/unassign', [ShiftController::class, 'unassign'])->name('shifts.unassign');
+
+        Route::post('app/shifts/create.php', [ShiftController::class, 'create'])->name('legacy.shifts.create');
+        Route::post('app/shifts/update.php', [ShiftController::class, 'update'])->name('legacy.shifts.update');
+        Route::post('app/shifts/delete.php', [ShiftController::class, 'delete'])->name('legacy.shifts.delete');
+        Route::post('app/shifts/assign.php', [ShiftController::class, 'assign'])->name('legacy.shifts.assign');
+        Route::post('app/shifts/unassign.php', [ShiftController::class, 'unassign'])->name('legacy.shifts.unassign');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:manage_employees'])->group(function (): void {
+        Route::post('v1/categories', [CategoryController::class, 'create'])->name('categories.create');
+        Route::post('v1/categories/update', [CategoryController::class, 'update'])->name('categories.update');
+        Route::post('v1/categories/delete', [CategoryController::class, 'delete'])->name('categories.delete');
+        Route::post('v1/categories/assign', [CategoryController::class, 'assign'])->name('categories.assign');
+
+        Route::post('app/categories/create.php', [CategoryController::class, 'create'])
+            ->name('legacy.categories.create');
+        Route::post('app/categories/update.php', [CategoryController::class, 'update'])
+            ->name('legacy.categories.update');
+        Route::post('app/categories/delete.php', [CategoryController::class, 'delete'])
+            ->name('legacy.categories.delete');
+        Route::post('app/categories/assign.php', [CategoryController::class, 'assign'])
+            ->name('legacy.categories.assign');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:view_reports'])->group(function (): void {
+        Route::get('v1/reports/attendance', [ReportController::class, 'attendance'])->name('reports.attendance');
+        Route::get('v1/reports/employees', [ReportController::class, 'employees'])->name('reports.employees');
+        Route::get('v1/reports/leaves', [ReportController::class, 'leaves'])->name('reports.leaves');
+        Route::get('v1/reports/overtime-late', [ReportController::class, 'overtimeAndLate'])
+            ->name('reports.overtime-late');
+        Route::get('v1/reports/payroll', [ReportController::class, 'payroll'])->name('reports.payroll');
+
+        Route::get('app/reports/attendance.php', [ReportController::class, 'attendance'])
+            ->name('legacy.reports.attendance');
+        Route::get('app/reports/employees.php', [ReportController::class, 'employees'])
+            ->name('legacy.reports.employees');
+        Route::get('app/reports/leaves.php', [ReportController::class, 'leaves'])->name('legacy.reports.leaves');
+        Route::get('app/reports/overtime_late.php', [ReportController::class, 'overtimeAndLate'])
+            ->name('legacy.reports.overtime-late');
+        Route::get('app/reports/payroll.php', [ReportController::class, 'payroll'])->name('legacy.reports.payroll');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:manage_support'])->group(function (): void {
+        Route::get('v1/support/tickets', [SupportController::class, 'index'])->name('support.list');
+        Route::post('v1/support/tickets', [SupportController::class, 'create'])->name('support.create');
+        Route::get('v1/support/messages', [SupportController::class, 'messages'])->name('support.messages');
+        Route::post('v1/support/reply', [SupportController::class, 'reply'])->name('support.reply');
+        Route::post('v1/support/close', [SupportController::class, 'close'])->name('support.close');
+        Route::get('v1/support/attachment', [SupportController::class, 'attachment'])->name('support.attachment');
+
+        Route::get('app/support/list.php', [SupportController::class, 'index'])->name('legacy.support.list');
+        Route::post('app/support/create.php', [SupportController::class, 'create'])->name('legacy.support.create');
+        Route::get('app/support/messages.php', [SupportController::class, 'messages'])->name('legacy.support.messages');
+        Route::post('app/support/reply.php', [SupportController::class, 'reply'])->name('legacy.support.reply');
+        Route::post('app/support/close.php', [SupportController::class, 'close'])->name('legacy.support.close');
+        Route::get('app/support/attachment.php', [SupportController::class, 'attachment'])
+            ->name('legacy.support.attachment');
     });
 
 });
