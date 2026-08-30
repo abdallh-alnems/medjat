@@ -1,0 +1,16 @@
+{
+    "name": "medjat/backend",
+    "description": "Medjat HR Attendance & Payroll SaaS Backend API",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "kreait/firebase-php": "^7.0",
+        "mpdf/mpdf": "^8.3",
+        "phpoffice/phpword": "^1.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    }
+}

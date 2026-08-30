@@ -1,31 +1,27 @@
-# ============================================
-# Medjat Backend - .gitignore
-# ============================================
-
-# Secrets & runtime (CRITICAL - never commit)
-config/env.php
-core/firebase_credentials.json
 *.log
-
-# OS files
 .DS_Store
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+/.codex
+/.cursor/
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+/node_modules
+/public/build
+/public/fonts-manifest.dev.json
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/vendor
+_ide_helper.php
+Homestead.json
+Homestead.yaml
 Thumbs.db
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# Composer
-vendor/
-
-# Cache runtime files
-cache_system/cache_storage/*.cache
-
-# Uploads
-uploads/
-
-# Temp / scratch PHP
-test_*.php
-describe_*.php

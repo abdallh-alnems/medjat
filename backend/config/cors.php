@@ -1,27 +1,56 @@
 <?php
 
-function setCorsHeaders(): void {
-    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-    $allowed = CORS_ALLOWED_ORIGINS;
+declare(strict_types=1);
 
-    if (empty($allowed)) {
-        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-            http_response_code(204);
-            exit;
-        }
-        return;
-    }
+/*
+|--------------------------------------------------------------------------
+| Cross-origin requests
+|--------------------------------------------------------------------------
+|
+| Only the browser surfaces need this — the Flutter apps and the attendance
+| terminals are not browsers and never send an Origin. It exists for the web
+| port, the desktop shell that wraps it, and the employee browser channel.
+|
+| The allow-list comes from the environment and is empty by default, which
+| denies every cross-origin request. That is the right default for an API
+| holding payroll: a permissive one would let any page on the internet make
+| authenticated requests from a signed-in employee's browser.
+|
+*/
 
-    $allowedOrigins = array_map('trim', explode(',', $allowed));
-    if (in_array($origin, $allowedOrigins) || in_array('*', $allowedOrigins)) {
-        header("Access-Control-Allow-Origin: " . ($origin ?: '*'));
-    }
+return [
 
-    header("Access-Control-Allow-Headers: " . CORS_ALLOWED_HEADERS);
-    header("Access-Control-Allow-Methods: " . CORS_ALLOWED_METHODS);
+    'paths' => ['*'],
 
-    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-        http_response_code(204);
-        exit;
-    }
-}
+    'allowed_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+
+    'allowed_origins' => array_values(array_filter(
+        array_map('trim', explode(',', (string) env('CORS_ALLOWED_ORIGINS', '')))
+    )),
+
+    'allowed_origins_patterns' => [],
+
+    // The headers the clients actually send: the app secret and the session
+    // tokens ride in Authorization and the X-* headers below.
+    'allowed_headers' => [
+        'Content-Type',
+        'Authorization',
+        'X-Requested-With',
+        'X-Tenant-Id',
+        'X-Firebase-Token',
+        'X-Employee-Token',
+        'X-Kiosk-Token',
+        'X-Device-Id',
+        'X-Cron-Secret',
+    ],
+
+    'exposed_headers' => [],
+
+    'max_age' => 0,
+
+    // False, and deliberately: every surface authenticates with a token in a
+    // header, not a cookie. Allowing credentials would also forbid the '*'
+    // origin, and buys nothing that is used.
+    'supports_credentials' => false,
+
+];
