@@ -28,6 +28,11 @@ return Application::configure(basePath: dirname(__DIR__))
         App\Modules\Cron\Console\RunDailyAlertsCommand::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
+        // Every response from a legacy URL says so, and a sample of the calls
+        // is logged. Applied globally rather than per route: 295 routes cannot
+        // each be trusted to remember.
+        $middleware->append(App\Shared\Http\Middleware\AnnounceDeprecation::class);
+
         $middleware->alias([
             // The shared secret the published app bundles carry. Not
             // authentication — that is the guards below — but the difference

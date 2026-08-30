@@ -60,6 +60,22 @@ return [
             'ignore_exceptions' => false,
         ],
 
+        /*
+         * Calls to the legacy .php URLs, sampled.
+         *
+         * Its own channel so the question "can these be deleted yet" is one
+         * file to read rather than a grep through everything the application
+         * logs. Kept a year, because the answer is about which app builds are
+         * still installed and that changes over months, not days.
+         */
+        'deprecated' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/deprecated.log'),
+            'level' => 'info',
+            'days' => 365,
+            'replace_placeholders' => true,
+        ],
+
         'single' => [
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),
