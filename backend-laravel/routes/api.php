@@ -33,6 +33,8 @@ use App\Http\Controllers\Auth\NotificationPrefsController;
 use App\Http\Controllers\Auth\SendAuthActionController;
 use App\Http\Controllers\Auth\UpdateFcmTokenController;
 use App\Http\Controllers\Auth\UpdateProfileController;
+use App\Http\Controllers\Breaks\BreakDecisionsController;
+use App\Http\Controllers\Breaks\MyBreaksController;
 use App\Http\Controllers\Documents\DocumentReportsController;
 use App\Http\Controllers\Documents\EmployeeDocumentsController;
 use App\Http\Controllers\Documents\MyDocumentController;
@@ -812,6 +814,49 @@ Route::middleware('throttle:api')->group(function (): void {
             ->name('roles.permissions');
         Route::get('app/roles/list_permissions.php', [AdminPermissionsController::class, 'catalogue'])
             ->name('legacy.roles.permissions');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Permissions (short breaks during a shift)
+    |--------------------------------------------------------------------------
+    |
+    | Gated on manage_leaves, the same permission as leave: a manager who
+    | decides one decides the other, and splitting them would leave companies
+    | granting two permissions to describe one job.
+    |
+    */
+
+    Route::middleware(['auth.employee', 'tenant'])->group(function (): void {
+        Route::post('v1/breaks/request', [MyBreaksController::class, 'request'])->name('breaks.request');
+        Route::get('v1/breaks/mine', [MyBreaksController::class, 'index'])->name('breaks.mine');
+        Route::post('v1/breaks/cancel', [MyBreaksController::class, 'cancel'])->name('breaks.cancel');
+        Route::post('v1/breaks/respond-postpone', [MyBreaksController::class, 'respondToPostpone'])
+            ->name('breaks.respond-postpone');
+
+        Route::post('app/breaks/request.php', [MyBreaksController::class, 'request'])->name('legacy.breaks.request');
+        Route::get('app/breaks/my_list.php', [MyBreaksController::class, 'index'])->name('legacy.breaks.mine');
+        Route::post('app/breaks/cancel.php', [MyBreaksController::class, 'cancel'])->name('legacy.breaks.cancel');
+        Route::post('app/breaks/respond_postpone.php', [MyBreaksController::class, 'respondToPostpone'])
+            ->name('legacy.breaks.respond-postpone');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:manage_leaves'])->group(function (): void {
+        Route::get('v1/breaks', [BreakDecisionsController::class, 'index'])->name('breaks.list');
+        Route::post('v1/breaks', [BreakDecisionsController::class, 'createFor'])->name('breaks.create');
+        Route::post('v1/breaks/approve', [BreakDecisionsController::class, 'approve'])->name('breaks.approve');
+        Route::post('v1/breaks/reject', [BreakDecisionsController::class, 'reject'])->name('breaks.reject');
+        Route::post('v1/breaks/postpone', [BreakDecisionsController::class, 'postpone'])->name('breaks.postpone');
+
+        Route::get('app/breaks/list.php', [BreakDecisionsController::class, 'index'])->name('legacy.breaks.list');
+        Route::post('app/breaks/create_for.php', [BreakDecisionsController::class, 'createFor'])
+            ->name('legacy.breaks.create');
+        Route::post('app/breaks/approve.php', [BreakDecisionsController::class, 'approve'])
+            ->name('legacy.breaks.approve');
+        Route::post('app/breaks/reject.php', [BreakDecisionsController::class, 'reject'])
+            ->name('legacy.breaks.reject');
+        Route::post('app/breaks/postpone.php', [BreakDecisionsController::class, 'postpone'])
+            ->name('legacy.breaks.postpone');
     });
 
 });
