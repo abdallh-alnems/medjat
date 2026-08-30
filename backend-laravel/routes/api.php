@@ -35,6 +35,8 @@ use App\Http\Controllers\Auth\NotificationPrefsController;
 use App\Http\Controllers\Auth\SendAuthActionController;
 use App\Http\Controllers\Auth\UpdateFcmTokenController;
 use App\Http\Controllers\Auth\UpdateProfileController;
+use App\Http\Controllers\Biometric\EnrollmentController;
+use App\Http\Controllers\Biometric\SelfEnrollmentController;
 use App\Http\Controllers\Branches\BranchController;
 use App\Http\Controllers\Branches\BranchNetworkController;
 use App\Http\Controllers\Breaks\BreakDecisionsController;
@@ -636,6 +638,61 @@ Route::middleware('throttle:api')->group(function (): void {
         Route::post('v1/deduction-rules', [DeductionRulesController::class, 'save'])->name('deduction-rules.save');
         Route::post('app/deductions/save_config.php', [DeductionRulesController::class, 'save'])
             ->name('legacy.deduction-rules.save');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Biometrics
+    |--------------------------------------------------------------------------
+    |
+    | Enrolling and clearing are separate permissions. Enrolling is routine —
+    | an attendance clerk does it as people join. Clearing is what authorises a
+    | re-enrollment, so it is the one that could be used to swap somebody's
+    | reference face, and it is held more narrowly.
+    |
+    | Reading the status is ungated beyond tenancy, as it was: the employee list
+    | shows an enrollment badge on every row.
+    |
+    */
+
+    Route::middleware(['auth.employee', 'tenant'])->group(function (): void {
+        Route::post('v1/biometric/self/face', [SelfEnrollmentController::class, 'enroll'])
+            ->name('biometric.self.enroll');
+        Route::post('v1/biometric/self/status', [SelfEnrollmentController::class, 'status'])
+            ->name('biometric.self.status');
+
+        Route::post('app/biometric/enroll_self.php', [SelfEnrollmentController::class, 'enroll'])
+            ->name('legacy.biometric.self.enroll');
+        Route::post('app/biometric/my_status.php', [SelfEnrollmentController::class, 'status'])
+            ->name('legacy.biometric.self.status');
+    });
+
+    Route::middleware(['auth.admin', 'tenant'])->group(function (): void {
+        Route::get('v1/biometric/status', [EnrollmentController::class, 'status'])
+            ->name('biometric.status');
+        Route::get('app/biometric/status.php', [EnrollmentController::class, 'status'])
+            ->name('legacy.biometric.status');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:biometric_enroll'])->group(function (): void {
+        Route::post('v1/biometric/face', [EnrollmentController::class, 'enrollFace'])
+            ->name('biometric.enroll-face');
+        Route::post('v1/biometric/fingerprint', [EnrollmentController::class, 'enrollFingerprint'])
+            ->name('biometric.enroll-fingerprint');
+
+        Route::post('app/biometric/enroll_face.php', [EnrollmentController::class, 'enrollFace'])
+            ->name('legacy.biometric.enroll-face');
+        Route::post('app/biometric/enroll_fingerprint.php', [EnrollmentController::class, 'enrollFingerprint'])
+            ->name('legacy.biometric.enroll-fingerprint');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:biometric_delete'])->group(function (): void {
+        Route::post('v1/biometric/delete', [EnrollmentController::class, 'delete'])
+            ->name('biometric.delete');
+        // The original also answered DELETE here. Both verbs are kept: the
+        // published app bundles speak POST and cannot be changed.
+        Route::match(['post', 'delete'], 'app/biometric/delete.php', [EnrollmentController::class, 'delete'])
+            ->name('legacy.biometric.delete');
     });
 
     /*

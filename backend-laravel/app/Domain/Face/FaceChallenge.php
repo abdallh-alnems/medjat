@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Face;
 
+use App\Support\Value;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -46,5 +47,36 @@ final class FaceChallenge
         );
 
         return ['nonce' => $nonce, 'challenge' => $challenge, 'expires_in' => self::TTL_SECONDS];
+    }
+
+    /**
+     * Spends a nonce, returning the challenge word it named — or null when it
+     * is spent, expired or unknown.
+     *
+     * Enrollment and check-in both come through here, so a nonce cannot be
+     * issued for one and redeemed against the other, and neither can be
+     * loosened without the other noticing.
+     */
+    public static function consume(string $nonce, int $tenantId, int $employeeId, string $purpose): ?string
+    {
+        if ($nonce === '') {
+            return null;
+        }
+
+        // Claimed with the guard inside the UPDATE so two racing requests cannot
+        // both spend it, and expiry compared by the database's own clock.
+        $claimed = DB::update(
+            'UPDATE face_challenges
+                SET consumed_at = NOW()
+              WHERE nonce = ? AND tenant_id = ? AND employee_id = ? AND purpose = ?
+                AND consumed_at IS NULL AND expires_at > NOW()',
+            [$nonce, $tenantId, $employeeId, $purpose]
+        );
+
+        if ($claimed < 1) {
+            return null;
+        }
+
+        return Value::nullableString(DB::table('face_challenges')->where('nonce', $nonce)->value('challenge'));
     }
 }

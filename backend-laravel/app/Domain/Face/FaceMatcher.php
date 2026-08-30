@@ -75,7 +75,7 @@ final class FaceMatcher
 
         // 3. The single-use challenge. Without it a captured embedding could be
         //    submitted whenever its holder liked.
-        $challenge = $this->consumeChallenge(Value::string($input['face_nonce'] ?? null), $tenantId, $employee->id, $purpose);
+        $challenge = FaceChallenge::consume(Value::string($input['face_nonce'] ?? null), $tenantId, $employee->id, $purpose);
         if ($challenge === null) {
             $context->write('invalid_challenge', false, null, false, null, null);
 
@@ -182,30 +182,6 @@ final class FaceMatcher
             'liveness_required' => Value::int($liveness, 1) === 1,
             'enforce' => Value::string($tenant?->face_enforce_mode, 'log_only') === 'enforce',
         ];
-    }
-
-    /** The challenge word, or null when the nonce is spent, expired or unknown. */
-    private function consumeChallenge(string $nonce, int $tenantId, int $employeeId, string $purpose): ?string
-    {
-        if ($nonce === '') {
-            return null;
-        }
-
-        // Claimed with the guard in the UPDATE so two racing requests cannot
-        // both spend it, and expiry compared by the database's clock.
-        $claimed = DB::update(
-            'UPDATE face_challenges
-                SET consumed_at = NOW()
-              WHERE nonce = ? AND tenant_id = ? AND employee_id = ? AND purpose = ?
-                AND consumed_at IS NULL AND expires_at > NOW()',
-            [$nonce, $tenantId, $employeeId, $purpose]
-        );
-
-        if ($claimed < 1) {
-            return null;
-        }
-
-        return Value::nullableString(DB::table('face_challenges')->where('nonce', $nonce)->value('challenge'));
     }
 
     private function seenBefore(int $tenantId, int $employeeId, string $fingerprint): bool
