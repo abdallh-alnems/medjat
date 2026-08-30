@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Auth;
 
+use App\Domain\Notifications\LoginAlert;
 use App\Http\ApiResponse;
 use App\Http\Requests\Auth\AdminLoginRequest;
 use App\Services\Auth\AdminLoginAction;
@@ -14,7 +15,10 @@ use Illuminate\Http\JsonResponse;
  */
 final class AdminLoginController
 {
-    public function __construct(private readonly AdminLoginAction $login) {}
+    public function __construct(
+        private readonly AdminLoginAction $login,
+        private readonly LoginAlert $alert,
+    ) {}
 
     public function __invoke(AdminLoginRequest $request): JsonResponse
     {
@@ -25,11 +29,13 @@ final class AdminLoginController
             userAgent: (string) $request->userAgent(),
         );
 
-        // TODO(auth-port): the new-device alert (in-app notification, FCM push,
-        // email) is deferred until the notifications module is ported. It was
-        // never on the login critical path in the old backend either — it ran
-        // after the response through Background::defer, chiefly because of the
-        // SMTP round trip.
+        // After the session exists, and best-effort throughout: an alert that
+        // fails must not fail the sign-in it was about.
+        $this->alert->handle(
+            $result['admin'],
+            $request->ip() ?? '',
+            (string) $request->userAgent(),
+        );
 
         return ApiResponse::success($result['payload']);
     }

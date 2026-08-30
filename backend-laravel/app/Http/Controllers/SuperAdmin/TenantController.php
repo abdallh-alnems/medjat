@@ -339,9 +339,12 @@ final class TenantController
             'invited' => $created['invitation'] !== null,
         ]);
 
-        // TODO(mail-port): the invitation email is deferred with the rest of
-        // the mailers. The code and join URL come back here meanwhile, which is
-        // how the panel already shares an invite by hand.
+        if ($created['invitation'] !== null && $ownerEmail !== null) {
+            ManagerInvitation::email($ownerEmail, $created['invitation']['code'], 'general_manager', $name);
+        }
+
+        // The code and join URL come back as well, which is how the panel
+        // shares an invite when somebody is on the phone.
         return ApiResponse::success([
             'tenant_id' => $created['tenant_id'],
             'name' => $name,

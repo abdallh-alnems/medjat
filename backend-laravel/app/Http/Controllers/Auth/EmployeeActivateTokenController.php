@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Auth;
 
+use App\Domain\Notifications\EmployeeActivationAlert;
 use App\Exceptions\ApiFailure;
 use App\Http\ApiResponse;
 use App\Http\Requests\Auth\EmployeeActivateTokenRequest;
@@ -23,7 +24,10 @@ use Illuminate\Support\Facades\Config;
  */
 final class EmployeeActivateTokenController
 {
-    public function __construct(private readonly EmployeeLoginAction $login) {}
+    public function __construct(
+        private readonly EmployeeLoginAction $login,
+        private readonly EmployeeActivationAlert $alert,
+    ) {}
 
     public function __invoke(EmployeeActivateTokenRequest $request): JsonResponse
     {
@@ -62,6 +66,10 @@ final class EmployeeActivateTokenController
             platform: $request->platform(),
             appVersion: $request->appVersion(),
         );
+
+        // The same alert the phone login sends: activating through a join link
+        // is still an activation, and HR is waiting to hear about it either way.
+        $this->alert->notify($result['model'], $result['was_first_activation']);
 
         return ApiResponse::success([
             'success' => true,

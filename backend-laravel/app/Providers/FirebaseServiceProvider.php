@@ -64,9 +64,15 @@ final class FirebaseServiceProvider extends ServiceProvider
             return (new Factory)->withServiceAccount($path)->createMessaging();
         });
 
+        // The factory, not the client: resolving a PushSender must not read
+        // the credentials file, because every caller treats delivery as
+        // best-effort and a missing file would otherwise 500 the action being
+        // announced rather than just losing the notification.
         $this->app->bind(
             PushSender::class,
-            fn (Application $app): PushSender => new FirebasePushSender($app->make(Messaging::class)),
+            fn (Application $app): PushSender => new FirebasePushSender(
+                static fn (): Messaging => $app->make(Messaging::class),
+            ),
         );
 
         $this->app->bind(

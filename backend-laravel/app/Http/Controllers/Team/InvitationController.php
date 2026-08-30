@@ -89,6 +89,8 @@ final class InvitationController
 
         AuditLog::record($tenantId, $caller->id, 'manager.invite', 'invitation', $invitation['id']);
 
+        ManagerInvitation::email($email, $invitation['code'], $role, self::companyName($tenantId));
+
         return ApiResponse::success([
             'invitation_id' => $invitation['id'],
             // Returned once, for in-person or QR sharing. It cannot be read
@@ -212,5 +214,10 @@ final class InvitationController
         }
 
         return $id;
+    }
+
+    private static function companyName(int $tenantId): string
+    {
+        return Value::string(DB::table('tenants')->where('id', $tenantId)->value('name'));
     }
 }

@@ -21,7 +21,7 @@ use Throwable;
  * issued by their company. There is no password: the code is the secret, the
  * phone is a sanity check, and what comes back is a long-lived device token.
  *
- * @phpstan-type LoginResult array{token: string, employee: array<string, mixed>, was_first_activation: bool}
+ * @phpstan-type LoginResult array{token: string, employee: array<string, mixed>, model: Employee, was_first_activation: bool}
  */
 final class EmployeeLoginAction
 {
@@ -141,6 +141,9 @@ final class EmployeeLoginAction
         return [
             'token' => $token,
             'employee' => $this->presentEmployee($employee),
+            // The model as well as the presented block, so a caller can alert
+            // on it without re-reading the row it already has.
+            'model' => $employee,
             'was_first_activation' => $wasFirstActivation,
         ];
     }

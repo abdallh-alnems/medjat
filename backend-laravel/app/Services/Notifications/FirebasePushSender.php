@@ -15,10 +15,34 @@ use Throwable;
 
 /**
  * The production sender, over FCM.
+ *
+ * The Messaging client is resolved on first use, not on construction. Every
+ * caller of this treats delivery as best-effort — a push that fails must not
+ * fail the thing it was announcing — and building the client reads the
+ * credentials file, so constructing it eagerly would turn a missing file into a
+ * 500 on sign-in, payroll approval and everything else that might notify
+ * somebody. Deferring it puts that failure inside the try/catch where every
+ * other delivery failure already lives.
  */
 final class FirebasePushSender implements PushSender
 {
-    public function __construct(private readonly Messaging $messaging) {}
+    /** @var callable(): Messaging */
+    private $factory;
+
+    private ?Messaging $messaging = null;
+
+    /**
+     * @param  callable(): Messaging  $factory
+     */
+    public function __construct(callable $factory)
+    {
+        $this->factory = $factory;
+    }
+
+    private function messaging(): Messaging
+    {
+        return $this->messaging ??= ($this->factory)();
+    }
 
     /**
      * @param  array<string, string>  $data
@@ -63,7 +87,7 @@ final class FirebasePushSender implements PushSender
                 ->withData($payload);
 
             /** @var list<string> $tokens */
-            $this->messaging->sendMulticast($message, $tokens);
+            $this->messaging()->sendMulticast($message, $tokens);
 
             return true;
         } catch (Throwable $e) {
@@ -88,7 +112,7 @@ final class FirebasePushSender implements PushSender
             // maintenance" on every lock screen in the country.
             $payload = array_filter($data, static fn (string $key): bool => $key !== '', ARRAY_FILTER_USE_KEY);
 
-            $this->messaging->send(CloudMessage::new()->toTopic($topic)->withData($payload));
+            $this->messaging()->send(CloudMessage::new()->toTopic($topic)->withData($payload));
 
             return true;
         } catch (Throwable $e) {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Auth;
 
+use App\Domain\Auth\AuthActionLink;
 use App\Exceptions\ApiFailure;
 use App\Http\ApiResponse;
 use App\Mail\AuthActionMail;
@@ -11,7 +12,6 @@ use App\Services\Auth\FirebaseAccountManager;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
@@ -59,7 +59,7 @@ final class SendAuthActionController
                 : $this->firebase->emailVerificationLink($email);
 
             if ($link !== null) {
-                Mail::to($email)->send(new AuthActionMail($kind, $lang, $name, $this->rebase($link)));
+                Mail::to($email)->send(new AuthActionMail($kind, $lang, $name, AuthActionLink::rebase($link)));
             }
         } catch (Throwable $e) {
             // Swallowed deliberately. A send failure must produce the same
@@ -68,25 +68,5 @@ final class SendAuthActionController
         }
 
         return ApiResponse::success(['success' => true]);
-    }
-
-    /**
-     * Routes Firebase's action link through our own branded page, which enforces
-     * the app's password rules.
-     *
-     * Only the base URL is swapped; Firebase's query string (mode, oobCode,
-     * apiKey, lang) is carried across untouched, so this needs no change in the
-     * Firebase console.
-     */
-    private function rebase(string $link): string
-    {
-        $base = Config::string('medjat.mail.action_url');
-        $query = parse_url($link, PHP_URL_QUERY);
-
-        if ($base === '' || ! is_string($query) || $query === '') {
-            return $link;
-        }
-
-        return $base.(str_contains($base, '?') ? '&' : '?').$query;
     }
 }

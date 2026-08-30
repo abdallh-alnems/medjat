@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Auth;
 
+use App\Domain\Notifications\EmployeeActivationAlert;
 use App\Http\ApiResponse;
 use App\Http\Requests\Auth\EmployeeLoginRequest;
 use App\Services\Auth\EmployeeLoginAction;
@@ -14,7 +15,10 @@ use Illuminate\Http\JsonResponse;
  */
 final class EmployeeLoginController
 {
-    public function __construct(private readonly EmployeeLoginAction $login) {}
+    public function __construct(
+        private readonly EmployeeLoginAction $login,
+        private readonly EmployeeActivationAlert $alert,
+    ) {}
 
     public function __invoke(EmployeeLoginRequest $request): JsonResponse
     {
@@ -27,13 +31,9 @@ final class EmployeeLoginController
             appVersion: $request->appVersion(),
         );
 
-        // The managers' alert is best-effort and deliberately outside the
-        // transaction: a notification that fails to send must not undo a
-        // successful sign-in.
-        // TODO(auth-port): wire EmployeeActivationAlert once the notification
-        // module is ported. Tracked as part of the notifications module, not
-        // silently dropped — $result['was_first_activation'] carries the flag
-        // the alert needs.
+        // Best-effort and deliberately outside the transaction: a notification
+        // that fails to send must not undo a successful sign-in.
+        $this->alert->notify($result['model'], $result['was_first_activation']);
 
         return ApiResponse::success([
             'success' => true,

@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Domain\Audit\AuditLog;
+use App\Domain\Auth\AuthActionLink;
 use App\Domain\SuperAdmin\SuperAdminAudit;
 use App\Domain\Team\ManagerInvitation;
 use App\Exceptions\ApiFailure;
 use App\Http\ApiResponse;
+use App\Mail\AuthActionMail;
 use App\Models\SuperAdmin;
 use App\Services\Auth\FirebaseAccountManager;
 use App\Services\Auth\FirebaseCustomTokenMinter;
@@ -18,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Throwable;
 
 /**
@@ -124,8 +127,8 @@ final class AdminAccountController
             'role' => $role,
         ]);
 
-        // TODO(mail-port): the invitation email is deferred with the rest of
-        // the mailers; the code and join URL come back here meanwhile.
+        ManagerInvitation::email($email, $invitation['code'], $role, Value::string($tenant->name));
+
         return ApiResponse::success([
             'tenant_id' => $tenantId,
             'email' => $email,
@@ -207,14 +210,28 @@ final class AdminAccountController
             AuditLog::record($tenantId, null, 'support.admin.password_reset', 'admin', $adminId);
         }
 
-        // TODO(mail-port): delivering the link through our own branded email is
-        // deferred with the rest of the mailers. Returned here meanwhile so an
-        // operator on a call can read it out.
+        $branded = AuthActionLink::rebase($link);
+
+        try {
+            Mail::to($email)->send(new AuthActionMail(AuthActionMail::RESET, 'ar', '', $branded));
+        } catch (Throwable $e) {
+            Log::error('Admin-initiated reset email failed', ['email' => $email, 'exception' => $e]);
+
+            // Reported honestly, unlike the self-service endpoint. There the
+            // caller is anonymous and hiding failure is enumeration protection;
+            // here an operator is looking at one named account, and "the email
+            // never arrived" is the support call itself.
+            throw new ApiFailure(
+                'تعذّر إرسال رابط إعادة التعيين — راجع سجل الأخطاء',
+                500,
+                'reset_link_failed',
+            );
+        }
+
         return ApiResponse::success([
             'admin_id' => $adminId,
             'email' => $email,
             'sent' => true,
-            'reset_link' => $link,
         ]);
     }
 

@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Domain\Team;
 
+use App\Mail\TeamInvitationMail;
 use App\Support\Value;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Throwable;
 
 /**
  * An invitation to join a company's management team.
@@ -232,5 +236,21 @@ final class ManagerInvitation
         } while ($taken);
 
         return $code;
+    }
+
+    /**
+     * Sends the invitation email, best-effort.
+     *
+     * The row is already committed by the time this runs and the code also
+     * comes back in the API response for sharing by hand, so a dead mail server
+     * must never cost anybody their invitation.
+     */
+    public static function email(string $to, string $code, string $role, string $companyName): void
+    {
+        try {
+            Mail::to($to)->send(new TeamInvitationMail($code, $role, $companyName));
+        } catch (Throwable $e) {
+            Log::warning('Invitation email failed', ['email' => $to, 'exception' => $e]);
+        }
     }
 }
