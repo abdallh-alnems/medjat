@@ -78,6 +78,8 @@ use App\Http\Controllers\Kiosk\KioskFleetController;
 use App\Http\Controllers\Kiosk\KioskSessionController;
 use App\Http\Controllers\Kiosk\PairingController;
 use App\Http\Controllers\Kiosk\PunchController;
+use App\Http\Controllers\Landing\JoinLinkController;
+use App\Http\Controllers\Landing\WellKnownController;
 use App\Http\Controllers\Leave\CarryoverController;
 use App\Http\Controllers\Leave\LeaveAdminController;
 use App\Http\Controllers\Leave\MyLeaveController;
@@ -146,6 +148,32 @@ use Illuminate\Support\Facades\Route;
 | there a version of the system that does not work.
 |
 */
+
+/*
+|--------------------------------------------------------------------------
+| Deep links
+|--------------------------------------------------------------------------
+|
+| The only HTML this backend serves, and the association files the two mobile
+| platforms fetch to decide whether a domain may open an app.
+|
+| Outside every gate: an app-link check is made by the operating system before
+| anybody has signed in, and the landing pages are for a visitor who does not
+| have the app yet. Nothing here reads the database or reveals anything the
+| visitor is not already holding in their URL.
+|
+*/
+
+Route::get('join', [JoinLinkController::class, 'employee'])->name('landing.join');
+Route::get('join_team', [JoinLinkController::class, 'team'])->name('landing.join-team');
+
+// The legacy filenames, still linked from published builds and sent emails.
+Route::get('join.php', [JoinLinkController::class, 'employee'])->name('legacy.landing.join');
+Route::get('join_team.php', [JoinLinkController::class, 'team'])->name('legacy.landing.join-team');
+
+Route::get('.well-known/{file}', WellKnownController::class)
+    ->where('file', 'assetlinks\.json|apple-app-site-association')
+    ->name('landing.well-known');
 
 /*
 |--------------------------------------------------------------------------

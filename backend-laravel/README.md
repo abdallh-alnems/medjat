@@ -1,58 +1,141 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Medjat backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+The PHP backend for Medjat: a multi-tenant HR SaaS (attendance, shifts, leaves,
+payroll, documents) for the Egypt / North-Africa market. One API serves four
+Flutter apps, a Next.js web port, a desktop shell over that web port, and the
+ZKTeco attendance terminals.
 
-## About Laravel
+Laravel 13 on PHP 8.4 (local, MAMP) / 8.5 (live), MySQL 8.4.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Two URLs for everything
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Every endpoint answers on two paths:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```
+POST /v1/payroll/approve          the current shape
+POST /app/payroll/approve.php     the shape published app bundles call
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+The `.php` URLs are **permanent**, not a deprecation. `API_HOST` is compiled
+into Flutter builds that are already in the stores and on people's phones; a
+build from two years ago has to keep working, so those paths cannot be retired
+on any schedule we control.
 
-## Contributing
+## Layout
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```
+app/
+├── Domain/          The rules. One directory per subject — Payroll, Leave,
+│                    Attendance, Kiosk, Devices, Face … Framework-free where it
+│                    can be, so a rule can be read without reading a request.
+├── Http/
+│   ├── Controllers/ One class per screen or action. They validate, delegate,
+│   │                and shape a response; the deciding happens in Domain.
+│   ├── Middleware/  The four principals and the two gates (see below).
+│   └── Requests/    Form requests where validation is worth naming.
+├── Models/          Eloquent, for the handful of tables with real behaviour.
+├── Services/        Multi-step actions and anything talking to the outside
+│                    world — Firebase, FCM, Remote Config, the cron jobs.
+├── Mail/            Transactional mail.
+├── Console/         The scheduled jobs, also reachable over HTTP.
+└── Support/         Value: narrowing `mixed` from query rows at level max.
 
-## Code of Conduct
+routes/api.php       Every route, grouped by module, gate visible on each.
+config/medjat.php    Everything this application configures.
+resources/
+├── views/mail/      Transactional email.
+├── views/landing/   Deep-link fallback pages.
+└── well-known/      App Links / Universal Links association files.
+lang/{ar,en}/        Arabic first; the apps are Arabic-first and RTL.
+tests/Feature/       One directory per module, mirroring app/Domain.
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Who can call what
 
-## Security Vulnerabilities
+Four principals, each with its own guard:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+| Middleware | Who | Proof |
+|---|---|---|
+| `auth.admin` | a company's administrator | Firebase ID token |
+| `auth.employee` | an employee | `X-Employee-Token` |
+| `auth.kiosk` | a shared branch tablet | `X-Kiosk-Token` — resolves to a *branch*, never a person |
+| `auth.super` | an operator of the product | bearer session, not scoped to any company |
 
-## License
+Two gates sit in front of them:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- **`app.secret`** — HTTP Basic, carried by every published app build. Not
+  authentication; the difference between our clients reaching an endpoint and
+  everything reaching it. Off when unset, which is how local development runs.
+- **`can.do:permission`** — the permission the caller must hold. Written on the
+  route so it is visible in one place. `a|b` means either is enough.
+
+Two things sit outside both, deliberately:
+
+- **The terminals** (`/iclock/*`) — the firmware has no field for a secret, so a
+  serial number is the whole authorisation model, and an unclaimed serial can do
+  nothing but say hello. Never rate-limited either: a device polls every ten
+  seconds by design.
+- **The deep-link pages and association files** — the operating system fetches
+  those before anybody has signed in.
+
+## Rules that bite
+
+**Time is per tenant.** PHP runs UTC and MySQL runs the server's zone, so they
+disagree by hours. Resolve "now" and "today" through `Domain\Time\TenantClock`,
+and compute every expiry **in SQL** (`DATE_ADD(NOW(), INTERVAL ? SECOND)`) so it
+is not born expired. Use the zone *name*, never a fixed offset — Egypt has DST,
+the Gulf does not.
+
+**Writes are POST, not PUT.** The rule outlived the shared host that caused it,
+but the apps in the stores still speak POST.
+
+**Never trust a client's verdict.** The phone extracts a face embedding; the
+*server* scores it. Companies start in `face_enforce_mode = log_only`, where
+every attempt is scored and nobody is refused, until the threshold is tuned on
+their own data.
+
+**Read the enum before writing to it.** `SELECT COLUMN_TYPE FROM
+information_schema.COLUMNS`. MySQL truncates an unknown ENUM value silently, and
+six bugs in this codebase came from inferring values from surrounding code —
+including break notifications that had never once sent.
+
+## Running it
+
+```bash
+composer install
+cp .env.example .env && php artisan key:generate   # see .env.example for the rest
+php artisan migrate
+php artisan serve
+```
+
+MySQL on `127.0.0.1:8889`, `root`/`root` under MAMP. Use the MAMP PHP binary,
+not the system one: `/Applications/MAMP/bin/php/php8.4.15/bin/php`.
+
+## Before you push
+
+Three gates, all of which must be green:
+
+```bash
+php vendor/bin/pint            # formatting
+php vendor/bin/phpstan analyse # static analysis, level max
+php artisan test               # against a real MySQL dump, not SQLite
+```
+
+The suite runs under `DatabaseTransactions` against a copy of production's
+schema, because SQLite would not reproduce the ENUM truncation, the `NULL`
+handling in unique keys, or the timezone disagreement that caused most of the
+bugs worth having tests for.
+
+## Scheduled work
+
+Three jobs, each reachable two ways — as an artisan command, and on the cron URL
+the installed crontab currently calls with a shared secret:
+
+```
+medjat:run-alerts              07:00  the morning digest
+medjat:catch-up-absences       23:50  the absence safety net
+medjat:purge-kiosk-captures    03:30  retention: deletes stored face captures
+```
+
+`CRON_SECRET` unset refuses every cron request rather than accepting one. These
+endpoints terminate employees and delete photographs.
