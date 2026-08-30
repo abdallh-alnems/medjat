@@ -7,6 +7,7 @@ namespace App\Services\RemoteConfig;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Contract\RemoteConfig;
+use Kreait\Firebase\RemoteConfig\ParameterValue;
 use Throwable;
 
 /**
@@ -116,11 +117,15 @@ final class FirebaseRemoteConfigGate implements RemoteConfigGate
 
         $default = $parameter->defaultValue();
 
-        if (! is_object($default) || ! method_exists($default, 'value')) {
+        if (! $default instanceof ParameterValue) {
             return null;
         }
 
-        $value = $default->value();
+        // Through toArray(), because ParameterValue exposes no accessor. A
+        // parameter can also be an in-app default, a personalisation or a
+        // rollout, none of which carry a plain value — those come back with no
+        // 'value' key, and an absent gate is an open one.
+        $value = $default->toArray()['value'] ?? null;
 
         return is_string($value) ? $value : null;
     }

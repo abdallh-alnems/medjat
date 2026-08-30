@@ -72,4 +72,29 @@ final class FirebasePushSender implements PushSender
             return false;
         }
     }
+
+    /**
+     * @param  array<string, string>  $data
+     */
+    public function toTopic(string $topic, array $data): bool
+    {
+        if ($topic === '') {
+            return false;
+        }
+
+        try {
+            // Data-only, deliberately: this is a signal the app acts on, not
+            // something to show. A notification block here would put "system
+            // maintenance" on every lock screen in the country.
+            $payload = array_filter($data, static fn (string $key): bool => $key !== '', ARRAY_FILTER_USE_KEY);
+
+            $this->messaging->send(CloudMessage::new()->toTopic($topic)->withData($payload));
+
+            return true;
+        } catch (Throwable $e) {
+            Log::warning('Topic push failed', ['topic' => $topic, 'exception' => $e]);
+
+            return false;
+        }
+    }
 }

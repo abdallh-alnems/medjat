@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\AdminSupport\AdminSupportController;
+use App\Http\Controllers\AppControl\AppControlController;
 use App\Http\Controllers\Assets\AssetController;
 use App\Http\Controllers\Assets\MyAssetsController;
 use App\Http\Controllers\Attendance\BranchAttendanceController;
@@ -950,6 +952,57 @@ Route::middleware('throttle:api')->group(function (): void {
             ->name('legacy.cron.run-alerts');
         Route::match(['get', 'post'], 'app/cron/purge_kiosk_captures.php', [CronController::class, 'purgeKioskCaptures'])
             ->name('legacy.cron.purge-kiosk-captures');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | The support desk
+    |--------------------------------------------------------------------------
+    |
+    | The internal panel, authenticating with its own bearer session rather than
+    | a Firebase credential, and deliberately not scoped to a company — looking
+    | across them is the point. Every action lands in the super-admin audit log.
+    |
+    | App control is superadmin only: raising a minimum version locks out every
+    | installed build below it, and for the kiosk that means physically visiting
+    | each branch.
+    |
+    */
+
+    Route::middleware('auth.super:admin')->group(function (): void {
+        Route::get('v1/admin/support/tickets', [AdminSupportController::class, 'index'])
+            ->name('admin.support.tickets');
+        Route::get('v1/admin/support/messages', [AdminSupportController::class, 'messages'])
+            ->name('admin.support.messages');
+        Route::get('v1/admin/support/attachment', [AdminSupportController::class, 'attachment'])
+            ->name('admin.support.attachment');
+        Route::post('v1/admin/support/reply', [AdminSupportController::class, 'reply'])
+            ->name('admin.support.reply');
+        Route::post('v1/admin/support/status', [AdminSupportController::class, 'setStatus'])
+            ->name('admin.support.status');
+
+        Route::get('app/admin_support/list.php', [AdminSupportController::class, 'index'])
+            ->name('legacy.admin.support.tickets');
+        Route::get('app/admin_support/messages.php', [AdminSupportController::class, 'messages'])
+            ->name('legacy.admin.support.messages');
+        Route::get('app/admin_support/attachment.php', [AdminSupportController::class, 'attachment'])
+            ->name('legacy.admin.support.attachment');
+        Route::post('app/admin_support/reply.php', [AdminSupportController::class, 'reply'])
+            ->name('legacy.admin.support.reply');
+        Route::post('app/admin_support/status.php', [AdminSupportController::class, 'setStatus'])
+            ->name('legacy.admin.support.status');
+    });
+
+    Route::middleware('auth.super:superadmin')->group(function (): void {
+        Route::get('v1/admin/app-control', [AppControlController::class, 'show'])
+            ->name('admin.app-control.show');
+        Route::post('v1/admin/app-control', [AppControlController::class, 'save'])
+            ->name('admin.app-control.save');
+
+        Route::get('app/admin_app_control/get.php', [AppControlController::class, 'show'])
+            ->name('legacy.admin.app-control.show');
+        Route::post('app/admin_app_control/set.php', [AppControlController::class, 'save'])
+            ->name('legacy.admin.app-control.save');
     });
 
     /*

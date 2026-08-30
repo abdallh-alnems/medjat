@@ -98,6 +98,80 @@ final class SupportTickets
     }
 
     /**
+     * The whole queue, across every company — the support desk's own view.
+     *
+     * @return array{tickets: list<array<string, mixed>>, total: int, page: int}
+     */
+    public static function queue(?string $status, ?int $tenantId, int $page, int $limit): array
+    {
+        $base = fn (): QueryBuilder => DB::table('support_tickets as st')
+            ->join('tenants as t', 't.id', '=', 'st.tenant_id')
+            ->when(
+                $status !== null && in_array($status, self::STATUSES, true),
+                fn (QueryBuilder $q): QueryBuilder => $q->where('st.status', $status)
+            )
+            ->when($tenantId !== null, fn (QueryBuilder $q): QueryBuilder => $q->where('st.tenant_id', $tenantId));
+
+        $tickets = $base()
+            ->orderByDesc('st.last_message_at')->orderByDesc('st.created_at')
+            ->limit($limit)->offset(($page - 1) * $limit)
+            ->get(['st.*', 't.name as tenant_name'])
+            ->all();
+
+        return [
+            'tickets' => array_values(array_map(self::toArray(...), $tickets)),
+            'total' => $base()->count(),
+            'page' => $page,
+        ];
+    }
+
+    /**
+     * One ticket without naming its company.
+     *
+     * The desk works across tenants by design, so it is the one caller that
+     * does not pass a tenant id — and the reason every action it takes lands in
+     * the super-admin audit log instead.
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function findAnywhere(int $id): ?array
+    {
+        $row = DB::table('support_tickets as st')
+            ->join('tenants as t', 't.id', '=', 'st.tenant_id')
+            ->where('st.id', $id)
+            ->first(['st.*', 't.name as tenant_name']);
+
+        return $row === null ? null : self::toArray($row);
+    }
+
+    public static function status(int $ticketId): ?string
+    {
+        return Value::nullableString(DB::table('support_tickets')->where('id', $ticketId)->value('status'));
+    }
+
+    /** Set by the desk, which is not scoped to a company. */
+    public static function setStatus(int $ticketId, string $status): void
+    {
+        DB::table('support_tickets')->where('id', $ticketId)->update(['status' => $status]);
+    }
+
+    /** The desk has read the thread; the company's side of the flag is untouched. */
+    public static function markReadBySupport(int $ticketId): void
+    {
+        DB::table('support_tickets')->where('id', $ticketId)->update(['unread_for_support' => 0]);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public static function message(int $messageId): ?array
+    {
+        $row = DB::table('support_messages')->where('id', $messageId)->first();
+
+        return $row === null ? null : self::toArray($row);
+    }
+
+    /**
      * @return array{messages: list<array<string, mixed>>, last_id: int}
      */
     public static function messages(int $ticketId, ?int $afterId = null, bool $markRead = false): array

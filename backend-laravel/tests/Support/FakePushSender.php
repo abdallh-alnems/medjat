@@ -49,6 +49,23 @@ final class FakePushSender implements PushSender
         return true;
     }
 
+    /** @var list<array{topic: string, data: array<string, string>}> */
+    public array $sentToTopics = [];
+
+    /**
+     * @param  array<string, string>  $data
+     */
+    public function toTopic(string $topic, array $data): bool
+    {
+        if ($this->fails) {
+            return false;
+        }
+
+        $this->sentToTopics[] = ['topic' => $topic, 'data' => $data];
+
+        return true;
+    }
+
     public function lastBody(): ?string
     {
         $last = end($this->sent);

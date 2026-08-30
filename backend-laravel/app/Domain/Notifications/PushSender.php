@@ -27,4 +27,15 @@ interface PushSender
      * @param  array<string, string>  $data
      */
     public function toAdmin(int $adminId, string $title, string $body, array $data = []): bool;
+
+    /**
+     * A silent, data-only message to everybody subscribed to a topic.
+     *
+     * Used for signals the app acts on rather than shows — switching an app
+     * into maintenance, for instance, which otherwise waits on Remote Config's
+     * realtime stream and only while the app is foregrounded.
+     *
+     * @param  array<string, string>  $data
+     */
+    public function toTopic(string $topic, array $data): bool;
 }

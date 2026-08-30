@@ -12,7 +12,9 @@ use App\Services\Auth\KreaitFirebaseAccountManager;
 use App\Services\Auth\KreaitFirebaseCustomTokenMinter;
 use App\Services\Auth\KreaitFirebaseTokenVerifier;
 use App\Services\Notifications\FirebasePushSender;
+use App\Services\RemoteConfig\FirebaseRemoteConfigAdmin;
 use App\Services\RemoteConfig\FirebaseRemoteConfigGate;
+use App\Services\RemoteConfig\RemoteConfigAdmin;
 use App\Services\RemoteConfig\RemoteConfigGate;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Config;
@@ -85,6 +87,13 @@ final class FirebaseServiceProvider extends ServiceProvider
         $this->app->bind(
             RemoteConfigGate::class,
             fn (Application $app): RemoteConfigGate => new FirebaseRemoteConfigGate($app->make(RemoteConfig::class)),
+        );
+
+        // The operator's view of the same thing: uncached and fail-loud, where
+        // the gate above is cached and fails open.
+        $this->app->bind(
+            RemoteConfigAdmin::class,
+            fn (Application $app): RemoteConfigAdmin => new FirebaseRemoteConfigAdmin($app->make(RemoteConfig::class)),
         );
     }
 }
