@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Assets\AssetController;
+use App\Http\Controllers\Assets\MyAssetsController;
 use App\Http\Controllers\Attendance\BranchAttendanceController;
 use App\Http\Controllers\Attendance\BranchQrCodeController;
 use App\Http\Controllers\Attendance\CheckInController;
@@ -33,6 +35,8 @@ use App\Http\Controllers\Auth\NotificationPrefsController;
 use App\Http\Controllers\Auth\SendAuthActionController;
 use App\Http\Controllers\Auth\UpdateFcmTokenController;
 use App\Http\Controllers\Auth\UpdateProfileController;
+use App\Http\Controllers\Branches\BranchController;
+use App\Http\Controllers\Branches\BranchNetworkController;
 use App\Http\Controllers\Breaks\BreakDecisionsController;
 use App\Http\Controllers\Breaks\MyBreaksController;
 use App\Http\Controllers\Devices\DeviceFleetController;
@@ -67,6 +71,8 @@ use App\Http\Controllers\Kiosk\PunchController;
 use App\Http\Controllers\Leave\CarryoverController;
 use App\Http\Controllers\Leave\LeaveAdminController;
 use App\Http\Controllers\Leave\MyLeaveController;
+use App\Http\Controllers\Loans\LoanController;
+use App\Http\Controllers\Loans\MyAdvanceController;
 use App\Http\Controllers\Payroll\ApproveController;
 use App\Http\Controllers\Payroll\AuditLogController as PayrollAuditLogController;
 use App\Http\Controllers\Payroll\BankFileController;
@@ -918,6 +924,128 @@ Route::middleware('throttle:api')->group(function (): void {
             ->middleware('can.do:manage_attendance')->name('legacy.devices.link-user');
         Route::post('app/devices/import_punches.php', ImportPunchesController::class)
             ->middleware('can.do:manage_attendance')->name('legacy.devices.import-punches');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Loans and salary advances
+    |--------------------------------------------------------------------------
+    |
+    | An employee's own advance requests land in the same queue as anything an
+    | administrator creates, so there is no second list to remember to check.
+    |
+    */
+
+    Route::middleware(['auth.employee', 'tenant'])->group(function (): void {
+        Route::post('v1/loans/request', [MyAdvanceController::class, 'request'])->name('loans.request');
+        Route::get('v1/loans/mine', [MyAdvanceController::class, 'index'])->name('loans.mine');
+        Route::post('v1/loans/cancel-request', [MyAdvanceController::class, 'cancel'])->name('loans.cancel-request');
+
+        Route::post('app/loans/request.php', [MyAdvanceController::class, 'request'])->name('legacy.loans.request');
+        Route::get('app/loans/my_list.php', [MyAdvanceController::class, 'index'])->name('legacy.loans.mine');
+        Route::post('app/loans/cancel_request.php', [MyAdvanceController::class, 'cancel'])
+            ->name('legacy.loans.cancel-request');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:manage_payroll'])->group(function (): void {
+        Route::get('v1/loans', [LoanController::class, 'index'])->name('loans.list');
+        Route::get('v1/loans/show', [LoanController::class, 'show'])->name('loans.show');
+        Route::post('v1/loans', [LoanController::class, 'create'])->name('loans.create');
+        Route::post('v1/loans/approve', [LoanController::class, 'approve'])->name('loans.approve');
+        Route::post('v1/loans/cancel', [LoanController::class, 'cancel'])->name('loans.cancel');
+
+        Route::get('app/loans/list.php', [LoanController::class, 'index'])->name('legacy.loans.list');
+        Route::get('app/loans/get.php', [LoanController::class, 'show'])->name('legacy.loans.show');
+        Route::post('app/loans/create.php', [LoanController::class, 'create'])->name('legacy.loans.create');
+        Route::post('app/loans/approve.php', [LoanController::class, 'approve'])->name('legacy.loans.approve');
+        Route::post('app/loans/cancel.php', [LoanController::class, 'cancel'])->name('legacy.loans.cancel');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Branches
+    |--------------------------------------------------------------------------
+    |
+    | The list is open to anybody signed in: every screen with a branch picker
+    | needs it, and gating it would break navigation for roles that can
+    | legitimately reach those screens. Changing a branch is a company-settings
+    | decision.
+    |
+    */
+
+    Route::middleware(['auth.admin', 'tenant'])->group(function (): void {
+        Route::get('v1/branches', [BranchController::class, 'index'])->name('branches.list');
+        Route::get('app/branches/list.php', [BranchController::class, 'index'])->name('legacy.branches.list');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:manage_company_settings'])->group(function (): void {
+        Route::post('v1/branches', [BranchController::class, 'create'])->name('branches.create');
+        Route::post('v1/branches/update', [BranchController::class, 'update'])->name('branches.update');
+        Route::post('v1/branches/generate-qr', [BranchController::class, 'generateQr'])->name('branches.generate-qr');
+        Route::post('v1/branches/attendance-method', [BranchController::class, 'updateAttendanceMethod'])
+            ->name('branches.attendance-method');
+
+        Route::post('v1/branches/networks/capture', [BranchNetworkController::class, 'capture'])
+            ->name('branches.networks.capture');
+        Route::post('v1/branches/networks/approve', [BranchNetworkController::class, 'approve'])
+            ->name('branches.networks.approve');
+        Route::post('v1/branches/networks/sightings', [BranchNetworkController::class, 'sightings'])
+            ->name('branches.networks.sightings');
+
+        Route::post('app/branches/create.php', [BranchController::class, 'create'])->name('legacy.branches.create');
+        Route::post('app/branches/update.php', [BranchController::class, 'update'])->name('legacy.branches.update');
+        Route::post('app/branches/generate_qr.php', [BranchController::class, 'generateQr'])
+            ->name('legacy.branches.generate-qr');
+        Route::post('app/branches/update_attendance_method.php', [BranchController::class, 'updateAttendanceMethod'])
+            ->name('legacy.branches.attendance-method');
+
+        Route::post('app/branches/capture_network.php', [BranchNetworkController::class, 'capture'])
+            ->name('legacy.branches.networks.capture');
+        Route::post('app/branches/approve_networks.php', [BranchNetworkController::class, 'approve'])
+            ->name('legacy.branches.networks.approve');
+        Route::post('app/branches/network_sightings.php', [BranchNetworkController::class, 'sightings'])
+            ->name('legacy.branches.networks.sightings');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Custody
+    |--------------------------------------------------------------------------
+    |
+    | Returning something is a two-step exchange: the employee says they are
+    | handing it back, and somebody with the item in front of them confirms it.
+    | So the two halves sit behind different guards.
+    |
+    */
+
+    Route::middleware(['auth.employee', 'tenant'])->group(function (): void {
+        Route::get('v1/assets/mine', [MyAssetsController::class, 'index'])->name('assets.mine');
+        Route::post('v1/assets/request-return', [MyAssetsController::class, 'requestReturn'])
+            ->name('assets.request-return');
+
+        Route::get('app/assets/my_list.php', [MyAssetsController::class, 'index'])->name('legacy.assets.mine');
+        Route::post('app/assets/request_return.php', [MyAssetsController::class, 'requestReturn'])
+            ->name('legacy.assets.request-return');
+    });
+
+    Route::middleware(['auth.admin', 'tenant', 'can.do:manage_assets'])->group(function (): void {
+        Route::get('v1/assets', [AssetController::class, 'index'])->name('assets.list');
+        Route::post('v1/assets', [AssetController::class, 'create'])->name('assets.create');
+        Route::post('v1/assets/update', [AssetController::class, 'update'])->name('assets.update');
+        Route::post('v1/assets/delete', [AssetController::class, 'delete'])->name('assets.delete');
+        Route::post('v1/assets/approve-return', [AssetController::class, 'approveReturn'])
+            ->name('assets.approve-return');
+        Route::post('v1/assets/reject-return', [AssetController::class, 'rejectReturn'])
+            ->name('assets.reject-return');
+
+        Route::get('app/assets/list.php', [AssetController::class, 'index'])->name('legacy.assets.list');
+        Route::post('app/assets/create.php', [AssetController::class, 'create'])->name('legacy.assets.create');
+        Route::post('app/assets/update.php', [AssetController::class, 'update'])->name('legacy.assets.update');
+        Route::post('app/assets/delete.php', [AssetController::class, 'delete'])->name('legacy.assets.delete');
+        Route::post('app/assets/approve_return.php', [AssetController::class, 'approveReturn'])
+            ->name('legacy.assets.approve-return');
+        Route::post('app/assets/reject_return.php', [AssetController::class, 'rejectReturn'])
+            ->name('legacy.assets.reject-return');
     });
 
 });
