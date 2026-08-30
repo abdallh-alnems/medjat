@@ -35,6 +35,9 @@ use App\Http\Controllers\Auth\UpdateFcmTokenController;
 use App\Http\Controllers\Auth\UpdateProfileController;
 use App\Http\Controllers\Breaks\BreakDecisionsController;
 use App\Http\Controllers\Breaks\MyBreaksController;
+use App\Http\Controllers\Devices\DeviceFleetController;
+use App\Http\Controllers\Devices\DeviceUsersController;
+use App\Http\Controllers\Devices\ImportPunchesController;
 use App\Http\Controllers\Documents\DocumentReportsController;
 use App\Http\Controllers\Documents\EmployeeDocumentsController;
 use App\Http\Controllers\Documents\MyDocumentController;
@@ -857,6 +860,64 @@ Route::middleware('throttle:api')->group(function (): void {
             ->name('legacy.breaks.reject');
         Route::post('app/breaks/postpone.php', [BreakDecisionsController::class, 'postpone'])
             ->name('legacy.breaks.postpone');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Fingerprint terminals
+    |--------------------------------------------------------------------------
+    |
+    | The read screens accept either permission. They are reachable from two
+    | directions — the person who runs attendance day to day, and the person
+    | who set the hardware up — and either must not meet a 403 on a page their
+    | own navigation offers them. Claiming and configuring hardware is a
+    | company-settings decision; linking a User ID to a person is an attendance
+    | one.
+    |
+    */
+
+    Route::middleware(['auth.admin', 'tenant'])->group(function (): void {
+        Route::get('v1/devices', [DeviceFleetController::class, 'index'])
+            ->middleware('can.do:manage_attendance|manage_company_settings')->name('devices.list');
+        Route::get('v1/devices/users', [DeviceUsersController::class, 'index'])
+            ->middleware('can.do:manage_attendance|manage_company_settings')->name('devices.users');
+        Route::get('v1/devices/punches', [DeviceFleetController::class, 'punches'])
+            ->middleware('can.do:manage_attendance|manage_company_settings')->name('devices.punches');
+
+        Route::post('v1/devices', [DeviceFleetController::class, 'register'])
+            ->middleware('can.do:manage_company_settings')->name('devices.register');
+        Route::post('v1/devices/update', [DeviceFleetController::class, 'update'])
+            ->middleware('can.do:manage_company_settings')->name('devices.update');
+        Route::post('v1/devices/delete', [DeviceFleetController::class, 'delete'])
+            ->middleware('can.do:manage_company_settings')->name('devices.delete');
+        Route::post('v1/devices/command', [DeviceFleetController::class, 'command'])
+            ->middleware('can.do:manage_company_settings')->name('devices.command');
+
+        Route::post('v1/devices/link-user', [DeviceUsersController::class, 'link'])
+            ->middleware('can.do:manage_attendance')->name('devices.link-user');
+        Route::post('v1/devices/import-punches', ImportPunchesController::class)
+            ->middleware('can.do:manage_attendance')->name('devices.import-punches');
+
+        Route::get('app/devices/list.php', [DeviceFleetController::class, 'index'])
+            ->middleware('can.do:manage_attendance|manage_company_settings')->name('legacy.devices.list');
+        Route::get('app/devices/users.php', [DeviceUsersController::class, 'index'])
+            ->middleware('can.do:manage_attendance|manage_company_settings')->name('legacy.devices.users');
+        Route::get('app/devices/punches.php', [DeviceFleetController::class, 'punches'])
+            ->middleware('can.do:manage_attendance|manage_company_settings')->name('legacy.devices.punches');
+
+        Route::post('app/devices/register.php', [DeviceFleetController::class, 'register'])
+            ->middleware('can.do:manage_company_settings')->name('legacy.devices.register');
+        Route::post('app/devices/update.php', [DeviceFleetController::class, 'update'])
+            ->middleware('can.do:manage_company_settings')->name('legacy.devices.update');
+        Route::post('app/devices/delete.php', [DeviceFleetController::class, 'delete'])
+            ->middleware('can.do:manage_company_settings')->name('legacy.devices.delete');
+        Route::post('app/devices/command.php', [DeviceFleetController::class, 'command'])
+            ->middleware('can.do:manage_company_settings')->name('legacy.devices.command');
+
+        Route::post('app/devices/link_user.php', [DeviceUsersController::class, 'link'])
+            ->middleware('can.do:manage_attendance')->name('legacy.devices.link-user');
+        Route::post('app/devices/import_punches.php', ImportPunchesController::class)
+            ->middleware('can.do:manage_attendance')->name('legacy.devices.import-punches');
     });
 
 });

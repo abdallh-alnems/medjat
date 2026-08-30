@@ -275,4 +275,177 @@ final class Attendance extends Model
             [$origin, $photo, $tenantId, $employeeId, $date]
         );
     }
+
+    /**
+     * A terminal punch recorded as the day's arrival.
+     *
+     * Device punches arrive one at a time and in any order, which is why this
+     * refuses to move an arrival later: a second tap five minutes after the
+     * first is somebody walking back in, not a later start.
+     *
+     * @return array{attendance_id: int|null, changed: bool, note: string|null}
+     */
+    public static function recordDeviceIn(
+        int $employeeId,
+        int $branchId,
+        int $tenantId,
+        string $date,
+        string $time,
+        ?string $recognitionMethod = null,
+    ): array {
+        $existing = self::forDay($employeeId, $tenantId, $date);
+        $recordedIn = $existing === null ? '' : Value::string($existing->check_in_time);
+
+        if ($existing !== null && $recordedIn !== '' && strtotime($recordedIn) <= strtotime($time)) {
+            return [
+                'attendance_id' => (int) $existing->id,
+                'changed' => false,
+                'note' => 'Later than the recorded check-in',
+            ];
+        }
+
+        $columns = [
+            'branch_id' => $branchId,
+            'check_in_time' => $time,
+            'check_in_method' => 'device',
+            'late_minutes' => self::lateMinutes($employeeId, $tenantId, $date, $time),
+            'status' => 'present',
+            'recognition_method' => $recognitionMethod,
+        ];
+
+        if ($existing !== null) {
+            self::query()->whereKey($existing->id)->update($columns);
+            $attendanceId = (int) $existing->id;
+        } else {
+            $attendanceId = (int) DB::table('attendance')->insertGetId($columns + [
+                'tenant_id' => $tenantId,
+                'employee_id' => $employeeId,
+                'date' => $date,
+            ]);
+        }
+
+        // Moving an arrival earlier changes the span, so the totals have to be
+        // recomputed rather than left at what the departure wrote.
+        if ($existing !== null && Value::string($existing->check_out_time) !== '') {
+            self::recomputeTotals($attendanceId, $employeeId, $tenantId, $date);
+        }
+
+        return ['attendance_id' => $attendanceId, 'changed' => true, 'note' => null];
+    }
+
+    /**
+     * A terminal punch recorded as the day's departure.
+     *
+     * The last tap wins, which is what "he left, came back for his bag, left
+     * again" should record.
+     *
+     * @return array{attendance_id: int|null, changed: bool, note: string|null}
+     */
+    public static function recordDeviceOut(
+        int $employeeId,
+        int $tenantId,
+        string $date,
+        string $time,
+        ?int $attendanceId = null,
+    ): array {
+        $existing = $attendanceId !== null
+            ? self::query()->whereKey($attendanceId)->where('tenant_id', $tenantId)->first()
+            : self::forDay($employeeId, $tenantId, $date);
+
+        if ($existing === null) {
+            return ['attendance_id' => null, 'changed' => false, 'note' => 'No open attendance row'];
+        }
+
+        $recordedOut = Value::string($existing->check_out_time);
+
+        if ($recordedOut !== '' && strtotime($recordedOut) >= strtotime($time)) {
+            return [
+                'attendance_id' => (int) $existing->id,
+                'changed' => false,
+                'note' => 'Earlier than the recorded check-out',
+            ];
+        }
+
+        self::query()->whereKey($existing->id)->update([
+            'check_out_time' => $time,
+            'check_out_method' => 'device',
+        ]);
+
+        self::recomputeTotals((int) $existing->id, $employeeId, $tenantId, $date);
+
+        return ['attendance_id' => (int) $existing->id, 'changed' => true, 'note' => null];
+    }
+
+    /**
+     * Recomputes worked, overtime and late from whatever times the row holds.
+     *
+     * Needed because device punches arrive one at a time and in any order, so
+     * the totals cannot be worked out at departure the way the app path does.
+     */
+    public static function recomputeTotals(int $attendanceId, int $employeeId, int $tenantId, string $date): void
+    {
+        $row = self::query()->whereKey($attendanceId)->first(['check_in_time', 'check_out_time']);
+
+        if ($row === null) {
+            return;
+        }
+
+        $in = Value::string($row->check_in_time);
+        $out = Value::string($row->check_out_time);
+
+        if ($in === '' || $out === '') {
+            return;
+        }
+
+        [$shiftStart, $shiftEnd] = self::shiftWindow($employeeId, $tenantId, $date);
+
+        $inAt = strtotime($in);
+        $outAt = strtotime($out);
+        $startAt = strtotime($shiftStart);
+        $endAt = strtotime($shiftEnd);
+
+        if ($inAt === false || $outAt === false) {
+            return;
+        }
+
+        // A departure earlier on the clock than the arrival means the shift
+        // crossed midnight, not that somebody left before they came.
+        if ($outAt < $inAt) {
+            $outAt += 86400;
+        }
+
+        self::query()->whereKey($attendanceId)->update([
+            'worked_minutes' => (int) max(0, ($outAt - $inAt) / 60),
+            'overtime_minutes' => $endAt === false ? 0 : (int) max(0, ($outAt - $endAt) / 60),
+            'late_minutes' => $startAt === false ? 0 : (int) max(0, ($inAt - $startAt) / 60),
+        ]);
+    }
+
+    /**
+     * The most recent day whose arrival has no departure.
+     *
+     * Catches a night shift: somebody who clocked in at 22:00 yesterday and
+     * taps at 06:00 today is leaving, not arriving.
+     *
+     * @return array{id: int, date: string, check_in_time: string}|null
+     */
+    public static function findOpenShift(int $employeeId, int $tenantId, string $beforeDate): ?array
+    {
+        $row = DB::table('attendance')
+            ->where('employee_id', $employeeId)->where('tenant_id', $tenantId)
+            ->where('date', '<', $beforeDate)
+            ->whereNotNull('check_in_time')->whereNull('check_out_time')
+            ->orderByDesc('date')
+            ->first(['id', 'date', 'check_in_time']);
+
+        if ($row === null) {
+            return null;
+        }
+
+        return [
+            'id' => Value::int($row->id),
+            'date' => Value::string($row->date),
+            'check_in_time' => Value::string($row->check_in_time),
+        ];
+    }
 }
