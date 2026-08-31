@@ -7,7 +7,7 @@ class FaceProof {
   /// The on-device face embedding, L2-normalised.
   final List<double> embedding;
 
-  /// Single-use nonce issued by face_challenge.php. Stops a captured embedding
+  /// Single-use nonce issued by v1/attendance/face-challenge. Stops a captured embedding
   /// from being replayed later or from another device.
   final String nonce;
 
@@ -55,7 +55,7 @@ class FaceChallengeModel {
       );
 }
 
-/// The employee's own enrollment state, from my_status.php.
+/// The employee's own enrollment state, from v1/biometric/self/status.
 class FaceStatusModel {
   final bool enrolled;
   final bool needsReenrollment;

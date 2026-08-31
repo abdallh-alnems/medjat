@@ -1015,7 +1015,7 @@ class EmployeeDetailController extends GetxController {
   }
 
   Future<void> deleteWarning(int id) async {
-    final response = await _crud.postData(AppLinks.warningDelete, {'id': id});
+    final response = await _crud.deleteData(AppLinks.warningDelete(id));
 
     if (response['status'] == StatusRequest.success) {
       Get.snackbar('done'.tr, 'warning_deleted'.tr,

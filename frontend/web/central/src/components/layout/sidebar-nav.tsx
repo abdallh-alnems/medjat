@@ -78,7 +78,7 @@ const GROUPS: NavGroup[] = [
     labelKey: "nav_group_insights",
     items: [
       { href: "/reports", labelKey: "nav_reports", icon: FileBarChart, permission: "view_reports" },
-      // The audit endpoint (audit/list.php) requires manage_company_settings —
+      // The audit endpoint (v1/audit) requires manage_company_settings —
       // gating on view_reports let viewers/HR open it into a 403. Match backend.
       { href: "/activity-log", labelKey: "nav_activity_log", icon: ScrollText, permission: "manage_company_settings" },
     ],

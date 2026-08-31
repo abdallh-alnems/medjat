@@ -6,7 +6,7 @@ import type {
   AttendanceStatus,
 } from "@/lib/types";
 
-/** Raw shape returned by the live backend (app/dashboard/overview.php). */
+/** Raw shape returned by the live backend (v1/dashboard/overview). */
 interface RawOverview {
   total_employees: number;
   active_in_scope: number;
@@ -103,7 +103,7 @@ export async function getDashboardOverview(): Promise<DashboardOverview> {
     : (raw as unknown as DashboardOverview);
 }
 
-/** Raw live-board row from the backend (app/dashboard/live_attendance.php). */
+/** Raw live-board row from the backend (v1/dashboard/live-attendance). */
 interface RawLiveEmployee {
   employee_id: number;
   name: string;

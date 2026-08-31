@@ -14,6 +14,6 @@ class PerformanceData {
   }
 
   Future<Map<String, dynamic>> deleteReview(int id) async {
-    return await _crud.postData(AppLinks.performanceReviewDelete, {'id': id});
+    return await _crud.deleteData(AppLinks.performanceReviewDelete(id));
   }
 }

@@ -834,7 +834,7 @@ List<GetPage<dynamic>> getPages = [
 /// always present (both are safe for any role); Employees / Attendance /
 /// Payroll appear only when the user can actually open them, so a view-only
 /// admin never taps into a page the backend rejects with a 403 ("an error
-/// occurred"). The visible permissions arrive from login.php via UserModel.
+/// occurred"). The visible permissions arrive from v1/auth/admin/login via UserModel.
 List<TabItem> _buildHomeTabs() {
   final user = Get.find<AuthController>().user;
   return [

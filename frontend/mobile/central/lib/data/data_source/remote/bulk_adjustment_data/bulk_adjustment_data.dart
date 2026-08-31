@@ -49,16 +49,14 @@ class BulkAdjustmentData {
     required String amountType,
     String reason = '',
   }) async {
-    return await _crud.postData(AppLinks.bulkAdjustmentUpdate, {
-      'id': id,
+    return await _crud.patchData(AppLinks.bulkAdjustmentUpdate(id), {
       'amount': amount,
       'amount_type': amountType,
-      'reason': reason,
-    });
+      'reason': reason});
   }
 
   Future<Map<String, dynamic>> delete(int id) async {
-    return await _crud.postData(AppLinks.bulkAdjustmentDelete, {'id': id});
+    return await _crud.deleteData(AppLinks.bulkAdjustmentDelete(id));
   }
 
   Future<Map<String, dynamic>> removeMember(int id, int rowId) async {

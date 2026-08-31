@@ -177,7 +177,7 @@ class StatusEmployeesController extends GetxController {
           return e.status == LiveStatus.inside;
         case EmployeeStatusFilter.absent:
           // Confirmed absences only, matching the dashboard "absent" card
-          // (overview.php's absent_today). No-shows with no record yet are
+          // (v1/dashboard/overview's absent_today). No-shows with no record yet are
           // "not arrived" and live under the separate notArrived filter.
           return e.status == LiveStatus.absent;
         case EmployeeStatusFilter.late:

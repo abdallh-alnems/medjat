@@ -97,6 +97,34 @@ class CRUD {
     }
   }
 
+  /// PATCH — replaces part of a resource whose id is in the path.
+  ///
+  /// The API addresses resources rather than taking an action named "update",
+  /// so the id does not travel in [data].
+  Future<Map<String, dynamic>> patchData(String url, Map<String, dynamic> data,
+      {bool auth = true}) async {
+    final connectivity = await _checkConnectivity();
+    if (connectivity == StatusRequest.offline) {
+      return {'status': StatusRequest.offline};
+    }
+
+    try {
+      final headers = await _headers(auth: auth);
+      final response = await http
+          .patch(
+            Uri.parse(url),
+            headers: headers,
+            body: jsonEncode(data),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      return _handleResponse(response);
+    } catch (e) {
+      debugPrint('PATCH Error: $e');
+      return {'status': StatusRequest.failure};
+    }
+  }
+
   Future<Map<String, dynamic>> deleteData(String url,
       {bool auth = true}) async {
     final connectivity = await _checkConnectivity();

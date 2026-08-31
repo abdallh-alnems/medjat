@@ -11,7 +11,7 @@ import { useTenantStore } from "@/lib/stores/tenant-store";
 
 /**
  * Orchestrates the full auth lifecycle:
- *  - Firebase sign-in → backend login.php → set user + tenant
+ *  - Firebase sign-in → v1/auth/admin/login → set user + tenant
  *  - onAuthStateChanged(null) → clear session
  *  - logout → backend logout + Firebase signOut + clear stores
  *  - surfaces "session superseded" responses by signing out

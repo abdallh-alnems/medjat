@@ -17,11 +17,11 @@ class AssetData {
 
   Future<Map<String, dynamic>> updateAsset(
       int id, Map<String, dynamic> data) async {
-    return await _crud.postData(AppLinks.assetUpdate, {...data, 'id': id});
+    return await _crud.patchData(AppLinks.assetUpdate(id), data);
   }
 
   Future<Map<String, dynamic>> deleteAsset(int id) async {
-    return await _crud.postData(AppLinks.assetDelete, {'id': id});
+    return await _crud.deleteData(AppLinks.assetDelete(id));
   }
 
   Future<Map<String, dynamic>> approveReturn(int id) async {

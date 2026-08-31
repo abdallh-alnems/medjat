@@ -24,7 +24,7 @@ class CompanySettingsData {
   /// configuration by a switch that had nothing to do with it.
   ///
   /// Omitting it is not merely tidier, it reaches a different branch of the
-  /// endpoint: app/settings/company.php only touches `attendance_methods` when
+  /// endpoint: v1/settings/company only touches `attendance_methods` when
   /// the key is present, and re-reads the stored list from the database when it
   /// is not. Send only what this particular save is actually changing.
   Future<Map<String, dynamic>> updateAttendanceConfig({
@@ -211,7 +211,7 @@ class CompanySettingsData {
   }
 
   Future<Map<String, dynamic>> deleteCarryoverPolicy(int id) async {
-    return await _crud.postData(AppLinks.leaveCarryoverPolicyDelete, {'id': id});
+    return await _crud.deleteData(AppLinks.leaveCarryoverPolicyDelete(id));
   }
 
   // ── Leave encashments ──────────────────────────────────

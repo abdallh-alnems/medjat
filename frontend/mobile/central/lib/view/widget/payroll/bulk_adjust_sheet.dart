@@ -20,7 +20,7 @@ import '../../../data/data_source/remote/payroll_data/payroll_data.dart';
 ///
 /// The sheet lets the admin pick deduction vs bonus, enter an amount + reason,
 /// then fans the value out to every employee in the scope via the
-/// `payroll/bulk_adjust.php` endpoint.
+/// `v1/payroll/bulk-adjust` endpoint.
 Future<void> showBulkAdjustSheet(
   BuildContext context, {
   required String scopeType,

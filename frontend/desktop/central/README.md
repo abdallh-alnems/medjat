@@ -156,7 +156,7 @@ if (window.medjat?.isDesktop) {
 
 The same deploy serves browser and desktop users; the desktop-only UI simply does not
 render in a browser. Note that the backend's current ZKTeco integration is **push only**
-(the terminal dials `device/iclock.php` on port 8090) — talking to a terminal directly
+(the terminal dials `/iclock/…` on port 8090) — talking to a terminal directly
 over the LAN on port 4370 is a different protocol, needs the machine to be on the same
 network as the device, and varies by firmware.
 
@@ -186,11 +186,11 @@ present:
 1. `auth:browser` generates a nonce and opens `${APP_URL}/login?desktop=<nonce>` in the
    system browser.
 2. The user signs in there — passkeys work, because it is a real browser.
-3. The page calls `desktop_authorize.php` for a single-use code and redirects to
+3. The page calls `v1/auth/desktop/authorize` for a single-use code and redirects to
    `medjat://auth?code=…&state=<nonce>`.
 4. `handleAuthLink` checks the nonce against the one this process generated (anything else
    is ignored) and loads `${APP_URL}/desktop-auth?code=…`.
-5. That page calls `desktop_exchange.php`, which claims the code and mints a Firebase
+5. That page calls `v1/auth/desktop/exchange`, which claims the code and mints a Firebase
    custom token; `signInWithCustomToken` turns it into an ordinary session.
 
 The code is single-use, expires after two minutes, and is stored only as a hash.

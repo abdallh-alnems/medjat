@@ -61,7 +61,7 @@ class KioskCrud {
 
   /// POSTs [body] to [url].
   ///
-  /// [authenticated] is false only for `pair.php`, where the pairing code *is*
+  /// [authenticated] is false only for `v1/kiosk/pair`, where the pairing code
   /// the credential and no token exists yet.
   Future<KioskResult> post(
     String url,

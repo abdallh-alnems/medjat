@@ -9,7 +9,7 @@
  *
  * What it deliberately does NOT do is invent a second ingestion path. The rows
  * come back as plain `user_id,punched_at` CSV and go to
- * `app/devices/import_punches.php`, the same vendor-neutral endpoint the web
+ * `v1/devices/import-punches`, the same vendor-neutral endpoint the web
  * page already uses for a USB export. Employee linking, direction, clock sanity
  * and repeat-tap suppression are therefore identical to a punch that arrived
  * over ADMS — none of that logic is duplicated here.
@@ -28,7 +28,7 @@ const net = require('node:net');
 const DEFAULT_PORT = 4370;
 const CONNECT_TIMEOUT_MS = 6000;
 const READ_TIMEOUT_MS = 60000;
-// Matches IMPORT_MAX_ROWS in app/devices/import_punches.php; a bigger read would
+// Matches IMPORT_MAX_ROWS in v1/devices/import-punches; a bigger read would
 // only be rejected server-side after the user waited for it.
 const MAX_ROWS = 20000;
 

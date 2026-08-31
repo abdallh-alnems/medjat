@@ -55,11 +55,9 @@ class ManagerData {
     int? branchId,
     bool branchProvided = false,
   }) async {
-    return await _crud.postData(AppLinks.adminUpdate, {
-      'admin_id': adminId,
+    return await _crud.patchData(AppLinks.adminUpdate(adminId), {
       'role': ?role,
-      if (branchProvided) 'branch_id': branchId,
-    });
+      if (branchProvided) 'branch_id': branchId});
   }
 
   Future<Map<String, dynamic>> setAdminActive({

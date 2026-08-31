@@ -38,15 +38,12 @@ class DocumentData {
     // listing URL was silently ignored by the backend (returned the list as
     // success), so nothing was actually removed.
     return await _crud
-        .postData(AppLinks.employeeDeleteDocument, {'document_id': docId});
+        .deleteData(AppLinks.employeeDeleteDocument(docId));
   }
 
   Future<Map<String, dynamic>> updateDocument(
       int docId, Map<String, dynamic> data) async {
-    return await _crud.postData(AppLinks.employeeUpdateDocument, {
-      'document_id': docId,
-      ...data,
-    });
+    return await _crud.patchData(AppLinks.employeeUpdateDocument(docId), data);
   }
 
   Future<Map<String, dynamic>> verifyDocument(int docId) async {

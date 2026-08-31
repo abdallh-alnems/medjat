@@ -29,7 +29,7 @@ import { useDebouncedCallback } from "@/lib/hooks/use-debounced";
 import { todayISO } from "@/lib/utils";
 import type { TKey } from "@/lib/i18n/ar";
 
-// Leave types the backend accepts on create (create.php enum).
+// Leave types the backend accepts on create (v1/leaves enum).
 const LEAVE_TYPES = ["annual", "sick", "personal", "unpaid"] as const;
 
 /** Sheet to create a leave request on behalf of an employee. */

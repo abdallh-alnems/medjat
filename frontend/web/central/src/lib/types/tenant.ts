@@ -22,7 +22,7 @@ export interface Admin {
   tenant_id: number;
   permissions?: Record<PermissionCode, boolean> | null;
   /** Whether the signed-in admin outranks this one and may manage them
-   *  (edit / suspend / remove). Computed by the backend (`list_admins.php`). */
+   *  (edit / suspend / remove). Computed by the backend (`v1/team`). */
   can_manage?: boolean;
   branch_name?: string | null;
   last_login_at?: string | null;

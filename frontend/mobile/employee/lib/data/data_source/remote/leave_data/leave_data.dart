@@ -40,14 +40,13 @@ class LeaveData {
     String? reason,
   }) async {
     final data = <String, dynamic>{
-      'leave_id': id,
       'type': type,
       'date': startDate,
       'start_date': startDate,
       'end_date': endDate,
     };
     if (reason != null) data['reason'] = reason;
-    return await _crud.postData(AppLinks.leaveUpdate, data);
+    return await _crud.patchData(AppLinks.leaveUpdate(id), data);
   }
 
   Future<Map<String, dynamic>> getBalance({int? year}) async {

@@ -83,8 +83,8 @@ export function saveDeductionSettings(rules: Partial<DeductionRule>[]) {
 
 // ── Attendance method resolution (company > branch > category > employee) ──
 // All data is served by `v1/settings/company` (GET). Writes go to
-// company.php (tenant-level), branches/update_attendance_method.php (branch),
-// and attendance/set_method_override.php (category / employee).
+// v1/settings/company (tenant-level), v1/branches/attendance-method (branch),
+// and v1/attendance/method-override (category / employee).
 
 export interface AttendanceBranchOverride {
   id: number;
@@ -151,7 +151,7 @@ export interface AttendanceMethodConfig {
   employee_overrides: AttendanceEmployeeOverride[];
 }
 
-/** Full attendance-method configuration comes from company.php. */
+/** Full attendance-method configuration comes from v1/settings/company. */
 export function getAttendanceMethodConfig() {
   return apiGet<AttendanceMethodConfig>("v1/settings/company");
 }

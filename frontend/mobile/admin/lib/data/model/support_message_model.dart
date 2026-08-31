@@ -6,7 +6,7 @@ class SupportMessageModel {
   final String createdAt;
 
   /// Stored path of an attachment, if any. The file itself is never served
-  /// publicly — it is fetched through admin_support/attachment.php with the
+  /// publicly — it is fetched through v1/admin/support/attachment with the
   /// admin token, since a client's screenshot can hold payroll or staff faces.
   final String? attachmentUrl;
   final String? attachmentName;

@@ -71,5 +71,5 @@ If you use a model with a different embedding size (FaceNet emits 128), update
 
 Leave the company in `log_only` mode for ~2 weeks after launch. Every attempt
 is scored and stored in `face_verification_logs`; read the distribution with
-`app/attendance/face_logs.php` (`view: "distribution"`), then set the threshold
+`v1/attendance/face-logs` (`view: "distribution"`), then set the threshold
 on real data and switch to `enforce`.

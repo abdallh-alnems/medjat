@@ -85,7 +85,7 @@ export const handlers = [
   ),
 
   // ── Dashboard ──
-  // Mirrors the live backend shape (app/dashboard/overview.php); the api layer
+  // Mirrors the live backend shape (v1/dashboard/overview); the api layer
   // adapts it to the DashboardOverview the UI consumes.
   http.get(`${API}/v1/dashboard/overview`, () =>
     ok({

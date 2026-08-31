@@ -403,7 +403,7 @@ class _ChatBubble extends StatelessWidget {
 /// One attachment on a message.
 ///
 /// Attachments are not public files — the bytes are fetched through
-/// app/support/attachment.php with the session's own credentials, because a
+/// v1/support/attachment with the session's own credentials, because a
 /// screenshot in a ticket can contain payroll figures or staff faces.
 class _AttachmentView extends StatelessWidget {
   final SupportMessageModel message;

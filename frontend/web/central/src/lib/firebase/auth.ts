@@ -36,7 +36,7 @@ export async function signUpEmail(email: string, password: string) {
 /**
  * Support-desk diagnostic sign-in.
  *
- * The token is minted by admin/admins/impersonate.php (super admin only, with a
+ * The token is minted by v1/admin/company-admins/impersonate (super admin only, with a
  * stated reason, recorded in both our audit log and the company's own) and is
  * exchanged here for a normal session. Firebase expires it after one hour and
  * it cannot be renewed, so a forgotten tab dies on its own.
@@ -50,7 +50,7 @@ export async function signInWithSupportToken(token: string) {
  *
  * Electron reports no platform authenticator, so a Google account protected by a
  * passkey cannot finish signing in inside the app window. The user signs in in
- * their real browser instead, and the token minted by desktop_exchange.php
+ * their real browser instead, and the token minted by v1/auth/desktop/exchange
  * carries that session back here.
  */
 export async function signInWithDesktopToken(token: string) {

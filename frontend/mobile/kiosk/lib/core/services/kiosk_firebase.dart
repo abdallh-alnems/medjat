@@ -18,7 +18,7 @@ typedef RemoteSignal = Future<void> Function();
 /// The division of labour is deliberate and worth stating once, because it is
 /// the thing that keeps two sources of truth from appearing:
 ///
-/// * **The server decides.** `kiosk/heartbeat.php` is the only thing that puts
+/// * **The server decides.** `v1/kiosk/heartbeat` is the only thing that puts
 ///   this tablet in or out of service — 401 revoked, 426 too old, 503
 ///   maintenance. Nothing in this file ever sets [KioskState] itself.
 /// * **Firebase reports and nudges.** Crashlytics carries out what a wall
@@ -37,7 +37,7 @@ class KioskFirebase {
   /// from a hang. Each step is bounded by this instead.
   static const Duration _gmsTimeout = Duration(seconds: 8);
 
-  /// The topic `app/admin_app_control/set.php` publishes to when the kiosk's
+  /// The topic `v1/admin/app-control` publishes to when the kiosk's
   /// maintenance switch is flipped, named the same way as the other apps:
   /// `maintenance_<app key>`.
   static const String maintenanceTopic = 'maintenance_medjat_kiosk';

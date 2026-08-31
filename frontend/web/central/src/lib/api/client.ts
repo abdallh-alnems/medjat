@@ -89,7 +89,7 @@ browserClient.interceptors.request.use(attachMedjatHeaders);
 
 /**
  * Unwrap the backend success envelope. The Medjat backend wraps every successful
- * payload as `{ status: "success", data: <payload> }` (see core/Response.php), while
+ * payload as `{ status: "success", data: <payload> }` (see the ApiResponse envelope), while
  * the whole frontend (and its contract mocks) treats the JSON body itself as the typed
  * payload. So on a 2xx success envelope we hoist `data` up to be the response body.
  * Error/fail/superseded bodies (`status !== "success"`) are left untouched so callers

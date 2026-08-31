@@ -61,20 +61,18 @@ class DeviceData {
     int? clockOffsetMinutes,
     bool? debugLogging,
   }) async {
-    return await _crud.postData(AppLinks.deviceUpdate, {
-      'device_id': deviceId,
+    return await _crud.patchData(AppLinks.deviceUpdate(deviceId), {
       'name': ?name,
       'branch_id': ?branchId,
       'status': ?status,
       'direction_mode': ?directionMode,
       'min_interval_seconds': ?minIntervalSeconds,
       'clock_offset_minutes': ?clockOffsetMinutes,
-      'debug_logging': ?debugLogging,
-    });
+      'debug_logging': ?debugLogging});
   }
 
   Future<Map<String, dynamic>> releaseDevice(int deviceId) async {
-    return await _crud.postData(AppLinks.deviceDelete, {'device_id': deviceId});
+    return await _crud.deleteData(AppLinks.deviceDelete(deviceId));
   }
 
   Future<Map<String, dynamic>> getDeviceUsers(int deviceId, {String? filter}) {

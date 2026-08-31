@@ -189,23 +189,21 @@ class PayrollData {
     String? endMonth,
     String? label,
   }) async {
-    return await _crud.postData(AppLinks.allowanceUpdate, {
-      'id': id,
+    return await _crud.patchData(AppLinks.allowanceUpdate(id), {
       'type': type,
       'amount': amount,
       'start_month': startMonth,
       'end_month': ?endMonth,
-      'label': ?label,
-    });
+      'label': ?label});
   }
 
   Future<Map<String, dynamic>> deleteAllowance(int id) async {
-    return await _crud.postData(AppLinks.allowanceDelete, {'id': id});
+    return await _crud.deleteData(AppLinks.allowanceDelete(id));
   }
 
   /// Per-slip approval actions wired to the financial tab. Each one POSTs
   /// `payroll_id` in the request body — that's the contract the existing
-  /// approve.php/mark_paid.php/revert.php endpoints expect.
+  /// approve / mark-paid / revert endpoints expect.
   Future<Map<String, dynamic>> approveSlip(int payrollId) async {
     return await _crud
         .postData(AppLinks.payrollSlipApprove, {'payroll_id': payrollId});
@@ -228,15 +226,13 @@ class PayrollData {
     required num amount,
     required String reason,
   }) async {
-    return await _crud.postData(AppLinks.deductionManualUpdate, {
-      'id': id,
+    return await _crud.patchData(AppLinks.deductionManualUpdate(id), {
       'amount': amount,
-      'reason': reason,
-    });
+      'reason': reason});
   }
 
   Future<Map<String, dynamic>> deleteManualDeduction(int id) async {
-    return await _crud.postData(AppLinks.deductionManualDelete, {'id': id});
+    return await _crud.deleteData(AppLinks.deductionManualDelete(id));
   }
 
   Future<Map<String, dynamic>> updateManualBonus({
@@ -244,15 +240,13 @@ class PayrollData {
     required num amount,
     required String reason,
   }) async {
-    return await _crud.postData(AppLinks.bonusManualUpdate, {
-      'id': id,
+    return await _crud.patchData(AppLinks.bonusManualUpdate(id), {
       'amount': amount,
-      'reason': reason,
-    });
+      'reason': reason});
   }
 
   Future<Map<String, dynamic>> deleteManualBonus(int id) async {
-    return await _crud.postData(AppLinks.bonusManualDelete, {'id': id});
+    return await _crud.deleteData(AppLinks.bonusManualDelete(id));
   }
 
   Future<Map<String, dynamic>> getBankFilePreview(String month, {int? branchId}) async {

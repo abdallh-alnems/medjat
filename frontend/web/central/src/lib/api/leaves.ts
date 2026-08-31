@@ -60,7 +60,7 @@ export async function listLeaves(
   return unwrapList<RawLeave>(raw, ["items", "data"]).map(toLeave);
 }
 
-/** Backend create.php expects `start_date`/`end_date` (end defaults to start). */
+/** v1/leaves expects `start_date`/`end_date` (end defaults to start). */
 export interface CreateLeaveInput {
   employee_id: number;
   type: string;

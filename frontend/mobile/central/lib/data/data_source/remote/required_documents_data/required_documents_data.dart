@@ -13,12 +13,16 @@ class RequiredDocumentsData {
     return await _crud.postData(AppLinks.documentCreateRequired, data);
   }
 
+  /// As with categories, the model's payload carries `id` and the id now
+  /// belongs in the path.
   Future<Map<String, dynamic>> updateRequired(Map<String, dynamic> data) async {
-    return await _crud.postData(AppLinks.documentUpdateRequired, data);
+    final body = Map<String, dynamic>.from(data)..remove('id');
+    return await _crud.patchData(
+        AppLinks.documentUpdateRequired(data['id'] as int), body);
   }
 
   Future<Map<String, dynamic>> deleteRequired(int id) async {
-    return await _crud.postData(AppLinks.documentDeleteRequired, {'id': id});
+    return await _crud.deleteData(AppLinks.documentDeleteRequired(id));
   }
 
   Future<Map<String, dynamic>> toggleRequired(int id) async {

@@ -335,7 +335,7 @@ class _MessageBubble extends StatelessWidget {
 /// An attachment on a message.
 ///
 /// Attachments are never served publicly — the file is fetched from
-/// app/admin_support/attachment.php with the admin bearer token, because a
+/// v1/admin/support/attachment with the admin bearer token, because a
 /// client's screenshot can contain payroll figures or staff faces. Images
 /// render inline; anything else (a PDF) gets a row that opens in the browser.
 class _Attachment extends StatelessWidget {

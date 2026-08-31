@@ -24,7 +24,7 @@ export interface AttendanceRecord {
   check_out_origin?: string | null;
   /**
    * Whether an image was captured. The path itself never leaves the server —
-   * fetch the image from `attendance/punch_photo.php`, which re-checks that the
+   * fetch the image from `v1/attendance/photo`, which re-checks that the
    * caller may review this employee.
    */
   has_check_in_photo?: boolean;

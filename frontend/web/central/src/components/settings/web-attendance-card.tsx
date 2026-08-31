@@ -39,7 +39,7 @@ const LIMITATION_KEYS: Record<WebChannelLimitation, TKey> = {
   face_match: "web_limit_face",
 };
 
-/** "inherit" is a real state, not the absence of one — see update_web_access.php. */
+/** "inherit" is a real state, not the absence of one — see v1/categories/web-access. */
 type AccessValue = "inherit" | "allowed" | "refused";
 
 function toAccessValue(v: boolean | null | undefined): AccessValue {

@@ -12,7 +12,7 @@ import 'package:tflite_flutter/tflite_flutter.dart';
 /// the employee's data plan), and extraction is the only expensive part. The
 /// resulting vector is sent to the server, which does the actual comparison —
 /// the match decision is never made here, because a patched build could simply
-/// claim success. See core/FaceMatchService.php on the backend.
+/// claim success. See the server-side FaceMatcher.
 ///
 /// The model is a MobileFaceNet-style TFLite graph shipped inside this package,
 /// taking a 112x112 RGB image and emitting a 192-float embedding.

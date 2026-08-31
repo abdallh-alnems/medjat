@@ -26,7 +26,7 @@ class KiosksScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text('kiosks'.tr),
         actions: [
-          // Gated on manage_attendance, matching recognition_logs.php.
+          // Gated on manage_attendance, matching v1/kiosk/recognition-logs.
           if (auth.user?.canManageAttendance ?? false)
             IconButton(
               icon: const Icon(Icons.insights_outlined),
@@ -35,7 +35,7 @@ class KiosksScreen extends StatelessWidget {
             ),
         ],
       ),
-      // The gate matches what create_pairing_code.php enforces. If these ever
+      // The gate matches what v1/kiosk/pairing-code enforces. If these ever
       // disagree the API answers 403 and the user sees a bare "an error
       // occurred" with nothing pointing at the cause.
       floatingActionButton: canManage

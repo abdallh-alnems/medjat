@@ -6,50 +6,50 @@ class AppLinks {
   static String get base => dotenv.env['API_HOST'] ?? '';
 
   // Auth
-  static String get adminLogin => '$base/admin/auth/login.php';
-  static String get adminLogout => '$base/admin/auth/logout.php';
-  static String get adminMe => '$base/admin/auth/me.php';
-  static String get adminChangePassword => '$base/admin/auth/change_password.php';
+  static String get adminLogin => '$base/v1/admin/auth/login';
+  static String get adminLogout => '$base/v1/admin/auth/logout';
+  static String get adminMe => '$base/v1/admin/auth/me';
+  static String get adminChangePassword => '$base/v1/admin/auth/password';
 
   // Tenants
-  static String get tenants => '$base/admin/tenants/list.php';
-  static String get tenantCreate => '$base/admin/tenants/create.php';
-  static String get tenantUpdate => '$base/admin/tenants/update.php';
-  static String get tenantDetail => '$base/admin/tenants/detail.php';
-  static String get tenantDiagnostics => '$base/admin/tenants/diagnostics.php';
-  static String get tenantActivate => '$base/admin/tenants/activate.php';
-  static String get tenantDeactivate => '$base/admin/tenants/deactivate.php';
+  static String get tenants => '$base/v1/admin/tenants';
+  static String get tenantCreate => '$base/v1/admin/tenants';
+  static String tenantUpdate(int tenantId) => '\$base/v1/admin/tenants/\$tenantId';
+  static String get tenantDetail => '$base/v1/admin/tenants/detail';
+  static String get tenantDiagnostics => '$base/v1/admin/tenants/diagnostics';
+  static String get tenantActivate => '$base/v1/admin/tenants/activate';
+  static String get tenantDeactivate => '$base/v1/admin/tenants/deactivate';
 
   // Acting on behalf of a client company
-  static String get companyAdminSetActive => '$base/admin/admins/set_active.php';
-  static String get companyAdminResetPassword => '$base/admin/admins/reset_password.php';
-  static String get companyAdminInvite => '$base/admin/admins/invite.php';
-  static String get companyAdminImpersonate => '$base/admin/admins/impersonate.php';
+  static String get companyAdminSetActive => '$base/v1/admin/company-admins/set-active';
+  static String get companyAdminResetPassword => '$base/v1/admin/company-admins/reset-password';
+  static String get companyAdminInvite => '$base/v1/admin/company-admins/invite';
+  static String get companyAdminImpersonate => '$base/v1/admin/company-admins/impersonate';
 
   // Dashboard
-  static String get dashboardOverview => '$base/admin/dashboard/overview.php';
+  static String get dashboardOverview => '$base/v1/admin/dashboard';
 
   // Notifications
-  static String get notificationSendAll => '$base/admin/notifications/send_all.php';
-  static String get notificationSendTenant => '$base/admin/notifications/send_tenant.php';
+  static String get notificationSendAll => '$base/v1/admin/announcements/all';
+  static String get notificationSendTenant => '$base/v1/admin/announcements/tenant';
 
   // Company administrators (the client contact book) + our own audit trail
-  static String get users => '$base/admin/users/list.php';
-  static String get userCreate => '$base/admin/users/create.php';
-  static String get auditLog => '$base/admin/audit/list.php';
+  static String get users => '$base/v1/admin/company-admins';
+  static String get userCreate => '$base/v1/admin/operators';
+  static String get auditLog => '$base/v1/admin/audit';
 
   // Support
-  static String get supportList => '$base/app/admin_support/list.php';
-  static String get supportMessages => '$base/app/admin_support/messages.php';
-  static String get supportReply => '$base/app/admin_support/reply.php';
-  static String get supportStatus => '$base/app/admin_support/status.php';
+  static String get supportList => '$base/v1/admin/support/tickets';
+  static String get supportMessages => '$base/v1/admin/support/messages';
+  static String get supportReply => '$base/v1/admin/support/reply';
+  static String get supportStatus => '$base/v1/admin/support/status';
   static String supportAttachment(int messageId) =>
-      '$base/app/admin_support/attachment.php?message_id=$messageId';
+      '$base/v1/admin/support/attachment?message_id=$messageId';
 
   // App Control
-  static String get appControlGet => '$base/app/admin_app_control/get.php';
-  static String get appControlSet => '$base/app/admin_app_control/set.php';
+  static String get appControlGet => '$base/v1/admin/app-control';
+  static String get appControlSet => '$base/v1/admin/app-control';
 
   // Device Registration
-  static String get deviceRegister => '$base/app/admin/devices/register.php';
+  static String get deviceRegister => '$base/v1/admin/devices';
 }

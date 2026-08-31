@@ -33,7 +33,7 @@ class EmployeeKioskCard extends StatefulWidget {
   final String? enrolledStationName;
   final bool hasKioskCode;
 
-  /// `manage_employees` — matching what set_pin.php enforces.
+  /// `manage_employees` — matching what v1/kiosk/set-pin enforces.
   final bool canManage;
 
   @override

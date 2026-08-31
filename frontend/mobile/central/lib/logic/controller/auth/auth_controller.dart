@@ -139,11 +139,11 @@ class AuthController extends GetxController {
 
   void _handleDeepLink(Uri uri) {
     // Team-invitation hand-off from the email, via either:
-    //   • Universal / App Link:  https://api.medjatapp.com/.../join_team.php?code=XXXX
+    //   • Universal / App Link:  https://medjatapp.com/join_team?code=XXXX
     //   • custom-scheme bridge:  medjatcentral://join?code=XXXX
     final isHttpsInvite =
         (uri.scheme == 'https' || uri.scheme == 'http') &&
-            uri.path.contains('join_team.php');
+            uri.path.contains('join_team');
     final isSchemeInvite = uri.scheme == _kDeepLinkScheme &&
         (uri.host == 'join' || uri.pathSegments.contains('join'));
     if (isHttpsInvite || isSchemeInvite) {

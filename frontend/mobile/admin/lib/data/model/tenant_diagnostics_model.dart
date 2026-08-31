@@ -1,6 +1,6 @@
 /// Why attendance is failing at one company.
 ///
-/// Mirrors admin/tenants/diagnostics.php. Every section is independent: a
+/// Mirrors v1/admin/tenants/diagnostics. Every section is independent: a
 /// company with no face data still gets useful WiFi and terminal answers, and
 /// `kiosks` is null when that feature's migration has not been applied.
 class TenantDiagnosticsModel {

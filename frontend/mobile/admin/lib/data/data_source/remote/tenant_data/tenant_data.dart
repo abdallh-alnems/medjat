@@ -58,7 +58,7 @@ class TenantData {
   /// Only the keys present are written, so editing a phone number cannot reset
   /// a timezone the caller never saw.
   Future<Map<String, dynamic>> update(int id, Map<String, dynamic> fields) async {
-    return await _crud.postData(AppLinks.tenantUpdate, {'id': id, ...fields});
+    return await _crud.patchData(AppLinks.tenantUpdate(id), fields);
   }
 
   Future<Map<String, dynamic>> activate(int id) async {

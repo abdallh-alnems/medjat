@@ -378,7 +378,7 @@ class PayrollRules {
 }
 
 /// End-of-Service Benefits — accumulated entitlement from hire date to now,
-/// computed by `app/payroll/eosb_calculate.php`. When [enabled] is false the
+/// computed by `v1/payroll/eosb`. When [enabled] is false the
 /// tenant has the EOSB feature disabled and the card stays hidden.
 class EosbInfo {
   final bool enabled;

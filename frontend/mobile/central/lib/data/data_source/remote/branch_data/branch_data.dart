@@ -18,8 +18,7 @@ class BranchData {
   }
 
   Future<Map<String, dynamic>> updateBranch(int id, Map<String, dynamic> data) async {
-    // POST: branches/update.php requires POST (Auth::requirePost()).
-    return await _crud.postData(AppLinks.branchUpdate, {...data, 'branch_id': id});
+    return await _crud.patchData(AppLinks.branchUpdate(id), data);
   }
 
   /// Generate (or regenerate) the branch QR payload. Returns {qr_code}.
@@ -38,12 +37,10 @@ class BranchData {
     required double longitude,
     required int gpsRadiusMeters,
   }) async {
-    return await _crud.postData(AppLinks.branchUpdate, {
-      'branch_id': id,
+    return await _crud.patchData(AppLinks.branchUpdate(id), {
       'latitude': latitude,
       'longitude': longitude,
-      'gps_radius_meters': gpsRadiusMeters,
-    });
+      'gps_radius_meters': gpsRadiusMeters});
   }
 
   /// Networks seen at a branch during its learning window.
@@ -108,7 +105,6 @@ class BranchData {
     } else {
       data['allow_offline_attendance'] = null;
     }
-    // POST: update_attendance_method.php requires POST (Auth::requirePost()).
     return await _crud.postData(AppLinks.branchUpdateAttendanceMethod, data);
   }
 }

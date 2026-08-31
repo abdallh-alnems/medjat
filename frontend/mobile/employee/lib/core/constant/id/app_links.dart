@@ -6,65 +6,65 @@ class AppLinks {
   static String get base => dotenv.env['API_HOST'] ?? '';
 
   static String get employeeLogin =>
-      '$base/app/auth/employee_login.php';
+      '$base/v1/auth/employee/login';
   static String get employeeActivateToken =>
-      '$base/app/auth/employee_activate_token.php';
+      '$base/v1/auth/employee/activate';
   static String get employeeLogout =>
-      '$base/app/auth/employee_logout.php';
+      '$base/v1/auth/employee/logout';
 
-  static String get myProfile => '$base/app/employees/my_profile.php';
+  static String get myProfile => '$base/v1/employees/me';
   static String get submitDocument =>
-      '$base/app/employees/submit_document.php';
+      '$base/v1/employees/documents/submit';
   static String get myDocumentView =>
-      '$base/app/employees/my_document_view.php';
+      '$base/v1/employees/documents/mine';
 
-  static String get checkIn => '$base/app/attendance/check_in.php';
-  static String get checkOut => '$base/app/attendance/check_out.php';
+  static String get checkIn => '$base/v1/attendance/check-in';
+  static String get checkOut => '$base/v1/attendance/check-out';
   static String get attendanceSync =>
-      '$base/app/attendance/sync_offline.php';
+      '$base/v1/attendance/sync-offline';
 
   // Crew attendance: a supervisor records for the people on site with them.
-  static String get crewList => '$base/app/attendance/crew_list.php';
-  static String get crewCheckIn => '$base/app/attendance/crew_check_in.php';
+  static String get crewList => '$base/v1/attendance/crew';
+  static String get crewCheckIn => '$base/v1/attendance/crew/punch';
   static String attendanceMonth(String month) =>
-      '$base/app/attendance/get_my_attendance.php?month=$month';
+      '$base/v1/attendance/mine?month=$month';
 
   static String payrollSlipMonth(String month) =>
-      '$base/app/payroll/get_slip.php?month=$month';
+      '$base/v1/payroll/me?month=$month';
   static String payrollPdf(String month) =>
-      '$base/app/payroll/get_slip.php?month=$month&format=pdf';
+      '$base/v1/payroll/me?month=$month&format=pdf';
 
-  static String get leaveApply => '$base/app/leaves/apply.php';
-  static String get leaveBalance => '$base/app/leaves/my_balance.php';
-  static String get myLeaves => '$base/app/leaves/my_leaves.php';
-  static String get leaveCancel => '$base/app/leaves/cancel.php';
-  static String get leaveUpdate => '$base/app/leaves/update.php';
+  static String get leaveApply => '$base/v1/leaves/apply';
+  static String get leaveBalance => '$base/v1/leaves/my-balance';
+  static String get myLeaves => '$base/v1/leaves/mine';
+  static String get leaveCancel => '$base/v1/leaves/cancel';
+  static String leaveUpdate(int leaveId) => '\$base/v1/leaves/\$leaveId';
 
-  static String get breakRequest => '$base/app/breaks/request.php';
-  static String get myBreaks => '$base/app/breaks/my_list.php';
-  static String get breakCancel => '$base/app/breaks/cancel.php';
+  static String get breakRequest => '$base/v1/breaks/request';
+  static String get myBreaks => '$base/v1/breaks/mine';
+  static String get breakCancel => '$base/v1/breaks/cancel';
   static String get breakRespondPostpone =>
-      '$base/app/breaks/respond_postpone.php';
+      '$base/v1/breaks/respond-postpone';
 
-  static String get advanceRequest => '$base/app/loans/request.php';
-  static String get myAdvances => '$base/app/loans/my_list.php';
-  static String get advanceCancel => '$base/app/loans/cancel_request.php';
+  static String get advanceRequest => '$base/v1/loans/request';
+  static String get myAdvances => '$base/v1/loans/mine';
+  static String get advanceCancel => '$base/v1/loans/cancel-request';
 
-  static String get myAssets => '$base/app/assets/my_list.php';
+  static String get myAssets => '$base/v1/assets/mine';
   static String get assetRequestReturn =>
-      '$base/app/assets/request_return.php';
+      '$base/v1/assets/request-return';
 
-  static String get notifications => '$base/app/notifications/list.php';
+  static String get notifications => '$base/v1/notifications';
   static String notificationRead(int id) =>
-      '$base/app/notifications/read.php?id=$id';
-  static String get registerFcm => '$base/app/auth/update_fcm_token.php';
+      '$base/v1/notifications/read?id=$id';
+  static String get registerFcm => '$base/v1/auth/fcm-token';
   static String get notificationPrefs =>
-      '$base/app/auth/notification_prefs.php';
+      '$base/v1/auth/notification-prefs';
   static String get attendanceSecurityLog =>
-      '$base/app/attendance/security_log.php';
+      '$base/v1/attendance/security-log';
 
   // Face check-in (face_selfie)
-  static String get faceChallenge => '$base/app/attendance/face_challenge.php';
-  static String get faceEnrollSelf => '$base/app/biometric/enroll_self.php';
-  static String get faceMyStatus => '$base/app/biometric/my_status.php';
+  static String get faceChallenge => '$base/v1/attendance/face-challenge';
+  static String get faceEnrollSelf => '$base/v1/biometric/self/face';
+  static String get faceMyStatus => '$base/v1/biometric/self/status';
 }

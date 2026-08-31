@@ -24,7 +24,7 @@ class AttendanceRecordModel {
   final String? checkOutOrigin;
 
   /// Whether an image was captured. The path never leaves the server — the
-  /// image is fetched by attendance id from `attendance/punch_photo.php`, which
+  /// image is fetched by attendance id from `v1/attendance/photo`, which
   /// re-checks that the caller may review this employee.
   final bool hasCheckInPhoto;
   final bool hasCheckOutPhoto;

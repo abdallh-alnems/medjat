@@ -59,7 +59,7 @@ class AdminModel {
   final String? lastLoginAt;
 
   /// Whether the signed-in admin outranks this one and may manage them
-  /// (edit / suspend / remove). Computed by the backend (`list_admins.php`).
+  /// (edit / suspend / remove). Computed by the backend (`v1/team`).
   /// Defaults to true so older payloads keep the previous behaviour.
   final bool canManage;
 

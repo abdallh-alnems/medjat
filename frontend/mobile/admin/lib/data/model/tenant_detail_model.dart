@@ -1,7 +1,7 @@
 /// The full picture of one client company: who they are, how their attendance
 /// is configured, how big they are, and when anyone last used the system.
 ///
-/// Mirrors admin/tenants/detail.php one-for-one.
+/// Mirrors v1/admin/tenants/detail one-for-one.
 class TenantDetailModel {
   final TenantProfile tenant;
   final TenantSettings settings;

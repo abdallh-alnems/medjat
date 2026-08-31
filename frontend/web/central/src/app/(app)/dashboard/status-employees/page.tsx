@@ -15,7 +15,7 @@ import { ArrowLeft } from "lucide-react";
 import type { AttendanceStatus } from "@/lib/types";
 
 // Match the dashboard buckets: "present" includes late arrivals (anyone checked
-// in), while "late" is the late subset — mirroring overview.php's counters.
+// in), while "late" is the late subset — mirroring v1/dashboard/overview's counters.
 const STATUS_MATCH: Record<string, (s: AttendanceStatus) => boolean> = {
   present: (s) => s === "present" || s === "late",
   absent: (s) => s === "absent",

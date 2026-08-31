@@ -72,7 +72,7 @@ export async function getEmployeeProfile(id: number): Promise<Employee> {
   } as unknown as Employee;
 }
 
-/** Full field set accepted by create.php (superset of the Employee shape). */
+/** Full field set accepted by v1/employees (superset of the Employee shape). */
 export interface EmployeeCreateFields {
   name: string;
   phone: string;

@@ -10,7 +10,7 @@ import '../../../data/model/employee_model.dart';
 class CategoryEmployeesController extends GetxController {
   final EmployeeData _employeeData = Get.find<EmployeeData>();
 
-  /// Max page size the backend allows (`employees/list.php` clamps to 50).
+  /// Max page size the backend allows (`v1/employees` clamps to 50).
   static const int _pageSize = 50;
 
   late final int categoryId;

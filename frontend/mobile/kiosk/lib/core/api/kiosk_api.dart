@@ -15,22 +15,22 @@ class KioskApi {
   // ---- Device identity -----------------------------------------------------
 
   /// Unauthenticated. The pairing code is the credential.
-  static String get pair => '$base/app/kiosk/pair.php';
+  static String get pair => '$base/v1/kiosk/pair';
 
   /// Also where revocation, a stale version, and maintenance take effect.
-  static String get heartbeat => '$base/app/kiosk/heartbeat.php';
+  static String get heartbeat => '$base/v1/kiosk/heartbeat';
 
   // ---- Identification and attendance ---------------------------------------
 
-  static String get challenge => '$base/app/kiosk/challenge.php';
-  static String get identify => '$base/app/kiosk/identify.php';
-  static String get identifyByCode => '$base/app/kiosk/identify_by_code.php';
-  static String get punch => '$base/app/kiosk/punch.php';
+  static String get challenge => '$base/v1/kiosk/challenge';
+  static String get identify => '$base/v1/kiosk/identify';
+  static String get identifyByCode => '$base/v1/kiosk/identify-by-code';
+  static String get punch => '$base/v1/kiosk/punch';
 
   // ---- Administration area -------------------------------------------------
 
-  static String get openAdmin => '$base/app/kiosk/open_admin.php';
-  static String get adminRoster => '$base/app/kiosk/admin/roster.php';
-  static String get adminEnroll => '$base/app/kiosk/admin/enroll.php';
-  static String get adminClose => '$base/app/kiosk/admin/close.php';
+  static String get openAdmin => '$base/v1/kiosk/open-admin';
+  static String get adminRoster => '$base/v1/kiosk/admin/roster';
+  static String get adminEnroll => '$base/v1/kiosk/admin/enroll';
+  static String get adminClose => '$base/v1/kiosk/admin/close';
 }

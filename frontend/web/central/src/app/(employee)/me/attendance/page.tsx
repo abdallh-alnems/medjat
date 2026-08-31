@@ -190,7 +190,7 @@ export default function EmployeeAttendancePage() {
   const canCheckIn = state === "not_checked_in" && !blocked;
 
   // Check-out is NOT gated on it. Someone who checked in on their phone must
-  // always be able to close the day, and check_out.php has no method gate for
+  // always be able to close the day, and v1/attendance/check-out has no method gate for
   // exactly that reason — a control that can strand an employee clocked in is a
   // payroll problem wearing a security badge.
   const canCheckOut = state === "checked_in";

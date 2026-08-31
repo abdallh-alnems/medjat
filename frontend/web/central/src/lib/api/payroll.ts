@@ -6,7 +6,7 @@ import type {
   PayrollAuditEntry,
 } from "@/lib/types";
 
-/** Raw row shape returned by `live.php` (different field names than a slip). */
+/** Raw row shape returned by `v1/payroll/live` (different field names than a slip). */
 interface LivePayrollRow {
   id?: number;
   employee_id: number;
