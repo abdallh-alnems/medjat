@@ -29,9 +29,9 @@ jobs:
 
     services:
       mysql:
-        # Matches production (MySQL 8.4). The schema is owned by the old
-        # backend's migration ledger, so CI loads its generated snapshot instead
-        # of running Laravel migrations.
+        # Matches production (MySQL 8.4). It starts empty; the migrations in
+        # database/ fill it, which is the only way this job can tell you they
+        # still work.
         image: mysql:8.4
         env:
           MYSQL_ROOT_PASSWORD: root
