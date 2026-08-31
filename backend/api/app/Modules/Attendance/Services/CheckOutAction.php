@@ -64,14 +64,14 @@ final class CheckOutAction
         // on a spoofed location.
         if (Value::int($input['is_mock_location'] ?? null) === 1 && $this->rejectsMockLocation($tenantId)) {
             AttendanceSecurityLog::record($tenantId, $employee->id, $branchId, 'mock_location', 'blocked', $latitude, $longitude);
-            throw new ApiFailure('تم رصد موقع وهمي', 403, 'MOCK_LOCATION');
+            throw new ApiFailure(__('messages.mock_location_detected'), 403, 'MOCK_LOCATION');
         }
 
         // Same reasoning: enforcing on arrival only would let a colleague clock
         // someone out.
         if ($this->requiresLocalBiometric($tenantId) && Value::int($input['local_biometric'] ?? null) !== 1) {
             AttendanceSecurityLog::record($tenantId, $employee->id, $branchId, 'no_local_biometric', 'blocked', $latitude, $longitude);
-            throw new ApiFailure('يجب التحقق ببصمة الجهاز أولاً', 403, 'LOCAL_BIOMETRIC_REQUIRED');
+            throw new ApiFailure(__('messages.device_biometric_required'), 403, 'LOCAL_BIOMETRIC_REQUIRED');
         }
 
         $methods = AttendanceMethod::resolveFor($employee, $tenantId);
@@ -82,13 +82,13 @@ final class CheckOutAction
         if ($branch !== null && $requestedMethod === 'wifi_gps' && in_array('wifi_gps', $methods, true)) {
             $network = NetworkVerifier::acceptsApp($branch, $input);
             if (! $network['accepted']) {
-                throw new ApiFailure('يجب الاتصال بشبكة الفرع', 403, 'WIFI_'.strtoupper($network['reason']));
+                throw new ApiFailure(__('messages.must_be_on_branch_network'), 403, 'WIFI_'.strtoupper($network['reason']));
             }
         }
 
         if ($isWeb && $branch !== null && ! NetworkVerifier::acceptsBrowser($branch)) {
             AttendanceSecurityLog::record($tenantId, $employee->id, $branchId, 'web_wrong_network', 'blocked', $latitude, $longitude);
-            throw new ApiFailure('يجب الاتصال بشبكة الفرع', 403, 'WEB_WRONG_NETWORK');
+            throw new ApiFailure(__('messages.must_be_on_branch_network'), 403, 'WEB_WRONG_NETWORK');
         }
 
         $this->guardRotatingQr($employee, $tenantId, $branch, $requestedMethod, $input, $latitude, $longitude);
@@ -185,7 +185,7 @@ final class CheckOutAction
         }
 
         if (! $declared) {
-            throw new ApiFailure('التحقق بالوجه مطلوب لتسجيل الانصراف', 400, 'FACE_REQUIRED');
+            throw new ApiFailure(__('messages.face_required_for_checkout'), 400, 'FACE_REQUIRED');
         }
 
         $verification = $this->faces->verify($employee, $tenantId, $branch, 'check_out', $input, $lat, $lng);
@@ -218,7 +218,7 @@ final class CheckOutAction
 
         $qrCode = Value::string($input['qr_code'] ?? null);
         if ($qrCode === '') {
-            throw new ApiFailure('امسح الرمز المعروض على الشاشة', 400, 'QR_REQUIRED');
+            throw new ApiFailure(__('messages.scan_displayed_code'), 400, 'QR_REQUIRED');
         }
 
         // 'check_out' is a separate claim from 'check_in': arriving and leaving
@@ -270,7 +270,7 @@ final class CheckOutAction
         );
 
         if ($photo === null) {
-            throw new ApiFailure('الصورة مطلوبة لتسجيل الانصراف', 422, 'PHOTO_REQUIRED');
+            throw new ApiFailure(__('messages.photo_required_for_checkout'), 422, 'PHOTO_REQUIRED');
         }
 
         return $photo;

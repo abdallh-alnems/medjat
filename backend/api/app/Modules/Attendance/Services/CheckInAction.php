@@ -71,7 +71,7 @@ final class CheckInAction
 
         $branch = Branch::query()->forTenant($tenantId)->whereKey($branchId)->first();
         if ($branch === null) {
-            throw new ApiFailure('Branch not found', 404, 'BRANCH_NOT_FOUND');
+            throw new ApiFailure(__('messages.branch_not_found'), 404, 'BRANCH_NOT_FOUND');
         }
 
         // 2. The method the company allows for this person.
@@ -85,7 +85,7 @@ final class CheckInAction
         //    enforced when opted in, because older builds never send the field.
         if ($this->requiresLocalBiometric($tenantId) && Value::int($input['local_biometric'] ?? null) !== 1) {
             $this->block($tenantId, $employee, $branchId, 'no_local_biometric', $latitude, $longitude);
-            throw new ApiFailure('يجب التحقق ببصمة الجهاز أولاً', 403, 'LOCAL_BIOMETRIC_REQUIRED');
+            throw new ApiFailure(__('messages.device_biometric_required'), 403, 'LOCAL_BIOMETRIC_REQUIRED');
         }
 
         // 4. QR shape. A branch on rotating codes does not accept its printed
@@ -100,10 +100,10 @@ final class CheckInAction
             // should be told to look at the screen, not told they are out of
             // range.
             if ($qrCode === null || $qrCode === '') {
-                throw new ApiFailure('امسح الرمز المعروض على الشاشة', 400, 'QR_REQUIRED');
+                throw new ApiFailure(__('messages.scan_displayed_code'), 400, 'QR_REQUIRED');
             }
         } elseif ($qrCode !== null && $qrCode !== '' && $branch->getAttribute('qr_code') !== $qrCode) {
-            throw new ApiFailure('Invalid QR code for this branch', 400, 'INVALID_QR');
+            throw new ApiFailure(__('messages.qr_wrong_branch'), 400, 'INVALID_QR');
         }
 
         // 5. A real location. Both qr_gps and gps_only need one, and a denied
@@ -120,7 +120,7 @@ final class CheckInAction
         //    never reports it.
         if ($isMockLocation && $this->rejectsMockLocation($tenantId)) {
             $this->block($tenantId, $employee, $branchId, 'mock_location', $latitude, $longitude);
-            throw new ApiFailure('تم رصد موقع وهمي', 403, 'MOCK_LOCATION');
+            throw new ApiFailure(__('messages.mock_location_detected'), 403, 'MOCK_LOCATION');
         }
 
         // 7. The geofence.
@@ -151,7 +151,7 @@ final class CheckInAction
         if ($method === 'wifi_gps') {
             $network = NetworkVerifier::acceptsApp($branch, $input);
             if (! $network['accepted']) {
-                throw new ApiFailure('يجب الاتصال بشبكة الفرع', 403, 'WIFI_'.strtoupper($network['reason']));
+                throw new ApiFailure(__('messages.must_be_on_branch_network'), 403, 'WIFI_'.strtoupper($network['reason']));
             }
         }
 
@@ -162,7 +162,7 @@ final class CheckInAction
         //    screen and nowhere else.
         if ($isWeb && ! NetworkVerifier::acceptsBrowser($branch)) {
             $this->block($tenantId, $employee, $branchId, 'web_wrong_network', $latitude, $longitude);
-            throw new ApiFailure('يجب الاتصال بشبكة الفرع', 403, 'WEB_WRONG_NETWORK');
+            throw new ApiFailure(__('messages.must_be_on_branch_network'), 403, 'WEB_WRONG_NETWORK');
         }
 
         // 10. The rotating code is claimed after the geofence for the same
@@ -219,7 +219,7 @@ final class CheckInAction
             );
 
             if ($photo === null) {
-                throw new ApiFailure('الصورة مطلوبة لتسجيل الحضور', 422, 'PHOTO_REQUIRED');
+                throw new ApiFailure(__('messages.photo_required_for_checkin'), 422, 'PHOTO_REQUIRED');
             }
         }
 
@@ -264,7 +264,7 @@ final class CheckInAction
             : ($qrCode !== null && $qrCode !== '' ? 'qr_gps' : 'gps_only');
 
         if (! in_array($requested, AttendanceMethod::SELF_SERVICE, true)) {
-            throw new ApiFailure('Unsupported check-in method', 422, 'METHOD_NOT_ALLOWED');
+            throw new ApiFailure(__('messages.checkin_method_unsupported'), 422, 'METHOD_NOT_ALLOWED');
         }
 
         if (in_array($requested, $allowed, true)) {
@@ -274,14 +274,14 @@ final class CheckInAction
         // Two near-misses get their own message, because "not allowed" would
         // leave the employee with nothing to do about it.
         if ($requested === 'qr_gps' && in_array('gps_only', $allowed, true)) {
-            throw new ApiFailure('QR check-in is not enabled for this branch', 403, 'METHOD_NOT_ALLOWED');
+            throw new ApiFailure(__('messages.qr_checkin_disabled'), 403, 'METHOD_NOT_ALLOWED');
         }
 
         if ($requested === 'gps_only' && in_array('qr_gps', $allowed, true)) {
             throw new ApiFailure('QR code is required for this branch', 400, 'QR_REQUIRED');
         }
 
-        throw new ApiFailure('Self check-in is disabled for this branch', 403, 'METHOD_NOT_ALLOWED');
+        throw new ApiFailure(__('messages.self_checkin_disabled'), 403, 'METHOD_NOT_ALLOWED');
     }
 
     private function requiresLocalBiometric(int $tenantId): bool

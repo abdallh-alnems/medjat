@@ -100,7 +100,7 @@ final class NotificationPrefsController
 
         if ($adminId === null) {
             throw new ApiFailure(
-                'No account linked to receive notifications',
+                __('messages.no_account_for_notifications'),
                 422,
                 'account_linked_receive_notifications'
             );

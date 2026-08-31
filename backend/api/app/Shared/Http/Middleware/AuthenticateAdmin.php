@@ -35,13 +35,13 @@ final class AuthenticateAdmin
 
         $admin = Admin::query()->where('firebase_uid', $identity->uid)->first();
         if ($admin === null) {
-            throw new ApiFailure('Admin not found', 404);
+            throw new ApiFailure(__('messages.admin_not_found'), 404);
         }
 
         if (! $admin->is_active) {
             // Removal no longer disables the account — it only detaches the
             // company — so an inactive account here is a genuine suspension.
-            throw new ApiFailure('تم إيقاف حسابك من قِبل المسؤول', 403, 'account_deactivated');
+            throw new ApiFailure(__('messages.account_disabled_by_admin'), 403, 'account_deactivated');
         }
 
         $this->assertStillAMember($request, $admin);
@@ -66,7 +66,7 @@ final class AuthenticateAdmin
         $claimsATenant = is_scalar($claimed) && (string) $claimed !== '';
 
         if ($claimsATenant && $admin->tenant_id === null) {
-            throw new ApiFailure('تمت إزالتك من الشركة من قِبل المسؤول', 403, 'account_removed');
+            throw new ApiFailure(__('messages.removed_from_company'), 403, 'account_removed');
         }
     }
 
@@ -90,7 +90,7 @@ final class AuthenticateAdmin
         }
 
         if ($admin->active_device_id !== $deviceId) {
-            throw new ApiFailure('تم تسجيل الدخول من جهاز آخر', 401, 'session_superseded');
+            throw new ApiFailure(__('messages.signed_in_elsewhere'), 401, 'session_superseded');
         }
     }
 }

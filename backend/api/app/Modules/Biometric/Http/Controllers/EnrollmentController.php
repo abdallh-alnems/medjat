@@ -109,7 +109,7 @@ final class EnrollmentController
         $employee = Employee::query()->where('id', $employeeId)->where('tenant_id', $tenantId)->first();
 
         if ($employee === null) {
-            throw new ApiFailure('Employee not found', 404, 'employee_not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'employee_not_found');
         }
 
         if ($type === 'face' || $type === 'both') {
@@ -131,7 +131,7 @@ final class EnrollmentController
         $status = BiometricEnrollment::status(Value::int($request->query('employee_id')), $tenantId);
 
         if ($status === null) {
-            throw new ApiFailure('Employee not found', 404, 'employee_not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'employee_not_found');
         }
 
         return ApiResponse::success($status);
@@ -148,7 +148,7 @@ final class EnrollmentController
         $employee = Employee::query()->where('id', $employeeId)->where('tenant_id', $tenantId)->first();
 
         if ($employee === null) {
-            throw new ApiFailure('Employee not found', 404, 'employee_not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'employee_not_found');
         }
 
         RequireBranchAccess::assert($admin, $employee->branch_id);
@@ -161,7 +161,7 @@ final class EnrollmentController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

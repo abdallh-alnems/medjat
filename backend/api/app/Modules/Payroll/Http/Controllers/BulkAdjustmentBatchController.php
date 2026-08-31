@@ -80,7 +80,7 @@ final class BulkAdjustmentBatchController
         $employees = $this->adjustments->inScope($scopeType, $scopeId, $tenantId);
 
         if ($employees === []) {
-            throw new ApiFailure('No employees match the selected scope', 404, 'no_employees_in_scope');
+            throw new ApiFailure(__('messages.no_employees_in_scope'), 404, 'no_employees_in_scope');
         }
 
         $isPercent = $amountType === 'percent';
@@ -142,7 +142,7 @@ final class BulkAdjustmentBatchController
 
         if ($eligible === []) {
             throw new ApiFailure(
-                'No eligible employees (all locked or zero base salary)',
+                __('messages.no_eligible_employees'),
                 409,
                 'no_eligible_employees',
             );
@@ -307,7 +307,7 @@ final class BulkAdjustmentBatchController
         }
 
         if ($member === null || ! BulkAdjustments::removeMember($rowId, $id, $kind, $tenantId)) {
-            throw new ApiFailure('Member not found in this batch', 404, 'not_found');
+            throw new ApiFailure(__('messages.member_not_in_batch'), 404, 'not_found');
         }
 
         $this->announceRemoval($tenantId, $member, $kind === 'bonus');
@@ -407,7 +407,7 @@ final class BulkAdjustmentBatchController
         $batch = $id > 0 ? BulkAdjustments::find($id, $tenantId) : null;
 
         if ($batch === null) {
-            throw new ApiFailure('Bulk adjustment not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.bulk_adjustment_not_found'), 404, 'not_found');
         }
 
         return [$id, $batch];
@@ -418,7 +418,7 @@ final class BulkAdjustmentBatchController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

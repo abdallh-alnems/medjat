@@ -107,14 +107,14 @@ final class ShiftController
         if ($transferTo > 0) {
             if ($transferTo === $id) {
                 throw new ApiFailure(
-                    'Cannot transfer employees to the shift being deleted',
+                    __('messages.transfer_to_deleted_shift'),
                     422,
                     'cannot_transfer_employees_shift_being',
                 );
             }
 
             if (Shifts::find($transferTo, $tenantId) === null) {
-                throw new ApiFailure('Target shift not found', 422, 'target_shift_not_found');
+                throw new ApiFailure(__('messages.target_shift_not_found'), 422, 'target_shift_not_found');
             }
 
             $affected = Shifts::transferEmployees($id, $transferTo, $tenantId);
@@ -173,7 +173,7 @@ final class ShiftController
         }
 
         if (Shifts::find($shiftId, $tenantId) === null) {
-            throw new ApiFailure('Shift not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.shift_not_found'), 404, 'not_found');
         }
 
         $employeeIds = array_values(array_filter(
@@ -197,11 +197,11 @@ final class ShiftController
     private static function existing(int $id, int $tenantId): int
     {
         if ($id <= 0) {
-            throw new ApiFailure('Shift ID required', 422, 'shift_id_required');
+            throw new ApiFailure(__('messages.shift_id_required'), 422, 'shift_id_required');
         }
 
         if (Shifts::find($id, $tenantId) === null) {
-            throw new ApiFailure('Shift not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.shift_not_found'), 404, 'not_found');
         }
 
         return $id;
@@ -212,7 +212,7 @@ final class ShiftController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

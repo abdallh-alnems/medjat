@@ -76,7 +76,7 @@ final class ManualAdjustmentController
         $exists = DB::table('employees')->where('id', $employeeId)->where('tenant_id', $tenantId)->exists();
 
         if (! $exists) {
-            throw new ApiFailure('Employee not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'not_found');
         }
 
         $reason = trim(Value::string($request->input('reason')));
@@ -199,7 +199,7 @@ final class ManualAdjustmentController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

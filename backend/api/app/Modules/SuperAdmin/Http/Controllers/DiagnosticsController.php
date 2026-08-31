@@ -40,7 +40,7 @@ final class DiagnosticsController
         $tenantId = Value::int($request->query('id')) ?: Value::int($request->input('id'));
 
         if ($tenantId <= 0) {
-            throw new ApiFailure('معرّف الشركة مطلوب', 422, 'id_required');
+            throw new ApiFailure(__('messages.tenant_id_required'), 422, 'id_required');
         }
 
         $row = DB::table('tenants')->where('id', $tenantId)->first([
@@ -49,7 +49,7 @@ final class DiagnosticsController
         ]);
 
         if ($row === null) {
-            throw new ApiFailure('Tenant not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.tenant_not_found'), 404, 'not_found');
         }
 
         /** @var array<string, mixed> $tenant */

@@ -91,7 +91,7 @@ final class KioskEmployeeCode
 
         // A branch would need a meaningful fraction of a million codes in use to
         // get here. Failing loudly beats handing out a duplicate.
-        throw new ApiFailure('Could not allocate a unique kiosk code', 500, 'kiosk_code_exhausted');
+        throw new ApiFailure(__('messages.kiosk_code_allocation_failed'), 500, 'kiosk_code_exhausted');
     }
 
     /**

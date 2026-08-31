@@ -160,8 +160,8 @@ final class AdminLoginAction
             // suspending it, so the two cases need different messages: one is
             // "you were taken off this company", the other is "you are barred".
             throw $admin->tenant_id === null
-                ? new ApiFailure('تمت إزالتك من الشركة من قِبل المسؤول', 403, 'account_removed')
-                : new ApiFailure('تم إيقاف حسابك من قِبل المسؤول', 403, 'account_deactivated');
+                ? new ApiFailure(__('messages.removed_from_company'), 403, 'account_removed')
+                : new ApiFailure(__('messages.account_disabled_by_admin'), 403, 'account_deactivated');
         }
 
         Admin::query()->whereKey($admin->id)->update([

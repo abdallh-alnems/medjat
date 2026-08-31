@@ -126,7 +126,7 @@ final class CategoryController
         $exists = DB::table('employees')->where('id', $employeeId)->where('tenant_id', $tenantId)->exists();
 
         if (! $exists) {
-            throw new ApiFailure('Employee not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'not_found');
         }
 
         $raw = $request->input('category_ids');
@@ -196,7 +196,7 @@ final class CategoryController
     private static function existing(int $id, int $tenantId): int
     {
         if ($id <= 0 || EmployeeCategories::find($id, $tenantId) === null) {
-            throw new ApiFailure('Category not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.category_not_found'), 404, 'not_found');
         }
 
         return $id;
@@ -207,7 +207,7 @@ final class CategoryController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

@@ -145,19 +145,19 @@ final class OnboardingController
         $invitation = ManagerInvitation::redeemable($code);
 
         if ($invitation === null) {
-            throw new ApiFailure('Invite code is invalid', 404, 'invite_code_invalid');
+            throw new ApiFailure(__('messages.invite_code_invalid'), 404, 'invite_code_invalid');
         }
 
         if ($invitation['cancelled_at'] !== null) {
-            throw new ApiFailure('This invitation was cancelled', 410, 'invitation_was_cancelled');
+            throw new ApiFailure(__('messages.invitation_cancelled'), 410, 'invitation_was_cancelled');
         }
 
         if ($invitation['accepted_at'] !== null) {
-            throw new ApiFailure('This invitation was already used', 410, 'invitation_was_already_used');
+            throw new ApiFailure(__('messages.invitation_already_used'), 410, 'invitation_was_already_used');
         }
 
         if (Value::int($invitation['is_expired'] ?? null) === 1) {
-            throw new ApiFailure('This invitation has expired', 410, 'invitation_expired');
+            throw new ApiFailure(__('messages.invitation_expired'), 410, 'invitation_expired');
         }
 
         $invitedEmail = Value::nullableString($invitation['email'] ?? null);
@@ -168,7 +168,7 @@ final class OnboardingController
         if ($invitedEmail !== null && $adminEmail !== null
             && strcasecmp($invitedEmail, $adminEmail) !== 0) {
             throw new ApiFailure(
-                'This invitation is for a different email address',
+                __('messages.invitation_email_mismatch'),
                 403,
                 'invitation_different_email_address',
             );
@@ -192,7 +192,7 @@ final class OnboardingController
         $email = Value::nullableString($admin->getAttribute('email'));
 
         if ($email === null || $email === '') {
-            throw new ApiFailure('No invitation found', 404, 'no_pending_invitation');
+            throw new ApiFailure(__('messages.invitation_not_found'), 404, 'no_pending_invitation');
         }
 
         $pinned = Value::int($request->input('invitation_id'));
@@ -200,7 +200,7 @@ final class OnboardingController
         $invitation = ManagerInvitation::pendingForEmail($email, $pinned > 0 ? $pinned : null);
 
         if ($invitation === null) {
-            throw new ApiFailure('لا توجد دعوة صالحة لهذا الحساب', 404, 'no_pending_invitation');
+            throw new ApiFailure(__('messages.no_valid_invitation'), 404, 'no_pending_invitation');
         }
 
         return $this->accept($invitation, $admin);
@@ -221,7 +221,7 @@ final class OnboardingController
         // Claimed first, with the guard inside the UPDATE: two people racing
         // the same code must not both be let into the company.
         if (! ManagerInvitation::claim($invitationId, $admin->id)) {
-            throw new ApiFailure('This invitation was already used', 410, 'invitation_was_already_used');
+            throw new ApiFailure(__('messages.invitation_already_used'), 410, 'invitation_was_already_used');
         }
 
         DB::transaction(function () use ($admin, $tenantId, $branchId, $role, $name, $permissions): void {
@@ -291,11 +291,11 @@ final class OnboardingController
         $admin = Admin::query()->where('firebase_uid', $identity->uid)->first();
 
         if ($admin === null) {
-            throw new ApiFailure('Sign in first', 401, 'sign_first');
+            throw new ApiFailure(__('messages.sign_in_first'), 401, 'sign_first');
         }
 
         if ($admin->tenant_id !== null) {
-            throw new ApiFailure('You already belong to a company', 409, 'you_already_belong_company');
+            throw new ApiFailure(__('messages.already_in_a_company'), 409, 'you_already_belong_company');
         }
 
         return $admin;

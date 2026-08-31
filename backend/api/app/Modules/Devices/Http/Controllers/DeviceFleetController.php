@@ -80,7 +80,7 @@ final class DeviceFleetController
         $branchId = Value::int($request->input('branch_id'));
 
         if (preg_match('/^[A-Z0-9\-]{4,64}$/', $serial) !== 1) {
-            throw new ApiFailure('Serial number looks invalid', 422, 'INVALID_SERIAL');
+            throw new ApiFailure(__('messages.serial_number_invalid'), 422, 'INVALID_SERIAL');
         }
 
         self::assertBranchExists($branchId, $tenantId);
@@ -200,7 +200,7 @@ final class DeviceFleetController
         $kind = Value::string($request->input('kind'));
 
         if (! in_array($kind, ZktecoProtocol::COMMAND_KINDS, true)) {
-            throw new ApiFailure('Unsupported command', 422, 'UNSUPPORTED_COMMAND');
+            throw new ApiFailure(__('messages.unsupported_command'), 422, 'UNSUPPORTED_COMMAND');
         }
 
         // The company's local time. Sending a UTC clock to a terminal would
@@ -208,7 +208,7 @@ final class DeviceFleetController
         $payload = ZktecoProtocol::commandPayload($kind, ['now' => TenantClock::timestamp($tenantId)]);
 
         if ($payload === null) {
-            throw new ApiFailure('Unsupported command', 422, 'UNSUPPORTED_COMMAND');
+            throw new ApiFailure(__('messages.unsupported_command'), 422, 'UNSUPPORTED_COMMAND');
         }
 
         $commandId = (int) DB::table('device_commands')->insertGetId([
@@ -295,7 +295,7 @@ final class DeviceFleetController
     private static function existing(int $deviceId, int $tenantId): int
     {
         if ($deviceId <= 0 || AttendanceDevice::find($deviceId, $tenantId) === null) {
-            throw new ApiFailure('Device not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.device_not_found'), 404, 'not_found');
         }
 
         return $deviceId;
@@ -304,7 +304,7 @@ final class DeviceFleetController
     public static function assertBranchExists(int $branchId, int $tenantId): void
     {
         if ($branchId <= 0 || ! DB::table('branches')->where('id', $branchId)->where('tenant_id', $tenantId)->exists()) {
-            throw new ApiFailure('Branch not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.branch_not_found'), 404, 'not_found');
         }
     }
 
@@ -353,7 +353,7 @@ final class DeviceFleetController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

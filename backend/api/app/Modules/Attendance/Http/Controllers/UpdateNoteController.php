@@ -28,7 +28,7 @@ final class UpdateNoteController
     {
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $tenantId = Value::int($request->attributes->get('tenant_id'));
@@ -45,7 +45,7 @@ final class UpdateNoteController
         if ($attendanceId > 0) {
             $exists = DB::table('attendance')->where('id', $attendanceId)->where('tenant_id', $tenantId)->exists();
             if (! $exists) {
-                throw new ApiFailure('Attendance record not found', 404, 'attendance_record_not_found');
+                throw new ApiFailure(__('messages.attendance_record_not_found'), 404, 'attendance_record_not_found');
             }
 
             $this->manual->setNote($tenantId, $attendanceId, $note);
@@ -59,7 +59,7 @@ final class UpdateNoteController
                 ->exists();
 
             if (! $exists) {
-                throw new ApiFailure('Attendance record not found', 404, 'attendance_record_not_found');
+                throw new ApiFailure(__('messages.attendance_record_not_found'), 404, 'attendance_record_not_found');
             }
 
             $this->manual->setNoteForDay($tenantId, $employeeId, $date, $note);

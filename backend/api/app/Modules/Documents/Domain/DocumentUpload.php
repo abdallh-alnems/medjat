@@ -41,11 +41,11 @@ final class DocumentUpload
         /** @var list<string> $allowed */
         $allowed = Config::array('medjat.uploads.allowed_types');
         if (! in_array($extension, $allowed, true)) {
-            throw new ApiFailure('File type not allowed', 400, 'file_type_not_allowed');
+            throw new ApiFailure(__('messages.file_type_not_allowed'), 400, 'file_type_not_allowed');
         }
 
         if ($file->getSize() > Config::integer('medjat.uploads.max_bytes')) {
-            throw new ApiFailure('File size exceeds limit', 400, 'file_size_exceeds_limit');
+            throw new ApiFailure(__('messages.file_size_exceeds_limit'), 400, 'file_size_exceeds_limit');
         }
 
         $directory = 'documents/'.$tenantId;

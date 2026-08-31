@@ -297,7 +297,7 @@ final class BranchController
     public static function existing(int $branchId, int $tenantId): int
     {
         if ($branchId <= 0 || Branches::find($branchId, $tenantId) === null) {
-            throw new ApiFailure('Branch not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.branch_not_found'), 404, 'not_found');
         }
 
         return $branchId;
@@ -308,7 +308,7 @@ final class BranchController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

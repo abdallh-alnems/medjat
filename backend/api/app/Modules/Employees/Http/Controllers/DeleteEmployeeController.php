@@ -28,7 +28,7 @@ final class DeleteEmployeeController
     {
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $tenantId = Value::int($request->attributes->get('tenant_id'));
@@ -40,7 +40,7 @@ final class DeleteEmployeeController
 
         $employee = Employee::query()->forTenant($tenantId)->whereKey($employeeId)->first();
         if ($employee === null) {
-            throw new ApiFailure('Employee not found', 404);
+            throw new ApiFailure(__('messages.employee_not_found'), 404);
         }
 
         DB::table('employees')->where('id', $employeeId)->where('tenant_id', $tenantId)

@@ -43,7 +43,7 @@ final class UpdateEmployeeController
     {
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $tenantId = Value::int($request->attributes->get('tenant_id'));
@@ -55,7 +55,7 @@ final class UpdateEmployeeController
 
         $employee = Employee::query()->forTenant($tenantId)->whereKey($employeeId)->first();
         if ($employee === null) {
-            throw new ApiFailure('Employee not found', 404);
+            throw new ApiFailure(__('messages.employee_not_found'), 404);
         }
 
         if ($request->has('branch_id')) {

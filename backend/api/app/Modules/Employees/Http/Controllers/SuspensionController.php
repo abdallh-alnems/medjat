@@ -55,7 +55,7 @@ final class SuspensionController
         }
 
         if ($employee->status === 'terminated') {
-            throw new ApiFailure('Cannot suspend a terminated employee', 422, 'cannot_suspend_terminated_employee');
+            throw new ApiFailure(__('messages.suspend_terminated_employee'), 422, 'cannot_suspend_terminated_employee');
         }
 
         $payMode = Value::string($request->input('pay_mode'), 'unpaid');
@@ -85,7 +85,7 @@ final class SuspensionController
         }
 
         if (Suspension::activeFor($employee->id, $tenantId) !== null) {
-            throw new ApiFailure('Employee already has an active suspension', 409, 'employee_already_active_suspension');
+            throw new ApiFailure(__('messages.suspension_already_active'), 409, 'employee_already_active_suspension');
         }
 
         $id = Suspension::open($tenantId, $employee->id, [
@@ -119,7 +119,7 @@ final class SuspensionController
 
         $active = Suspension::activeFor($employee->id, $tenantId);
         if ($active === null) {
-            throw new ApiFailure('Employee has no active suspension', 422, 'employee_active_suspension');
+            throw new ApiFailure(__('messages.no_active_suspension'), 422, 'employee_active_suspension');
         }
 
         $note = trim(Value::string($request->input('end_note')));
@@ -143,7 +143,7 @@ final class SuspensionController
     {
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return [$admin, Value::int($request->attributes->get('tenant_id'))];
@@ -157,7 +157,7 @@ final class SuspensionController
 
         $employee = Employee::query()->forTenant($tenantId)->whereKey($employeeId)->first();
         if ($employee === null) {
-            throw new ApiFailure('Employee not found', 404);
+            throw new ApiFailure(__('messages.employee_not_found'), 404);
         }
 
         return $employee;

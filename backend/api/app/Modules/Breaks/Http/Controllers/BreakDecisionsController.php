@@ -64,7 +64,7 @@ final class BreakDecisionsController
             ->where('id', $employeeId)->where('tenant_id', $tenantId)->exists();
 
         if (! $exists) {
-            throw new ApiFailure('الموظف غير موجود', 404, 'employee_not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'employee_not_found');
         }
 
         $created = $this->record->execute($request->all(), $employeeId, $tenantId);
@@ -94,7 +94,7 @@ final class BreakDecisionsController
         if (BreakRequests::windowHasPassed($tenantId, $date, $endTime)) {
             $this->breaks->expirePastPending($tenantId, Value::int($breakRequest['employee_id'] ?? null));
 
-            throw new ApiFailure('انتهى وقت الإذن، لا يمكن الموافقة عليه', 409, 'break_window_passed');
+            throw new ApiFailure(__('messages.permission_window_passed_approve'), 409, 'break_window_passed');
         }
 
         // The manager's flag wins if they sent one; otherwise the choice made
@@ -164,7 +164,7 @@ final class BreakDecisionsController
 
         foreach ([$start, $end] as $time) {
             if ($time !== null && preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $time) !== 1) {
-                throw new ApiFailure('suggested time is invalid', 422, 'invalid_time');
+                throw new ApiFailure(__('messages.suggested_time_invalid'), 422, 'invalid_time');
             }
         }
 
@@ -216,11 +216,11 @@ final class BreakDecisionsController
         $breakRequest = $id > 0 ? $this->breaks->find($id, $tenantId) : null;
 
         if ($breakRequest === null) {
-            throw new ApiFailure('الطلب غير موجود', 404, 'not_found');
+            throw new ApiFailure(__('messages.request_not_found'), 404, 'not_found');
         }
 
         if (Value::string($breakRequest['status'] ?? null) !== 'pending') {
-            throw new ApiFailure('الطلب ليس قيد الانتظار', 409, 'not_pending');
+            throw new ApiFailure(__('messages.request_not_pending'), 409, 'not_pending');
         }
 
         return $breakRequest;
@@ -231,7 +231,7 @@ final class BreakDecisionsController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

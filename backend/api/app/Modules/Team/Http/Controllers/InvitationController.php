@@ -45,11 +45,11 @@ final class InvitationController
         $role = Value::string($request->input('role'));
 
         if (! in_array($role, Permissions::MANAGEMENT_ROLES, true)) {
-            throw new ApiFailure('الدور غير صالح', 422, 'invalid_role');
+            throw new ApiFailure(__('messages.role_invalid'), 422, 'invalid_role');
         }
 
         if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            throw new ApiFailure('صيغة البريد الإلكتروني غير صحيحة', 422, 'invalid_email');
+            throw new ApiFailure(__('messages.email_format_invalid'), 422, 'invalid_email');
         }
 
         $permissions = $this->requestedPermissions($request);
@@ -66,7 +66,7 @@ final class InvitationController
         $existingTenant = DB::table('admins')->where('email', $email)->value('tenant_id');
 
         if ($existingTenant !== null) {
-            throw new ApiFailure('هذا المستخدم ينتمي لشركة بالفعل', 409, 'user_already_in_company');
+            throw new ApiFailure(__('messages.user_already_in_company'), 409, 'user_already_in_company');
         }
 
         $branchId = Value::int($request->input('branch_id')) ?: null;
@@ -76,7 +76,7 @@ final class InvitationController
         }
 
         if (ManagerInvitation::pendingFor($tenantId, $email)) {
-            throw new ApiFailure('يوجد دعوة معلقة بالفعل لهذا البريد الإلكتروني', 409, 'invitation_already_pending');
+            throw new ApiFailure(__('messages.invitation_already_pending'), 409, 'invitation_already_pending');
         }
 
         $invitation = ManagerInvitation::create($tenantId, $caller->id, [
@@ -110,11 +110,11 @@ final class InvitationController
         $invitation = self::find($invitationId, $tenantId);
 
         if ($invitation['accepted_at'] !== null) {
-            throw new ApiFailure('الدعوة مقبولة بالفعل', 409, 'invitation_already_accepted');
+            throw new ApiFailure(__('messages.invitation_already_accepted'), 409, 'invitation_already_accepted');
         }
 
         if ($invitation['cancelled_at'] !== null) {
-            throw new ApiFailure('الدعوة ملغاة بالفعل', 409, 'invitation_already_cancelled');
+            throw new ApiFailure(__('messages.invitation_already_cancelled'), 409, 'invitation_already_cancelled');
         }
 
         ManagerInvitation::cancel($invitationId, $tenantId);
@@ -137,13 +137,13 @@ final class InvitationController
         $invitationId = self::invitationId($request);
 
         if (self::find($invitationId, $tenantId)['accepted_at'] !== null) {
-            throw new ApiFailure('الدعوة مقبولة بالفعل', 409, 'invitation_already_accepted');
+            throw new ApiFailure(__('messages.invitation_already_accepted'), 409, 'invitation_already_accepted');
         }
 
         $result = ManagerInvitation::regenerate($invitationId, $tenantId);
 
         if ($result === null) {
-            throw new ApiFailure('تعذّر إعادة إنشاء الدعوة', 500, 'resend_invitation_failed');
+            throw new ApiFailure(__('messages.invitation_recreate_failed'), 500, 'resend_invitation_failed');
         }
 
         AuditLog::record($tenantId, $caller->id, 'manager.resend_invite', 'invitation', $invitationId);
@@ -196,7 +196,7 @@ final class InvitationController
             ->first(['id', 'accepted_at', 'cancelled_at']);
 
         if ($row === null) {
-            throw new ApiFailure('الدعوة غير موجودة', 404, 'not_found');
+            throw new ApiFailure(__('messages.invitation_missing'), 404, 'not_found');
         }
 
         /** @var array<string, mixed> $invitation */
@@ -210,7 +210,7 @@ final class InvitationController
         $id = Value::int($request->query('id')) ?: Value::int($request->input('id'));
 
         if ($id <= 0) {
-            throw new ApiFailure('معرّف الدعوة مطلوب', 422, 'invitation_id_required');
+            throw new ApiFailure(__('messages.invitation_id_required'), 422, 'invitation_id_required');
         }
 
         return $id;

@@ -84,7 +84,7 @@ final class Attendance extends Model
         // shift ended — and that has to convert into a real check-in rather
         // than block one, or the employee can never check in at all.
         if ($existing !== null && $existing->check_in_time !== null && $existing->check_in_time !== '') {
-            throw new ApiFailure('Already checked in today', 400);
+            throw new ApiFailure(__('messages.already_checked_in_today'), 400);
         }
 
         $lateMinutes = self::lateMinutes($employeeId, $tenantId, $today, $time);
@@ -150,19 +150,19 @@ final class Attendance extends Model
         $record = self::forDay($employeeId, $tenantId, $today);
 
         if ($record === null) {
-            throw new ApiFailure('No check-in record found for today', 404);
+            throw new ApiFailure(__('messages.no_checkin_today'), 404);
         }
 
         if ($record->check_in_time === null || $record->check_in_time === '') {
             // A placeholder row with no arrival: there is no session to close.
-            throw new ApiFailure('No check-in record found for today', 404);
+            throw new ApiFailure(__('messages.no_checkin_today'), 404);
         }
 
         $checkIn = strtotime($record->check_in_time);
         $checkOut = strtotime($time);
 
         if ($checkIn === false || $checkOut === false) {
-            throw new ApiFailure('No check-in record found for today', 404);
+            throw new ApiFailure(__('messages.no_checkin_today'), 404);
         }
 
         [$shiftStart, $shiftEnd] = self::shiftWindow($employeeId, $tenantId, $today);

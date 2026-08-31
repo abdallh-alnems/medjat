@@ -52,7 +52,7 @@ final class ViewDocumentController
         $path = $document === null ? '' : Value::string($document->file_path);
 
         if ($path === '' || ! Storage::disk('uploads')->exists($path)) {
-            throw new ApiFailure('Document not found', 404);
+            throw new ApiFailure(__('messages.document_not_found'), 404);
         }
 
         $name = Value::string($document?->original_name) ?: basename($path);

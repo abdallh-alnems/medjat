@@ -28,7 +28,7 @@ final class FaceChallengeController
     {
         $employee = $request->attributes->get('employee');
         if (! $employee instanceof Employee) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $tenantId = Value::int($request->attributes->get('tenant_id'));
@@ -43,7 +43,7 @@ final class FaceChallengeController
         // early with a clear code rather than letting the punch reject later.
         $enrolled = $employee->getAttribute('face_embedding');
         if ($purpose !== 'enroll' && ($enrolled === null || $enrolled === '')) {
-            throw new ApiFailure('لم يتم تسجيل بصمة الوجه لحسابك', 400, 'FACE_NOT_ENROLLED');
+            throw new ApiFailure(__('messages.face_not_enrolled'), 400, 'FACE_NOT_ENROLLED');
         }
 
         $branch = $employee->branch_id === null

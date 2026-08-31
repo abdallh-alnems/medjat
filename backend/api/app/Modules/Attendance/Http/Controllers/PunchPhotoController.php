@@ -31,7 +31,7 @@ final class PunchPhotoController
     {
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $tenantId = Value::int($request->attributes->get('tenant_id'));
@@ -55,7 +55,7 @@ final class PunchPhotoController
             ->first(['a.check_in_photo', 'a.check_out_photo', 'a.branch_id', 'e.branch_id as employee_branch_id']);
 
         if ($row === null) {
-            throw new ApiFailure('Attendance not found', 404);
+            throw new ApiFailure(__('messages.attendance_not_found'), 404);
         }
 
         // A branch-scoped reviewer sees only the branches they were given.
@@ -68,7 +68,7 @@ final class PunchPhotoController
 
         $stored = Value::string($which === 'check_in' ? $row->check_in_photo : $row->check_out_photo);
         if ($stored === '' || ! Storage::disk('uploads')->exists($stored)) {
-            throw new ApiFailure('Photo not found', 404);
+            throw new ApiFailure(__('messages.photo_not_found'), 404);
         }
 
         return response(Storage::disk('uploads')->get($stored), 200, [

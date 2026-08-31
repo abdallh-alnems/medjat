@@ -23,7 +23,7 @@ final class CheckOutController
     {
         $employee = $request->attributes->get('employee');
         if (! $employee instanceof Employee) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         // The channel comes from the session, never the body — see check-in.

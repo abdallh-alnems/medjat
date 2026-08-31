@@ -136,7 +136,7 @@ final class PairingController
         $station = KioskStation::find($stationId, $tenantId);
 
         if ($station === null) {
-            throw new ApiFailure('Kiosk not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.kiosk_not_found'), 404, 'not_found');
         }
 
         if (Value::string($station['status'] ?? null) !== 'active') {
@@ -208,7 +208,7 @@ final class PairingController
         $station = KioskStation::find($stationId, $tenantId);
 
         if ($station === null) {
-            throw new ApiFailure('Kiosk not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.kiosk_not_found'), 404, 'not_found');
         }
 
         if (Value::string($station['status'] ?? null) === 'revoked') {
@@ -222,7 +222,7 @@ final class PairingController
         }
 
         if (! KioskStation::revoke($stationId, $tenantId, $adminId)) {
-            throw new ApiFailure('Could not revoke this kiosk', 409, 'kiosk_revoke_failed');
+            throw new ApiFailure(__('messages.kiosk_revoke_failed'), 409, 'kiosk_revoke_failed');
         }
 
         return ApiResponse::success([
@@ -241,7 +241,7 @@ final class PairingController
         $branch = Branch::query()->where('id', $branchId)->where('tenant_id', $tenantId)->first();
 
         if ($branch === null) {
-            throw new ApiFailure('Branch not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.branch_not_found'), 404, 'not_found');
         }
 
         return $branch;
@@ -252,7 +252,7 @@ final class PairingController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

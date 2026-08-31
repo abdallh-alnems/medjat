@@ -42,7 +42,7 @@ final class EmployeeWebActivateController
         // really was.
         $key = 'web_activate:'.PhoneNumber::digits($phone);
         if (RateLimiter::tooManyAttempts($key, 10)) {
-            throw new ApiFailure('عدد كبير من المحاولات، حاول لاحقاً', 429, 'rate_limited');
+            throw new ApiFailure(__('messages.too_many_attempts_later'), 429, 'rate_limited');
         }
         RateLimiter::hit($key, 3600);
 
@@ -61,7 +61,7 @@ final class EmployeeWebActivateController
         }
 
         if ($employee->isTerminated()) {
-            throw new ApiFailure('الحساب موقوف', 403, 'account_suspended');
+            throw new ApiFailure(__('messages.account_suspended'), 403, 'account_suspended');
         }
 
         if (! PhoneNumber::matches($phone, (string) $employee->phone)) {
@@ -85,7 +85,7 @@ final class EmployeeWebActivateController
         }
 
         if (EmployeeWebCredential::findFor($employee->id, $tenantId) !== null) {
-            throw new ApiFailure('تم تفعيل الدخول من المتصفح لحسابك مسبقاً', 409, 'already_activated');
+            throw new ApiFailure(__('messages.web_access_already_enabled'), 409, 'already_activated');
         }
 
         try {
@@ -114,7 +114,7 @@ final class EmployeeWebActivateController
             });
         } catch (Throwable $e) {
             Log::error('Employee web activation failed', ['employee_id' => $employee->id, 'exception' => $e]);
-            throw new ApiFailure('حدث خطأ، حاول مرة أخرى', 500, 'activation_failed');
+            throw new ApiFailure(__('messages.generic_error_retry'), 500, 'activation_failed');
         }
 
         RateLimiter::clear($key);
@@ -143,6 +143,6 @@ final class EmployeeWebActivateController
      */
     private function refuse(): never
     {
-        throw new ApiFailure('بيانات التفعيل غير صحيحة', 401, 'invalid_activation');
+        throw new ApiFailure(__('messages.activation_details_wrong'), 401, 'invalid_activation');
     }
 }

@@ -305,7 +305,7 @@ final class CreateEmployeeAction
 
             $category = Value::nullableString($document['category'] ?? null);
             if ($category !== null && $category !== '' && ! in_array($category, self::DOCUMENT_CATEGORIES, true)) {
-                throw new ApiFailure('Invalid document category', 422, 'invalid_category');
+                throw new ApiFailure(__('messages.document_category_invalid'), 422, 'invalid_category');
             }
 
             $expiryDays = Value::nullableInt($document['expiry_days'] ?? null);

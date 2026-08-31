@@ -47,7 +47,7 @@ final class LoanController
         $loan = $id > 0 ? Loans::find($id, $tenantId) : null;
 
         if ($loan === null) {
-            throw new ApiFailure('Loan not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.loan_not_found'), 404, 'not_found');
         }
 
         $loan['installments'] = Loans::installments($id, $tenantId);
@@ -82,7 +82,7 @@ final class LoanController
         $exists = DB::table('employees')->where('id', $employeeId)->where('tenant_id', $tenantId)->exists();
 
         if (! $exists) {
-            throw new ApiFailure('Employee not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'not_found');
         }
 
         $installmentAmount = round($totalAmount / $installments, 2);
@@ -112,7 +112,7 @@ final class LoanController
         [$id, $loan] = $this->target($request, $tenantId);
 
         if (Value::string($loan['status'] ?? null) !== 'pending') {
-            throw new ApiFailure('Only pending loans can be approved', 409, 'only_pending_loans_can_approved');
+            throw new ApiFailure(__('messages.loan_not_pending'), 409, 'only_pending_loans_can_approved');
         }
 
         Loans::approve($id, $tenantId, $adminId);
@@ -153,7 +153,7 @@ final class LoanController
 
         if (! $done) {
             throw new ApiFailure(
-                'Loan cannot be cancelled in its current state',
+                __('messages.loan_not_cancellable'),
                 409,
                 'loan_cannot_cancelled_its_current',
             );
@@ -216,7 +216,7 @@ final class LoanController
         $loan = $id > 0 ? Loans::find($id, $tenantId) : null;
 
         if ($loan === null) {
-            throw new ApiFailure('Loan not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.loan_not_found'), 404, 'not_found');
         }
 
         return [$id, $loan];
@@ -227,7 +227,7 @@ final class LoanController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

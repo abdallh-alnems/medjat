@@ -31,7 +31,7 @@ final class RevertController
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $adminId = $admin->id;
@@ -44,7 +44,7 @@ final class RevertController
         $from = $this->ledger->revert($payrollId, $tenantId);
 
         if ($from === null) {
-            throw new ApiFailure('Slip not found or already in draft', 422, 'slip_not_found_already_draft');
+            throw new ApiFailure(__('messages.slip_not_found_or_draft'), 422, 'slip_not_found_already_draft');
         }
 
         AuditLog::record($tenantId, $adminId, 'payroll.revert', 'payroll', $payrollId, ['from' => $from]);

@@ -79,7 +79,7 @@ final class DeductionRulesController
         $absenceDays = Value::float($request->input('absence_days'));
 
         if ($absenceDays < 0) {
-            throw new ApiFailure('يجب أن يكون خصم الغياب صفراً أو أكثر', 422, 'invalid_absence_days');
+            throw new ApiFailure(__('messages.absence_deduction_negative'), 422, 'invalid_absence_days');
         }
 
         $tiers = $this->tiers($request);
@@ -121,7 +121,7 @@ final class DeductionRulesController
         $raw = $request->input('tiers', []);
 
         if (! is_array($raw)) {
-            throw new ApiFailure('صيغة الشرائح غير صحيحة', 422, 'invalid_tiers');
+            throw new ApiFailure(__('messages.brackets_format_invalid'), 422, 'invalid_tiers');
         }
 
         $tiers = [];
@@ -136,11 +136,11 @@ final class DeductionRulesController
             $days = Value::float($tier['deduction_days'] ?? $tier['days'] ?? null);
 
             if ($minutes <= 0) {
-                throw new ApiFailure('عتبة الدقائق يجب أن تكون أكبر من صفر', 422, 'invalid_threshold');
+                throw new ApiFailure(__('messages.minutes_threshold_invalid'), 422, 'invalid_threshold');
             }
 
             if ($days <= 0) {
-                throw new ApiFailure('قيمة الخصم يجب أن تكون أكبر من صفر', 422, 'invalid_deduction_days');
+                throw new ApiFailure(__('messages.deduction_value_invalid'), 422, 'invalid_deduction_days');
             }
 
             // A repeated threshold makes the ladder ambiguous: two rungs at the
@@ -177,7 +177,7 @@ final class DeductionRulesController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

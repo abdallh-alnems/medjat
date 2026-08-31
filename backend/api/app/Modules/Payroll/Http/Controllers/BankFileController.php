@@ -59,7 +59,7 @@ final class BankFileController
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $adminId = $admin->id;
@@ -74,7 +74,7 @@ final class BankFileController
 
         if ($exporter === null) {
             throw new ApiFailure(
-                'No payroll exporter available for this country/format',
+                __('messages.no_payroll_exporter'),
                 422,
                 'payroll_exporter_available_country_format',
             );
@@ -145,7 +145,7 @@ final class BankFileController
         $tenant = DB::table('tenants')->where('id', $tenantId)->first();
 
         if ($tenant === null) {
-            throw new ApiFailure('Tenant not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.tenant_not_found'), 404, 'not_found');
         }
 
         /** @var array<string, mixed> $columns */

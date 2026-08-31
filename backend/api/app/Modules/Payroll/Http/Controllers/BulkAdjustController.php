@@ -40,7 +40,7 @@ final class BulkAdjustController
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $adminId = $admin->id;
@@ -74,7 +74,7 @@ final class BulkAdjustController
         $employees = $this->adjustments->inScope($scopeType, $scopeId, $tenantId);
 
         if ($employees === []) {
-            throw new ApiFailure('No employees match the selected scope', 404);
+            throw new ApiFailure(__('messages.no_employees_in_scope'), 404);
         }
 
         $isBonus = $kind === 'bonus';

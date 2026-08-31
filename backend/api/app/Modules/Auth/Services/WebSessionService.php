@@ -87,7 +87,7 @@ final class WebSessionService
         $key = 'web_employee:'.$employeeId;
 
         if (RateLimiter::tooManyAttempts($key, self::PER_EMPLOYEE_LIMIT)) {
-            throw new ApiFailure('عدد كبير من الطلبات، حاول بعد قليل', 429, 'rate_limited');
+            throw new ApiFailure(__('messages.too_many_requests_soon'), 429, 'rate_limited');
         }
 
         RateLimiter::hit($key, self::PER_EMPLOYEE_WINDOW);

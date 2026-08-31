@@ -34,7 +34,7 @@ final class MyDocumentController
     {
         $employee = $request->attributes->get('employee');
         if (! $employee instanceof Employee) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $tenantId = Value::int($request->attributes->get('tenant_id'));
@@ -54,7 +54,7 @@ final class MyDocumentController
         $path = $document === null ? '' : Value::string($document->file_path);
 
         if ($path === '' || ! Storage::disk('uploads')->exists($path)) {
-            throw new ApiFailure('Document not found', 404);
+            throw new ApiFailure(__('messages.document_not_found'), 404);
         }
 
         $name = Value::string($document?->original_name) ?: basename($path);

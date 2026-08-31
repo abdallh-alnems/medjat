@@ -65,7 +65,7 @@ final class ReviewController
         $cycleId = Value::int($request->input('cycle_id'));
 
         if ($cycleId > 0 && ! PerformanceReviews::cycleExists($cycleId, $tenantId)) {
-            throw new ApiFailure('Cycle not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.cycle_not_found'), 404, 'not_found');
         }
 
         $id = PerformanceReviews::create($tenantId, [
@@ -95,7 +95,7 @@ final class ReviewController
         $review = $id > 0 ? PerformanceReviews::find($id, $tenantId) : null;
 
         if ($review === null) {
-            throw new ApiFailure('Review not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.review_not_found'), 404, 'not_found');
         }
 
         // The branch check follows the review's subject, so a branch manager
@@ -118,7 +118,7 @@ final class ReviewController
         $employee = Employee::query()->where('id', $employeeId)->where('tenant_id', $tenantId)->first();
 
         if ($employee === null) {
-            throw new ApiFailure('Employee not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'not_found');
         }
 
         RequireBranchAccess::assert($admin, $employee->branch_id);
@@ -131,7 +131,7 @@ final class ReviewController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

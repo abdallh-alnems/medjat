@@ -60,7 +60,7 @@ final class SupportController
         }
 
         if (! in_array($priority, SupportTickets::PRIORITIES, true)) {
-            throw new ApiFailure('Invalid priority', 422, 'invalid_priority');
+            throw new ApiFailure(__('messages.priority_invalid'), 422, 'invalid_priority');
         }
 
         $ticketId = SupportTickets::create($tenantId, $adminId, $subject, $category, $priority, $body);
@@ -111,11 +111,11 @@ final class SupportController
         // empty when something is attached — but a message with neither is not
         // a message.
         if ($body === '' && ! $hasAttachment) {
-            throw new ApiFailure('اكتب رسالة أو أرفق ملفًا', 422, 'body_required');
+            throw new ApiFailure(__('messages.message_or_attachment_required'), 422, 'body_required');
         }
 
         if (mb_strlen($body) > 5000) {
-            throw new ApiFailure('body is too long', 422, 'body_too_long');
+            throw new ApiFailure(__('messages.body_too_long'), 422, 'body_too_long');
         }
 
         // Answering a closed ticket reopens it: the conversation is plainly not
@@ -136,7 +136,7 @@ final class SupportController
 
             if ($attachment === null) {
                 throw new ApiFailure(
-                    'تعذّر حفظ المرفق — يُقبل صورة أو PDF حتى 5 ميجابايت',
+                    __('messages.attachment_save_failed'),
                     422,
                     'attachment_rejected',
                 );
@@ -195,7 +195,7 @@ final class SupportController
         $path = SupportAttachment::relativePath($stored);
 
         if ($path === null || ! Storage::disk('uploads')->exists($path)) {
-            throw new ApiFailure('Attachment not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.attachment_not_found'), 404, 'not_found');
         }
 
         $name = Value::string($message?->attachment_name) ?: basename($path);
@@ -215,7 +215,7 @@ final class SupportController
             : Value::int($request->input('ticket_id'));
 
         if ($ticketId <= 0 || SupportTickets::find($ticketId, $tenantId) === null) {
-            throw new ApiFailure('Ticket not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.ticket_not_found'), 404, 'not_found');
         }
 
         return $ticketId;
@@ -226,7 +226,7 @@ final class SupportController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

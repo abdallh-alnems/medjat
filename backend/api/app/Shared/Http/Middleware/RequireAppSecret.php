@@ -49,7 +49,7 @@ final class RequireAppSecret
             && hash_equals($key, $providedKey ?? '');
 
         if (! $ok) {
-            throw new ApiFailure('Unauthorized', 401, 'unauthorized');
+            throw new ApiFailure(__('messages.unauthorized'), 401, 'unauthorized');
         }
 
         return $next($request);

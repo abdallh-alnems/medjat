@@ -65,30 +65,30 @@ final class AdminAccountController
         $tenant = $tenantId > 0 ? DB::table('tenants')->where('id', $tenantId)->first(['id', 'name']) : null;
 
         if ($tenant === null) {
-            throw new ApiFailure('Tenant not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.tenant_not_found'), 404, 'not_found');
         }
 
         $email = trim(Value::string($request->input('email')));
 
         if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            throw new ApiFailure('البريد الإلكتروني غير صالح', 422, 'invalid_email');
+            throw new ApiFailure(__('messages.email_invalid'), 422, 'invalid_email');
         }
 
         $role = Value::string($request->input('role'), 'general_manager') ?: 'general_manager';
 
         if (! in_array($role, self::ROLES, true)) {
-            throw new ApiFailure('الدور غير صالح', 422, 'invalid_role');
+            throw new ApiFailure(__('messages.role_invalid'), 422, 'invalid_role');
         }
 
         $existing = DB::table('admins')->where('email', $email)->first(['id', 'tenant_id']);
         $existingTenant = Value::nullableInt($existing->tenant_id ?? null);
 
         if ($existingTenant !== null && $existingTenant !== $tenantId) {
-            throw new ApiFailure('هذا البريد ينتمي لشركة أخرى بالفعل', 409, 'email_belongs_elsewhere');
+            throw new ApiFailure(__('messages.email_belongs_to_other_company'), 409, 'email_belongs_elsewhere');
         }
 
         if ($existingTenant === $tenantId && $existing !== null) {
-            throw new ApiFailure('هذا الشخص عضو في الشركة بالفعل', 409, 'already_a_member');
+            throw new ApiFailure(__('messages.person_already_member'), 409, 'already_a_member');
         }
 
         $pendingId = Value::nullableInt(
@@ -112,7 +112,7 @@ final class AdminAccountController
             ]);
 
         if ($invitation === null) {
-            throw new ApiFailure('تعذّر إعادة إنشاء الدعوة', 500, 'invitation_failed');
+            throw new ApiFailure(__('messages.invitation_recreate_failed'), 500, 'invitation_failed');
         }
 
         SuperAdminAudit::record($caller->id, 'admin.invite', 'tenant', $tenantId, [
@@ -161,7 +161,7 @@ final class AdminAccountController
 
         if ($email === '') {
             throw new ApiFailure(
-                'هذا الحساب بلا بريد إلكتروني — لا يمكن إرسال رابط إعادة تعيين',
+                __('messages.account_without_email'),
                 422,
                 'no_email',
             );
@@ -172,7 +172,7 @@ final class AdminAccountController
         if ($provider !== 'email') {
             // A Google or Apple account has no password with us to reset.
             throw new ApiFailure(
-                'هذا الحساب يسجّل الدخول عبر '.$provider.' وليس بكلمة مرور',
+                __('messages.not_a_password_account', ['provider' => $provider]),
                 422,
                 'not_a_password_account',
             );
@@ -184,7 +184,7 @@ final class AdminAccountController
             Log::error('Admin-initiated password reset failed', ['email' => $email, 'exception' => $e]);
 
             throw new ApiFailure(
-                'تعذّر إرسال رابط إعادة التعيين — راجع سجل الأخطاء',
+                __('messages.reset_link_send_failed'),
                 500,
                 'reset_link_failed',
             );
@@ -192,7 +192,7 @@ final class AdminAccountController
 
         if ($link === null) {
             throw new ApiFailure(
-                'تعذّر إرسال رابط إعادة التعيين — راجع سجل الأخطاء',
+                __('messages.reset_link_send_failed'),
                 500,
                 'reset_link_failed',
             );
@@ -222,7 +222,7 @@ final class AdminAccountController
             // here an operator is looking at one named account, and "the email
             // never arrived" is the support call itself.
             throw new ApiFailure(
-                'تعذّر إرسال رابط إعادة التعيين — راجع سجل الأخطاء',
+                __('messages.reset_link_send_failed'),
                 500,
                 'reset_link_failed',
             );
@@ -247,7 +247,7 @@ final class AdminAccountController
         $target = $this->target($request);
 
         if (! $request->has('is_active')) {
-            throw new ApiFailure('is_active مطلوب', 422, 'is_active_required');
+            throw new ApiFailure(__('messages.is_active_required'), 422, 'is_active_required');
         }
 
         $active = $request->boolean('is_active');
@@ -300,7 +300,7 @@ final class AdminAccountController
 
         if ($reason === '') {
             throw new ApiFailure(
-                'سبب الدخول التشخيصي مطلوب (يُسجَّل للشركة)',
+                __('messages.impersonation_reason_required'),
                 422,
                 'reason_required',
             );
@@ -312,7 +312,7 @@ final class AdminAccountController
 
         if ($uid === '') {
             throw new ApiFailure(
-                'هذا الحساب لم يسجّل الدخول من قبل — لا يوجد حساب Firebase لانتحاله',
+                __('messages.account_never_signed_in'),
                 422,
                 'never_signed_in',
             );
@@ -320,7 +320,7 @@ final class AdminAccountController
 
         if (Value::int($target['is_active'] ?? null) !== 1) {
             throw new ApiFailure(
-                'الحساب موقوف — فعّله أولًا إن أردت الدخول به',
+                __('messages.account_suspended_activate_first'),
                 422,
                 'account_suspended',
             );
@@ -339,7 +339,7 @@ final class AdminAccountController
         } catch (Throwable $e) {
             Log::error('Impersonation token failed', ['admin_id' => $adminId, 'exception' => $e]);
 
-            throw new ApiFailure('تعذّر إنشاء رمز الدخول التشخيصي', 500, 'token_failed');
+            throw new ApiFailure(__('messages.impersonation_token_failed'), 500, 'token_failed');
         }
 
         SuperAdminAudit::record($caller->id, 'admin.impersonate', 'admin', $adminId, [
@@ -378,13 +378,13 @@ final class AdminAccountController
         $adminId = Value::int($request->input('admin_id'));
 
         if ($adminId <= 0) {
-            throw new ApiFailure('معرّف المدير مطلوب', 422, 'admin_id_required');
+            throw new ApiFailure(__('messages.admin_id_required'), 422, 'admin_id_required');
         }
 
         $row = DB::table('admins')->where('id', $adminId)->first();
 
         if ($row === null) {
-            throw new ApiFailure('Admin not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.admin_not_found'), 404, 'not_found');
         }
 
         /** @var array<string, mixed> $admin */
@@ -410,7 +410,7 @@ final class AdminAccountController
         $tenantId = Value::int($request->input('tenant_id'));
 
         if ($tenantId <= 0) {
-            throw new ApiFailure('حدّد المدير أو الشركة', 422, 'admin_or_tenant_required');
+            throw new ApiFailure(__('messages.specify_admin_or_company'), 422, 'admin_or_tenant_required');
         }
 
         $row = DB::table('admins')
@@ -425,7 +425,7 @@ final class AdminAccountController
             ->first();
 
         if ($row === null) {
-            throw new ApiFailure('Admin not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.admin_not_found'), 404, 'not_found');
         }
 
         /** @var array<string, mixed> $admin */
@@ -439,7 +439,7 @@ final class AdminAccountController
         $admin = $request->attributes->get('super_admin');
 
         if (! $admin instanceof SuperAdmin) {
-            throw new ApiFailure('Admin token required', 401, 'admin_token_required');
+            throw new ApiFailure(__('messages.admin_token_required'), 401, 'admin_token_required');
         }
 
         return $admin;

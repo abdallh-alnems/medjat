@@ -54,7 +54,7 @@ final class AdminPermissionsController
         $role = self::roleOf($adminId, $tenantId);
 
         if ($role === 'general_manager') {
-            throw new ApiFailure('General manager permissions cannot be modified', 403, 'forbidden');
+            throw new ApiFailure(__('messages.gm_permissions_immutable'), 403, 'forbidden');
         }
 
         $permissions = self::submitted($request);
@@ -87,7 +87,7 @@ final class AdminPermissionsController
         $adminId = Value::int($request->input('admin_id'));
 
         if (self::roleOf($adminId, $tenantId) === 'general_manager') {
-            throw new ApiFailure('General manager permissions cannot be modified', 403, 'forbidden');
+            throw new ApiFailure(__('messages.gm_permissions_immutable'), 403, 'forbidden');
         }
 
         DB::table('custom_roles')->where('tenant_id', $tenantId)->where('admin_id', $adminId)->delete();
@@ -172,7 +172,7 @@ final class AdminPermissionsController
         $role = DB::table('admins')->where('id', $adminId)->where('tenant_id', $tenantId)->value('role');
 
         if ($role === null) {
-            throw new ApiFailure('Admin not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.admin_not_found'), 404, 'not_found');
         }
 
         return Value::string($role);

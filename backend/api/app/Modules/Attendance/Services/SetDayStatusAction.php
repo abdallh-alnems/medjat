@@ -194,7 +194,7 @@ final class SetDayStatusAction
         }
 
         if ($branchId === null) {
-            throw new ApiFailure('Employee has no branch — cannot create an attendance record', 422);
+            throw new ApiFailure(__('messages.employee_without_branch'), 422);
         }
 
         return (int) DB::table('attendance')->insertGetId($values + [

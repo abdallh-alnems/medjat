@@ -128,7 +128,7 @@ final class FirebaseRemoteConfigAdmin implements RemoteConfigAdmin
         } catch (Throwable $e) {
             Log::error('Remote Config fetch failed', ['exception' => $e]);
 
-            throw new ApiFailure('Failed to fetch Remote Config', 503, 'remote_config_unavailable');
+            throw new ApiFailure(__('messages.remote_config_fetch_failed'), 503, 'remote_config_unavailable');
         }
     }
 
@@ -144,7 +144,7 @@ final class FirebaseRemoteConfigAdmin implements RemoteConfigAdmin
         } catch (Throwable $e) {
             Log::error('Remote Config publish failed', ['key' => $key, 'exception' => $e]);
 
-            throw new ApiFailure('Failed to update Remote Config', 503, 'remote_config_unavailable');
+            throw new ApiFailure(__('messages.remote_config_update_failed'), 503, 'remote_config_unavailable');
         }
     }
 

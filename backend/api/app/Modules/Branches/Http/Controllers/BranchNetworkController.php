@@ -245,7 +245,7 @@ final class BranchNetworkController
         // branch on the next shift.
         if ($mode === 'enforcing' && ! self::hasApproved($branchId, $tenantId)) {
             throw new ApiFailure(
-                'Approve at least one network before enabling enforcement',
+                __('messages.network_approve_before_enforce'),
                 422,
                 'no_approved_networks',
             );

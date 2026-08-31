@@ -52,11 +52,11 @@ final class ImportPunchesController
         $parsed = PunchCsvParser::parse($raw);
 
         if ($parsed['rows'] === [] && $parsed['errors'] === []) {
-            throw new ApiFailure('The file has no rows', 422, 'FILE_EMPTY');
+            throw new ApiFailure(__('messages.file_has_no_rows'), 422, 'FILE_EMPTY');
         }
 
         if (count($parsed['rows']) > self::MAX_ROWS) {
-            throw new ApiFailure('The file has too many rows; split it into smaller files', 413, 'TOO_MANY_ROWS');
+            throw new ApiFailure(__('messages.file_too_many_rows'), 413, 'TOO_MANY_ROWS');
         }
 
         // Nothing readable at all almost always means the wrong column was
@@ -64,7 +64,7 @@ final class ImportPunchesController
         // reporting "0 imported" and leaving somebody to guess.
         if ($parsed['rows'] === []) {
             throw new ApiFailure(
-                'No row in this file could be read. Check that it has an employee/user id column and a date column.',
+                __('messages.file_unreadable_rows'),
                 422,
                 'NO_READABLE_ROWS',
                 ['errors' => array_slice($parsed['errors'], 0, 20), 'error_count' => count($parsed['errors'])],
@@ -198,21 +198,21 @@ final class ImportPunchesController
 
         if ($file !== null) {
             if (is_array($file)) {
-                throw new ApiFailure('Upload one file at a time', 422, 'UPLOAD_FAILED');
+                throw new ApiFailure(__('messages.upload_one_file'), 422, 'UPLOAD_FAILED');
             }
 
             if (! $file->isValid()) {
-                throw new ApiFailure('File upload failed', 400, 'UPLOAD_FAILED');
+                throw new ApiFailure(__('messages.file_upload_failed'), 400, 'UPLOAD_FAILED');
             }
 
             if ($file->getSize() > self::MAX_BYTES) {
-                throw new ApiFailure('File is too large', 413, 'FILE_TOO_LARGE');
+                throw new ApiFailure(__('messages.file_too_large'), 413, 'FILE_TOO_LARGE');
             }
 
             $raw = file_get_contents($file->getRealPath());
 
             if ($raw === false) {
-                throw new ApiFailure('File upload failed', 400, 'UPLOAD_FAILED');
+                throw new ApiFailure(__('messages.file_upload_failed'), 400, 'UPLOAD_FAILED');
             }
 
             return $raw;
@@ -221,7 +221,7 @@ final class ImportPunchesController
         $pasted = Value::string($request->input('csv_text'));
 
         if (strlen($pasted) > self::MAX_BYTES) {
-            throw new ApiFailure('File is too large', 413, 'FILE_TOO_LARGE');
+            throw new ApiFailure(__('messages.file_too_large'), 413, 'FILE_TOO_LARGE');
         }
 
         if (trim($pasted) === '') {
@@ -246,11 +246,11 @@ final class ImportPunchesController
             $device = AttendanceDevice::find($deviceId, $tenantId);
 
             if ($device === null) {
-                throw new ApiFailure('Device not found', 404, 'not_found');
+                throw new ApiFailure(__('messages.device_not_found'), 404, 'not_found');
             }
 
             if (Value::nullableInt($device['branch_id'] ?? null) === null) {
-                throw new ApiFailure('This device is not assigned to a branch', 422, 'DEVICE_WITHOUT_BRANCH');
+                throw new ApiFailure(__('messages.device_without_branch'), 422, 'DEVICE_WITHOUT_BRANCH');
             }
 
             return $device;
@@ -259,7 +259,7 @@ final class ImportPunchesController
         $branchId = Value::int($request->input('branch_id'));
 
         if ($branchId <= 0) {
-            throw new ApiFailure('Choose a branch or a device for the import', 422, 'BRANCH_REQUIRED');
+            throw new ApiFailure(__('messages.import_needs_branch_or_device'), 422, 'BRANCH_REQUIRED');
         }
 
         DeviceFleetController::assertBranchExists($branchId, $tenantId);

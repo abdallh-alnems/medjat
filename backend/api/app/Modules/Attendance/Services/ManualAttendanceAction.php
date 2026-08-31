@@ -76,7 +76,7 @@ final class ManualAttendanceAction
             ->first(['id', 'check_in_time', 'branch_id']);
 
         if ($existing !== null && Value::string($existing->check_in_time) !== '') {
-            throw new ApiFailure('Employee already has check-in for this date', 400, 'already_checked_in');
+            throw new ApiFailure(__('messages.checkin_exists_for_date'), 400, 'already_checked_in');
         }
 
         [$start] = $this->shiftWindow($employee, $tenantId, $date);
@@ -126,7 +126,7 @@ final class ManualAttendanceAction
             ->first(['id', 'check_in_time']);
 
         if ($record === null || Value::string($record->check_in_time) === '') {
-            throw new ApiFailure('No check-in record for this date', 404, 'no_check_in_record');
+            throw new ApiFailure(__('messages.no_checkin_for_date'), 404, 'no_check_in_record');
         }
 
         [, $end] = $this->shiftWindow($employee, $tenantId, $date);

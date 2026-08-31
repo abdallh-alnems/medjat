@@ -42,27 +42,27 @@ final class RecordBreakRequest
         }
 
         if (mb_strlen($type) > 100) {
-            throw new ApiFailure('نوع الطلب طويل جدًا', 422, 'type_too_long');
+            throw new ApiFailure(__('messages.request_type_too_long'), 422, 'type_too_long');
         }
 
         $duration = self::minutesBetween($date, $startTime, $endTime);
 
         if ($duration <= 0) {
-            throw new ApiFailure('وقت النهاية يجب أن يكون بعد وقت البداية', 422, 'invalid_time_range');
+            throw new ApiFailure(__('messages.end_before_start_time'), 422, 'invalid_time_range');
         }
 
         if ($duration > BreakRequests::MAX_DURATION_MINUTES) {
-            throw new ApiFailure('مدة الإذن كبيرة جدًا', 422, 'duration_too_long');
+            throw new ApiFailure(__('messages.permission_too_long'), 422, 'duration_too_long');
         }
 
         // Judged by the company's clock, not the server's: a window that has
         // closed in Cairo has closed, whatever hour it is in UTC.
         if (BreakRequests::windowHasPassed($tenantId, $date, $endTime)) {
-            throw new ApiFailure('انتهى وقت الإذن، لا يمكن طلبه', 422, 'break_window_passed');
+            throw new ApiFailure(__('messages.permission_window_passed_request'), 422, 'break_window_passed');
         }
 
         if ($this->breaks->overlaps($employeeId, $tenantId, $date, $startTime, $endTime)) {
-            throw new ApiFailure('يوجد تداخل مع طلب إذن قائم في نفس الوقت', 409, 'break_overlap');
+            throw new ApiFailure(__('messages.permission_overlaps_existing'), 409, 'break_overlap');
         }
 
         $id = $this->breaks->create(

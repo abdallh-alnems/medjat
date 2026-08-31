@@ -126,7 +126,7 @@ final class TenantController
         $row = DB::table('tenants')->where('id', $tenantId)->first();
 
         if ($row === null) {
-            throw new ApiFailure('Tenant not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.tenant_not_found'), 404, 'not_found');
         }
 
         /** @var array<string, mixed> $tenant */
@@ -288,7 +288,7 @@ final class TenantController
         $name = trim(Value::string($request->input('name')));
 
         if ($name === '') {
-            throw new ApiFailure('اسم الشركة مطلوب', 422, 'name_required');
+            throw new ApiFailure(__('messages.company_name_required'), 422, 'name_required');
         }
 
         $fields = ['name' => $name, 'is_active' => 1, 'email_verified_at' => DB::raw('NOW()')]
@@ -299,7 +299,7 @@ final class TenantController
 
         if ($ownerEmail !== null) {
             if (filter_var($ownerEmail, FILTER_VALIDATE_EMAIL) === false) {
-                throw new ApiFailure('بريد المالك غير صالح', 422, 'invalid_owner_email');
+                throw new ApiFailure(__('messages.owner_email_invalid'), 422, 'invalid_owner_email');
             }
 
             // Somebody already inside another company cannot be handed a
@@ -308,7 +308,7 @@ final class TenantController
                 ->where('email', $ownerEmail)->whereNotNull('tenant_id')->exists();
 
             if ($taken) {
-                throw new ApiFailure('هذا البريد ينتمي لشركة أخرى بالفعل', 409, 'email_belongs_elsewhere');
+                throw new ApiFailure(__('messages.email_belongs_to_other_company'), 409, 'email_belongs_elsewhere');
             }
         }
 
@@ -375,7 +375,7 @@ final class TenantController
             $name = trim(Value::string($request->input('name')));
 
             if ($name === '') {
-                throw new ApiFailure('اسم الشركة لا يمكن أن يكون فارغًا', 422, 'name_required');
+                throw new ApiFailure(__('messages.company_name_empty'), 422, 'name_required');
             }
 
             $updates['name'] = $name;
@@ -394,14 +394,14 @@ final class TenantController
 
             if ($field === 'contact_email' && $value !== ''
                 && filter_var($value, FILTER_VALIDATE_EMAIL) === false) {
-                throw new ApiFailure('بريد جهة الاتصال غير صالح', 422, 'invalid_contact_email');
+                throw new ApiFailure(__('messages.contact_email_invalid'), 422, 'invalid_contact_email');
             }
 
             $updates[$field] = $value === '' ? null : $value;
         }
 
         if ($updates === []) {
-            throw new ApiFailure('لا يوجد ما يتم تحديثه', 422, 'nothing_to_update');
+            throw new ApiFailure(__('messages.nothing_to_update'), 422, 'nothing_to_update');
         }
 
         DB::table('tenants')->where('id', $tenantId)->update($updates);
@@ -451,7 +451,7 @@ final class TenantController
             $timezone = trim(Value::string($request->input('timezone')));
 
             if (! in_array($timezone, timezone_identifiers_list(), true)) {
-                throw new ApiFailure('المنطقة الزمنية غير صالحة', 422, 'invalid_timezone');
+                throw new ApiFailure(__('messages.timezone_invalid'), 422, 'invalid_timezone');
             }
 
             $fields['timezone'] = $timezone;
@@ -464,7 +464,7 @@ final class TenantController
             $currency = strtoupper(trim(Value::string($request->input('currency'))));
 
             if (preg_match('/^[A-Z]{3}$/', $currency) !== 1) {
-                throw new ApiFailure('العملة يجب أن تكون رمزًا من 3 أحرف (مثل EGP)', 422, 'invalid_currency');
+                throw new ApiFailure(__('messages.currency_code_invalid'), 422, 'invalid_currency');
             }
 
             $fields['currency'] = $currency;
@@ -498,7 +498,7 @@ final class TenantController
         $email = self::trimmed($request->input('contact_email'));
 
         if ($email !== null && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            throw new ApiFailure('بريد جهة الاتصال غير صالح', 422, 'invalid_contact_email');
+            throw new ApiFailure(__('messages.contact_email_invalid'), 422, 'invalid_contact_email');
         }
 
         $fields = [];
@@ -521,11 +521,11 @@ final class TenantController
     private static function existing(int $id): int
     {
         if ($id <= 0) {
-            throw new ApiFailure('معرّف الشركة مطلوب', 422, 'id_required');
+            throw new ApiFailure(__('messages.tenant_id_required'), 422, 'id_required');
         }
 
         if (! DB::table('tenants')->where('id', $id)->exists()) {
-            throw new ApiFailure('Tenant not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.tenant_not_found'), 404, 'not_found');
         }
 
         return $id;
@@ -559,7 +559,7 @@ final class TenantController
         $admin = $request->attributes->get('super_admin');
 
         if (! $admin instanceof SuperAdmin) {
-            throw new ApiFailure('Admin token required', 401, 'admin_token_required');
+            throw new ApiFailure(__('messages.admin_token_required'), 401, 'admin_token_required');
         }
 
         return $admin;

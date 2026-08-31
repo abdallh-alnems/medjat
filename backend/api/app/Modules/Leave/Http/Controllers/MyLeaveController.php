@@ -69,7 +69,7 @@ final class MyLeaveController
         $leaveId = self::leaveId($request);
 
         if ($this->leaves->ownedPending($leaveId, $employee->id, $tenantId) === null) {
-            throw new ApiFailure('لا يمكن إلغاء هذا الطلب', 409, 'leave_not_cancellable');
+            throw new ApiFailure(__('messages.request_not_cancellable'), 409, 'leave_not_cancellable');
         }
 
         // The chain goes first: dropping the leave while an approval request
@@ -99,20 +99,20 @@ final class MyLeaveController
             throw new ApiFailure('Invalid date', 422, 'invalid_date');
         }
         if ($end < $start) {
-            throw new ApiFailure('تاريخ النهاية قبل تاريخ البداية', 422, 'invalid_date_range');
+            throw new ApiFailure(__('messages.end_before_start_date'), 422, 'invalid_date_range');
         }
         if ($start < TenantClock::date($tenantId)) {
-            throw new ApiFailure('لا يمكن طلب إجازة بتاريخ ماضٍ', 422, 'leave_past_date');
+            throw new ApiFailure(__('messages.leave_in_the_past'), 422, 'leave_past_date');
         }
 
         if ($this->leaves->ownedPending($leaveId, $employee->id, $tenantId) === null) {
-            throw new ApiFailure('لا يمكن تعديل هذا الطلب', 409, 'leave_not_editable');
+            throw new ApiFailure(__('messages.request_not_editable'), 409, 'leave_not_editable');
         }
 
         // Excluding this request from the overlap check: a request always
         // overlaps itself, and editing it must not be blocked by that.
         if ($this->leaves->overlaps($employee->id, $tenantId, $start, $end, $leaveId)) {
-            throw new ApiFailure('يوجد تداخل مع إجازة قائمة في هذه الفترة', 409, 'leave_overlap');
+            throw new ApiFailure(__('messages.leave_overlaps_existing'), 409, 'leave_overlap');
         }
 
         if ($type === 'annual') {
@@ -140,7 +140,7 @@ final class MyLeaveController
         $employee = $request->attributes->get('employee');
 
         if (! $employee instanceof Employee) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $employee;

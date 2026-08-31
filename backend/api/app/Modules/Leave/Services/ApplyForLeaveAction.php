@@ -60,18 +60,18 @@ final class ApplyForLeaveAction
         $employeeId = $employee->id;
 
         if ($this->leaves->pendingCount($employeeId, $tenantId) >= LeaveRequests::PENDING_LIMIT) {
-            throw new ApiFailure('لا يمكنك تقديم أكثر من طلبين قيد المراجعة', 422, 'leave_pending_limit');
+            throw new ApiFailure(__('messages.too_many_open_requests'), 422, 'leave_pending_limit');
         }
 
         // Against the company's today, not the server's: a request filed at
         // 01:00 in Cairo must not be judged against a UTC date that has not
         // turned over yet.
         if ($start < TenantClock::date($tenantId)) {
-            throw new ApiFailure('لا يمكن طلب إجازة بتاريخ ماضٍ', 422, 'leave_past_date');
+            throw new ApiFailure(__('messages.leave_in_the_past'), 422, 'leave_past_date');
         }
 
         if ($this->leaves->overlaps($employeeId, $tenantId, $start, $end)) {
-            throw new ApiFailure('يوجد تداخل مع إجازة قائمة في هذه الفترة', 409, 'leave_overlap');
+            throw new ApiFailure(__('messages.leave_overlaps_existing'), 409, 'leave_overlap');
         }
 
         if ($type === 'annual') {

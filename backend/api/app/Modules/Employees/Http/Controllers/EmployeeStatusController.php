@@ -36,7 +36,7 @@ final class EmployeeStatusController
         [$admin, $tenantId, $employee] = $this->context($request);
 
         if ($employee->status !== 'terminated') {
-            throw new ApiFailure('هذا الموظف ليس منتهي الخدمة', 409, 'not_terminated');
+            throw new ApiFailure(__('messages.employee_not_terminated'), 409, 'not_terminated');
         }
 
         $reactivated = DB::table('employees')
@@ -51,7 +51,7 @@ final class EmployeeStatusController
             ]) > 0;
 
         if (! $reactivated) {
-            throw new ApiFailure('تعذر إعادة تعيين الموظف', 409, 'reactivate_failed');
+            throw new ApiFailure(__('messages.employee_reinstate_failed'), 409, 'reactivate_failed');
         }
 
         DB::table('employee_settlements')
@@ -102,15 +102,15 @@ final class EmployeeStatusController
             // like a setting that saved but does not work.
             $supervisor = Employee::query()->forTenant($tenantId)->whereKey($supervisorId)->first();
             if ($supervisor === null) {
-                throw new ApiFailure('Supervisor not found', 404);
+                throw new ApiFailure(__('messages.supervisor_not_found'), 404);
             }
 
             if ($supervisor->isTerminated()) {
-                throw new ApiFailure('لا يمكن اختيار مشرف منتهي الخدمة', 422, 'supervisor_terminated');
+                throw new ApiFailure(__('messages.supervisor_terminated'), 422, 'supervisor_terminated');
             }
 
             if (Crew::wouldCycle($supervisorId, $employee->id, $tenantId)) {
-                throw new ApiFailure('هذا الاختيار ينشئ حلقة إشراف', 422, 'supervisor_cycle');
+                throw new ApiFailure(__('messages.supervisor_cycle'), 422, 'supervisor_cycle');
             }
         }
 
@@ -155,7 +155,7 @@ final class EmployeeStatusController
             });
         } catch (Throwable $e) {
             Log::error('Web PIN reset failed', ['employee_id' => $employee->id, 'exception' => $e]);
-            throw new ApiFailure('حدث خطأ، حاول مرة أخرى', 500, 'reset_failed');
+            throw new ApiFailure(__('messages.generic_error_retry'), 500, 'reset_failed');
         }
 
         AuditLog::record($tenantId, $admin->id, 'employee.web_pin_reset', 'employee', $employee->id);
@@ -174,7 +174,7 @@ final class EmployeeStatusController
     {
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $tenantId = Value::int($request->attributes->get('tenant_id'));
@@ -186,7 +186,7 @@ final class EmployeeStatusController
 
         $employee = Employee::query()->forTenant($tenantId)->whereKey($employeeId)->first();
         if ($employee === null) {
-            throw new ApiFailure('Employee not found', 404);
+            throw new ApiFailure(__('messages.employee_not_found'), 404);
         }
 
         return [$admin, $tenantId, $employee];

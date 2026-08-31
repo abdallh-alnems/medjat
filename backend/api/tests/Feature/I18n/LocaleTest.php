@@ -68,6 +68,21 @@ final class LocaleTest extends TestCase
         $this->assertSame(__('messages.kiosk_token_invalid', [], 'ar'), $this->refusal('fr-FR,fr;q=0.9'));
     }
 
+    public function test_a_refusal_that_used_to_be_hardcoded_english_now_follows_the_header(): void
+    {
+        // "Forbidden" was written inline, so an Arabic user was shown English.
+        // The cron guard refuses a wrong secret with it and needs nothing else.
+        $arabic = $this->withHeader('Accept-Language', 'ar')
+            ->getJson('/v1/cron/run-alerts?key=wrong');
+
+        $english = $this->withHeader('Accept-Language', 'en')
+            ->getJson('/v1/cron/run-alerts?key=wrong');
+
+        $this->assertSame(__('messages.forbidden', [], 'ar'), $arabic->json('message'));
+        $this->assertSame(__('messages.forbidden', [], 'en'), $english->json('message'));
+        $this->assertNotSame($arabic->json('message'), $english->json('message'));
+    }
+
     public function test_the_two_files_describe_the_same_set_of_messages(): void
     {
         // A key present in one language and missing from the other surfaces to

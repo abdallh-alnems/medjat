@@ -177,7 +177,7 @@ final class AllowanceController
             : null;
 
         if ($row === null) {
-            throw new ApiFailure('Allowance not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.allowance_not_found'), 404, 'not_found');
         }
 
         /** @var array<string, mixed> $existing */
@@ -192,7 +192,7 @@ final class AllowanceController
             && DB::table('employees')->where('id', $employeeId)->where('tenant_id', $tenantId)->exists();
 
         if (! $exists) {
-            throw new ApiFailure('Employee not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'not_found');
         }
     }
 
@@ -201,7 +201,7 @@ final class AllowanceController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

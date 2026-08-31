@@ -65,14 +65,14 @@ final class RecordLeaveAction
             ->first(['id', 'name', 'branch_id']);
 
         if ($employee === null) {
-            throw new ApiFailure('Employee not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'not_found');
         }
 
         $branchId = Value::nullableInt($employee->branch_id);
         $name = Value::string($employee->name);
 
         if ($this->leaves->overlaps($employeeId, $tenantId, $start, $end)) {
-            throw new ApiFailure('يوجد تداخل مع إجازة قائمة في هذه الفترة', 409, 'leave_overlap');
+            throw new ApiFailure(__('messages.leave_overlaps_existing'), 409, 'leave_overlap');
         }
 
         if ($type === 'annual') {
@@ -82,7 +82,7 @@ final class RecordLeaveAction
 
             if ($requested > $remaining) {
                 if ($onExceed === 'block') {
-                    throw new ApiFailure('رصيد الإجازات السنوية غير كافٍ', 422, 'balance_exceeded');
+                    throw new ApiFailure(__('messages.annual_leave_insufficient'), 422, 'balance_exceeded');
                 }
 
                 return $this->split(

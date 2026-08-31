@@ -87,7 +87,7 @@ final class KioskAdminController
         // Not "forbidden": from the tablet's point of view this employee simply
         // is not on its roster, and it was never offered them.
         if ($employee === null || Value::int($employee->branch_id) !== $branchId) {
-            throw new ApiFailure('Employee not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'not_found');
         }
 
         if (Value::string($employee->status) === 'terminated') {

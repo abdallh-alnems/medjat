@@ -58,7 +58,7 @@ final class WarningController
             ->where('id', $employeeId)->where('tenant_id', $tenantId)->exists();
 
         if (! $exists) {
-            throw new ApiFailure('Employee not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'not_found');
         }
 
         $id = (int) DB::table('warnings')->insertGetId([
@@ -84,13 +84,13 @@ final class WarningController
             : null;
 
         if ($warning === null) {
-            throw new ApiFailure('Warning not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.warning_not_found'), 404, 'not_found');
         }
 
         $type = Value::string($warning->type);
 
         if (in_array($type, self::SYSTEM_TYPES, true)) {
-            throw new ApiFailure('System-generated warnings cannot be deleted', 403, 'system_warning');
+            throw new ApiFailure(__('messages.system_warning_undeletable'), 403, 'system_warning');
         }
 
         DB::table('warnings')->where('id', $id)->where('tenant_id', $tenantId)->delete();
@@ -109,7 +109,7 @@ final class WarningController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

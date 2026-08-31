@@ -41,7 +41,7 @@ final class EmployeeActivateTokenController
         } else {
             $activationCode = ActivationCode::findUsableByToken($token);
             if ($activationCode === null) {
-                throw new ApiFailure('رابط التفعيل غير صالح أو منتهي', 404, 'join_link_invalid');
+                throw new ApiFailure(__('messages.activation_link_invalid'), 404, 'join_link_invalid');
             }
 
             $employee = Employee::query()
@@ -50,12 +50,12 @@ final class EmployeeActivateTokenController
                 ->first();
 
             if ($employee === null) {
-                throw new ApiFailure('رابط التفعيل غير صالح أو منتهي', 404, 'join_link_invalid');
+                throw new ApiFailure(__('messages.activation_link_invalid'), 404, 'join_link_invalid');
             }
         }
 
         if ($employee->isTerminated()) {
-            throw new ApiFailure('الحساب موقوف', 403, 'account_suspended');
+            throw new ApiFailure(__('messages.account_suspended'), 403, 'account_suspended');
         }
 
         $result = $this->login->completeSignIn(
@@ -97,7 +97,7 @@ final class EmployeeActivateTokenController
         $employee = $this->login->demoEmployee();
 
         if ($employee === null) {
-            throw new ApiFailure('Demo account not configured', 404, 'join_link_invalid');
+            throw new ApiFailure(__('messages.demo_account_not_configured'), 404, 'join_link_invalid');
         }
 
         return $employee;

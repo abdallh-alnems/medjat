@@ -41,7 +41,7 @@ final class WordExportController
         }
 
         if (count($headers) > self::MAX_COLUMNS || count($rows) > self::MAX_ROWS) {
-            throw new ApiFailure('Report too large to export', 413, 'report_too_large_export');
+            throw new ApiFailure(__('messages.report_too_large'), 413, 'report_too_large_export');
         }
 
         // Arabic unless told otherwise: these reports are read in Arabic, and a

@@ -51,13 +51,13 @@ final class WellKnownController
         };
 
         if ($name === null) {
-            throw new ApiFailure('Not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.not_found'), 404, 'not_found');
         }
 
         $path = resource_path('well-known/'.$name);
 
         if (! is_file($path)) {
-            throw new ApiFailure('Not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.not_found'), 404, 'not_found');
         }
 
         $contents = file_get_contents($path);

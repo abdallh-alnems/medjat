@@ -33,7 +33,7 @@ final class ManualCheckInController
     {
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $tenantId = Value::int($request->attributes->get('tenant_id'));
@@ -64,7 +64,7 @@ final class ManualCheckInController
 
         $employee = Employee::query()->forTenant($tenantId)->whereKey($employeeId)->first();
         if ($employee === null) {
-            throw new ApiFailure('Employee not found', 404, 'employee_not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'employee_not_found');
         }
 
         if ($branchId > 0) {
@@ -122,7 +122,7 @@ final class ManualCheckInController
         $methods = AttendanceMethod::decode($tenant?->attendance_methods);
 
         if (! in_array('manual', $methods, true)) {
-            throw new ApiFailure('Manual attendance is disabled for this company', 403, 'manual_disabled');
+            throw new ApiFailure(__('messages.manual_attendance_off_company'), 403, 'manual_disabled');
         }
 
         $allowed = $tenant?->manual_attendance_admin_ids;
@@ -136,7 +136,7 @@ final class ManualCheckInController
         }
 
         if (! in_array($admin->id, array_map(static fn (mixed $id): int => Value::int($id), $ids), true)) {
-            throw new ApiFailure('You are not authorized to record manual attendance', 403, 'manual_not_authorized');
+            throw new ApiFailure(__('messages.manual_attendance_not_allowed'), 403, 'manual_not_authorized');
         }
     }
 
@@ -151,7 +151,7 @@ final class ManualCheckInController
         }
 
         if (! in_array('manual', AttendanceMethod::decode($stored), true)) {
-            throw new ApiFailure('Manual attendance is disabled for this branch', 403, 'manual_disabled_branch');
+            throw new ApiFailure(__('messages.manual_attendance_off_branch'), 403, 'manual_disabled_branch');
         }
     }
 }

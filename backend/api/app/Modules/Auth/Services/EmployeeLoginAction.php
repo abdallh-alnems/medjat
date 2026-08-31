@@ -39,7 +39,7 @@ final class EmployeeLoginAction
         ?string $appVersion,
     ): array {
         if ($phone === '' || $code === '' || $deviceId === '') {
-            throw new ApiFailure('حقل مطلوب', 422, 'missing_fields');
+            throw new ApiFailure(__('messages.field_required'), 422, 'missing_fields');
         }
 
         // An unrecognised platform is normalised rather than refused: the value
@@ -57,7 +57,7 @@ final class EmployeeLoginAction
         } else {
             $activationCode = ActivationCode::findUsableByCode($code);
             if ($activationCode === null) {
-                throw new ApiFailure('كود التفعيل غير صالح أو منتهي', 404, 'activation_code_invalid');
+                throw new ApiFailure(__('messages.activation_code_invalid'), 404, 'activation_code_invalid');
             }
 
             $employee = Employee::query()
@@ -66,16 +66,16 @@ final class EmployeeLoginAction
                 ->first();
 
             if ($employee === null) {
-                throw new ApiFailure('Employee not found', 404, 'activation_code_invalid');
+                throw new ApiFailure(__('messages.employee_not_found'), 404, 'activation_code_invalid');
             }
         }
 
         if ($employee->isTerminated()) {
-            throw new ApiFailure('الحساب موقوف', 403, 'account_suspended');
+            throw new ApiFailure(__('messages.account_suspended'), 403, 'account_suspended');
         }
 
         if ($demo === null && ! PhoneNumber::matches($phone, (string) $employee->phone)) {
-            throw new ApiFailure('رقم الهاتف لا يطابق كود التفعيل', 403, 'phone_code_mismatch');
+            throw new ApiFailure(__('messages.phone_code_mismatch'), 403, 'phone_code_mismatch');
         }
 
         return $this->completeSignIn($employee, $activationCode, $deviceId, $deviceModel, $platform, $appVersion);
@@ -135,7 +135,7 @@ final class EmployeeLoginAction
             });
         } catch (Throwable $e) {
             Log::error('Employee login failed', ['employee_id' => $employee->id, 'exception' => $e]);
-            throw new ApiFailure('تعذّر تسجيل الدخول', 500, 'login_failed');
+            throw new ApiFailure(__('messages.sign_in_failed'), 500, 'login_failed');
         }
 
         return [
@@ -186,7 +186,7 @@ final class EmployeeLoginAction
             ->first();
 
         if ($employee === null) {
-            throw new ApiFailure('Demo account not configured', 404, 'activation_code_invalid');
+            throw new ApiFailure(__('messages.demo_account_not_configured'), 404, 'activation_code_invalid');
         }
 
         return $employee;

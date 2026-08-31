@@ -44,7 +44,7 @@ final class KioskFleetController
         $branchId = Value::int($request->input('branch_id')) ?: null;
 
         if ($branchId !== null && ! self::branchExists($branchId, $tenantId)) {
-            throw new ApiFailure('Branch not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.branch_not_found'), 404, 'not_found');
         }
 
         $gate = $this->gate->forApp('medjat_kiosk');
@@ -111,14 +111,14 @@ final class KioskFleetController
             ->first(['id', 'name', 'branch_id', 'kiosk_pin_hash']);
 
         if ($employee === null) {
-            throw new ApiFailure('Employee not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'not_found');
         }
 
         $branchId = Value::int($employee->branch_id);
 
         if ($branchId <= 0) {
             throw new ApiFailure(
-                'Employee has no branch, so a kiosk code has no scope',
+                __('messages.kiosk_code_without_branch'),
                 422,
                 'employee_without_branch',
             );
@@ -154,7 +154,7 @@ final class KioskFleetController
         $branchId = Value::int($request->input('branch_id')) ?: null;
 
         if ($branchId !== null && ! self::branchExists($branchId, $tenantId)) {
-            throw new ApiFailure('Branch not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.branch_not_found'), 404, 'not_found');
         }
 
         if (Value::string($request->input('view'), 'list') === 'distribution') {
@@ -224,7 +224,7 @@ final class KioskFleetController
             ->first(['id', 'branch_id', 'employee_id', 'capture_path', 'capture_expires_at', 'created_at']);
 
         if ($log === null) {
-            throw new ApiFailure('Recognition attempt not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.recognition_attempt_not_found'), 404, 'not_found');
         }
 
         $storedPath = Value::string($log->capture_path);
@@ -234,7 +234,7 @@ final class KioskFleetController
         // was one whose capture is deliberately not kept. Saying so plainly
         // beats returning a broken image.
         if ($relative === null || ! Storage::disk('uploads')->exists($relative)) {
-            throw new ApiFailure('This capture is no longer available', 410, 'kiosk_capture_expired', [
+            throw new ApiFailure(__('messages.capture_no_longer_available'), 410, 'kiosk_capture_expired', [
                 'expired_at' => $log->capture_expires_at,
             ]);
         }
@@ -349,7 +349,7 @@ final class KioskFleetController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

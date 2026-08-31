@@ -34,7 +34,7 @@ final class AuthenticateEmployee
 
         $authToken = EmployeeAuthToken::findActiveByPlain($token);
         if ($authToken === null) {
-            return ApiResponse::fail('جلستك انتهت، يرجى تسجيل الدخول مجدداً', 401);
+            return ApiResponse::fail(__('messages.session_expired'), 401);
         }
 
         $employee = Employee::query()
@@ -43,11 +43,11 @@ final class AuthenticateEmployee
             ->first();
 
         if ($employee === null) {
-            return ApiResponse::fail('Employee not found', 404);
+            return ApiResponse::fail(__('messages.employee_not_found'), 404);
         }
 
         if ($employee->isTerminated()) {
-            return ApiResponse::fail('الحساب موقوف', 403);
+            return ApiResponse::fail(__('messages.account_suspended'), 403);
         }
 
         // The channel is taken from the session, never from the request body.

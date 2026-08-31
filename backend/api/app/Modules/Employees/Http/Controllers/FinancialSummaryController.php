@@ -38,7 +38,7 @@ final class FinancialSummaryController
         $month = Value::string($request->query('month'), '') ?: substr(TenantClock::date($tenantId), 0, 7);
 
         if ($employeeId <= 0) {
-            throw new ApiFailure('Employee ID required', 422, 'employee_id_required');
+            throw new ApiFailure(__('messages.employee_id_required'), 422, 'employee_id_required');
         }
         if (preg_match('/^\d{4}-\d{2}$/', $month) !== 1) {
             throw new ApiFailure('Invalid month format (expected YYYY-MM)', 422, 'invalid_month_format_expected_yyyy');
@@ -49,7 +49,7 @@ final class FinancialSummaryController
             ->first(['id', 'name', 'base_salary', 'branch_id']);
 
         if ($employee === null) {
-            throw new ApiFailure('Employee not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'not_found');
         }
 
         $live = $this->calculator->calculate($employeeId, $month, $tenantId, TenantClock::date($tenantId));

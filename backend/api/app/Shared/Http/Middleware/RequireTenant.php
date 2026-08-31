@@ -35,11 +35,11 @@ final class RequireTenant
         $tenant = DB::table('tenants')->where('id', $tenantId)->first(['id', 'is_active']);
 
         if ($tenant === null) {
-            throw new ApiFailure('Company not found', 404);
+            throw new ApiFailure(__('messages.tenant_not_found'), 404);
         }
 
         if (! Value::int($tenant->is_active)) {
-            throw new ApiFailure('Company account is suspended', 403);
+            throw new ApiFailure(__('messages.company_suspended'), 403);
         }
 
         return $next($request);

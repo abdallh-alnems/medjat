@@ -72,7 +72,7 @@ final class RosterController
         $shiftId = $request->input('shift_id') === null ? null : Value::int($request->input('shift_id'));
 
         if ($shiftId !== null && Shifts::find($shiftId, $tenantId) === null) {
-            throw new ApiFailure('Shift not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.shift_not_found'), 404, 'not_found');
         }
 
         $count = WeeklyRoster::assign($tenantId, $employeeIds, $dates, $shiftId, $admin->id);
@@ -230,7 +230,7 @@ final class RosterController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

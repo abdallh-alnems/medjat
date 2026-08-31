@@ -38,7 +38,7 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(Config::integer('medjat.rate_limit.per_minute'))
                 ->by($request->ip() ?? 'unknown')
                 ->response(fn (): mixed => ApiResponse::fail(
-                    'عدد كبير من الطلبات، حاول بعد قليل',
+                    __('messages.too_many_requests_soon'),
                     429,
                     'rate_limited'
                 ));

@@ -95,11 +95,11 @@ final class AdminSupportController
         // empty when something is attached — but a message with neither is not
         // a message.
         if ($body === '' && ! $hasAttachment) {
-            throw new ApiFailure('اكتب رسالة أو أرفق ملفًا', 422, 'body_required');
+            throw new ApiFailure(__('messages.message_or_attachment_required'), 422, 'body_required');
         }
 
         if (mb_strlen($body) > self::MAX_BODY_LENGTH) {
-            throw new ApiFailure('الرسالة طويلة جداً', 422, 'body_too_long');
+            throw new ApiFailure(__('messages.message_too_long'), 422, 'body_too_long');
         }
 
         $attachment = $hasAttachment
@@ -108,7 +108,7 @@ final class AdminSupportController
 
         if ($hasAttachment && $attachment === null) {
             throw new ApiFailure(
-                'تعذّر حفظ المرفق — يُقبل صورة أو PDF حتى 5 ميجابايت',
+                __('messages.attachment_save_failed'),
                 422,
                 'attachment_rejected',
             );
@@ -174,14 +174,14 @@ final class AdminSupportController
         $stored = Value::nullableString($message['attachment_url'] ?? null);
 
         if ($message === null || $stored === null || $stored === '') {
-            throw new ApiFailure('Attachment not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.attachment_not_found'), 404, 'not_found');
         }
 
         $relative = SupportAttachment::relativePath($stored);
         $disk = Storage::disk('uploads');
 
         if ($relative === null || ! $disk->exists($relative)) {
-            throw new ApiFailure('File not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.file_not_found'), 404, 'not_found');
         }
 
         $name = Value::string($message['attachment_name'] ?? null) ?: basename($relative);
@@ -234,7 +234,7 @@ final class AdminSupportController
         $ticket = $ticketId > 0 ? SupportTickets::findAnywhere($ticketId) : null;
 
         if ($ticket === null) {
-            throw new ApiFailure('Ticket not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.ticket_not_found'), 404, 'not_found');
         }
 
         return $ticket;
@@ -245,7 +245,7 @@ final class AdminSupportController
         $admin = $request->attributes->get('super_admin');
 
         if (! $admin instanceof SuperAdmin) {
-            throw new ApiFailure('Admin token required', 401, 'admin_token_required');
+            throw new ApiFailure(__('messages.admin_token_required'), 401, 'admin_token_required');
         }
 
         return $admin;

@@ -135,7 +135,7 @@ final class LeaveAdminController
 
         if ($requested > 0) {
             if (! self::holds($admin, 'manage_leaves')) {
-                throw new ApiFailure('Insufficient permissions', 403, 'forbidden');
+                throw new ApiFailure(__('messages.insufficient_permissions'), 403, 'forbidden');
             }
 
             $employeeId = $requested;
@@ -149,7 +149,7 @@ final class LeaveAdminController
             ->where('id', $employeeId)->where('tenant_id', $tenantId)->exists();
 
         if (! $exists) {
-            throw new ApiFailure('Employee profile not found', 404, 'employee_profile_not_found');
+            throw new ApiFailure(__('messages.employee_profile_not_found'), 404, 'employee_profile_not_found');
         }
 
         $year = Value::int($request->query('year')) ?: (int) substr(TenantClock::date($tenantId), 0, 4);
@@ -165,7 +165,7 @@ final class LeaveAdminController
         // Two permissions, because this both cancels leave and writes
         // attendance — either alone would let somebody reach past their remit.
         if (! self::holds($admin, 'manage_leaves') || ! self::holds($admin, 'manage_attendance')) {
-            throw new ApiFailure('Insufficient permissions', 403, 'forbidden');
+            throw new ApiFailure(__('messages.insufficient_permissions'), 403, 'forbidden');
         }
 
         $leaveId = self::leaveId($request);
@@ -270,7 +270,7 @@ final class LeaveAdminController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

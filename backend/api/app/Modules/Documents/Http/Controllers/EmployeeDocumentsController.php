@@ -69,7 +69,7 @@ final class EmployeeDocumentsController
 
         $exists = Employee::query()->forTenant($tenantId)->whereKey($employeeId)->exists();
         if (! $exists) {
-            throw new ApiFailure('Employee not found', 404);
+            throw new ApiFailure(__('messages.employee_not_found'), 404);
         }
 
         return $employeeId;

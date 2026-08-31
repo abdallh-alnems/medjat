@@ -48,7 +48,7 @@ final class CompanySettingsController
         $tenant = DB::table('tenants')->where('id', $tenantId)->first();
 
         if ($tenant === null) {
-            throw new ApiFailure('Tenant not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.tenant_not_found'), 404, 'not_found');
         }
 
         /** @var array<string, mixed> $company */
@@ -113,7 +113,7 @@ final class CompanySettingsController
         $tenant = DB::table('tenants')->where('id', $tenantId)->first();
 
         if ($tenant === null) {
-            throw new ApiFailure('Tenant not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.tenant_not_found'), 404, 'not_found');
         }
 
         /** @var array<string, mixed> $current */
@@ -605,7 +605,7 @@ final class CompanySettingsController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

@@ -84,26 +84,26 @@ final class AuthController
         $new = Value::string($request->input('new_password'));
 
         if ($current === '' || $new === '') {
-            throw new ApiFailure('كلمة المرور الحالية والجديدة مطلوبتان', 422, 'passwords_required');
+            throw new ApiFailure(__('messages.both_passwords_required'), 422, 'passwords_required');
         }
 
         if (mb_strlen($new) < self::MIN_PASSWORD_LENGTH) {
             throw new ApiFailure(
-                'كلمة المرور الجديدة قصيرة جدًا (8 أحرف على الأقل)',
+                __('messages.password_too_short_8'),
                 422,
                 'password_too_short',
             );
         }
 
         if ($new === $current) {
-            throw new ApiFailure('كلمة المرور الجديدة مطابقة للحالية', 422, 'password_unchanged');
+            throw new ApiFailure(__('messages.password_unchanged'), 422, 'password_unchanged');
         }
 
         if (! password_verify($current, $admin->password_hash)) {
             // Logged, because a run of these is somebody guessing.
             SuperAdminAudit::record($admin->id, 'auth.change_password_failed', 'super_admin', $admin->id);
 
-            throw new ApiFailure('كلمة المرور الحالية غير صحيحة', 401, 'wrong_password');
+            throw new ApiFailure(__('messages.current_password_wrong'), 401, 'wrong_password');
         }
 
         DB::table('super_admins')->where('id', $admin->id)->update([
@@ -132,11 +132,11 @@ final class AuthController
             ->first();
 
         if ($admin === null) {
-            throw new ApiFailure('Admin account not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.admin_account_not_found'), 404, 'not_found');
         }
 
         if ($admin->is_active !== 1) {
-            throw new ApiFailure('Admin account disabled', 403, 'admin_disabled');
+            throw new ApiFailure(__('messages.admin_account_disabled'), 403, 'admin_disabled');
         }
 
         // First Google sign-in on an account that was matched by email: the uid
@@ -183,7 +183,7 @@ final class AuthController
         }
 
         if (! $verified || $admin === null) {
-            throw new ApiFailure('Invalid credentials', 401, 'invalid_credentials');
+            throw new ApiFailure(__('messages.credentials_invalid'), 401, 'invalid_credentials');
         }
 
         $session = $this->start($admin, $request);
@@ -217,7 +217,7 @@ final class AuthController
         $admin = $request->attributes->get('super_admin');
 
         if (! $admin instanceof SuperAdmin) {
-            throw new ApiFailure('Admin token required', 401, 'admin_token_required');
+            throw new ApiFailure(__('messages.admin_token_required'), 401, 'admin_token_required');
         }
 
         return $admin;

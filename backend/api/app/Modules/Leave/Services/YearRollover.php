@@ -35,7 +35,7 @@ final class YearRollover
         $defaultEntitlement = DB::table('tenants')->where('id', $tenantId)->value('default_annual_leave_days');
 
         if ($defaultEntitlement === null && ! DB::table('tenants')->where('id', $tenantId)->exists()) {
-            throw new ApiFailure('Tenant not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.tenant_not_found'), 404, 'not_found');
         }
 
         $toYear = $fromYear + 1;

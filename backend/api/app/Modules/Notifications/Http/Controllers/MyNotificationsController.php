@@ -64,7 +64,7 @@ final class MyNotificationsController
         ]);
 
         if ($updated === 0 && ! self::addressedTo($employee)->where('id', $id)->exists()) {
-            throw new ApiFailure('Notification not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.notification_not_found'), 404, 'not_found');
         }
 
         return ApiResponse::success(['message' => 'Marked as read']);
@@ -99,7 +99,7 @@ final class MyNotificationsController
         $employee = $request->attributes->get('employee');
 
         if (! $employee instanceof Employee) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $employee;

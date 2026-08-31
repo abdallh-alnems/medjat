@@ -55,12 +55,12 @@ final class MyAssetsController
 
         // Somebody else's custody is reported as missing rather than forbidden.
         if ($asset === null || Value::int($asset['employee_id'] ?? null) !== $employee->id) {
-            throw new ApiFailure('Custody not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.custody_not_found'), 404, 'not_found');
         }
 
         if (Value::string($asset['status'] ?? null) !== 'assigned') {
             throw new ApiFailure(
-                'This custody item cannot be returned in its current state',
+                __('messages.custody_not_returnable'),
                 409,
                 'asset_not_returnable',
             );
@@ -93,7 +93,7 @@ final class MyAssetsController
         $employee = $request->attributes->get('employee');
 
         if (! $employee instanceof Employee) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $employee;

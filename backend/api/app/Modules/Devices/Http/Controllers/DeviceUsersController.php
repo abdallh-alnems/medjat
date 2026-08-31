@@ -33,7 +33,7 @@ final class DeviceUsersController
         $deviceId = Value::int($request->query('device_id'));
 
         if ($deviceId <= 0 || AttendanceDevice::find($deviceId, $tenantId) === null) {
-            throw new ApiFailure('Device not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.device_not_found'), 404, 'not_found');
         }
 
         $filter = Value::string($request->query('filter'));
@@ -73,14 +73,14 @@ final class DeviceUsersController
         $row = $rowId > 0 ? DeviceUsers::findById($rowId, $tenantId) : null;
 
         if ($row === null) {
-            throw new ApiFailure('Device user not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.device_user_not_found'), 404, 'not_found');
         }
 
         $deviceId = Value::int($row['device_id'] ?? null);
         $device = AttendanceDevice::find($deviceId, $tenantId);
 
         if ($device === null) {
-            throw new ApiFailure('Device not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.device_not_found'), 404, 'not_found');
         }
 
         // Absent or null means unlink.
@@ -90,7 +90,7 @@ final class DeviceUsersController
             $exists = DB::table('employees')->where('id', $employeeId)->where('tenant_id', $tenantId)->exists();
 
             if (! $exists) {
-                throw new ApiFailure('Employee not found', 404, 'not_found');
+                throw new ApiFailure(__('messages.employee_not_found'), 404, 'not_found');
             }
 
             // One fingerprint per person per device: two User IDs pointing at
@@ -98,7 +98,7 @@ final class DeviceUsersController
             // day.
             if (DeviceUsers::employeeTakenOnDevice($deviceId, $employeeId, $rowId)) {
                 throw new ApiFailure(
-                    'This employee is already linked to another User ID on this device',
+                    __('messages.device_user_already_linked'),
                     409,
                     'EMPLOYEE_ALREADY_LINKED',
                 );

@@ -37,7 +37,7 @@ final class EosbController
             ->first(['name', 'hire_date', 'base_salary']);
 
         if ($employee === null) {
-            throw new ApiFailure('Employee not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'not_found');
         }
 
         $settings = DB::table('payroll_statutory_settings')->where('tenant_id', $tenantId)->first();

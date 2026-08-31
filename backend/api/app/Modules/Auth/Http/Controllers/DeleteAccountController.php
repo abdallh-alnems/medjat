@@ -30,7 +30,7 @@ final class DeleteAccountController
     {
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         try {
@@ -50,7 +50,7 @@ final class DeleteAccountController
             });
         } catch (Throwable $e) {
             Log::error('Delete account failed', ['admin_id' => $admin->id, 'exception' => $e]);
-            throw new ApiFailure('Failed to delete account', 500, 'failed_delete_account');
+            throw new ApiFailure(__('messages.account_deletion_failed'), 500, 'failed_delete_account');
         }
 
         // Best-effort, and after the transaction: the row is already gone, and

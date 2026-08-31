@@ -36,7 +36,7 @@ final class LeaveSettingsController
         ]);
 
         if ($tenant === null) {
-            throw new ApiFailure('Tenant not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.tenant_not_found'), 404, 'not_found');
         }
 
         $policy = CarryoverPolicy::tenantPolicy($tenantId);
@@ -98,7 +98,7 @@ final class LeaveSettingsController
         ]);
 
         if ($tenantFields === [] && ! $touchesPolicy) {
-            throw new ApiFailure('No leave settings provided', 422, 'leave_settings_provided');
+            throw new ApiFailure(__('messages.no_leave_settings'), 422, 'leave_settings_provided');
         }
 
         if ($touchesPolicy) {
@@ -171,7 +171,7 @@ final class LeaveSettingsController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

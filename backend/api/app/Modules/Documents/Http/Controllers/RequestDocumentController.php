@@ -30,7 +30,7 @@ final class RequestDocumentController
     {
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $tenantId = Value::int($request->attributes->get('tenant_id'));
@@ -41,7 +41,7 @@ final class RequestDocumentController
         }
 
         if (! Employee::query()->forTenant($tenantId)->whereKey($employeeId)->exists()) {
-            throw new ApiFailure('Employee not found', 404);
+            throw new ApiFailure(__('messages.employee_not_found'), 404);
         }
 
         $typeId = Value::int($request->input('required_document_id'));
@@ -106,7 +106,7 @@ final class RequestDocumentController
             ->where('id', $typeId)->where('tenant_id', $tenantId)->first();
 
         if ($type === null) {
-            throw new ApiFailure('Document type not found', 404);
+            throw new ApiFailure(__('messages.document_type_not_found'), 404);
         }
 
         // Idempotent: if the type already reaches this employee through any

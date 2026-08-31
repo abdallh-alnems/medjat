@@ -28,19 +28,19 @@ final class KreaitFirebaseTokenVerifier implements FirebaseTokenVerifier
             // matching the old backend. Signature checking stays on.
             $verified = $this->auth->verifyIdToken($idToken, false, 60);
         } catch (FailedToVerifyToken) {
-            throw new ApiFailure('Invalid or expired token', 401);
+            throw new ApiFailure(__('messages.token_invalid_or_expired'), 401);
         } catch (Throwable $e) {
             // A misconfigured service account and a forged token must not look
             // alike to the caller: this is ours, so it is a 500 and it is logged.
             Log::error('Firebase token verification failed', ['exception' => $e]);
-            throw new ApiFailure('Authentication failed', 500);
+            throw new ApiFailure(__('messages.authentication_failed'), 500);
         }
 
         $claims = $verified->claims();
         $uid = $claims->get('sub');
 
         if (! is_string($uid) || $uid === '') {
-            throw new ApiFailure('Invalid or expired token', 401);
+            throw new ApiFailure(__('messages.token_invalid_or_expired'), 401);
         }
 
         $email = $claims->get('email');

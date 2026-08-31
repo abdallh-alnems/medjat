@@ -46,11 +46,11 @@ final class MyAdvanceController
 
         // Months in this form sort lexically, so the comparison is the check.
         if ($startMonth < $thisMonth) {
-            throw new ApiFailure('شهر بداية الخصم لا يمكن أن يكون في الماضي', 422, 'start_month_in_past');
+            throw new ApiFailure(__('messages.deduction_start_in_past'), 422, 'start_month_in_past');
         }
 
         if (Loans::pendingCountForEmployee($employee->id, $tenantId) >= Loans::PENDING_LIMIT) {
-            throw new ApiFailure('لديك طلبات سلفة معلّقة بالفعل', 409, 'advance_pending_limit');
+            throw new ApiFailure(__('messages.loan_request_pending'), 409, 'advance_pending_limit');
         }
 
         $id = Loans::create(
@@ -118,11 +118,11 @@ final class MyAdvanceController
         // Somebody else's request is reported as missing rather than forbidden:
         // from this employee's point of view it does not exist.
         if ($loan === null || Value::int($loan['employee_id'] ?? null) !== $employee->id) {
-            throw new ApiFailure('Advance not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.advance_not_found'), 404, 'not_found');
         }
 
         if (Value::string($loan['status'] ?? null) !== 'pending') {
-            throw new ApiFailure('لا يمكن إلغاء هذا الطلب', 409, 'not_pending');
+            throw new ApiFailure(__('messages.request_not_cancellable'), 409, 'not_pending');
         }
 
         Loans::cancel($id, $tenantId);
@@ -139,7 +139,7 @@ final class MyAdvanceController
         $employee = $request->attributes->get('employee');
 
         if (! $employee instanceof Employee) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $employee;

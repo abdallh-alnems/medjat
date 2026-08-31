@@ -132,29 +132,29 @@ final class DirectoryController
         $role = Value::string($request->input('role'), 'admin') ?: 'admin';
 
         if (mb_strlen($username) < self::MIN_USERNAME_LENGTH) {
-            throw new ApiFailure('اسم المستخدم قصير جداً (3 أحرف على الأقل)', 422, 'username_too_short');
+            throw new ApiFailure(__('messages.username_too_short'), 422, 'username_too_short');
         }
 
         if (mb_strlen($password) < self::MIN_PASSWORD_LENGTH) {
-            throw new ApiFailure('كلمة المرور قصيرة جداً (6 أحرف على الأقل)', 422, 'password_too_short');
+            throw new ApiFailure(__('messages.password_too_short_6'), 422, 'password_too_short');
         }
 
         if (! in_array($role, self::OPERATOR_ROLES, true)) {
-            throw new ApiFailure('الدور غير صالح', 422, 'invalid_role');
+            throw new ApiFailure(__('messages.role_invalid'), 422, 'invalid_role');
         }
 
         $email = trim(Value::string($request->input('email'))) ?: null;
 
         if ($email !== null && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            throw new ApiFailure('البريد الإلكتروني غير صالح', 422, 'invalid_email');
+            throw new ApiFailure(__('messages.email_invalid'), 422, 'invalid_email');
         }
 
         if (DB::table('super_admins')->where('username', $username)->exists()) {
-            throw new ApiFailure('اسم المستخدم مستخدم بالفعل', 422, 'username_taken');
+            throw new ApiFailure(__('messages.username_taken'), 422, 'username_taken');
         }
 
         if ($email !== null && DB::table('super_admins')->where('email', $email)->exists()) {
-            throw new ApiFailure('البريد الإلكتروني مستخدم بالفعل', 422, 'email_taken');
+            throw new ApiFailure(__('messages.email_taken'), 422, 'email_taken');
         }
 
         $displayName = trim(Value::string($request->input('display_name'))) ?: null;
@@ -302,7 +302,7 @@ final class DirectoryController
         $admin = $request->attributes->get('super_admin');
 
         if (! $admin instanceof SuperAdmin) {
-            throw new ApiFailure('Admin token required', 401, 'admin_token_required');
+            throw new ApiFailure(__('messages.admin_token_required'), 401, 'admin_token_required');
         }
 
         return $admin;

@@ -29,7 +29,7 @@ final class UpdateProfileController
         $tenantId = Value::int($request->attributes->get('tenant_id'));
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         /** @var array<string, mixed> $changes */
@@ -38,7 +38,7 @@ final class UpdateProfileController
         if ($request->has('name')) {
             $name = trim(Value::string($request->input('name')));
             if ($name === '') {
-                throw new ApiFailure('Name cannot be empty', 422, 'name_cannot_empty');
+                throw new ApiFailure(__('messages.name_empty'), 422, 'name_cannot_empty');
             }
             $changes['name'] = $name;
         }
@@ -59,7 +59,7 @@ final class UpdateProfileController
         }
 
         if ($changes === []) {
-            throw new ApiFailure('Nothing to update', 422, 'nothing_update');
+            throw new ApiFailure(__('messages.nothing_to_update'), 422, 'nothing_update');
         }
 
         Admin::query()->whereKey($admin->id)->where('tenant_id', $tenantId)->update($changes);

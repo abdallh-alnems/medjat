@@ -154,7 +154,7 @@ final class PlatformController
             : null;
 
         if ($tenant === null) {
-            throw new ApiFailure('Tenant not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.tenant_not_found'), 404, 'not_found');
         }
 
         $sentAdmins = 0;
@@ -241,7 +241,7 @@ final class PlatformController
         $audience = Value::string($request->input('audience'), 'admins') ?: 'admins';
 
         if (! in_array($audience, self::AUDIENCES, true)) {
-            throw new ApiFailure('الجمهور غير صالح', 422, 'invalid_audience');
+            throw new ApiFailure(__('messages.audience_invalid'), 422, 'invalid_audience');
         }
 
         return [$title, $body, $audience];
@@ -252,7 +252,7 @@ final class PlatformController
         $admin = $request->attributes->get('super_admin');
 
         if (! $admin instanceof SuperAdmin) {
-            throw new ApiFailure('Admin token required', 401, 'admin_token_required');
+            throw new ApiFailure(__('messages.admin_token_required'), 401, 'admin_token_required');
         }
 
         return $admin;

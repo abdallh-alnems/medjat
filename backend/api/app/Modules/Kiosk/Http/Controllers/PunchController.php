@@ -68,7 +68,7 @@ final class PunchController
         $employee = Employee::query()->where('id', $employeeId)->where('tenant_id', $tenantId)->first();
 
         if ($employee === null) {
-            throw new ApiFailure('Employee not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'not_found');
         }
 
         // The ticket is thirty seconds old, but a transfer in that window must

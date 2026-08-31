@@ -37,14 +37,14 @@ final class ConvertToAbsenceAction
             ]);
 
         if ($leave === null) {
-            throw new ApiFailure('Leave not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.leave_not_found'), 404, 'not_found');
         }
 
         $employeeId = Value::int($leave->employee_id);
         $employee = Employee::query()->where('id', $employeeId)->where('tenant_id', $tenantId)->first();
 
         if ($employee === null) {
-            throw new ApiFailure('Employee not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'not_found');
         }
 
         $cursor = new DateTimeImmutable(Value::string($leave->start_date));

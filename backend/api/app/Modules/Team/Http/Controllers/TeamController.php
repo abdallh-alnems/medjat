@@ -83,7 +83,7 @@ final class TeamController
         $newBranchId = $hasBranch ? (Value::int($request->input('branch_id')) ?: null) : null;
 
         if ($newRole === null && ! $hasBranch) {
-            throw new ApiFailure('لا يوجد تغييرات', 422, 'no_changes');
+            throw new ApiFailure(__('messages.no_changes'), 422, 'no_changes');
         }
 
         $changes = [];
@@ -91,7 +91,7 @@ final class TeamController
 
         if ($roleChanged) {
             if (! in_array($newRole, Permissions::MANAGEMENT_ROLES, true)) {
-                throw new ApiFailure('الدور غير صالح', 422, 'invalid_role');
+                throw new ApiFailure(__('messages.role_invalid'), 422, 'invalid_role');
             }
 
             self::assertMayGrant(Permissions::defaultsFor((string) $newRole), $caller, $tenantId);
@@ -133,7 +133,7 @@ final class TeamController
         $isActive = filter_var($raw, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
 
         if ($isActive === null) {
-            throw new ApiFailure('is_active مطلوب', 422, 'is_active_required');
+            throw new ApiFailure(__('messages.is_active_required'), 422, 'is_active_required');
         }
 
         self::target(Value::int($request->input('admin_id')), $caller, $tenantId, 'لا يمكنك تعطيل حسابك بنفسك', 'لا يمكنك تعطيل مدير عام', 'لا يمكنك تعطيل مدير يعلوك في الصلاحيات الإدارية');
@@ -175,7 +175,7 @@ final class TeamController
                 ->count();
 
             if ($remaining <= 1) {
-                throw new ApiFailure('لا يمكن إزالة آخر مدير عام للشركة', 409, 'cannot_remove_last_owner');
+                throw new ApiFailure(__('messages.last_general_manager'), 409, 'cannot_remove_last_owner');
             }
         }
 
@@ -211,7 +211,7 @@ final class TeamController
     ): array {
 
         if ($targetId <= 0) {
-            throw new ApiFailure('admin_id مطلوب', 422, 'admin_id_required');
+            throw new ApiFailure(__('messages.admin_id_field_required'), 422, 'admin_id_required');
         }
 
         if ($targetId === $caller->id) {
@@ -221,7 +221,7 @@ final class TeamController
         $row = DB::table('admins')->where('id', $targetId)->where('tenant_id', $tenantId)->first(['id', 'name', 'email', 'role']);
 
         if ($row === null) {
-            throw new ApiFailure('المدير غير موجود', 404, 'not_found');
+            throw new ApiFailure(__('messages.manager_not_found'), 404, 'not_found');
         }
 
         /** @var array<string, mixed> $target */
@@ -252,21 +252,21 @@ final class TeamController
 
         if ($granted === Permissions::ALL) {
             if ($callerPermissions !== Permissions::ALL) {
-                throw new ApiFailure('لا يمكنك منح صلاحيات أعلى من صلاحياتك', 403, 'forbidden');
+                throw new ApiFailure(__('messages.cannot_grant_above_own'), 403, 'forbidden');
             }
 
             return;
         }
 
         if (! Permissions::isWithin($granted, $callerPermissions)) {
-            throw new ApiFailure('لا يمكنك منح صلاحيات لا تملكها', 403, 'forbidden');
+            throw new ApiFailure(__('messages.cannot_grant_unheld'), 403, 'forbidden');
         }
     }
 
     public static function assertBranchExists(int $branchId, int $tenantId): void
     {
         if (! DB::table('branches')->where('id', $branchId)->where('tenant_id', $tenantId)->exists()) {
-            throw new ApiFailure('الفرع غير موجود', 404, 'branch_not_found');
+            throw new ApiFailure(__('messages.branch_not_found'), 404, 'branch_not_found');
         }
     }
 
@@ -283,7 +283,7 @@ final class TeamController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

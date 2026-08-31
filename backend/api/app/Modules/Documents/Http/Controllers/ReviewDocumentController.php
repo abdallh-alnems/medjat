@@ -142,7 +142,7 @@ final class ReviewDocumentController
     {
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $tenantId = Value::int($request->attributes->get('tenant_id'));
@@ -159,7 +159,7 @@ final class ReviewDocumentController
             ->first(['ed.id', 'ed.employee_id', 'ed.original_name', 'rd.name as document_name']);
 
         if ($document === null) {
-            throw new ApiFailure('Document not found', 404);
+            throw new ApiFailure(__('messages.document_not_found'), 404);
         }
 
         return [$admin, $tenantId, $document];

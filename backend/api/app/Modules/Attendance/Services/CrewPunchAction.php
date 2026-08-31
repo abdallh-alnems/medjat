@@ -59,7 +59,7 @@ final class CrewPunchAction
         $this->assertAllAreTheirs($supervisor, $tenantId, $employeeIds, $latitude, $longitude);
 
         if (! in_array('crew_gps', AttendanceMethod::resolveFor($supervisor, $tenantId), true)) {
-            throw new ApiFailure('تسجيل الطاقم غير مفعّل لحسابك', 403, 'METHOD_NOT_ALLOWED');
+            throw new ApiFailure(__('messages.crew_attendance_not_enabled'), 403, 'METHOD_NOT_ALLOWED');
         }
 
         // One fix, from the supervisor's phone, verified once and written onto
@@ -72,14 +72,14 @@ final class CrewPunchAction
 
         $branchId = $supervisor->branch_id;
         if ($branchId === null) {
-            throw new ApiFailure('المشرف غير مرتبط بفرع', 409, 'BRANCH_REQUIRED');
+            throw new ApiFailure(__('messages.supervisor_without_branch'), 409, 'BRANCH_REQUIRED');
         }
 
         // Mirrors the ordinary punch: a spoofed location invalidates the
         // geofence, so it is checked before it.
         if (! empty($input['is_mock_location']) && $this->rejectsMockLocation($tenantId)) {
             AttendanceSecurityLog::record($tenantId, $supervisor->id, $branchId, 'mock_location', 'blocked', $latitude, $longitude);
-            throw new ApiFailure('تم رصد موقع وهمي', 403, 'MOCK_LOCATION');
+            throw new ApiFailure(__('messages.mock_location_detected'), 403, 'MOCK_LOCATION');
         }
 
         // Check-out is not geofenced, matching the ordinary departure: a crew
@@ -88,7 +88,7 @@ final class CrewPunchAction
         if (! $isCheckOut) {
             $branch = Branch::query()->forTenant($tenantId)->whereKey($branchId)->first();
             if ($branch === null) {
-                throw new ApiFailure('Branch not found', 404, 'BRANCH_NOT_FOUND');
+                throw new ApiFailure(__('messages.branch_not_found'), 404, 'BRANCH_NOT_FOUND');
             }
 
             $geofence = GeofenceCheck::evaluate($branch, $latitude, $longitude);
@@ -109,7 +109,7 @@ final class CrewPunchAction
             );
 
             if ($photo === null) {
-                throw new ApiFailure('الصورة مطلوبة لتسجيل الطاقم', 422, 'PHOTO_REQUIRED');
+                throw new ApiFailure(__('messages.crew_photo_required'), 422, 'PHOTO_REQUIRED');
             }
         }
 
@@ -133,7 +133,7 @@ final class CrewPunchAction
         }
 
         if (count($raw) > self::MAX_BATCH) {
-            throw new ApiFailure('Too many employees in one batch', 422, 'CREW_TOO_LARGE');
+            throw new ApiFailure(__('messages.batch_too_many_employees'), 422, 'CREW_TOO_LARGE');
         }
 
         $ids = array_values(array_unique(array_filter(
@@ -183,7 +183,7 @@ final class CrewPunchAction
         }
 
         throw new ApiFailure(
-            'أحد الأسماء ليس ضمن طاقمك',
+            __('messages.name_not_in_crew'),
             403,
             'CREW_NOT_SUPERVISOR',
             ['employee_ids' => $outsiders],

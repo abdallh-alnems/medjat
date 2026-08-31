@@ -76,7 +76,7 @@ final class ActivationCodeController
     {
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $tenantId = Value::int($request->attributes->get('tenant_id'));
@@ -84,7 +84,7 @@ final class ActivationCodeController
 
         if ($employee->isTerminated()) {
             throw new ApiFailure(
-                'Cannot generate code for terminated employee',
+                __('messages.code_for_terminated_employee'),
                 409,
                 'cannot_generate_code_terminated_employee'
             );
@@ -130,12 +130,12 @@ final class ActivationCodeController
     private function employee(Request $request, int $tenantId, int $employeeId): Employee
     {
         if ($employeeId <= 0) {
-            throw new ApiFailure('Employee ID required', 422, 'employee_id_required');
+            throw new ApiFailure(__('messages.employee_id_required'), 422, 'employee_id_required');
         }
 
         $employee = Employee::query()->forTenant($tenantId)->whereKey($employeeId)->first();
         if ($employee === null) {
-            throw new ApiFailure('Employee not found', 404);
+            throw new ApiFailure(__('messages.employee_not_found'), 404);
         }
 
         return $employee;

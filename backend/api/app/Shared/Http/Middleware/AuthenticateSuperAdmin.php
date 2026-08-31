@@ -33,15 +33,15 @@ final class AuthenticateSuperAdmin
         $admin = SuperAdminSession::resolve($token);
 
         if ($admin === null) {
-            throw new ApiFailure('Admin token required', 401, 'admin_token_required');
+            throw new ApiFailure(__('messages.admin_token_required'), 401, 'admin_token_required');
         }
 
         if ($admin->is_active !== 1) {
-            throw new ApiFailure('Admin account disabled', 403, 'admin_disabled');
+            throw new ApiFailure(__('messages.admin_account_disabled'), 403, 'admin_disabled');
         }
 
         if (! $admin->outranks($minRole)) {
-            throw new ApiFailure('Insufficient permissions', 403, 'insufficient_permissions');
+            throw new ApiFailure(__('messages.insufficient_permissions'), 403, 'insufficient_permissions');
         }
 
         $request->attributes->set('super_admin', $admin);

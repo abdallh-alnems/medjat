@@ -39,7 +39,7 @@ final class EmployeeProfileController
 
         $employee = Employee::query()->forTenant($tenantId)->whereKey($id)->first();
         if ($employee === null) {
-            throw new ApiFailure('Employee profile not found', 404, 'employee_profile_not_found');
+            throw new ApiFailure(__('messages.employee_profile_not_found'), 404, 'employee_profile_not_found');
         }
 
         return ApiResponse::success([
@@ -58,7 +58,7 @@ final class EmployeeProfileController
     {
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $tenantId = Value::int($request->attributes->get('tenant_id'));
@@ -96,7 +96,7 @@ final class EmployeeProfileController
         $year = Value::int($request->query('year'), (int) date('Y'));
 
         if ($employeeId <= 0) {
-            throw new ApiFailure('Employee ID required', 422, 'employee_id_required');
+            throw new ApiFailure(__('messages.employee_id_required'), 422, 'employee_id_required');
         }
 
         if ($year < 2000 || $year > 2100) {
@@ -104,7 +104,7 @@ final class EmployeeProfileController
         }
 
         if (! Employee::query()->forTenant($tenantId)->whereKey($employeeId)->exists()) {
-            throw new ApiFailure('Employee not found', 404);
+            throw new ApiFailure(__('messages.employee_not_found'), 404);
         }
 
         $rows = DB::table('payroll')

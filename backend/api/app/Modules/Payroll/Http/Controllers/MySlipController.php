@@ -40,7 +40,7 @@ final class MySlipController
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $employee = $request->attributes->get('employee');
         if (! $employee instanceof Employee) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $employeeId = $employee->id;
@@ -54,7 +54,7 @@ final class MySlipController
             $live = $this->calculator->calculate($employeeId, $month, $tenantId, $today);
 
             if ($live === []) {
-                throw new ApiFailure('Payroll slip not found', 404, 'not_found');
+                throw new ApiFailure(__('messages.payslip_not_found'), 404, 'not_found');
             }
 
             if ($wantsPdf) {
@@ -94,7 +94,7 @@ final class MySlipController
         $tenant = DB::table('tenants')->where('id', $tenantId)->first();
 
         if ($tenant === null) {
-            throw new ApiFailure('Tenant not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.tenant_not_found'), 404, 'not_found');
         }
 
         $employee = DB::table('employees as e')
@@ -103,7 +103,7 @@ final class MySlipController
             ->first(['e.*', 'b.name as branch_name']);
 
         if ($employee === null) {
-            throw new ApiFailure('Employee not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'not_found');
         }
 
         return PayslipDownload::stream(

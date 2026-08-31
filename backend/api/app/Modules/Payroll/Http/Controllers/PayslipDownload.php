@@ -34,7 +34,7 @@ final class PayslipDownload
         int $employeeId,
     ): BinaryFileResponse {
         if ($breakdown === []) {
-            throw new ApiFailure('Payroll slip not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.payslip_not_found'), 404, 'not_found');
         }
 
         try {
@@ -42,13 +42,13 @@ final class PayslipDownload
         } catch (Throwable $e) {
             Log::error('Payslip PDF generation failed', ['employee_id' => $employeeId, 'exception' => $e]);
 
-            throw new ApiFailure('Failed to generate payslip', 500, 'failed_generate_payslip');
+            throw new ApiFailure(__('messages.payslip_generation_failed'), 500, 'failed_generate_payslip');
         }
 
         if (! is_file($path) || filesize($path) === 0) {
             Log::error('Payslip PDF missing after generation', ['employee_id' => $employeeId, 'path' => $path]);
 
-            throw new ApiFailure('Failed to generate payslip', 500, 'failed_generate_payslip');
+            throw new ApiFailure(__('messages.payslip_generation_failed'), 500, 'failed_generate_payslip');
         }
 
         return (new BinaryFileResponse($path))

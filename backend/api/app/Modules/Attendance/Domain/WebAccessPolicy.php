@@ -78,7 +78,7 @@ final class WebAccessPolicy
         AttendanceSecurityLog::record($tenantId, $employeeId, $branchId, $reason, 'blocked', $lat, $lng);
 
         throw new ApiFailure(
-            'تسجيل الحضور من المتصفح غير متاح لحسابك',
+            __('messages.web_attendance_not_available'),
             403,
             strtoupper($reason),
         );

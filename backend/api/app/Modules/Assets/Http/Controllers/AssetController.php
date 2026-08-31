@@ -48,7 +48,7 @@ final class AssetController
         $exists = DB::table('employees')->where('id', $employeeId)->where('tenant_id', $tenantId)->exists();
 
         if (! $exists) {
-            throw new ApiFailure('Employee not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'not_found');
         }
 
         $fields = $this->fields($request, $tenantId);
@@ -82,7 +82,7 @@ final class AssetController
         // A returned item is a historical record: editing it would rewrite what
         // was handed back, after the fact.
         if (Value::string($asset['status'] ?? null) === 'returned') {
-            throw new ApiFailure('A returned custody item cannot be edited', 409, 'asset_returned_locked');
+            throw new ApiFailure(__('messages.custody_returned_immutable'), 409, 'asset_returned_locked');
         }
 
         AssetCustody::update($id, $tenantId, $this->fields($request, $tenantId, $asset));
@@ -123,7 +123,7 @@ final class AssetController
         [$id, $asset] = $this->target(Value::int($request->input('id')) ?: Value::int($request->query('id')), $tenantId);
 
         if (! in_array(Value::string($asset['status'] ?? null), ['assigned', 'return_requested'], true)) {
-            throw new ApiFailure('This custody item is already returned', 409, 'custody_item_already_returned');
+            throw new ApiFailure(__('messages.custody_already_returned'), 409, 'custody_item_already_returned');
         }
 
         AssetCustody::approveReturn($id, $tenantId, $adminId);
@@ -151,7 +151,7 @@ final class AssetController
 
         if (Value::string($asset['status'] ?? null) !== 'return_requested') {
             throw new ApiFailure(
-                'Only a pending return request can be rejected',
+                __('messages.return_request_not_pending'),
                 409,
                 'only_pending_return_request_can',
             );
@@ -238,7 +238,7 @@ final class AssetController
         $asset = $id > 0 ? AssetCustody::find($id, $tenantId) : null;
 
         if ($asset === null) {
-            throw new ApiFailure('Custody not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.custody_not_found'), 404, 'not_found');
         }
 
         return [$id, $asset];
@@ -256,7 +256,7 @@ final class AssetController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

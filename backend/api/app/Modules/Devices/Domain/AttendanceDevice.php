@@ -133,7 +133,7 @@ final class AttendanceDevice
 
             if ($owner !== null && $owner !== $tenantId) {
                 throw new ApiFailure(
-                    'This device is already registered to another company',
+                    __('messages.device_registered_elsewhere'),
                     409,
                     'DEVICE_ALREADY_CLAIMED',
                 );

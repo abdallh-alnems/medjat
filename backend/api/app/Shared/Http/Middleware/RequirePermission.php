@@ -36,7 +36,7 @@ final class RequirePermission
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $held = Permissions::effectiveFor($admin->id, $admin->tenant_id ?? 0, $admin->role);

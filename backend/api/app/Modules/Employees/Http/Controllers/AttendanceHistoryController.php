@@ -30,11 +30,11 @@ final class AttendanceHistoryController
         $employeeId = Value::int($request->query('employee_id'));
 
         if ($employeeId <= 0) {
-            throw new ApiFailure('Employee ID required', 422, 'employee_id_required');
+            throw new ApiFailure(__('messages.employee_id_required'), 422, 'employee_id_required');
         }
 
         if (! Employee::query()->forTenant($tenantId)->whereKey($employeeId)->exists()) {
-            throw new ApiFailure('Employee not found', 404);
+            throw new ApiFailure(__('messages.employee_not_found'), 404);
         }
 
         [$from, $to] = $this->range($request);

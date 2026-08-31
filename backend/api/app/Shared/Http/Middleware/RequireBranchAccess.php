@@ -33,7 +33,7 @@ final class RequireBranchAccess
         }
 
         if ($admin->branch_id !== $branchId) {
-            throw new ApiFailure('Access denied for this branch', 403, 'branch_access_denied');
+            throw new ApiFailure(__('messages.branch_access_denied'), 403, 'branch_access_denied');
         }
     }
 }

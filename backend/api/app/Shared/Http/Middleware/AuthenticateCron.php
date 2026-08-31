@@ -38,7 +38,7 @@ final class AuthenticateCron
         // hash_equals rather than ===: the comparison happens on every
         // unauthenticated request that reaches these URLs.
         if ($expected === '' || ! hash_equals($expected, $provided)) {
-            throw new ApiFailure('Forbidden', 403, 'forbidden');
+            throw new ApiFailure(__('messages.forbidden'), 403, 'forbidden');
         }
 
         return $next($request);

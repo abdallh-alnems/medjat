@@ -50,7 +50,7 @@ final class SendAuthActionController
         // A malformed address is refused: that is a client bug, not an account
         // that may or may not exist, so it leaks nothing to say so.
         if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-            throw new ApiFailure('Invalid email', 400, 'invalid_email');
+            throw new ApiFailure(__('messages.email_invalid'), 400, 'invalid_email');
         }
 
         try {

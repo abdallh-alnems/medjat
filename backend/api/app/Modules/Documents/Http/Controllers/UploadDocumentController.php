@@ -29,7 +29,7 @@ final class UploadDocumentController
     {
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $tenantId = Value::int($request->attributes->get('tenant_id'));
@@ -41,7 +41,7 @@ final class UploadDocumentController
         }
 
         if (! Employee::query()->forTenant($tenantId)->whereKey($employeeId)->exists()) {
-            throw new ApiFailure('Employee not found', 404);
+            throw new ApiFailure(__('messages.employee_not_found'), 404);
         }
 
         $documentId = DocumentUpload::store($this->file($request), $tenantId, $employeeId, $typeId, $admin->id);
@@ -55,7 +55,7 @@ final class UploadDocumentController
     {
         $employee = $request->attributes->get('employee');
         if (! $employee instanceof Employee) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $tenantId = Value::int($request->attributes->get('tenant_id'));
@@ -70,7 +70,7 @@ final class UploadDocumentController
         // including one scoped to somebody else entirely.
         $required = $this->applicableRequirement($employee->id, $tenantId, $typeId);
         if ($required === null) {
-            throw new ApiFailure('This document is not required for you', 403, 'document_not_required');
+            throw new ApiFailure(__('messages.document_not_required_for_you'), 403, 'document_not_required');
         }
 
         $documentId = DocumentUpload::store($this->file($request), $tenantId, $employee->id, $typeId, null);
@@ -119,7 +119,7 @@ final class UploadDocumentController
         $file = $request->file('file');
 
         if (! $file instanceof UploadedFile || ! $file->isValid()) {
-            throw new ApiFailure('No file uploaded', 400, 'no_file');
+            throw new ApiFailure(__('messages.no_file_uploaded'), 400, 'no_file');
         }
 
         return $file;

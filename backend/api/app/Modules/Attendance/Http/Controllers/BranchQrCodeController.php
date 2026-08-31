@@ -36,7 +36,7 @@ final class BranchQrCodeController
     {
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $tenantId = Value::int($request->attributes->get('tenant_id'));
@@ -48,7 +48,7 @@ final class BranchQrCodeController
 
         $branch = Branch::query()->forTenant($tenantId)->whereKey($branchId)->first();
         if ($branch === null) {
-            throw new ApiFailure('Branch not found', 404);
+            throw new ApiFailure(__('messages.branch_not_found'), 404);
         }
 
         // Refuse rather than mint a code nothing will accept. A display quietly
@@ -56,7 +56,7 @@ final class BranchQrCodeController
         // the printed one — is the kind of failure discovered by a queue at the
         // door.
         if (! $branch->rotating_qr_enabled) {
-            throw new ApiFailure('Rotating QR is not enabled for this branch.', 409, 'ROTATING_QR_DISABLED');
+            throw new ApiFailure(__('messages.rotating_qr_disabled'), 409, 'ROTATING_QR_DISABLED');
         }
 
         return ApiResponse::success(BranchQrChallenge::issue($tenantId, $branchId, $admin->id));

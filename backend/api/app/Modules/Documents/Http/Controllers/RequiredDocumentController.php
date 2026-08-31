@@ -128,7 +128,7 @@ final class RequiredDocumentController
         $id = self::existing($id, $tenantId);
 
         if (! RequiredDocument::delete($id, $tenantId)) {
-            throw new ApiFailure('Failed to delete required document', 500);
+            throw new ApiFailure(__('messages.required_document_delete_failed'), 500);
         }
 
         AuditLog::record($tenantId, $adminId, 'document_type.delete', 'required_document', $id);
@@ -144,7 +144,7 @@ final class RequiredDocumentController
         $existing = RequiredDocument::find($id, $tenantId);
 
         if ($existing === null) {
-            throw new ApiFailure('Required document not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.required_document_not_found'), 404, 'not_found');
         }
 
         RequiredDocument::toggleActive($id, $tenantId);
@@ -166,7 +166,7 @@ final class RequiredDocumentController
         $required = RequiredDocument::find($requiredId, $tenantId);
 
         if ($required === null) {
-            throw new ApiFailure('Required document not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.required_document_not_found'), 404, 'not_found');
         }
 
         // Deliberately not the obligations helper: that one filters to active,
@@ -340,7 +340,7 @@ final class RequiredDocumentController
     private static function existing(int $id, int $tenantId): int
     {
         if (RequiredDocument::find($id, $tenantId) === null) {
-            throw new ApiFailure('Required document not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.required_document_not_found'), 404, 'not_found');
         }
 
         return $id;
@@ -351,7 +351,7 @@ final class RequiredDocumentController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

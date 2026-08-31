@@ -97,13 +97,13 @@ final class SettlementController
         }
 
         if ($employee->status === 'terminated') {
-            throw new ApiFailure('الموظف منتهية خدمته بالفعل', 422, 'already_terminated');
+            throw new ApiFailure(__('messages.employee_already_terminated'), 422, 'already_terminated');
         }
 
         $existing = Settlement::forEmployee($employee->id, $tenantId);
 
         if ($existing !== null && Value::string($existing['status'] ?? null) !== 'draft') {
-            throw new ApiFailure('لا يمكن تعديل تسوية معتمدة', 409, 'settlement_locked');
+            throw new ApiFailure(__('messages.approved_settlement_immutable'), 409, 'settlement_locked');
         }
 
         $data = [
@@ -154,7 +154,7 @@ final class SettlementController
         unset($snapshot['created_by_name'], $snapshot['approved_by_name']);
 
         if (! Settlement::approve($id, $tenantId, $admin->id, $snapshot)) {
-            throw new ApiFailure('تعذر اعتماد التسوية', 409, 'approve_failed');
+            throw new ApiFailure(__('messages.settlement_approve_failed'), 409, 'approve_failed');
         }
 
         $lastWorkingDay = Value::string($settlement['last_working_day'] ?? null);
@@ -189,23 +189,23 @@ final class SettlementController
         $settlement = Settlement::forEmployee($employeeId, $tenantId);
 
         if ($settlement === null) {
-            throw new ApiFailure('لا توجد تسوية محفوظة لهذا الموظف', 404, 'no_settlement');
+            throw new ApiFailure(__('messages.no_saved_settlement'), 404, 'no_settlement');
         }
 
         $status = Value::string($settlement['status'] ?? null);
 
         if ($status === 'draft') {
-            throw new ApiFailure('يجب اعتماد التسوية أولاً', 409, 'not_approved');
+            throw new ApiFailure(__('messages.settlement_approve_first'), 409, 'not_approved');
         }
 
         if ($status === 'paid') {
-            throw new ApiFailure('التسوية مدفوعة بالفعل', 409, 'already_paid');
+            throw new ApiFailure(__('messages.settlement_already_paid'), 409, 'already_paid');
         }
 
         $id = Value::int($settlement['id'] ?? null);
 
         if (! Settlement::markPaid($id, $tenantId)) {
-            throw new ApiFailure('تعذر تحديث التسوية', 409, 'mark_paid_failed');
+            throw new ApiFailure(__('messages.settlement_update_failed'), 409, 'mark_paid_failed');
         }
 
         AuditLog::record($tenantId, $admin->id, 'settlement.mark_paid', 'employee', $employeeId, [
@@ -226,11 +226,11 @@ final class SettlementController
         $settlement = Settlement::forEmployee($employeeId, $tenantId);
 
         if ($settlement === null) {
-            throw new ApiFailure('لا توجد تسوية محفوظة لهذا الموظف', 404, 'no_settlement');
+            throw new ApiFailure(__('messages.no_saved_settlement'), 404, 'no_settlement');
         }
 
         if (Value::string($settlement['status'] ?? null) !== 'draft') {
-            throw new ApiFailure('التسوية معتمدة بالفعل', 409, 'already_approved');
+            throw new ApiFailure(__('messages.settlement_already_approved'), 409, 'already_approved');
         }
 
         return $settlement;
@@ -239,13 +239,13 @@ final class SettlementController
     private function subject(int $employeeId, int $tenantId): Employee
     {
         if ($employeeId <= 0) {
-            throw new ApiFailure('Employee ID required', 422, 'employee_id_required');
+            throw new ApiFailure(__('messages.employee_id_required'), 422, 'employee_id_required');
         }
 
         $employee = Employee::query()->where('id', $employeeId)->where('tenant_id', $tenantId)->first();
 
         if ($employee === null) {
-            throw new ApiFailure('Employee not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'not_found');
         }
 
         return $employee;
@@ -263,7 +263,7 @@ final class SettlementController
         $admin = $request->attributes->get('admin');
 
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $admin;

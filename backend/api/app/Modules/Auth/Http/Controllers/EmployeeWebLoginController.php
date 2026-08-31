@@ -33,7 +33,7 @@ final class EmployeeWebLoginController
         // the real bound on a six-digit space is the lockout below.
         $key = 'web_login:'.PhoneNumber::digits($phone);
         if (RateLimiter::tooManyAttempts($key, 20)) {
-            throw new ApiFailure('عدد كبير من المحاولات، حاول بعد قليل', 429, 'rate_limited');
+            throw new ApiFailure(__('messages.too_many_attempts_soon'), 429, 'rate_limited');
         }
         RateLimiter::hit($key, 900);
 
@@ -46,7 +46,7 @@ final class EmployeeWebLoginController
         $tenantId = $employee->tenant_id;
 
         if ($employee->isTerminated()) {
-            throw new ApiFailure('الحساب موقوف', 403, 'account_suspended');
+            throw new ApiFailure(__('messages.account_suspended'), 403, 'account_suspended');
         }
 
         $credential = EmployeeWebCredential::findFor($employee->id, $tenantId);
@@ -56,18 +56,18 @@ final class EmployeeWebLoginController
             // This leaks only that the number exists, to somebody who already
             // guessed it, and the alternative is a support call for every
             // first-time user.
-            throw new ApiFailure('لم يتم تفعيل الدخول من المتصفح لحسابك بعد', 404, 'not_activated');
+            throw new ApiFailure(__('messages.web_access_not_enabled'), 404, 'not_activated');
         }
 
         if (EmployeeWebCredential::isLocked($employee->id)) {
             AttendanceSecurityLog::record($tenantId, $employee->id, null, 'web_pin_locked', 'blocked');
-            throw new ApiFailure('تم قفل الحساب مؤقتاً بعد محاولات خاطئة', 423, 'web_pin_locked');
+            throw new ApiFailure(__('messages.account_temporarily_locked'), 423, 'web_pin_locked');
         }
 
         if (! $credential->verifyPin($request->pin())) {
             if (EmployeeWebCredential::recordFailure($employee->id)) {
                 AttendanceSecurityLog::record($tenantId, $employee->id, null, 'web_pin_locked', 'blocked');
-                throw new ApiFailure('تم قفل الحساب مؤقتاً بعد محاولات خاطئة', 423, 'web_pin_locked');
+                throw new ApiFailure(__('messages.account_temporarily_locked'), 423, 'web_pin_locked');
             }
             $this->refuseGenerically();
         }
@@ -107,7 +107,7 @@ final class EmployeeWebLoginController
      */
     private function refuseGenerically(): never
     {
-        throw new ApiFailure('رقم الهاتف أو الرقم السري غير صحيح', 401, 'invalid_credentials');
+        throw new ApiFailure(__('messages.phone_or_pin_wrong'), 401, 'invalid_credentials');
     }
 
     /**

@@ -29,7 +29,7 @@ final class OverrideLineController
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         $adminId = $admin->id;
@@ -58,14 +58,14 @@ final class OverrideLineController
             throw new ApiFailure('action must be set, waive or clear', 422, 'action_set_waive_clear');
         }
         if ($type === 'manual') {
-            throw new ApiFailure('Manual lines are edited from their own form', 422, 'manual_lines_edited_from_their');
+            throw new ApiFailure(__('messages.manual_lines_own_form'), 422, 'manual_lines_edited_from_their');
         }
 
         $exists = DB::table('employees')
             ->where('id', $employeeId)->where('tenant_id', $tenantId)->exists();
 
         if (! $exists) {
-            throw new ApiFailure('Employee not found', 404, 'not_found');
+            throw new ApiFailure(__('messages.employee_not_found'), 404, 'not_found');
         }
 
         // An approved or paid slip is the source of truth and is not edited in
@@ -76,7 +76,7 @@ final class OverrideLineController
 
         if ($status !== null && in_array(Value::string($status), ['approved', 'paid'], true)) {
             throw new ApiFailure(
-                'Slip is locked. Revert it to draft before editing lines.',
+                __('messages.slip_locked'),
                 409,
                 'slip_locked_revert_it_draft',
             );

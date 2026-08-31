@@ -186,6 +186,27 @@ backend's ledger still creates — `expense_claims`, `kiosk_pins` and
 that now lives in the old `migrations/archive/`, and no code in either backend
 refers to them.
 
+## Messages
+
+The API answers in the language of the `Accept-Language` header, Arabic or
+English, falling back to `APP_LOCALE` for anything else.
+
+Two kinds of message, and the difference decides where the text lives:
+
+- **A refusal a person reads** — "this account is suspended", "no check-in for
+  this date", "not enough annual leave" — goes through `__('messages.…')` and
+  exists in both `lang/ar` and `lang/en`. There is one key per message rather
+  than a parameterised `:entity not found`, because Arabic agrees adjectives
+  with the noun's gender: a company is غير موجودة and an employee is غير موجود.
+- **A contract violation** — `employee_id is required`, `scope_type must be
+  category or employee` — stays in English. It fires only when a client sends a
+  malformed request, so the reader is whoever is debugging that client, and a
+  translated diagnostic helps nobody. These carry an `error_code`, so a client
+  that wants to show its own wording can.
+
+A test asserts the two files hold the same keys. One present in Arabic and
+missing from English reaches an English speaker as the raw key.
+
 ## Scheduled work
 
 Three jobs, each reachable two ways — as an artisan command, and on the cron URL

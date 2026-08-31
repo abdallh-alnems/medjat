@@ -77,7 +77,7 @@ final class MyBreaksController
         $breakRequest = $this->owned($request, $employee, $tenantId);
 
         if (Value::string($breakRequest['status'] ?? null) !== 'pending') {
-            throw new ApiFailure('لا يمكن إلغاء طلب تمّت معالجته', 409, 'not_pending');
+            throw new ApiFailure(__('messages.processed_request_not_cancellable'), 409, 'not_pending');
         }
 
         $this->breaks->cancel(Value::int($breakRequest['id'] ?? null), $employee->id, $tenantId);
@@ -106,12 +106,12 @@ final class MyBreaksController
         $id = Value::int($breakRequest['id'] ?? null);
 
         if (Value::string($breakRequest['status'] ?? null) !== 'postponed') {
-            throw new ApiFailure('لا يوجد اقتراح وقت بديل لهذا الطلب', 409, 'not_postponed');
+            throw new ApiFailure(__('messages.no_alternative_time'), 409, 'not_postponed');
         }
 
         if ($action === 'reject') {
             if (! $this->breaks->rejectPostpone($id, $employee->id, $tenantId)) {
-                throw new ApiFailure('تعذّر رفض الوقت البديل', 409, 'reject_failed');
+                throw new ApiFailure(__('messages.alternative_time_reject_failed'), 409, 'reject_failed');
             }
 
             return ApiResponse::success(['message' => 'Suggested time rejected', 'status' => 'cancelled']);
@@ -122,17 +122,17 @@ final class MyBreaksController
         $end = Value::string($breakRequest['suggested_end_time'] ?? null);
 
         if ($date === '' || $start === '' || $end === '') {
-            throw new ApiFailure('لا يوجد وقت بديل مكتمل للموافقة عليه', 422, 'no_suggestion');
+            throw new ApiFailure(__('messages.no_complete_alternative_time'), 422, 'no_suggestion');
         }
 
         if (BreakRequests::windowHasPassed($tenantId, $date, $end)) {
-            throw new ApiFailure('انتهى وقت الإذن البديل', 422, 'break_window_passed');
+            throw new ApiFailure(__('messages.alternative_window_passed'), 422, 'break_window_passed');
         }
 
         $duration = RecordBreakRequest::minutesBetween($date, $start, $end);
 
         if (! $this->breaks->acceptPostpone($id, $employee->id, $tenantId, $duration)) {
-            throw new ApiFailure('تعذّر قبول الوقت البديل', 409, 'accept_failed');
+            throw new ApiFailure(__('messages.alternative_time_accept_failed'), 409, 'accept_failed');
         }
 
         return ApiResponse::success(['message' => 'Suggested time accepted', 'status' => 'approved']);
@@ -149,7 +149,7 @@ final class MyBreaksController
         // Somebody else's request is reported as missing rather than forbidden:
         // from this employee's point of view it does not exist.
         if ($breakRequest === null || Value::int($breakRequest['employee_id'] ?? null) !== $employee->id) {
-            throw new ApiFailure('الطلب غير موجود', 404, 'not_found');
+            throw new ApiFailure(__('messages.request_not_found'), 404, 'not_found');
         }
 
         return $breakRequest;
@@ -160,7 +160,7 @@ final class MyBreaksController
         $employee = $request->attributes->get('employee');
 
         if (! $employee instanceof Employee) {
-            throw new ApiFailure('Authentication required', 401);
+            throw new ApiFailure(__('messages.authentication_required'), 401);
         }
 
         return $employee;
