@@ -553,9 +553,9 @@ final class TeamManagementTest extends TestCase
 
         $id = Value::int($response->json('data.invitation_id'));
 
-        $this->as($this->gmToken)->getJson('/v1/team/invitations/cancel?id='.$id)->assertOk();
+        $this->as($this->gmToken)->postJson('/v1/team/invitations/cancel', ['id' => $id])->assertOk();
 
-        $this->as($this->gmToken)->getJson('/v1/team/invitations/cancel?id='.$id)
+        $this->as($this->gmToken)->postJson('/v1/team/invitations/cancel', ['id' => $id])
             ->assertStatus(409)->assertJsonPath('error_code', 'invitation_already_cancelled');
     }
 
@@ -570,7 +570,7 @@ final class TeamManagementTest extends TestCase
         $id = Value::int($response->json('data.invitation_id'));
         $firstCode = Value::string($response->json('data.invitation_code'));
 
-        $this->as($this->gmToken)->getJson('/v1/team/invitations/cancel?id='.$id)->assertOk();
+        $this->as($this->gmToken)->postJson('/v1/team/invitations/cancel', ['id' => $id])->assertOk();
 
         $resent = $this->as($this->gmToken)
             ->postJson('/v1/team/invitations/resend', ['id' => $id])

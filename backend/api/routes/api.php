@@ -1009,7 +1009,10 @@ Route::middleware(['app.secret', 'throttle:api'])->group(function (): void {
 
         Route::get('v1/team/invitations', [InvitationController::class, 'index'])->name('team.invitations');
         Route::post('v1/team/invitations', [InvitationController::class, 'invite'])->name('team.invite');
-        Route::get('v1/team/invitations/cancel', [InvitationController::class, 'cancel'])->name('team.invite.cancel');
+        // POST, not GET: it writes and audits. The endpoint it was ported from
+        // had no method guard, so the verb was a free choice and the first pass
+        // chose wrong — a mutating GET is one prefetch away from firing itself.
+        Route::post('v1/team/invitations/cancel', [InvitationController::class, 'cancel'])->name('team.invite.cancel');
         Route::post('v1/team/invitations/resend', [InvitationController::class, 'resend'])->name('team.invite.resend');
 
         // A GET that mutates, kept as it is: the published apps call it this way.

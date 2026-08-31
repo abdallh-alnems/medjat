@@ -72,8 +72,3 @@ export function deleteAccount(password?: string) {
   );
 }
 
-export function me() {
-  return apiGet<{ user?: Admin; tenant_id?: number | null }>(
-    "v1/auth/admin/login",
-  );
-}

@@ -33,9 +33,9 @@ export async function listInvitations(): Promise<ManagerInvitation[]> {
 }
 
 export function cancelInvitation(id: number) {
-  // Backend reads the id from the query string ($_GET['id']).
   return apiPost<{ status?: string }>(
-    `v1/team/invitations/cancel?id=${id}`,
+    "v1/team/invitations/cancel",
+    { id },
   );
 }
 

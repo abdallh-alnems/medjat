@@ -17340,7 +17340,7 @@
             }
         },
         "/v1/team/invitations/cancel": {
-            "get": {
+            "post": {
                 "operationId": "team.invite.cancel",
                 "tags": [
                     "Team"
@@ -17383,6 +17383,17 @@
                         }
                     }
                 ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
                 "security": [
                     {
                         "adminToken": []

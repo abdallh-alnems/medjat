@@ -21,7 +21,7 @@ class UserData {
     if (q != null && q.isNotEmpty) data['q'] = q;
     if (role != null && role.isNotEmpty) data['role'] = role;
     if (status != null && status.isNotEmpty) data['status'] = status;
-    return await _crud.postData(AppLinks.users, data);
+    return await _crud.getData(AppLinks.users, queryParameters: data);
   }
 
   Future<Map<String, dynamic>> setActive(int adminId, bool isActive) async {

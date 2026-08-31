@@ -18,11 +18,12 @@ class TenantData {
   }
 
   Future<Map<String, dynamic>> detail(int id) async {
-    return await _crud.postData(AppLinks.tenantDetail, {'id': id});
+    return await _crud.getData(AppLinks.tenantDetail, queryParameters: {'id': id});
   }
 
   Future<Map<String, dynamic>> diagnostics(int id, {int days = 30}) async {
-    return await _crud.postData(AppLinks.tenantDiagnostics, {'id': id, 'days': days});
+    return await _crud.getData(AppLinks.tenantDiagnostics,
+        queryParameters: {'id': id, 'days': days});
   }
 
   /// Onboards a company: the tenant row plus, when an owner email is given, a

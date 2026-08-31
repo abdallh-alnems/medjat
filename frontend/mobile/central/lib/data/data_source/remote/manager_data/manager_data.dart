@@ -17,7 +17,7 @@ class ManagerData {
   }
 
   Future<Map<String, dynamic>> cancelInvitation(int id) async {
-    return await _crud.postData(AppLinks.managerCancelInvitation(id), {});
+    return await _crud.postData(AppLinks.managerCancelInvitation, {'id': id});
   }
 
   Future<Map<String, dynamic>> resendInvitation(int id) async {

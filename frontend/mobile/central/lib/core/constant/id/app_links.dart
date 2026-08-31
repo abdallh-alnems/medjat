@@ -349,8 +349,8 @@ class AppLinks {
   // ── Manager Invitations ────────────────────────────────
   static String get managerInvite => '$base/v1/team/invitations';
   static String get managerInvitations => '$base/v1/team/invitations';
-  static String managerCancelInvitation(int id) =>
-      '$base/v1/team/invitations/cancel?id=$id';
+  static String get managerCancelInvitation =>
+      '\$base/v1/team/invitations/cancel';
   static String managerResendInvitation(int id) =>
       '$base/v1/team/invitations/resend?id=$id';
   static String get adminsList => '$base/v1/team';

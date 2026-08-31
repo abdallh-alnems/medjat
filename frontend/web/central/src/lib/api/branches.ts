@@ -39,7 +39,7 @@ export function updateBranchAttendanceMethod(
 }
 
 export function generateBranchQr(id: number) {
-  return apiGet<{ qr_token: string }>("v1/branches/generate-qr", { id });
+  return apiPost<{ qr_token: string }>("v1/branches/generate-qr", { id });
 }
 
 /** Turn the rotating branch QR on or off for one branch. */

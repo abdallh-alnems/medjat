@@ -18,6 +18,6 @@ class AuditData {
     if (q != null && q.isNotEmpty) data['q'] = q;
     if (from != null && from.isNotEmpty) data['from'] = from;
     if (to != null && to.isNotEmpty) data['to'] = to;
-    return await _crud.postData(AppLinks.auditLog, data);
+    return await _crud.getData(AppLinks.auditLog, queryParameters: data);
   }
 }

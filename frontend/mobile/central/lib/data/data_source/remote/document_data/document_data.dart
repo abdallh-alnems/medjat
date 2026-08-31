@@ -15,11 +15,6 @@ class DocumentData {
     return await _crud.getBytes(AppLinks.documentFileView(docId));
   }
 
-  Future<Map<String, dynamic>> uploadDocument(
-      int employeeId, Map<String, dynamic> data) async {
-    return await _crud.postData(AppLinks.employeeDocuments(employeeId), data);
-  }
-
   Future<Map<String, dynamic>> uploadFile(
       int employeeId, File file, Map<String, String> fields) async {
     return await _crud.postFile(
