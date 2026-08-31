@@ -1,7 +1,7 @@
 # Medjat Central — Web Edition
 
 The admin web app for **Medjat Central** HR/payroll. A feature-for-feature port of the
-Flutter admin app (`frontend/mobile/central`), talking to the **same PHP backend and
+Flutter admin app (`frontend/mobile/manager`), talking to the **same PHP backend and
 same Firebase project** through a server-side `/api/[...path]` proxy that injects
 backend Basic-auth credentials and forwards `X-Firebase-Token` / `X-Tenant-Id` /
 `X-Device-Id`.
@@ -44,6 +44,10 @@ The app is **not** on Vercel. It runs as a Node service on the same server as th
 backend, at **`app.medjatapp.com`**, behind Nginx and Cloudflare. It can't be a static
 export — the BFF proxy `src/app/api/[...path]/route.ts` injects the secret
 `SECURITY_USER`/`SECURITY_KEY` server-side.
+
+> The repo folder is `frontend/web/manager`, but the **server** directory is still
+> `/var/www/medjat-web/central` — it is wired into `medjat-web.service` and the Nginx
+> vhost. Do not "fix" the paths below to match the repo folder.
 
 1. Deploy = rsync this folder (excluding `node_modules`, `.next`, `.git`) to
    `/var/www/medjat-web/central` on the server.

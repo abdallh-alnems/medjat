@@ -41,7 +41,7 @@ NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=...
 ```
 
 > The backend host + credentials come from the Flutter app's `.env`
-> (`frontend/mobile/central/.env`: `API_HOST`, `SECURITY_USER`, `SECURITY_KEY`).
+> (`frontend/mobile/manager/.env`: `API_HOST`, `SECURITY_USER`, `SECURITY_KEY`).
 > The Firebase web config comes from the Firebase console (Web app) for the same project
 > the mobile app uses. Add the deploy domain + `localhost` to Firebase Auth authorized
 > domains, and configure Google + Apple providers for web origins.

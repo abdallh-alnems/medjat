@@ -1,7 +1,7 @@
 # Phase 1 — Data Model: Medjat Central Web Edition
 
 Entities are **client-side TypeScript types** mirroring the backend JSON returned by the
-existing PHP API. They are ported from `frontend/mobile/central/lib/data/model/*.dart`.
+existing PHP API. They are ported from `frontend/mobile/manager/lib/data/model/*.dart`.
 The backend (MySQL) remains the authoritative store; the web client does not own schema.
 Field names follow the API's JSON (snake_case) mapped to typed interfaces. Validation
 rules listed are client-side form rules (react-hook-form + zod) that match backend

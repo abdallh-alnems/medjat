@@ -10,8 +10,8 @@
 ## Path Conventions
 
 - Backend (PHP/MySQL): `backend_medjet/`
-- Admin app (Flutter): `frontend/mobile/admin/lib/`
-- Other apps: `frontend/mobile/employee/` (Employee), `frontend/mobile/central/` (HR — no change)
+- Admin app (Flutter): `frontend/mobile/superadmin/lib/`
+- Other apps: `frontend/mobile/employee/` (Employee), `frontend/mobile/manager/` (HR — no change)
 
 ---
 
@@ -21,7 +21,7 @@
 
 - [x] T001 Verify MAMP MySQL is reachable (`medjat` @ 127.0.0.1:8889, root/root) and that `support_tickets` + `support_messages` exist (from `backend_medjet/migrations/2026_06_support.sql`)
 - [x] T002 Confirm a Firebase service-account credential is available to the backend (same one used by `backend_medjet/core/NotificationService.php`) — required for Remote Config writes and FCM
-- [x] T003 [P] Run `flutter pub get` in `frontend/mobile/admin` and confirm the app builds on the current branch
+- [x] T003 [P] Run `flutter pub get` in `frontend/mobile/superadmin` and confirm the app builds on the current branch
 
 **Checkpoint**: Environment verified — story work can begin.
 
@@ -31,8 +31,8 @@
 
 **Purpose**: Shared plumbing used by more than one story. Keep minimal so stories stay independent.
 
-- [x] T004 Add support + app-control endpoint URLs to `frontend/mobile/admin/lib/core/constant/id/app_links.dart` (support: list/messages/reply/status; app control: get/set; device register) and mark the deprecated `forceUpdateTrigger` getter for removal
-- [x] T005 Add new route names to `frontend/mobile/admin/lib/core/constant/routes/app_routes.dart` (`supportInbox`, `supportThread`, `appControl`) and remove the obsolete `forceUpdate` route
+- [x] T004 Add support + app-control endpoint URLs to `frontend/mobile/superadmin/lib/core/constant/id/app_links.dart` (support: list/messages/reply/status; app control: get/set; device register) and mark the deprecated `forceUpdateTrigger` getter for removal
+- [x] T005 Add new route names to `frontend/mobile/superadmin/lib/core/constant/routes/app_routes.dart` (`supportInbox`, `supportThread`, `appControl`) and remove the obsolete `forceUpdate` route
 
 **Checkpoint**: Routing + endpoint constants ready for all stories.
 
@@ -50,23 +50,23 @@
 
 ### Flutter — data layer
 
-- [x] T007 [P] [US1] Create `frontend/mobile/admin/lib/data/model/support_ticket_model.dart` (id, tenantId, tenantName, subject, category, priority, status, lastMessageAt, lastMessagePreview, unreadForSupport) per data-model.md
-- [x] T008 [P] [US1] Create `frontend/mobile/admin/lib/data/model/support_message_model.dart` (id, ticketId, senderType, body, createdAt)
-- [x] T009 [US1] Create `frontend/mobile/admin/lib/data/data_source/remote/support_data/support_data.dart` with `list({page,status,tenantId})`, `messages(ticketId,{afterId})`, `reply(ticketId,body)`, `setStatus(ticketId,status)` using `Get.find<CRUD>()`
+- [x] T007 [P] [US1] Create `frontend/mobile/superadmin/lib/data/model/support_ticket_model.dart` (id, tenantId, tenantName, subject, category, priority, status, lastMessageAt, lastMessagePreview, unreadForSupport) per data-model.md
+- [x] T008 [P] [US1] Create `frontend/mobile/superadmin/lib/data/model/support_message_model.dart` (id, ticketId, senderType, body, createdAt)
+- [x] T009 [US1] Create `frontend/mobile/superadmin/lib/data/data_source/remote/support_data/support_data.dart` with `list({page,status,tenantId})`, `messages(ticketId,{afterId})`, `reply(ticketId,body)`, `setStatus(ticketId,status)` using `Get.find<CRUD>()`
 
 ### Flutter — controller
 
-- [x] T010 [US1] Create `frontend/mobile/admin/lib/logic/controller/support/support_controller.dart`: inbox load + status/tenant filters, thread load (mark-read on open), send reply, change status, and a ~5s polling timer using `after_id` while a thread is open (stop on close/background) — meets SC-003
+- [x] T010 [US1] Create `frontend/mobile/superadmin/lib/logic/controller/support/support_controller.dart`: inbox load + status/tenant filters, thread load (mark-read on open), send reply, change status, and a ~5s polling timer using `after_id` while a thread is open (stop on close/background) — meets SC-003
 
 ### Flutter — UI
 
-- [x] T011 [P] [US1] Create `frontend/mobile/admin/lib/view/screen/support/support_inbox_screen.dart` (ticket list ordered by last activity, unread badge from `unreadForSupport`, status + company filters, empty/loading states)
-- [x] T012 [P] [US1] Create `frontend/mobile/admin/lib/view/screen/support/support_thread_screen.dart` (chat bubbles user vs support, reply input ≤5000 chars text-only, status action menu, deactivated-tenant notice per FR-011)
+- [x] T011 [P] [US1] Create `frontend/mobile/superadmin/lib/view/screen/support/support_inbox_screen.dart` (ticket list ordered by last activity, unread badge from `unreadForSupport`, status + company filters, empty/loading states)
+- [x] T012 [P] [US1] Create `frontend/mobile/superadmin/lib/view/screen/support/support_thread_screen.dart` (chat bubbles user vs support, reply input ≤5000 chars text-only, status action menu, deactivated-tenant notice per FR-011)
 
 ### Flutter — wiring
 
-- [x] T013 [US1] Register `SupportBinding` (SupportData + SupportController) and `GetPage`s for `supportInbox`/`supportThread` in `frontend/mobile/admin/lib/core/constant/routes/app_pages.dart`
-- [x] T014 [US1] Add a "Support / الدعم" entry to the dashboard navigation in `frontend/mobile/admin/lib/view/screen/dashboard/dashboard_screen.dart` linking to `supportInbox`
+- [x] T013 [US1] Register `SupportBinding` (SupportData + SupportController) and `GetPage`s for `supportInbox`/`supportThread` in `frontend/mobile/superadmin/lib/core/constant/routes/app_pages.dart`
+- [x] T014 [US1] Add a "Support / الدعم" entry to the dashboard navigation in `frontend/mobile/superadmin/lib/view/screen/dashboard/dashboard_screen.dart` linking to `supportInbox`
 
 **Checkpoint**: US1 fully functional and independently testable (the MVP).
 
@@ -87,15 +87,15 @@
 ### App-side Remote Config wiring (other apps)
 
 - [x] T018 [P] [US2] Ensure the Employee app reads `medjat_app_min_version` + `medjat_app_maintenance_enabled` — mirror the HR app's `UpdateService`/`MaintenanceGate` in `frontend/mobile/employee/lib/core/` (add gate/service if missing); fall back to a safe non-locking state on RC failure (FR-019/SC-008)
-- [x] T019 [P] [US2] Add a `medjat_admin_min_version` force-update check to `frontend/mobile/admin` (version-only, no maintenance gate)
+- [x] T019 [P] [US2] Add a `medjat_admin_min_version` force-update check to `frontend/mobile/superadmin` (version-only, no maintenance gate)
 
 ### Flutter (admin) — app control screen
 
-- [x] T020 [P] [US2] Create `frontend/mobile/admin/lib/data/model/app_control_model.dart` (key, name, minVersion, maintenance nullable, supportsMaintenance)
-- [x] T021 [US2] Create `frontend/mobile/admin/lib/data/data_source/remote/app_control_data/app_control_data.dart` with `get()` and `set({app, minVersion?, maintenance?})`
-- [x] T022 [US2] Create `frontend/mobile/admin/lib/logic/controller/app_control/app_control_controller.dart` (load apps, edit version, toggle maintenance for Employee/HR only, client-side version validation per FR-017)
-- [x] T023 [US2] Create `frontend/mobile/admin/lib/view/screen/app_control/app_control_screen.dart` (per-app card: min-version field + save; maintenance toggle shown only when `supportsMaintenance`; current-state display)
-- [x] T024 [US2] Register `AppControlBinding` + `GetPage` for `appControl` and remove the deprecated `ForceUpdateBinding`/route in `frontend/mobile/admin/lib/core/constant/routes/app_pages.dart`; delete `force_update_*` data/controller/screen
+- [x] T020 [P] [US2] Create `frontend/mobile/superadmin/lib/data/model/app_control_model.dart` (key, name, minVersion, maintenance nullable, supportsMaintenance)
+- [x] T021 [US2] Create `frontend/mobile/superadmin/lib/data/data_source/remote/app_control_data/app_control_data.dart` with `get()` and `set({app, minVersion?, maintenance?})`
+- [x] T022 [US2] Create `frontend/mobile/superadmin/lib/logic/controller/app_control/app_control_controller.dart` (load apps, edit version, toggle maintenance for Employee/HR only, client-side version validation per FR-017)
+- [x] T023 [US2] Create `frontend/mobile/superadmin/lib/view/screen/app_control/app_control_screen.dart` (per-app card: min-version field + save; maintenance toggle shown only when `supportsMaintenance`; current-state display)
+- [x] T024 [US2] Register `AppControlBinding` + `GetPage` for `appControl` and remove the deprecated `ForceUpdateBinding`/route in `frontend/mobile/superadmin/lib/core/constant/routes/app_pages.dart`; delete `force_update_*` data/controller/screen
 - [x] T025 [US2] Add an "App Control / التحكم بالتطبيقات" nav entry in `dashboard_screen.dart`, shown only when the signed-in operator's role is `superadmin`
 
 **Checkpoint**: US1 and US2 both work independently.
@@ -108,7 +108,7 @@
 
 **Independent Test**: Try to enable a stop switch → confirmation dialog names the app; cancel → no change; confirm → change applies.
 
-- [x] T026 [US3] Add a reusable confirmation dialog in `frontend/mobile/admin/lib/core/shared/dialogs/` (or extend existing) that names the affected app and the impact
+- [x] T026 [US3] Add a reusable confirmation dialog in `frontend/mobile/superadmin/lib/core/shared/dialogs/` (or extend existing) that names the affected app and the impact
 - [x] T027 [US3] Wire the confirmation into `app_control_screen.dart`/`app_control_controller.dart` so enabling maintenance or raising `min_version` requires confirm before calling `set()` (FR-018/SC-007); cancel restores previous UI state
 
 **Checkpoint**: App-control mutations are guarded.
@@ -130,8 +130,8 @@
 
 ### Flutter (admin) — Firebase + token registration
 
-- [x] T032 [USPush] Add `firebase_core` + `firebase_messaging` to `frontend/mobile/admin/pubspec.yaml`; add platform config (`google-services.json`, `GoogleService-Info.plist`); initialize Firebase in `frontend/mobile/admin/lib/main.dart`
-- [x] T033 [USPush] Create `frontend/mobile/admin/lib/data/data_source/remote/device_data/device_data.dart` + register the FCM token on login/app-start (request notification permission), calling the device-register endpoint
+- [x] T032 [USPush] Add `firebase_core` + `firebase_messaging` to `frontend/mobile/superadmin/pubspec.yaml`; add platform config (`google-services.json`, `GoogleService-Info.plist`); initialize Firebase in `frontend/mobile/superadmin/lib/main.dart`
+- [x] T033 [USPush] Create `frontend/mobile/superadmin/lib/data/data_source/remote/device_data/device_data.dart` + register the FCM token on login/app-start (request notification permission), calling the device-register endpoint
 - [x] T034 [USPush] Handle notification tap with `data.type=='support'` → deep-link to `supportThread` for `ticket_id`
 
 **Checkpoint**: Support push delivered end-to-end; badges remain the always-on fallback.
@@ -144,7 +144,7 @@
 
 - [x] T035 [P] Verify audit trail (SC-006): rows in `super_admin_audit_log` for `support.reply`, `support.status`, `app_control.set_version`, `app_control.set_maintenance`
 - [x] T036 [P] Verify edge cases from spec: concurrent reply + user message ordering; deactivated tenant shows history + delivery notice (FR-011); RC fetch failure → no false lockout (SC-008); min_version above latest → warn
-- [x] T037 [P] Run `flutter analyze` on `frontend/mobile/admin` (and any touched app) and resolve lints; confirm RTL/Arabic strings render
+- [x] T037 [P] Run `flutter analyze` on `frontend/mobile/superadmin` (and any touched app) and resolve lints; confirm RTL/Arabic strings render
 - [x] T038 Walk through `quickstart.md` slices 1–3 end-to-end and confirm SC-001..SC-009
 
 ---

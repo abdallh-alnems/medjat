@@ -163,8 +163,8 @@ frontend/mobile/kiosk/                 # NEW standalone Flutter app (Android)
     └── kotlin/.../KioskBootReceiver.kt # returns after a power cut
 
 frontend/mobile/employee/                   # employee app — now depends on medjat_shared
-frontend/mobile/central/               # management: kiosk tab on a branch
-frontend/web/central/           # same surfaces on the web port
+frontend/mobile/manager/               # management: kiosk tab on a branch
+frontend/web/manager/           # same surfaces on the web port
 ```
 
 **Structure Decision**: Three Flutter projects, not two and not one.

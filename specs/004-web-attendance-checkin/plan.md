@@ -117,7 +117,7 @@ backend_medjet/
     ├── 2026_08_03_attendance_punch_photo.sql
     └── 2026_08_03_web_attendance_settings.sql
 
-frontend/web/central/src/
+frontend/web/manager/src/
 ├── app/(employee)/                        # NEW route group — employee surface, isolated from (app)
 │   ├── layout.tsx                         # Own auth context; imports nothing from the admin tree
 │   ├── activate/page.tsx                  # Phone + activation code + choose PIN
@@ -126,7 +126,7 @@ frontend/web/central/src/
 ├── features/employee-attendance/          # NEW — hooks, schemas, api client
 └── lib/api/employee.ts                    # NEW — axios instance carrying the employee session
 
-frontend/mobile/central/lib/
+frontend/mobile/manager/lib/
 └── view/screen/settings/                  # EXTEND — web toggle, photo toggle, category access
 ```
 

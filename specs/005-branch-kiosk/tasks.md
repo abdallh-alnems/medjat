@@ -26,7 +26,7 @@ shipped on its own.
 - Backend: `backend_medjet/` — one endpoint per file under `app/<module>/`, shared logic in `core/`
 - Kiosk app: `frontend/mobile/kiosk/` — a **standalone Flutter project**
 - Shared: `frontend/mobile/shared/` — the face pipeline and its model, depended on by both `medjat_app` and `medjat_kiosk`
-- Management: `frontend/mobile/central/` (Flutter) and `frontend/web/central/` (Next.js)
+- Management: `frontend/mobile/manager/` (Flutter) and `frontend/web/manager/` (Next.js)
 
 ---
 
@@ -89,8 +89,8 @@ shipped on its own.
 - [X] T027 [P] [US1] Implement `backend_medjet/app/kiosk/revoke.php` — permission `kiosk_devices`, sets station `revoked` and stamps the live token row; must not orphan `attendance.station_id` on historical rows
 - [X] T028 [US1] Build the pairing screen in `frontend/mobile/kiosk/lib/view/pairing_screen.dart` — code entry, branch confirmation, and persistence of the returned token
 - [X] T029 [US1] Build the heartbeat/bootstrap controller in `frontend/mobile/kiosk/lib/logic/kiosk_controller.dart` — on launch, resolve stored token → heartbeat → route to identify, pairing, update-required, or maintenance
-- [X] T030 [P] [US1] Add a Kiosks tab to the branch screen in `frontend/mobile/central/` — list, add (shows the code), and revoke, gated on `kiosk_devices`
-- [X] T031 [P] [US1] Add the same Kiosks surface to `frontend/web/central/`, gated on `kiosk_devices` from the permissions `login.php` already returns
+- [X] T030 [P] [US1] Add a Kiosks tab to the branch screen in `frontend/mobile/manager/` — list, add (shows the code), and revoke, gated on `kiosk_devices`
+- [X] T031 [P] [US1] Add the same Kiosks surface to `frontend/web/manager/`, gated on `kiosk_devices` from the permissions `login.php` already returns
 - [ ] T032 [US1] **Verify**: pair a tablet; re-enter the same code on a second device and confirm `410`; revoke and confirm the first device gets `401` on its next heartbeat and wipes local state
 - [ ] T033 [US1] **Verify**: sign in as a user without `kiosk_devices` and confirm both that `create_pairing_code.php` refuses and that the UI never shows the control (FR-061)
 
@@ -112,8 +112,8 @@ shipped on its own.
 - [X] T039 [P] [US2] Implement `backend_medjet/app/kiosk/admin/close.php` — ends the admin session, and with `release_kiosk_mode: true` releases kiosk mode
 - [X] T040 [US2] Build the admin area in `frontend/mobile/kiosk/lib/view/admin_screen.dart` — code entry, roster list, and an idle timer that closes the area by itself (FR-038)
 - [X] T041 [US2] Build the enrollment capture flow in `frontend/mobile/kiosk/lib/logic/enrollment_controller.dart`, reusing `lib/core/services/face_embedder.dart` and `face_liveness.dart` unchanged
-- [X] T042 [P] [US2] Add "Open kiosk settings" (generate access code) to the branch screen in `frontend/mobile/central/` and `frontend/web/central/`, gated on `kiosk_access`
-- [X] T043 [P] [US2] Surface enrollment provenance on the employee screen in `frontend/mobile/central/` — enrolled, when, by whom, at which kiosk
+- [X] T042 [P] [US2] Add "Open kiosk settings" (generate access code) to the branch screen in `frontend/mobile/manager/` and `frontend/web/manager/`, gated on `kiosk_access`
+- [X] T043 [P] [US2] Surface enrollment provenance on the employee screen in `frontend/mobile/manager/` — enrolled, when, by whom, at which kiosk
 - [ ] T044 [US2] **Verify**: enroll three employees in one session; confirm an employee of another branch never appears in the roster; confirm a deliberately blurred capture is refused with a reason and stores nothing
 - [ ] T045 [US2] **Verify**: leave the admin area untouched and confirm it closes itself and returns to the identification screen; confirm a spent access code returns `410`
 
@@ -156,8 +156,8 @@ shipped on its own.
 - [X] T061 [US4] Implement `backend_medjet/app/kiosk/identify_by_code.php` — returns the same envelope as `identify.php` with `method = 'code'`; refuses with `422` when `branches.station_code_fallback_enabled = 0`
 - [X] T062 [US4] Add per-station rate limiting to `identify_by_code.php` via `RateLimiter`; crossing the threshold writes `kiosk_pin_bruteforce` to `attendance_security_logs` and returns `429` (FR-019)
 - [X] T063 [US4] Build the code entry screen in `frontend/mobile/kiosk/lib/view/code_entry_screen.dart`, reachable from a failed identification and hidden when the branch has the fallback disabled
-- [X] T064 [P] [US4] Add the kiosk code control to the employee screen in `frontend/mobile/central/` and `frontend/web/central/`, gated on `manage_employees`
-- [X] T065 [P] [US4] Add the per-branch `station_code_fallback_enabled` toggle to the branch settings screen in `frontend/mobile/central/`
+- [X] T064 [P] [US4] Add the kiosk code control to the employee screen in `frontend/mobile/manager/` and `frontend/web/manager/`, gated on `manage_employees`
+- [X] T065 [P] [US4] Add the per-branch `station_code_fallback_enabled` toggle to the branch settings screen in `frontend/mobile/manager/`
 - [ ] T066 [US4] **Verify**: punch by code and confirm the attendance row and its log row both show code identification, not face; confirm repeated wrong codes are throttled and flagged
 
 **Checkpoint**: A bad face day no longer sends the branch back to manual entry.
@@ -194,7 +194,7 @@ shipped on its own.
 - [X] T077 [US6] Implement outcome resolution on reconnect in the kiosk client — replay the pending punch with its original idempotency key rather than creating a new one, so a lost response cannot become a double punch
 - [X] T078 [US6] Assert that no embedding, roster, or capture is written to device storage anywhere in the kiosk app — audit `lib/kiosk/` for persistence and confirm only the token is stored (FR-025)
 - [X] T079 [US6] Add dark-kiosk detection to the existing alerting cron in `backend_medjet/app/cron/run_alerts.php` — a station whose `last_seen_at` has gone stale during its branch's working hours notifies management (FR-048)
-- [ ] T080 [P] [US6] Surface kiosk outage windows beside branch attendance in `frontend/mobile/central/` so missing punches have an explanation (FR-050)
+- [ ] T080 [P] [US6] Surface kiosk outage windows beside branch attendance in `frontend/mobile/manager/` so missing punches have an explanation (FR-050)
 - [ ] T081 [US6] **Verify**: pull the network mid-shift, confirm the tablet identifies nobody and states why; reconnect and confirm it resumes with no intervention and no invented punches
 - [ ] T082 [US6] **Verify**: inspect the tablet's app storage after a full session and confirm no biometric data persists. If anything does, the offline capability was given up for a security property that was never delivered
 
@@ -211,7 +211,7 @@ shipped on its own.
 - [X] T083 [US7] Implement `backend_medjet/app/kiosk/recognition_logs.php` — permission `manage_attendance`, filters on branch/station/result/date, plus `view: "distribution"` returning a score histogram in the same shape as `app/attendance/face_logs.php`. **Omit `capture_path`** — reaching the image costs a different permission
 - [X] T084 [US7] Implement `backend_medjet/app/kiosk/capture.php` — permission `kiosk_evidence`, returns a short-lived signed URL, writes an audit row on every call, and returns `410` once `capture_expires_at` has passed (FR-055, FR-059)
 - [X] T085 [US7] Create `backend_medjet/app/cron/purge_kiosk_captures.php` — unlinks the file **then** nulls `capture_path`; deleting the row alone leaves the image on disk (FR-056)
-- [X] T086 [P] [US7] Add kiosk activity and score distribution to the attendance section of `frontend/mobile/central/` and `frontend/web/central/`, gated on `manage_attendance`
+- [X] T086 [P] [US7] Add kiosk activity and score distribution to the attendance section of `frontend/mobile/manager/` and `frontend/web/manager/`, gated on `manage_attendance`
 - [X] T087 [P] [US7] Add "view capture" beside kiosk attendance rows, gated on `kiosk_evidence` — visible only to holders, per FR-061
 - [X] T088 [P] [US7] Surface branches whose identification failure rate is abnormal, and kiosks unseen for an extended period, in the existing alerts surface (FR-032)
 - [X] T089 [US7] Implement the roster-size warning (FR-047) — warn when a branch's enrolled roster passes the size at which the configured threshold and margin can still hold SC-013

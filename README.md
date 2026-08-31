@@ -10,15 +10,15 @@ Medjat/
 ├── frontend/
 │   ├── mobile/              ← تطبيقات Flutter — أداة `flutter`
 │   │   ├── employee/        ← تطبيق الموظف (Android / iOS)
-│   │   ├── central/         ← تطبيق الإدارة والموارد البشرية للشركة (Android / iOS)
+│   │   ├── manager/         ← تطبيق الإدارة والموارد البشرية للشركة (Android / iOS)
 │   │   ├── kiosk/           ← كشك الفرع (تابلت Android) — حضور بجهاز مشترك
-│   │   ├── admin/           ← لوحة الـ Super Admin للفريق الداخلي (Android)
+│   │   ├── superadmin/      ← لوحة الـ Super Admin للفريق الداخلي (Android)
 │   │   └── shared/          ← حزمة `medjat_shared` المشتركة بين تطبيقات Flutter
 │   ├── web/                 ← أداة `npm`
-│   │   ├── central/         ← نسخة الويب من تطبيق الإدارة (Next.js 16)
+│   │   ├── manager/         ← نسخة الويب من تطبيق الإدارة (Next.js 16)
 │   │   └── site/            ← الموقع التعريفي والصفحات الثابتة (الخصوصية، حذف الحساب، الدعم)
 │   └── desktop/
-│       └── central/         ← غلاف Electron فوق web/central → ‏.dmg / .exe
+│       └── manager/         ← غلاف Electron فوق web/manager → ‏.dmg / .exe
 └── specs/                   ← مواصفات الميزات (spec-kit)
 ```
 
@@ -38,13 +38,13 @@ REST API بلغة **PHP 8.x** على قاعدة **MySQL 8**، مستضاف عل�
 ### 2) تطبيق الموظف — `frontend/mobile/employee/`
 يستخدمه الموظف لتسجيل الحضور (QR / GPS / شبكة WiFi / سيلفي الوجه)، ومتابعة الراتب والمستندات، وتقديم طلبات الإجازات والسلف، مع عمل **offline** يُزامن تلقائيًا. الدخول برقم الهاتف + رمز تفعيل (أو رمز/رابط/QR انضمام). (Android + iOS)
 
-### 3) تطبيق الإدارة — `frontend/mobile/central/`
+### 3) تطبيق الإدارة — `frontend/mobile/manager/`
 مركز التحكّم الكامل للشركة: إدارة الموظفين والفروع والفئات، تصميم الورديات والجدول الأسبوعي، اعتماد الإجازات، تشغيل الرواتب والتعديلات الجماعية والتسويات، ضبط طرق الحضور وشبكات الفروع وأجهزة البصمة، والتقارير مع التصدير (PDF/Word/DOCX). يدعم العربية والإنجليزية. (Android + iOS)
 
-### 4) نسخة الويب — `frontend/web/central/`
+### 4) نسخة الويب — `frontend/web/manager/`
 منفذ ويب لتطبيق الإدارة بـ **Next.js 16 (App Router)** و React 19 و TypeScript، يتحدّث إلى **نفس الباك إند ونفس مشروع Firebase** عبر وسيط `/api/[...path]` يحقن بيانات الـ Basic-auth على الخادم. مُستضاف ذاتيًا على نفس خادم Hetzner على `app.medjatapp.com`.
 
-### 5) لوحة الـ Super Admin — `frontend/mobile/admin/`
+### 5) لوحة الـ Super Admin — `frontend/mobile/superadmin/`
 للفريق الداخلي: إدارة الشركات العميلة (Tenants) والمستخدمين الداخليين، الدعم الفني، سجل التدقيق، والتحكّم عن بُعد في حالة التطبيقات (تحديث إجباري/صيانة) عبر Firebase Remote Config. (Android)
 
 ---
@@ -89,7 +89,7 @@ REST API بلغة **PHP 8.x** على قاعدة **MySQL 8**، مستضاف عل�
 - لتشغيل/فحص PHP محليًا استخدم نسخة MAMP: `/Applications/MAMP/bin/php/php8.4.15/bin/php`.
 
 ### 2) أي تطبيق Flutter
-داخل مجلد التطبيق (`frontend/mobile/employee` أو `frontend/mobile/central` أو `frontend/mobile/admin`):
+داخل مجلد التطبيق (`frontend/mobile/employee` أو `frontend/mobile/manager` أو `frontend/mobile/superadmin`):
 
 ```bash
 flutter pub get
@@ -106,7 +106,7 @@ SECURITY_USER = ""
 ثم شغّل:
 
 ```bash
-# mobile/admin و mobile/central (يحمّلان .env كـ asset عند الإقلاع)
+# mobile/superadmin و mobile/manager (يحمّلان .env كـ asset عند الإقلاع)
 flutter run
 
 # mobile/employee
@@ -119,7 +119,7 @@ flutter run --dart-define-from-file=.env
 ### 3) نسخة الويب
 
 ```bash
-cd frontend/web/central
+cd frontend/web/manager
 npm install
 cp .env.local.example .env.local   # ثم املأ SECURITY_USER/KEY و NEXT_PUBLIC_*
 npm run dev

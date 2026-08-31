@@ -10,7 +10,7 @@ mocks), and Playwright (the per-story Independent Tests from the spec).
 but stories are still ordered/checkpointed so each is independently implementable and
 testable. **MVP = Setup + Foundational + US1.**
 
-**Base path**: all paths are under `frontend/web/central/` unless noted.
+**Base path**: all paths are under `frontend/web/manager/` unless noted.
 
 ## Path Conventions
 
@@ -25,7 +25,7 @@ testable. **MVP = Setup + Foundational + US1.**
 
 **Purpose**: Project initialization, tooling, theme, fonts.
 
-- [X] T001 Scaffold Next.js 16 App-Router TS app at `frontend/web/central/` (src dir, ESLint) per quickstart.md
+- [X] T001 Scaffold Next.js 16 App-Router TS app at `frontend/web/manager/` (src dir, ESLint) per quickstart.md
 - [X] T002 Install runtime deps (react-query, zustand, axios, firebase, react-hook-form, zod, shadcn/@base-ui, tailwind v4, lucide, sonner, next-themes, recharts, date-fns, dayjs, jspdf, html2canvas, xlsx, react-day-picker, react-markdown, remark-gfm, qrcode, input-otp) in `package.json`
 - [X] T003 [P] Install + configure dev tooling (Vitest, RTL, jsdom, MSW, Playwright, Prettier + tailwind plugin) in `package.json`, `vitest.config.ts`, `playwright.config.ts`, `.prettierrc`
 - [X] T004 [P] Initialize shadcn and add base UI primitives (button, input, label, card, dialog, sheet, dropdown-menu, select, tabs, badge, avatar, skeleton, popover, calendar, separator, sonner, input-otp, textarea, table) in `src/components/ui/`

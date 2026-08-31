@@ -3,7 +3,7 @@
 **Feature Branch**: `003-medjat-central-web`
 **Created**: 2026-06-19
 **Status**: Draft
-**Input**: User description: "عايز احول التطبيق دة frontend/mobile/central الي موقع ويب اريد كل التفاصيل الذي فية واريد ان تستخدم نفس الطريقة هذة frontend/farkha_web"
+**Input**: User description: "عايز احول التطبيق دة frontend/mobile/manager الي موقع ويب اريد كل التفاصيل الذي فية واريد ان تستخدم نفس الطريقة هذة frontend/farkha_web"
 
 ## Summary
 

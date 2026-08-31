@@ -15,15 +15,15 @@ Medjat/
 ├── frontend/
 │   ├── mobile/              ← Flutter apps — the `flutter` toolchain
 │   │   ├── employee/        ← Employee app (Android/iOS) — attendance, payslips, requests
-│   │   ├── central/         ← Company HR/management app (Android/iOS)
+│   │   ├── manager/         ← Company HR/management app (Android/iOS)
 │   │   ├── kiosk/           ← Branch kiosk (Android tablet) — shared-device attendance
-│   │   ├── admin/           ← Internal super-admin panel (Android)
+│   │   ├── superadmin/      ← Internal super-admin panel (Android)
 │   │   └── shared/          ← package `medjat_shared` — shared between the Flutter apps
 │   ├── web/                 ← the `npm` toolchain
-│   │   ├── central/         ← Next.js 16 web port of mobile/central (self-hosted)
+│   │   ├── manager/         ← Next.js 16 web port of mobile/manager (self-hosted)
 │   │   └── site/            ← Static promo/landing + privacy, delete-account, support
 │   └── desktop/
-│       └── central/         ← Electron shell over web/central → .dmg / .exe
+│       └── manager/         ← Electron shell over web/manager → .dmg / .exe
 └── specs/                   ← spec-kit feature specs
 ```
 

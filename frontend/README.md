@@ -7,18 +7,18 @@
 frontend/
 ├── mobile/      تطبيقات Flutter — أداة `flutter`
 │   ├── employee/    تطبيق الموظف (Android / iOS)
-│   ├── central/     تطبيق إدارة الشركة (Android / iOS)
+│   ├── manager/     تطبيق إدارة الشركة (Android / iOS)
 │   ├── kiosk/       كشك الفرع (تابلت Android)
-│   ├── admin/       لوحة الـ Super Admin الداخلية (Android)
+│   ├── superadmin/  لوحة الـ Super Admin الداخلية (Android)
 │   └── shared/      حزمة `medjat_shared` — كود مشترك بين تطبيقات Flutter
 ├── web/         أداة `npm`
-│   ├── central/     نسخة الويب من تطبيق الإدارة (Next.js 16)
+│   ├── manager/     نسخة الويب من تطبيق الإدارة (Next.js 16)
 │   └── site/        الموقع التعريفي والصفحات الثابتة (HTML)
 └── desktop/
-    └── central/     غلاف Electron فوق web/central → ‏.dmg / .exe
+    └── manager/     غلاف Electron فوق web/manager → ‏.dmg / .exe
 ```
 
-`central` بتتكرر تحت `mobile/` و`web/` و`desktop/` عن قصد: دي **نفس المنتج بتلات واجهات**.
+`manager` بتتكرر تحت `mobile/` و`web/` و`desktop/` عن قصد: دي **نفس المنتج بتلات واجهات**.
 نسخة الويب منفذ لتطبيق الموبايل، وتطبيق سطح المكتب غلاف حوالين نسخة الويب — يعني التلاتة
 بيتغيّروا مع بعض غالبًا.
 
@@ -30,10 +30,10 @@ flutter pub get
 flutter analyze lib          # لا تستخدم `flutter analyze` وحدها — بتفحص build/ وتطلع أخطاء وهمية
 
 # نسخة الويب
-cd web/central && npm run dev
+cd web/manager && npm run dev
 
 # تطبيق سطح المكتب
-cd desktop/central && npm run dev
+cd desktop/manager && npm run dev
 ```
 
 ## ملاحظات تخصّ التقسيم

@@ -1,5 +1,5 @@
 /**
- * The bridge the Electron shell injects (see frontend/desktop/central/src/preload.js).
+ * The bridge the Electron shell injects (see frontend/desktop/manager/src/preload.js).
  *
  * Everything here is feature-detected: in a plain browser `window.medjat` does
  * not exist and the desktop-only paths simply never render.
