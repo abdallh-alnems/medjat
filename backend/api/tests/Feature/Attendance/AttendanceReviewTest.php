@@ -13,6 +13,7 @@ use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\TestCase;
 
@@ -22,6 +23,7 @@ use Tests\TestCase;
  */
 final class AttendanceReviewTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private Employee $employee;
@@ -40,10 +42,7 @@ final class AttendanceReviewTest extends TestCase
         $this->firebase = new FakeFirebaseTokenVerifier;
         $this->app->instance(FirebaseTokenVerifier::class, $this->firebase);
 
-        $this->employee = Employee::query()
-            ->where('status', 'active')
-            ->whereNotNull('branch_id')
-            ->firstOrFail();
+        $this->employee = $this->createEmployee($this->createTenant());
 
         $this->branchId = (int) $this->employee->branch_id;
         $this->tenantId = $this->employee->tenant_id;
@@ -230,10 +229,15 @@ final class AttendanceReviewTest extends TestCase
     {
         [, $token] = $this->admin();
 
-        $other = DB::table('attendance')->where('tenant_id', '!=', $this->tenantId)->value('id');
-        if ($other === null) {
-            $this->markTestSkipped('needs a second company with attendance');
-        }
+        $stranger = $this->createEmployee($this->createTenant());
+        $other = DB::table('attendance')->insertGetId([
+            'tenant_id' => $stranger->tenant_id,
+            'employee_id' => $stranger->id,
+            'branch_id' => $stranger->branch_id,
+            'date' => TenantClock::date((int) $stranger->tenant_id),
+            'check_in_time' => '09:00:00',
+            'status' => 'present',
+        ]);
 
         $this->withHeader('X-Firebase-Token', $token)
             ->get('/v1/attendance/photo?attendance_id='.Value::int($other))

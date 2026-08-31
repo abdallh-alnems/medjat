@@ -6,12 +6,12 @@ namespace Tests\Feature\Cron;
 
 use App\Modules\Notifications\Domain\PushSender;
 use App\Shared\Time\TenantClock;
-use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
 
@@ -21,6 +21,7 @@ use Tests\TestCase;
  */
 final class CronTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private const SECRET = 'test-cron-secret';
@@ -41,7 +42,7 @@ final class CronTest extends TestCase
         Config::set('medjat.cron.secret', self::SECRET);
         $this->app->instance(PushSender::class, new FakePushSender);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
         $this->today = TenantClock::date($this->tenantId);
 
         $this->branchId = (int) DB::table('branches')->insertGetId([

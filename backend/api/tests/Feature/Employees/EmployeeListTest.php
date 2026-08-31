@@ -11,6 +11,7 @@ use App\Modules\Auth\Services\FirebaseTokenVerifier;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\TestCase;
 
@@ -20,6 +21,7 @@ use Tests\TestCase;
  */
 final class EmployeeListTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -35,8 +37,7 @@ final class EmployeeListTest extends TestCase
         $this->firebase = new FakeFirebaseTokenVerifier;
         $this->app->instance(FirebaseTokenVerifier::class, $this->firebase);
 
-        $this->employee = Employee::query()
-            ->where('status', 'active')->whereNotNull('branch_id')->firstOrFail();
+        $this->employee = $this->createEmployee($this->createTenant());
         $this->tenantId = $this->employee->tenant_id;
     }
 
@@ -230,10 +231,7 @@ final class EmployeeListTest extends TestCase
     {
         [, $token] = $this->admin();
 
-        $other = Employee::query()->where('tenant_id', '!=', $this->tenantId)->first();
-        if ($other === null) {
-            $this->markTestSkipped('needs a second company');
-        }
+        $other = $this->createEmployee($this->createTenant());
 
         $this->withHeader('X-Firebase-Token', $token)
             ->postJson('/v1/employees/delete', ['employee_id' => $other->id])

@@ -9,6 +9,7 @@ use App\Models\Employee;
 use App\Models\EmployeeAuthToken;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\TestCase;
 
 /**
@@ -19,6 +20,7 @@ use Tests\TestCase;
  */
 final class EmployeeLoginTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private const ENDPOINT = '/v1/auth/employee/login';
@@ -30,11 +32,7 @@ final class EmployeeLoginTest extends TestCase
      */
     private function employee(): Employee
     {
-        return Employee::query()
-            ->where('status', '!=', 'terminated')
-            ->whereNotNull('phone')
-            ->where('phone', '!=', '')
-            ->firstOrFail();
+        return $this->createEmployee($this->createTenant(), ['phone' => $this->uniquePhone()]);
     }
 
     /**
@@ -127,8 +125,7 @@ final class EmployeeLoginTest extends TestCase
     public function test_a_code_belonging_to_someone_else_is_refused(): void
     {
         $employee = $this->employee();
-        $other = Employee::query()->whereKeyNot($employee->id)
-            ->where('tenant_id', $employee->tenant_id)->firstOrFail();
+        $other = $this->createEmployee((int) $employee->tenant_id);
 
         // Give the other employee an unmistakably different number: the guard
         // compares the tail of the significant digits, so "different" has to

@@ -8,6 +8,7 @@ use App\Models\Employee;
 use App\Models\EmployeeAuthToken;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\TestCase;
 
 /**
@@ -19,6 +20,7 @@ use Tests\TestCase;
  */
 final class EmployeeAuthenticationTest extends TestCase
 {
+    use CreatesFixtures;
     // Not RefreshDatabase: the schema is owned by the old backend's migration
     // ledger, so tests read a real copy of it and roll back their own writes.
     use DatabaseTransactions;
@@ -28,7 +30,7 @@ final class EmployeeAuthenticationTest extends TestCase
      */
     private function makeToken(array $overrides = []): string
     {
-        $employee = Employee::query()->where('status', '!=', 'terminated')->firstOrFail();
+        $employee = $this->createEmployee($this->createTenant());
         $plain = 'test-'.bin2hex(random_bytes(16));
 
         EmployeeAuthToken::query()->create(array_merge([

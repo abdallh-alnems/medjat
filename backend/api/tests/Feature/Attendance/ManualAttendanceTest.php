@@ -12,6 +12,7 @@ use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\TestCase;
 
@@ -24,6 +25,7 @@ use Tests\TestCase;
  */
 final class ManualAttendanceTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private Employee $employee;
@@ -44,10 +46,7 @@ final class ManualAttendanceTest extends TestCase
         $this->firebase = new FakeFirebaseTokenVerifier;
         $this->app->instance(FirebaseTokenVerifier::class, $this->firebase);
 
-        $this->employee = Employee::query()
-            ->where('status', 'active')
-            ->whereNotNull('branch_id')
-            ->firstOrFail();
+        $this->employee = $this->createEmployee($this->createTenant());
 
         $this->branchId = (int) $this->employee->branch_id;
         $this->tenantId = $this->employee->tenant_id;

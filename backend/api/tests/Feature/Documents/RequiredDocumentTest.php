@@ -9,6 +9,7 @@ use App\Modules\Notifications\Domain\PushSender;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
@@ -19,6 +20,7 @@ use Tests\TestCase;
  */
 final class RequiredDocumentTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -39,7 +41,7 @@ final class RequiredDocumentTest extends TestCase
         $this->app->instance(FirebaseTokenVerifier::class, $firebase);
         $this->app->instance(PushSender::class, new FakePushSender);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
 
         // The dump carries a company's real catalogue and staff; these cases
         // are about what this test creates.
@@ -231,7 +233,7 @@ final class RequiredDocumentTest extends TestCase
 
     public function test_a_type_from_another_company_is_not_found(): void
     {
-        $otherTenant = Value::int(DB::table('tenants')->where('id', '!=', $this->tenantId)->value('id'));
+        $otherTenant = $this->createTenant();
         $stranger = (int) DB::table('required_documents')->insertGetId([
             'tenant_id' => $otherTenant,
             'name' => 'Somebody else\'s',

@@ -13,6 +13,7 @@ use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
+use Tests\Support\CreatesFixtures;
 use Tests\TestCase;
 
 /**
@@ -20,15 +21,12 @@ use Tests\TestCase;
  */
 final class EmployeeActivationTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private function employee(): Employee
     {
-        $employee = Employee::query()
-            ->where('status', '!=', 'terminated')
-            ->whereNotNull('phone')
-            ->where('phone', '!=', '')
-            ->firstOrFail();
+        $employee = $this->createEmployee($this->createTenant(), ['phone' => $this->uniquePhone()]);
 
         DB::table('tenants')->where('id', $employee->tenant_id)->update(['web_attendance_enabled' => 1]);
         RateLimiter::clear('web_activate:'.preg_replace('/\D/', '', (string) $employee->phone));

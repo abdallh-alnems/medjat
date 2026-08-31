@@ -17,6 +17,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use RuntimeException;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
 
@@ -25,6 +26,7 @@ use Tests\TestCase;
  */
 final class TransactionalMailTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -39,7 +41,7 @@ final class TransactionalMailTest extends TestCase
         $this->push = new FakePushSender;
         $this->app->instance(PushSender::class, $this->push);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
     }
 
     private function admin(?string $email = 'manager@example.test'): Admin

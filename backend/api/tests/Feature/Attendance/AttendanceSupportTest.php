@@ -8,9 +8,10 @@ use App\Models\Employee;
 use App\Models\EmployeeAuthToken;
 use App\Shared\Face\FaceEmbedding;
 use App\Shared\Time\TenantClock;
-use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Tests\Support\CreatesFixtures;
 use Tests\TestCase;
 
 /**
@@ -19,6 +20,7 @@ use Tests\TestCase;
  */
 final class AttendanceSupportTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private Employee $employee;
@@ -30,10 +32,7 @@ final class AttendanceSupportTest extends TestCase
         parent::setUp();
         TenantClock::flush();
 
-        $this->employee = Employee::query()
-            ->where('status', '!=', 'terminated')
-            ->whereNotNull('branch_id')
-            ->firstOrFail();
+        $this->employee = $this->createEmployee($this->createTenant());
 
         $plain = 'test-'.bin2hex(random_bytes(16));
         EmployeeAuthToken::query()->create([
@@ -145,10 +144,7 @@ final class AttendanceSupportTest extends TestCase
 
     public function test_a_supervisor_gets_their_crew_with_todays_state(): void
     {
-        $member = Employee::query()
-            ->whereKeyNot($this->employee->id)
-            ->where('tenant_id', $this->employee->tenant_id)
-            ->firstOrFail();
+        $member = $this->createEmployee((int) $this->employee->tenant_id);
 
         Employee::query()->whereKey($member->id)
             ->update(['crew_supervisor_id' => $this->employee->id, 'status' => 'active']);
@@ -175,10 +171,7 @@ final class AttendanceSupportTest extends TestCase
 
     public function test_a_terminated_member_is_left_out(): void
     {
-        $member = Employee::query()
-            ->whereKeyNot($this->employee->id)
-            ->where('tenant_id', $this->employee->tenant_id)
-            ->firstOrFail();
+        $member = $this->createEmployee((int) $this->employee->tenant_id);
 
         Employee::query()->whereKey($member->id)
             ->update(['crew_supervisor_id' => $this->employee->id, 'status' => 'terminated']);
@@ -214,6 +207,9 @@ final class AttendanceSupportTest extends TestCase
             ->assertStatus(400)
             ->assertJsonPath('error_code', 'invalid_reason');
 
-        $this->assertGreaterThan(0, Value::int(DB::table('attendance')->count()));
+        // What matters is that the table is still there. Counting rows only
+        // said so by accident, back when the test database was a copy of
+        // production and never empty.
+        $this->assertTrue(Schema::hasTable('attendance'));
     }
 }

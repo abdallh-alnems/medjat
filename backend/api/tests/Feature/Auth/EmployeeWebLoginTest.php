@@ -12,6 +12,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\CreatesFixtures;
 use Tests\TestCase;
 
 /**
@@ -23,6 +24,7 @@ use Tests\TestCase;
  */
 final class EmployeeWebLoginTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private const ENDPOINT = '/v1/auth/employee/web/login';
@@ -38,11 +40,7 @@ final class EmployeeWebLoginTest extends TestCase
 
     private function employee(): Employee
     {
-        $employee = Employee::query()
-            ->where('status', '!=', 'terminated')
-            ->whereNotNull('phone')
-            ->where('phone', '!=', '')
-            ->firstOrFail();
+        $employee = $this->createEmployee($this->createTenant(), ['phone' => $this->uniquePhone()]);
 
         // The channel ships switched off per company; these tests are about the
         // credential, so turn it on for this one.

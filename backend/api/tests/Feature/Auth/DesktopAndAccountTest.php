@@ -9,9 +9,9 @@ use App\Models\DesktopAuthCode;
 use App\Modules\Auth\Services\FirebaseAccountManager;
 use App\Modules\Auth\Services\FirebaseCustomTokenMinter;
 use App\Modules\Auth\Services\FirebaseTokenVerifier;
-use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseAccountManager;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\TestCase;
@@ -21,6 +21,7 @@ use Tests\TestCase;
  */
 final class DesktopAndAccountTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private FakeFirebaseTokenVerifier $firebase;
@@ -41,7 +42,7 @@ final class DesktopAndAccountTest extends TestCase
 
     private function tenantId(): int
     {
-        return Value::int(DB::table('tenants')->where('is_active', 1)->orderBy('id')->value('id'));
+        return $this->createTenant();
     }
 
     /**

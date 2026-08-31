@@ -8,9 +8,9 @@ use App\Models\EmployeeAuthToken;
 use App\Modules\Auth\Services\FirebaseTokenVerifier;
 use App\Modules\Notifications\Domain\PushSender;
 use App\Shared\Time\TenantClock;
-use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
@@ -20,6 +20,7 @@ use Tests\TestCase;
  */
 final class LeaveRequestTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -50,7 +51,7 @@ final class LeaveRequestTest extends TestCase
         $this->app->instance(FirebaseTokenVerifier::class, $firebase);
         $this->app->instance(PushSender::class, $this->push);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
         DB::table('tenants')->where('id', $this->tenantId)->update([
             'default_annual_leave_days' => 21,
             'apply_legal_seniority_entitlement' => 0,

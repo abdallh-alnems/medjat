@@ -6,10 +6,10 @@ namespace Tests\Feature\Reports;
 
 use App\Modules\Auth\Services\FirebaseTokenVerifier;
 use App\Modules\Notifications\Domain\PushSender;
-use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
@@ -19,6 +19,7 @@ use Tests\TestCase;
  */
 final class WordExportTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private const ENDPOINT = '/v1/reports/export.docx';
@@ -37,7 +38,7 @@ final class WordExportTest extends TestCase
         $this->app->instance(FirebaseTokenVerifier::class, $this->firebase);
         $this->app->instance(PushSender::class, new FakePushSender);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
         $this->adminToken = $this->admin('general_manager');
     }
 

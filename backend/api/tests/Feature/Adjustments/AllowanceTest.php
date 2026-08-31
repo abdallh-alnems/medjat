@@ -10,6 +10,7 @@ use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
@@ -20,6 +21,7 @@ use Tests\TestCase;
  */
 final class AllowanceTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -36,7 +38,7 @@ final class AllowanceTest extends TestCase
         $this->app->instance(FirebaseTokenVerifier::class, $firebase);
         $this->app->instance(PushSender::class, new FakePushSender);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
 
         $this->employeeId = (int) DB::table('employees')->insertGetId([
             'tenant_id' => $this->tenantId,

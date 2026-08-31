@@ -9,6 +9,7 @@ use App\Modules\Payroll\Domain\PayrollCalculator;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\TestCase;
 
 /**
@@ -21,6 +22,7 @@ use Tests\TestCase;
  */
 final class PayrollCalculatorTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private const MONTH = '2026-02';
@@ -38,7 +40,7 @@ final class PayrollCalculatorTest extends TestCase
         parent::setUp();
 
         $this->calculator = app(PayrollCalculator::class);
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
         DB::table('tenants')->where('id', $this->tenantId)->update(['cycle_start_day' => 1]);
 
         $this->employeeId = (int) DB::table('employees')->insertGetId([

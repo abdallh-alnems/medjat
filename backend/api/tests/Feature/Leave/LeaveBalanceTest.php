@@ -6,9 +6,9 @@ namespace Tests\Feature\Leave;
 
 use App\Modules\Leave\Domain\CarryoverPolicy;
 use App\Modules\Leave\Domain\LeaveBalanceCalculator;
-use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\TestCase;
 
 /**
@@ -17,6 +17,7 @@ use Tests\TestCase;
  */
 final class LeaveBalanceTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -30,7 +31,7 @@ final class LeaveBalanceTest extends TestCase
         parent::setUp();
 
         $this->balances = app(LeaveBalanceCalculator::class);
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
 
         DB::table('tenants')->where('id', $this->tenantId)->update([
             'default_annual_leave_days' => 21,

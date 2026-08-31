@@ -8,9 +8,9 @@ use App\Models\Admin;
 use App\Models\Employee;
 use App\Models\EmployeeAuthToken;
 use App\Modules\Auth\Services\FirebaseTokenVerifier;
-use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\TestCase;
 
@@ -19,6 +19,7 @@ use Tests\TestCase;
  */
 final class AccountSettingsTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private FakeFirebaseTokenVerifier $firebase;
@@ -33,7 +34,7 @@ final class AccountSettingsTest extends TestCase
 
     private function tenantId(): int
     {
-        return Value::int(DB::table('tenants')->where('is_active', 1)->orderBy('id')->value('id'));
+        return $this->createTenant();
     }
 
     /** @return array{Admin, string} */
@@ -54,10 +55,8 @@ final class AccountSettingsTest extends TestCase
     /** @return array{Employee, string} */
     private function employee(): array
     {
-        $employee = Employee::query()
-            ->where('status', '!=', 'terminated')
-            ->whereNotNull('admin_id')
-            ->firstOrFail();
+        $tenantId = $this->createTenant();
+        $employee = $this->createEmployee($tenantId, ['admin_id' => $this->createAdmin($tenantId)]);
 
         $plain = 'test-'.bin2hex(random_bytes(16));
         EmployeeAuthToken::query()->create([

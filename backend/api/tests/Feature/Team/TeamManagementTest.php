@@ -11,6 +11,7 @@ use App\Shared\Access\Permissions;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
@@ -20,6 +21,7 @@ use Tests\TestCase;
  */
 final class TeamManagementTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -40,7 +42,7 @@ final class TeamManagementTest extends TestCase
         $this->app->instance(FirebaseTokenVerifier::class, $this->firebase);
         $this->app->instance(PushSender::class, new FakePushSender);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
 
         // The dump carries a company's real staff; these cases are about the
         // people this test creates.
@@ -336,7 +338,7 @@ final class TeamManagementTest extends TestCase
 
     public function test_somebody_from_another_company_is_not_found(): void
     {
-        $otherTenant = Value::int(DB::table('tenants')->where('id', '!=', $this->tenantId)->value('id'));
+        $otherTenant = $this->createTenant();
         $stranger = (int) DB::table('admins')->insertGetId([
             'firebase_uid' => 'uid-stranger',
             'tenant_id' => $otherTenant,

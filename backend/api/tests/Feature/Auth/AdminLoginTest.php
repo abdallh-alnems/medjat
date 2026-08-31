@@ -10,6 +10,7 @@ use App\Modules\Auth\Services\FirebaseTokenVerifier;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\TestCase;
 
@@ -23,6 +24,7 @@ use Tests\TestCase;
  */
 final class AdminLoginTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private const ENDPOINT = '/v1/auth/admin/login';
@@ -39,7 +41,7 @@ final class AdminLoginTest extends TestCase
 
     private function tenantId(): int
     {
-        return Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        return $this->createTenant();
     }
 
     /**

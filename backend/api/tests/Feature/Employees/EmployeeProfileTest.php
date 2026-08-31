@@ -11,6 +11,7 @@ use App\Models\EmployeeAuthToken;
 use App\Modules\Auth\Services\FirebaseTokenVerifier;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\TestCase;
 
@@ -20,6 +21,7 @@ use Tests\TestCase;
  */
 final class EmployeeProfileTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -35,7 +37,7 @@ final class EmployeeProfileTest extends TestCase
         $firebase = new FakeFirebaseTokenVerifier;
         $this->app->instance(FirebaseTokenVerifier::class, $firebase);
 
-        $this->employee = Employee::query()->where('status', 'active')->firstOrFail();
+        $this->employee = $this->createEmployee($this->createTenant());
         $this->tenantId = $this->employee->tenant_id;
 
         $uid = 'uid-'.bin2hex(random_bytes(6));
@@ -119,10 +121,7 @@ final class EmployeeProfileTest extends TestCase
 
     public function test_a_profile_from_another_company_is_not_found(): void
     {
-        $other = Employee::query()->where('tenant_id', '!=', $this->tenantId)->first();
-        if ($other === null) {
-            $this->markTestSkipped('needs a second company');
-        }
+        $other = $this->createEmployee($this->createTenant());
 
         $this->withHeader('X-Firebase-Token', $this->token)
             ->getJson('/v1/employees/profile?id='.$other->id)

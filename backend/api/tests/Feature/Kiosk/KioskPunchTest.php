@@ -16,6 +16,7 @@ use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\Support\FakeRemoteConfigGate;
@@ -26,6 +27,7 @@ use Tests\TestCase;
  */
 final class KioskPunchTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -53,7 +55,7 @@ final class KioskPunchTest extends TestCase
         $this->app->instance(RemoteConfigGate::class, $this->gate);
         $this->app->instance(PushSender::class, new FakePushSender);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
         DB::table('tenants')->where('id', $this->tenantId)->update([
             'attendance_methods' => json_encode(['kiosk']),
             'face_enforce_mode' => 'enforce',

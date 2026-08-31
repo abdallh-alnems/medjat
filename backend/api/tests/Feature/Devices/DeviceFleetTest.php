@@ -12,6 +12,7 @@ use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
@@ -22,6 +23,7 @@ use Tests\TestCase;
  */
 final class DeviceFleetTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -45,7 +47,7 @@ final class DeviceFleetTest extends TestCase
         $this->app->instance(FirebaseTokenVerifier::class, $firebase);
         $this->app->instance(PushSender::class, new FakePushSender);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
 
         $this->branchId = (int) DB::table('branches')->insertGetId([
             'tenant_id' => $this->tenantId,
@@ -146,7 +148,7 @@ final class DeviceFleetTest extends TestCase
     {
         // Silently moving it would hand that company's punch stream to a
         // stranger.
-        $otherTenant = Value::int(DB::table('tenants')->where('id', '!=', $this->tenantId)->value('id'));
+        $otherTenant = $this->createTenant();
         $serial = $this->serial();
 
         DB::table('attendance_devices')->insert([

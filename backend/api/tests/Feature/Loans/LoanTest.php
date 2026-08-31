@@ -12,6 +12,7 @@ use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
@@ -22,6 +23,7 @@ use Tests\TestCase;
  */
 final class LoanTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -46,7 +48,7 @@ final class LoanTest extends TestCase
         $this->app->instance(FirebaseTokenVerifier::class, $firebase);
         $this->app->instance(PushSender::class, $this->push);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
 
         $this->employeeId = (int) DB::table('employees')->insertGetId([
             'tenant_id' => $this->tenantId,
@@ -313,7 +315,7 @@ final class LoanTest extends TestCase
 
     public function test_a_loan_from_another_company_is_not_found(): void
     {
-        $otherTenant = Value::int(DB::table('tenants')->where('id', '!=', $this->tenantId)->value('id'));
+        $otherTenant = $this->createTenant();
         $stranger = (int) DB::table('employees')->insertGetId([
             'tenant_id' => $otherTenant,
             'name' => 'Elsewhere',

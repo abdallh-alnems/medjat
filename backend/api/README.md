@@ -155,6 +155,16 @@ The suite runs under `DatabaseTransactions` against MySQL, because SQLite would
 not reproduce the ENUM truncation, the `NULL` handling in unique keys, or the
 timezone disagreement that caused most of the bugs worth having tests for.
 
+It needs nothing in the database beyond the schema. Each test builds the rows it
+asserts on through `Tests\Support\CreatesFixtures` and rolls them back, so a
+run leaves the database exactly as it found it and no test can see another's
+settings:
+
+```php
+$tenantId = $this->createTenant(['cycle_start_day' => 26]);
+$employee = $this->createEmployee($tenantId);
+```
+
 ## The schema
 
 `database/migrations/` builds the whole thing — 85 tables, 368 indexes and 179

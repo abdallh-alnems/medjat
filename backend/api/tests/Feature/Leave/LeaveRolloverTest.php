@@ -10,6 +10,7 @@ use App\Modules\Notifications\Domain\PushSender;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
@@ -19,6 +20,7 @@ use Tests\TestCase;
  */
 final class LeaveRolloverTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private const FROM_YEAR = 2026;
@@ -40,7 +42,7 @@ final class LeaveRolloverTest extends TestCase
         $this->app->instance(PushSender::class, new FakePushSender);
 
         $this->rollover = app(YearRollover::class);
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
 
         DB::table('tenants')->where('id', $this->tenantId)->update([
             'default_annual_leave_days' => 21,

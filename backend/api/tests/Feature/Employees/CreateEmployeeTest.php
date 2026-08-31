@@ -12,6 +12,7 @@ use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\TestCase;
 
@@ -20,6 +21,7 @@ use Tests\TestCase;
  */
 final class CreateEmployeeTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -37,7 +39,7 @@ final class CreateEmployeeTest extends TestCase
         $firebase = new FakeFirebaseTokenVerifier;
         $this->app->instance(FirebaseTokenVerifier::class, $firebase);
 
-        $existing = Employee::query()->whereNotNull('branch_id')->firstOrFail();
+        $existing = $this->createEmployee($this->createTenant());
         $this->tenantId = $existing->tenant_id;
         $this->branchId = (int) $existing->branch_id;
 
@@ -276,10 +278,7 @@ final class CreateEmployeeTest extends TestCase
 
     public function test_editing_somebody_from_another_company_is_not_found(): void
     {
-        $other = Employee::query()->where('tenant_id', '!=', $this->tenantId)->first();
-        if ($other === null) {
-            $this->markTestSkipped('needs a second company');
-        }
+        $other = $this->createEmployee($this->createTenant());
 
         $this->withHeader('X-Firebase-Token', $this->token)
             ->postJson('/v1/employees/update', ['employee_id' => $other->id, 'name' => 'Hijacked'])

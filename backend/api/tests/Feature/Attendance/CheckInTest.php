@@ -11,6 +11,7 @@ use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\CreatesFixtures;
 use Tests\TestCase;
 
 /**
@@ -23,6 +24,7 @@ use Tests\TestCase;
  */
 final class CheckInTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private const ENDPOINT = '/v1/attendance/check-in';
@@ -42,10 +44,7 @@ final class CheckInTest extends TestCase
         parent::setUp();
         TenantClock::flush();
 
-        $this->employee = Employee::query()
-            ->where('status', '!=', 'terminated')
-            ->whereNotNull('branch_id')
-            ->firstOrFail();
+        $this->employee = $this->createEmployee($this->createTenant());
 
         $this->branchId = (int) $this->employee->branch_id;
 

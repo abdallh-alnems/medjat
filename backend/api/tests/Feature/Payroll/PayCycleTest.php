@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature\Payroll;
 
 use App\Modules\Payroll\Domain\PayCycle;
-use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\TestCase;
 
 /**
@@ -15,6 +15,7 @@ use Tests\TestCase;
  */
 final class PayCycleTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -22,7 +23,7 @@ final class PayCycleTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
     }
 
     private function withStartDay(int $day): void

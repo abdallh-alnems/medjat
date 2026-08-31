@@ -9,6 +9,7 @@ use App\Modules\Notifications\Domain\PushSender;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
@@ -18,6 +19,7 @@ use Tests\TestCase;
  */
 final class BranchTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -36,7 +38,7 @@ final class BranchTest extends TestCase
         $this->app->instance(FirebaseTokenVerifier::class, $firebase);
         $this->app->instance(PushSender::class, new FakePushSender);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
         DB::table('tenants')->where('id', $this->tenantId)
             ->update(['attendance_methods' => json_encode(['qr_gps'])]);
 

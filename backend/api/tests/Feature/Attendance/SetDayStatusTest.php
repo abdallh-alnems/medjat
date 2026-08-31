@@ -13,6 +13,7 @@ use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\TestCase;
 
@@ -26,6 +27,7 @@ use Tests\TestCase;
  */
 final class SetDayStatusTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private const ENDPOINT = '/v1/attendance/day-status';
@@ -46,10 +48,7 @@ final class SetDayStatusTest extends TestCase
         $this->firebase = new FakeFirebaseTokenVerifier;
         $this->app->instance(FirebaseTokenVerifier::class, $this->firebase);
 
-        $this->employee = Employee::query()
-            ->where('status', 'active')
-            ->whereNotNull('branch_id')
-            ->firstOrFail();
+        $this->employee = $this->createEmployee($this->createTenant());
 
         $this->tenantId = $this->employee->tenant_id;
         $this->date = TenantClock::now($this->tenantId)->modify('-2 days')->format('Y-m-d');
@@ -277,10 +276,7 @@ final class SetDayStatusTest extends TestCase
     {
         [, $token] = $this->admin();
 
-        $other = Employee::query()->where('tenant_id', '!=', $this->tenantId)->first();
-        if ($other === null) {
-            $this->markTestSkipped('needs a second company');
-        }
+        $other = $this->createEmployee($this->createTenant());
 
         $this->withHeader('X-Firebase-Token', $token)
             ->postJson(self::ENDPOINT, [

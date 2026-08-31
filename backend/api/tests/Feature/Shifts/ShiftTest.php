@@ -9,6 +9,7 @@ use App\Modules\Notifications\Domain\PushSender;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
@@ -18,6 +19,7 @@ use Tests\TestCase;
  */
 final class ShiftTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -40,7 +42,7 @@ final class ShiftTest extends TestCase
         $this->app->instance(FirebaseTokenVerifier::class, $firebase);
         $this->app->instance(PushSender::class, new FakePushSender);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
 
         $this->branchId = (int) DB::table('branches')->insertGetId([
             'tenant_id' => $this->tenantId,
@@ -265,7 +267,7 @@ final class ShiftTest extends TestCase
 
     public function test_a_shift_from_another_company_is_not_found(): void
     {
-        $otherTenant = Value::int(DB::table('tenants')->where('id', '!=', $this->tenantId)->value('id'));
+        $otherTenant = $this->createTenant();
         $stranger = (int) DB::table('shifts')->insertGetId([
             'tenant_id' => $otherTenant,
             'name' => 'Elsewhere',

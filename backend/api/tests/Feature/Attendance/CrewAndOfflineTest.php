@@ -11,6 +11,7 @@ use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\CreatesFixtures;
 use Tests\TestCase;
 
 /**
@@ -23,6 +24,7 @@ use Tests\TestCase;
  */
 final class CrewAndOfflineTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private const BRANCH_LAT = 30.0444;
@@ -44,16 +46,12 @@ final class CrewAndOfflineTest extends TestCase
         parent::setUp();
         TenantClock::flush();
 
-        $this->supervisor = Employee::query()
-            ->where('status', 'active')->whereNotNull('branch_id')->firstOrFail();
+        $this->supervisor = $this->createEmployee($this->createTenant());
 
         $this->branchId = (int) $this->supervisor->branch_id;
         $this->tenantId = $this->supervisor->tenant_id;
 
-        $this->member = Employee::query()
-            ->whereKeyNot($this->supervisor->id)
-            ->where('tenant_id', $this->tenantId)
-            ->firstOrFail();
+        $this->member = $this->createEmployee($this->tenantId);
 
         Employee::query()->whereKey($this->member->id)->update([
             'crew_supervisor_id' => $this->supervisor->id,
@@ -123,15 +121,7 @@ final class CrewAndOfflineTest extends TestCase
         // Quietly recording the rest would leave the supervisor believing all of
         // them were marked. Telling them costs one retry; the silent version
         // costs somebody a day's pay.
-        $outsider = Employee::query()
-            ->whereKeyNot($this->member->id)
-            ->whereKeyNot($this->supervisor->id)
-            ->where('tenant_id', $this->tenantId)
-            ->first();
-
-        if ($outsider === null) {
-            $this->markTestSkipped('needs a third employee');
-        }
+        $outsider = $this->createEmployee($this->tenantId);
 
         Employee::query()->whereKey($outsider->id)->update(['crew_supervisor_id' => null]);
 
@@ -148,13 +138,7 @@ final class CrewAndOfflineTest extends TestCase
 
     public function test_an_unauthorised_target_is_recorded_as_a_security_event(): void
     {
-        $outsider = Employee::query()
-            ->whereKeyNot($this->member->id)->whereKeyNot($this->supervisor->id)
-            ->where('tenant_id', $this->tenantId)->first();
-
-        if ($outsider === null) {
-            $this->markTestSkipped('needs a third employee');
-        }
+        $outsider = $this->createEmployee($this->tenantId);
 
         Employee::query()->whereKey($outsider->id)->update(['crew_supervisor_id' => null]);
 

@@ -7,9 +7,9 @@ namespace Tests\Feature\Reports;
 use App\Modules\Auth\Services\FirebaseTokenVerifier;
 use App\Modules\Notifications\Domain\PushSender;
 use App\Shared\Time\TenantClock;
-use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
@@ -19,6 +19,7 @@ use Tests\TestCase;
  */
 final class ReportTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private const FROM = '2026-02-01';
@@ -46,7 +47,7 @@ final class ReportTest extends TestCase
         $this->app->instance(FirebaseTokenVerifier::class, $this->firebase);
         $this->app->instance(PushSender::class, new FakePushSender);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
 
         // The dump carries a whole company; these cases are about what this
         // test creates.

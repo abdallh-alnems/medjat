@@ -8,10 +8,10 @@ use App\Modules\Audit\Domain\AuditFeed;
 use App\Modules\Audit\Domain\AuditLog;
 use App\Modules\Auth\Services\FirebaseTokenVerifier;
 use App\Modules\Notifications\Domain\PushSender;
-use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
@@ -21,6 +21,7 @@ use Tests\TestCase;
  */
 final class AuditFeedTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -41,7 +42,7 @@ final class AuditFeedTest extends TestCase
         $this->app->instance(FirebaseTokenVerifier::class, $this->firebase);
         $this->app->instance(PushSender::class, new FakePushSender);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
         DB::table('audit_log')->where('tenant_id', $this->tenantId)->delete();
 
         $this->employeeId = (int) DB::table('employees')->insertGetId([

@@ -10,6 +10,7 @@ use App\Modules\Notifications\Domain\PushSender;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
@@ -19,6 +20,7 @@ use Tests\TestCase;
  */
 final class PayrollEndpointsTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private const MONTH = '2026-02';
@@ -46,7 +48,7 @@ final class PayrollEndpointsTest extends TestCase
         $this->app->instance(FirebaseTokenVerifier::class, $firebase);
         $this->app->instance(PushSender::class, $this->push);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
         DB::table('tenants')->where('id', $this->tenantId)->update([
             'cycle_start_day' => 1,
             'currency' => 'EGP',

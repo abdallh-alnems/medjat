@@ -12,6 +12,7 @@ use App\Modules\Notifications\Domain\PushSender;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
@@ -21,6 +22,7 @@ use Tests\TestCase;
  */
 final class ReviewDocumentTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -48,7 +50,7 @@ final class ReviewDocumentTest extends TestCase
         $this->app->instance(FirebaseTokenVerifier::class, $this->firebase);
         $this->app->instance(PushSender::class, $this->push);
 
-        $this->employee = Employee::query()->where('status', 'active')->firstOrFail();
+        $this->employee = $this->createEmployee($this->createTenant());
         $this->tenantId = $this->employee->tenant_id;
 
         [$this->admin, $this->token] = $this->admin();
@@ -229,10 +231,14 @@ final class ReviewDocumentTest extends TestCase
 
     public function test_a_document_from_another_company_is_not_found(): void
     {
-        $other = DB::table('employee_documents')->where('tenant_id', '!=', $this->tenantId)->value('id');
-        if ($other === null) {
-            $this->markTestSkipped('needs a document in another company');
-        }
+        $stranger = $this->createEmployee($this->createTenant());
+        $other = DB::table('employee_documents')->insertGetId([
+            'tenant_id' => $stranger->tenant_id,
+            'employee_id' => $stranger->id,
+            'file_path' => 'documents/elsewhere.pdf',
+            'original_name' => 'elsewhere.pdf',
+            'status' => 'uploaded',
+        ]);
 
         $this->withHeader('X-Firebase-Token', $this->token)
             ->postJson('/v1/employees/documents/verify', ['document_id' => Value::int($other)])

@@ -11,6 +11,7 @@ use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
@@ -20,6 +21,7 @@ use Tests\TestCase;
  */
 final class OnboardingTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private FakeFirebaseTokenVerifier $firebase;
@@ -38,7 +40,7 @@ final class OnboardingTest extends TestCase
         $this->app->instance(FirebaseTokenVerifier::class, $this->firebase);
         $this->app->instance(PushSender::class, new FakePushSender);
 
-        $this->hostTenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->hostTenantId = $this->createTenant();
 
         [$this->newcomerId, $this->newcomerToken] = $this->person('newcomer@example.com');
     }

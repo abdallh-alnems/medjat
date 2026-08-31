@@ -10,6 +10,7 @@ use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\CreatesFixtures;
 use Tests\TestCase;
 
 /**
@@ -17,6 +18,7 @@ use Tests\TestCase;
  */
 final class SelfEnrollmentTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -31,7 +33,7 @@ final class SelfEnrollmentTest extends TestCase
     {
         parent::setUp();
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
         DB::table('tenants')->where('id', $this->tenantId)->update(['face_liveness_required' => 1]);
 
         $this->branchId = (int) DB::table('branches')->insertGetId([

@@ -8,6 +8,7 @@ use App\Models\Admin;
 use App\Modules\Auth\Services\FirebaseTokenVerifier;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\TestCase;
 
@@ -20,6 +21,7 @@ use Tests\TestCase;
  */
 final class AdminAuthenticationTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private const ENDPOINT = '/v1/auth/admin/logout';
@@ -44,7 +46,7 @@ final class AdminAuthenticationTest extends TestCase
 
         $id = Admin::query()->insertGetId(array_merge([
             'firebase_uid' => $uid,
-            'tenant_id' => DB::table('tenants')->orderBy('id')->value('id'),
+            'tenant_id' => $this->createTenant(),
             'name' => 'Test Admin',
             'role' => 'general_manager',
             'is_active' => 1,

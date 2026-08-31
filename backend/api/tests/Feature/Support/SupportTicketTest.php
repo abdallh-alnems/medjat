@@ -11,6 +11,7 @@ use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
@@ -20,6 +21,7 @@ use Tests\TestCase;
  */
 final class SupportTicketTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -37,7 +39,7 @@ final class SupportTicketTest extends TestCase
         $this->app->instance(FirebaseTokenVerifier::class, $firebase);
         $this->app->instance(PushSender::class, new FakePushSender);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
         DB::table('support_tickets')->where('tenant_id', $this->tenantId)->delete();
 
         $this->adminToken = $this->admin($firebase, 'general_manager');
@@ -63,7 +65,7 @@ final class SupportTicketTest extends TestCase
      */
     private function otherCompany(): array
     {
-        $tenantId = Value::int(DB::table('tenants')->where('id', '!=', $this->tenantId)->value('id'));
+        $tenantId = $this->createTenant();
         $adminId = (int) DB::table('admins')->insertGetId([
             'firebase_uid' => 'uid-'.bin2hex(random_bytes(6)),
             'tenant_id' => $tenantId,

@@ -11,6 +11,7 @@ use App\Modules\Auth\Services\FirebaseTokenVerifier;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\TestCase;
 
@@ -19,6 +20,7 @@ use Tests\TestCase;
  */
 final class EmployeeStatusTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -36,7 +38,7 @@ final class EmployeeStatusTest extends TestCase
         $firebase = new FakeFirebaseTokenVerifier;
         $this->app->instance(FirebaseTokenVerifier::class, $firebase);
 
-        $this->employee = Employee::query()->where('status', 'active')->firstOrFail();
+        $this->employee = $this->createEmployee($this->createTenant());
         $this->tenantId = $this->employee->tenant_id;
 
         $uid = 'uid-'.bin2hex(random_bytes(6));
@@ -268,8 +270,7 @@ final class EmployeeStatusTest extends TestCase
     public function test_a_longer_supervision_ring_is_refused(): void
     {
         // The database cannot check this: a CHECK cannot see other rows.
-        $b = Employee::query()->whereKeyNot($this->employee->id)
-            ->where('tenant_id', $this->tenantId)->firstOrFail();
+        $b = $this->createEmployee($this->tenantId);
 
         Employee::query()->whereKey($b->id)->update(['crew_supervisor_id' => $this->employee->id]);
 
@@ -282,10 +283,7 @@ final class EmployeeStatusTest extends TestCase
     {
         // Otherwise the setting saves and the crew queries silently return
         // nothing, looking like a configuration that does not work.
-        $other = Employee::query()->where('tenant_id', '!=', $this->tenantId)->first();
-        if ($other === null) {
-            $this->markTestSkipped('needs a second company');
-        }
+        $other = $this->createEmployee($this->createTenant());
 
         $this->send('/v1/employees/crew-supervisor', [
             'employee_id' => $this->employee->id, 'supervisor_id' => $other->id,
@@ -294,8 +292,7 @@ final class EmployeeStatusTest extends TestCase
 
     public function test_a_terminated_supervisor_is_refused(): void
     {
-        $b = Employee::query()->whereKeyNot($this->employee->id)
-            ->where('tenant_id', $this->tenantId)->firstOrFail();
+        $b = $this->createEmployee($this->tenantId);
         Employee::query()->whereKey($b->id)->update(['status' => 'terminated']);
 
         $this->send('/v1/employees/crew-supervisor', [
@@ -350,10 +347,7 @@ final class EmployeeStatusTest extends TestCase
 
     public function test_an_employee_from_another_company_is_not_found(): void
     {
-        $other = Employee::query()->where('tenant_id', '!=', $this->tenantId)->first();
-        if ($other === null) {
-            $this->markTestSkipped('needs a second company');
-        }
+        $other = $this->createEmployee($this->createTenant());
 
         $this->send('/v1/employees/reset-web-pin', ['employee_id' => $other->id])->assertNotFound();
     }

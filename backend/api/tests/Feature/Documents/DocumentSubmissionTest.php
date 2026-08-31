@@ -14,6 +14,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
@@ -23,6 +24,7 @@ use Tests\TestCase;
  */
 final class DocumentSubmissionTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -47,7 +49,7 @@ final class DocumentSubmissionTest extends TestCase
         $this->app->instance(FirebaseTokenVerifier::class, $firebase);
         $this->app->instance(PushSender::class, $this->push);
 
-        $this->employee = Employee::query()->where('status', 'active')->firstOrFail();
+        $this->employee = $this->createEmployee($this->createTenant());
         $this->tenantId = $this->employee->tenant_id;
 
         $uid = 'uid-'.bin2hex(random_bytes(6));
@@ -122,8 +124,7 @@ final class DocumentSubmissionTest extends TestCase
     {
         // Otherwise they could file against any requirement in the company,
         // including one scoped to somebody else entirely.
-        $other = Employee::query()->whereKeyNot($this->employee->id)
-            ->where('tenant_id', $this->tenantId)->firstOrFail();
+        $other = $this->createEmployee($this->tenantId);
 
         $scoped = (int) DB::table('required_documents')->insertGetId([
             'tenant_id' => $this->tenantId,
@@ -240,8 +241,7 @@ final class DocumentSubmissionTest extends TestCase
     {
         // The id is a small integer; without the ownership check this hands out
         // the identity documents of everyone in the company.
-        $other = Employee::query()->whereKeyNot($this->employee->id)
-            ->where('tenant_id', $this->tenantId)->firstOrFail();
+        $other = $this->createEmployee($this->tenantId);
 
         Storage::disk('uploads')->put('documents/'.$this->tenantId.'/theirs.pdf', 'not-yours');
 

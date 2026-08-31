@@ -11,6 +11,7 @@ use App\Shared\RemoteConfig\RemoteConfigGate;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\Support\FakeRemoteConfigGate;
@@ -21,6 +22,7 @@ use Tests\TestCase;
  */
 final class KioskPairingTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -43,7 +45,7 @@ final class KioskPairingTest extends TestCase
         $this->app->instance(RemoteConfigGate::class, $this->gate);
         $this->app->instance(PushSender::class, new FakePushSender);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
 
         $this->branchId = (int) DB::table('branches')->insertGetId([
             'tenant_id' => $this->tenantId,

@@ -8,6 +8,7 @@ use App\Modules\Payroll\Domain\PayrollLedger;
 use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesFixtures;
 use Tests\TestCase;
 
 /**
@@ -15,6 +16,7 @@ use Tests\TestCase;
  */
 final class PayrollLedgerTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private const MONTH = '2026-02';
@@ -34,7 +36,7 @@ final class PayrollLedgerTest extends TestCase
         parent::setUp();
 
         $this->ledger = app(PayrollLedger::class);
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
         DB::table('tenants')->where('id', $this->tenantId)->update(['cycle_start_day' => 1]);
 
         $this->branchId = (int) DB::table('branches')->insertGetId([
@@ -193,7 +195,7 @@ final class PayrollLedgerTest extends TestCase
         // The id is a small integer; without the tenant check this approves
         // payroll at a company the caller has nothing to do with.
         $this->ledger->generate($this->tenantId, self::MONTH, null);
-        $otherTenant = Value::int(DB::table('tenants')->where('id', '!=', $this->tenantId)->value('id'));
+        $otherTenant = $this->createTenant();
 
         $this->assertNull($this->ledger->approve($this->slipId(), $otherTenant, $this->adminId));
         $this->assertSame('draft', $this->slipStatus());

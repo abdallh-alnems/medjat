@@ -12,6 +12,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
 
@@ -20,6 +21,7 @@ use Tests\TestCase;
  */
 final class AdminSupportTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private int $tenantId;
@@ -41,7 +43,7 @@ final class AdminSupportTest extends TestCase
         $this->push = new FakePushSender;
         $this->app->instance(PushSender::class, $this->push);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
 
         $this->companyAdminId = (int) DB::table('admins')->insertGetId([
             'firebase_uid' => 'uid-'.bin2hex(random_bytes(6)),

@@ -11,6 +11,7 @@ use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
@@ -20,6 +21,7 @@ use Tests\TestCase;
  */
 final class RosterTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     /** A Saturday. */
@@ -51,7 +53,7 @@ final class RosterTest extends TestCase
         $this->app->instance(FirebaseTokenVerifier::class, $this->firebase);
         $this->app->instance(PushSender::class, new FakePushSender);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
         DB::table('tenants')->where('id', $this->tenantId)->update(['week_start_day' => 6]);
 
         $this->branchId = (int) DB::table('branches')->insertGetId([

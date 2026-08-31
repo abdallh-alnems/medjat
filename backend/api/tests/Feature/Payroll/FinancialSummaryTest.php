@@ -6,10 +6,10 @@ namespace Tests\Feature\Payroll;
 
 use App\Modules\Auth\Services\FirebaseTokenVerifier;
 use App\Modules\Notifications\Domain\PushSender;
-use App\Support\Value;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
+use Tests\Support\CreatesFixtures;
 use Tests\Support\FakeFirebaseTokenVerifier;
 use Tests\Support\FakePushSender;
 use Tests\TestCase;
@@ -19,6 +19,7 @@ use Tests\TestCase;
  */
 final class FinancialSummaryTest extends TestCase
 {
+    use CreatesFixtures;
     use DatabaseTransactions;
 
     private const ENDPOINT = '/v1/employees/financial-summary';
@@ -41,7 +42,7 @@ final class FinancialSummaryTest extends TestCase
         $this->app->instance(FirebaseTokenVerifier::class, $firebase);
         $this->app->instance(PushSender::class, new FakePushSender);
 
-        $this->tenantId = Value::int(DB::table('tenants')->orderBy('id')->value('id'));
+        $this->tenantId = $this->createTenant();
         DB::table('tenants')->where('id', $this->tenantId)->update(['cycle_start_day' => 1]);
         DB::table('deduction_rules')->where('tenant_id', $this->tenantId)->delete();
         DB::table('bonus_rules')->where('tenant_id', $this->tenantId)->delete();
@@ -265,7 +266,7 @@ final class FinancialSummaryTest extends TestCase
 
     public function test_an_employee_at_another_company_is_not_found(): void
     {
-        $otherTenant = Value::int(DB::table('tenants')->where('id', '!=', $this->tenantId)->value('id'));
+        $otherTenant = $this->createTenant();
         $stranger = (int) DB::table('employees')->insertGetId([
             'tenant_id' => $otherTenant,
             'name' => 'Somebody else',
