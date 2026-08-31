@@ -28,6 +28,11 @@ return Application::configure(basePath: dirname(__DIR__))
         App\Modules\Cron\Console\RunDailyAlertsCommand::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
+        // Every API request, before anything can produce a message: the reply
+        // should be in the language the caller asked for, including the replies
+        // from the guards below that reject it.
+        $middleware->prependToGroup('api', App\Shared\Http\Middleware\ResolveLocale::class);
+
         $middleware->alias([
             // The shared secret the published app bundles carry. Not
             // authentication — that is the guards below — but the difference
