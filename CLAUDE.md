@@ -9,8 +9,9 @@ Next.js web port, and a desktop shell that wraps that web port.
 
 ```
 Medjat/
-├── backend/                 ← Laravel 13 REST API on MySQL 8 — the core (Hetzner VPS)
-├── backend-legacy/          ← the PHP 8.x backend it replaces. STILL WHAT IS DEPLOYED.
+├── backend/
+│   ├── api/                 ← Laravel 13 REST API on MySQL 8 — the core (Hetzner VPS)
+│   └── legacy/              ← the PHP 8.x backend it replaces. STILL WHAT IS DEPLOYED.
 ├── frontend/
 │   ├── mobile/              ← Flutter apps — the `flutter` toolchain
 │   │   ├── employee/        ← Employee app (Android/iOS) — attendance, payslips, requests
@@ -43,22 +44,22 @@ Each subproject has its own `README.md` (and `medjat_app` its own `CLAUDE.md`) w
 
 ## Two backends, for now
 
-`backend/` is a complete Laravel rewrite: every endpoint of `backend-legacy/`,
+`backend/api/` is a complete Laravel rewrite: every endpoint of `backend/legacy/`,
 both deep-link pages, the association files and the terminal protocol — all of
 it under a single `/v1` surface. The legacy `.php` URLs were carried for a
 while and then removed: the app builds they existed for turned out to be
 pre-release, so there was no installed base to protect. It has **never been
 deployed**.
 
-`backend-legacy/` is what is running in production and serving every customer,
+`backend/legacy/` is what is running in production and serving every customer,
 and it holds the deployment tooling (`deploy.sh`, `check-drift.sh`, the dated
 SQL migrations and their ledger). Nothing about the live system has changed.
 
 Until the cutover happens, the rules below still describe how the *live* backend
-is deployed, and they refer to `backend-legacy/`. `backend/` has its own README
+is deployed, and they refer to `backend/legacy/`. `backend/api/` has its own README
 covering how the Laravel side is laid out and run.
 
-## Legacy backend layout (`backend-legacy/`)
+## Legacy backend layout (`backend/legacy/`)
 
 - `app/<module>/` — endpoints. Modules: auth, employees, attendance, shifts, schedule, breaks,
   leaves, payroll, deductions, allowances, bonuses, loans, settlements, bulk_adjustments, documents,
@@ -139,22 +140,22 @@ covering how the Laravel side is laid out and run.
 There is no CI and no staging. The repo, the local MAMP database and the live server are kept in
 step by hand, so the only thing preventing drift is following this every time:
 
-1. **Never edit a file on the server.** Edit it here, then run `backend-legacy/deploy.sh`. A file
+1. **Never edit a file on the server.** Edit it here, then run `backend/legacy/deploy.sh`. A file
    changed over SSH is invisible to git and gets silently reverted by the next deploy.
 2. **Never run SQL on the server by hand.** Write a dated `migrations/YYYY_MM_DD_thing.sql`, then
    `deploy.sh` applies it and records it. Ad-hoc SQL is the reason production once had four tables
    local had never heard of.
 3. **Never edit a migration that has already been applied** — write a new one. `migrate.sh` stores
    each file's checksum and warns when an applied file changes underneath it.
-4. **Run `backend-legacy/check-drift.sh` before starting and after finishing.** It compares code
+4. **Run `backend/legacy/check-drift.sh` before starting and after finishing.** It compares code
    (checksums), schema (every table + column) and the migration ledger, and exits non-zero on any
    disagreement.
 
 ```
-backend-legacy/check-drift.sh         # do the three sides still agree?
-backend-legacy/deploy.sh --dry-run     # what would change
-backend-legacy/deploy.sh              # code + migrations + php reload + smoke test
-backend-legacy/migrations/migrate.sh --status
+backend/legacy/check-drift.sh         # do the three sides still agree?
+backend/legacy/deploy.sh --dry-run     # what would change
+backend/legacy/deploy.sh              # code + migrations + php reload + smoke test
+backend/legacy/migrations/migrate.sh --status
 ```
 
 `schema_migrations` (both databases) is the ledger of what has been applied. `schema.sql` is
@@ -193,9 +194,9 @@ Feature specs live in `specs/` (spec-kit): `001-rebuild-employee-app`, `002-admi
 
 ## Active Technologies
 - PHP 8.4 local (MAMP) / 8.5 live · TypeScript 5, React 19, Next.js 16 (App Router) + Existing `core/` services — `Auth`, `GpsService`, `NetworkVerifier`, `TenantClock`, `RateLimiter`, `Validator`, `Response`, `BiometricEnrollment` (photo-storage pattern). Web: TanStack Query, Zustand, React Hook Form + Zod, Tailwind, shadcn/Base UI, axios. (004-web-attendance-checkin)
-- MySQL 8.4 (live) — additive migrations only; images to `backend-legacy/uploads/` (004-web-attendance-checkin)
+- MySQL 8.4 (live) — additive migrations only; images to `backend/legacy/uploads/` (004-web-attendance-checkin)
 - PHP 8.4 local (MAMP) / 8.5 live · Dart 3.11 / Flutter (GetX, MVVM) · TypeScript 5, React 19, Next.js 16 for the management web surface + Existing `core/` services — `Auth`, `FaceMatchService`, `BiometricEnrollment`, `GpsService`, `TenantClock`, `PermissionMiddleware`, `TenantMiddleware`, `RateLimiter`, `RemoteConfigService`, `I18n`, `Response`. Kiosk app: `camera`, `google_mlkit_face_detection`, `tflite_flutter` (all already in `frontend/mobile/employee/pubspec.yaml`), `assets/models/mobilefacenet.tflite` (5.2 MB, BSD-3, already in the repo) (005-branch-kiosk)
-- MySQL 8.4 (live) — four additive migrations, no drops or narrowing. Captures to `backend-legacy/uploads/kiosk/`, purged on a schedule (005-branch-kiosk)
+- MySQL 8.4 (live) — four additive migrations, no drops or narrowing. Captures to `backend/legacy/uploads/kiosk/`, purged on a schedule (005-branch-kiosk)
 
 ## Recent Changes
 - 004-web-attendance-checkin: Added PHP 8.4 local (MAMP) / 8.5 live · TypeScript 5, React 19, Next.js 16 (App Router) + Existing `core/` services — `Auth`, `GpsService`, `NetworkVerifier`, `TenantClock`, `RateLimiter`, `Validator`, `Response`, `BiometricEnrollment` (photo-storage pattern). Web: TanStack Query, Zustand, React Hook Form + Zod, Tailwind, shadcn/Base UI, axios.

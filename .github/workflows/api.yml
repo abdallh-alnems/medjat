@@ -1,22 +1,27 @@
-name: backend-laravel
+name: api
 
 # The gates that make the migration safe. The old backend has 36k lines, no
 # static analysis and five hand-run scripts; the whole point of moving is to not
 # arrive at the same place, so these run on every push from the first commit
 # rather than being retrofitted once the codebase is too big to fix.
+#
+# The path filter is load-bearing and silent when wrong: a filter that matches
+# nothing does not fail the run, it simply never starts one. This workflow was
+# dark for several commits after the directories were renamed, which is exactly
+# how a green repository stops meaning anything.
 
 on:
   push:
     paths:
-      - 'backend-laravel/**'
-      - '.github/workflows/backend-laravel.yml'
+      - 'backend/api/**'
+      - '.github/workflows/api.yml'
   pull_request:
     paths:
-      - 'backend-laravel/**'
+      - 'backend/api/**'
 
 defaults:
   run:
-    working-directory: backend-laravel
+    working-directory: backend/api
 
 jobs:
   quality:
@@ -53,13 +58,13 @@ jobs:
       - name: Cache composer packages
         uses: actions/cache@v4
         with:
-          path: backend-laravel/vendor
-          key: composer-${{ hashFiles('backend-laravel/composer.lock') }}
+          path: backend/api/vendor
+          key: composer-${{ hashFiles('backend/api/composer.lock') }}
 
       - run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Load the production schema snapshot
-        run: mysql -h 127.0.0.1 -P 3306 -uroot -proot medjat_laravel_test < ../backend/database/migrations/schema.sql
+        run: mysql -h 127.0.0.1 -P 3306 -uroot -proot medjat_laravel_test < ../legacy/database/migrations/schema.sql
 
       - run: cp .env.example .env && php artisan key:generate
 
