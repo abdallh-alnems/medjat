@@ -82,5 +82,8 @@ jobs:
       - name: Static analysis
         run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
 
+      - name: API description is current
+        run: php artisan medjat:openapi --check --env=testing
+
       - name: Tests
         run: php artisan test

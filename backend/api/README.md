@@ -186,6 +186,27 @@ backend's ledger still creates — `expense_claims`, `kiosk_pins` and
 that now lives in the old `migrations/archive/`, and no code in either backend
 refers to them.
 
+## The API description
+
+`docs/openapi.json` describes all 303 operations. Regenerate it after changing a
+route:
+
+```bash
+php artisan medjat:openapi           # write it
+php artisan medjat:openapi --check   # fail if it is stale (CI runs this)
+```
+
+It is generated from the routing table rather than from annotations, and says
+only what it actually knows: the path, the verb, which of the four principals
+authenticates it, which permission it demands, and the response envelope, which
+is the same everywhere. Request bodies are described as "an object" because
+handlers read them field by field rather than through a request class — there is
+nothing to derive a schema from, and inventing one would be worse than saying so.
+
+A test regenerates it and compares, so a new route fails the build until the
+document is rewritten. That is the only way a description of three hundred
+endpoints stays true.
+
 ## Messages
 
 The API answers in the language of the `Accept-Language` header, Arabic or

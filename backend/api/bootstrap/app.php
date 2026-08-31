@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
         App\Modules\Cron\Console\CatchUpAbsencesCommand::class,
         App\Modules\Cron\Console\PurgeKioskCapturesCommand::class,
         App\Modules\Cron\Console\RunDailyAlertsCommand::class,
+        App\Shared\Docs\GenerateOpenApiCommand::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         // Every API request, before anything can produce a message: the reply
