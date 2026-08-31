@@ -72,7 +72,7 @@ describe("branches & shifts contract", () => {
 
   it("generate qr: success", async () => {
     server.use(
-      http.get(`${API}/v1/branches/generate-qr`, () =>
+      http.post(`${API}/v1/branches/generate-qr`, () =>
         HttpResponse.json({ qr_token: "tok-123" }),
       ),
     );
