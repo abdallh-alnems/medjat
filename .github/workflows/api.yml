@@ -63,14 +63,18 @@ jobs:
 
       - run: composer install --prefer-dist --no-interaction --no-progress
 
-      - name: Load the production schema snapshot
-        run: mysql -h 127.0.0.1 -P 3306 -uroot -proot medjat_laravel_test < ../legacy/database/migrations/schema.sql
-
       - run: cp .env.example .env && php artisan key:generate
 
       - name: Point the test environment at the service container
         run: |
           sed -i 's/^DB_PORT=.*/DB_PORT=3306/' .env.testing
+
+      # Building the schema from our own migrations is the point: it proves on
+      # every push that they still produce a working database from empty. The
+      # previous step loaded a snapshot dumped out of production, which drifted
+      # 167 columns behind the code without anything noticing.
+      - name: Build the schema
+        run: php artisan migrate --force --no-interaction --env=testing
 
       - name: Code style
         run: vendor/bin/pint --test

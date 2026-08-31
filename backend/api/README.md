@@ -148,13 +148,33 @@ Three gates, all of which must be green:
 ```bash
 php vendor/bin/pint            # formatting
 php vendor/bin/phpstan analyse # static analysis, level max
-php artisan test               # against a real MySQL dump, not SQLite
+php artisan test               # against real MySQL, not SQLite
 ```
 
-The suite runs under `DatabaseTransactions` against a copy of production's
-schema, because SQLite would not reproduce the ENUM truncation, the `NULL`
-handling in unique keys, or the timezone disagreement that caused most of the
-bugs worth having tests for.
+The suite runs under `DatabaseTransactions` against MySQL, because SQLite would
+not reproduce the ENUM truncation, the `NULL` handling in unique keys, or the
+timezone disagreement that caused most of the bugs worth having tests for.
+
+## The schema
+
+`database/migrations/` builds the whole thing — 85 tables, 368 indexes and 179
+foreign keys — from an empty database:
+
+```bash
+php artisan migrate
+```
+
+Foreign keys are all added in one final migration rather than inline, so table
+migrations never have to be ordered by dependency: a graph that is tedious to
+maintain and easy to break with one new relation.
+
+These migrations were generated from the running production schema and then
+checked back against it column by column, index by index and key by key, rather
+than being trusted because they ran without error. The three tables the old
+backend's ledger still creates — `expense_claims`, `kiosk_pins` and
+`shift_swap_requests` — are deliberately absent: each was dropped by a migration
+that now lives in the old `migrations/archive/`, and no code in either backend
+refers to them.
 
 ## Scheduled work
 
