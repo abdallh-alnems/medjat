@@ -49,7 +49,7 @@ final class BranchNetworkController
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $admin = BranchController::admin($request);
-        $branchId = BranchController::existing($request, $tenantId);
+        $branchId = BranchController::existing(Value::int($request->input('branch_id')), $tenantId);
         RequireBranchAccess::assert($admin, $branchId);
 
         $bssid = NetworkVerifier::normaliseBssid($request->input('bssid'));
@@ -112,7 +112,7 @@ final class BranchNetworkController
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $admin = BranchController::admin($request);
-        $branchId = BranchController::existing($request, $tenantId);
+        $branchId = BranchController::existing(Value::int($request->input('branch_id')), $tenantId);
         RequireBranchAccess::assert($admin, $branchId);
 
         $approved = 0;
@@ -171,7 +171,7 @@ final class BranchNetworkController
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $admin = BranchController::admin($request);
-        $branchId = BranchController::existing($request, $tenantId);
+        $branchId = BranchController::existing(Value::int($request->input('branch_id')), $tenantId);
         RequireBranchAccess::assert($admin, $branchId);
 
         $branch = Branches::find($branchId, $tenantId) ?? [];

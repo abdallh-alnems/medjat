@@ -94,7 +94,7 @@ final class EnrollmentController
      * self-service path is one-time, so this is the only way back to the
      * camera.
      */
-    public function delete(Request $request): JsonResponse
+    public function delete(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $admin = self::admin($request);
@@ -105,7 +105,7 @@ final class EnrollmentController
             throw new ApiFailure('type must be one of: face, fingerprint, both', 422, 'invalid_type');
         }
 
-        $employeeId = Value::int($request->input('employee_id'));
+        $employeeId = $id;
         $employee = Employee::query()->where('id', $employeeId)->where('tenant_id', $tenantId)->first();
 
         if ($employee === null) {

@@ -87,12 +87,11 @@ final class ReviewController
         return ApiResponse::success(['id' => $id, 'message' => 'Review created'], 201);
     }
 
-    public function delete(Request $request): JsonResponse
+    public function delete(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $admin = self::admin($request);
 
-        $id = Value::int($request->input('id'));
         $review = $id > 0 ? PerformanceReviews::find($id, $tenantId) : null;
 
         if ($review === null) {

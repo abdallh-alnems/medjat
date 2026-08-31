@@ -48,7 +48,7 @@ final class BulkAdjustmentBatchController
     public function show(Request $request): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
-        [$id, $batch] = $this->target($request, $tenantId);
+        [$id, $batch] = $this->target(Value::int($request->input('id')) ?: Value::int($request->query('id')), $tenantId);
 
         return ApiResponse::success([
             'batch' => $batch,
@@ -201,11 +201,11 @@ final class BulkAdjustmentBatchController
      * so a raise between the two edits is reflected rather than frozen at what
      * the original run happened to compute.
      */
-    public function update(Request $request): JsonResponse
+    public function update(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        [$id, $batch] = $this->target($request, $tenantId);
+        [$id, $batch] = $this->target($id, $tenantId);
 
         $amountType = Value::string($request->input('amount_type'), 'fixed') ?: 'fixed';
         $amount = Value::float($request->input('amount'));
@@ -257,11 +257,11 @@ final class BulkAdjustmentBatchController
         return ApiResponse::success(['updated' => $updated, 'message' => 'Bulk adjustment updated']);
     }
 
-    public function delete(Request $request): JsonResponse
+    public function delete(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        [$id, $batch] = $this->target($request, $tenantId);
+        [$id, $batch] = $this->target($id, $tenantId);
 
         $kind = Value::string($batch['kind'] ?? null);
         $isBonus = $kind === 'bonus';
@@ -289,7 +289,7 @@ final class BulkAdjustmentBatchController
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        [$id, $batch] = $this->target($request, $tenantId);
+        [$id, $batch] = $this->target(Value::int($request->input('id')) ?: Value::int($request->query('id')), $tenantId);
 
         $rowId = Value::int($request->input('row_id'));
 
@@ -402,9 +402,8 @@ final class BulkAdjustmentBatchController
     /**
      * @return array{0: int, 1: array<string, mixed>}
      */
-    private function target(Request $request, int $tenantId): array
+    private function target(int $id, int $tenantId): array
     {
-        $id = Value::int($request->input('id')) ?: Value::int($request->query('id'));
         $batch = $id > 0 ? BulkAdjustments::find($id, $tenantId) : null;
 
         if ($batch === null) {

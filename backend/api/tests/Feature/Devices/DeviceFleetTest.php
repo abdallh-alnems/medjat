@@ -258,13 +258,11 @@ final class DeviceFleetTest extends TestCase
     {
         $id = $this->registered();
 
-        $this->asAdmin()->postJson('/v1/devices/update', [
-            'device_id' => $id,
+        $this->asAdmin()->patchJson('/v1/devices/'.$id, [
             'name' => 'Back door',
             'direction_mode' => 'device_status',
             'min_interval_seconds' => 120,
-            'clock_offset_minutes' => -60,
-        ])->assertOk();
+            'clock_offset_minutes' => -60])->assertOk();
 
         $this->assertDatabaseHas('attendance_devices', [
             'id' => $id,
@@ -279,10 +277,8 @@ final class DeviceFleetTest extends TestCase
     {
         $id = $this->registered();
 
-        $this->asAdmin()->postJson('/v1/devices/update', [
-            'device_id' => $id,
-            'min_interval_seconds' => 99999,
-        ])->assertStatus(422)->assertJsonPath('error_code', 'min_interval_range');
+        $this->asAdmin()->patchJson('/v1/devices/'.$id, [
+            'min_interval_seconds' => 99999])->assertStatus(422)->assertJsonPath('error_code', 'min_interval_range');
     }
 
     public function test_a_device_cannot_be_unclaimed_through_the_settings(): void
@@ -291,10 +287,8 @@ final class DeviceFleetTest extends TestCase
         // cleaned up with it.
         $id = $this->registered();
 
-        $this->asAdmin()->postJson('/v1/devices/update', [
-            'device_id' => $id,
-            'status' => 'unclaimed',
-        ])->assertStatus(422)->assertJsonPath('error_code', 'invalid_status');
+        $this->asAdmin()->patchJson('/v1/devices/'.$id, [
+            'status' => 'unclaimed'])->assertStatus(422)->assertJsonPath('error_code', 'invalid_status');
     }
 
     public function test_releasing_keeps_the_attendance_and_drops_the_link(): void
@@ -315,7 +309,7 @@ final class DeviceFleetTest extends TestCase
             'state' => 'applied',
         ]);
 
-        $this->asAdmin()->postJson('/v1/devices/delete', ['device_id' => $id])->assertOk();
+        $this->asAdmin()->deleteJson('/v1/devices/'.$id)->assertOk();
 
         $this->assertDatabaseHas('attendance_devices', ['id' => $id, 'status' => 'unclaimed', 'tenant_id' => null]);
         $this->assertDatabaseMissing('device_users', ['device_id' => $id]);

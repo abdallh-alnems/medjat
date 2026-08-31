@@ -42,24 +42,24 @@ final class ManualAdjustmentController
         return $this->add($request, isBonus: true);
     }
 
-    public function updateDeduction(Request $request): JsonResponse
+    public function updateDeduction(Request $request, int $id): JsonResponse
     {
-        return $this->change($request, isBonus: false);
+        return $this->change($request, $id, isBonus: false);
     }
 
-    public function updateBonus(Request $request): JsonResponse
+    public function updateBonus(Request $request, int $id): JsonResponse
     {
-        return $this->change($request, isBonus: true);
+        return $this->change($request, $id, isBonus: true);
     }
 
-    public function deleteDeduction(Request $request): JsonResponse
+    public function deleteDeduction(Request $request, int $id): JsonResponse
     {
-        return $this->remove($request, isBonus: false);
+        return $this->remove($request, $id, isBonus: false);
     }
 
-    public function deleteBonus(Request $request): JsonResponse
+    public function deleteBonus(Request $request, int $id): JsonResponse
     {
-        return $this->remove($request, isBonus: true);
+        return $this->remove($request, $id, isBonus: true);
     }
 
     private function add(Request $request, bool $isBonus): JsonResponse
@@ -100,11 +100,11 @@ final class ManualAdjustmentController
         ]);
     }
 
-    private function change(Request $request, bool $isBonus): JsonResponse
+    private function change(Request $request, int $id, bool $isBonus): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        [$id, $existing] = $this->target($request, $tenantId, $isBonus);
+        [$id, $existing] = $this->target($id, $tenantId, $isBonus);
 
         $amount = Value::float($request->input('amount'));
 
@@ -129,11 +129,11 @@ final class ManualAdjustmentController
         return ApiResponse::success(['message' => $isBonus ? 'Manual bonus updated' : 'Manual deduction updated']);
     }
 
-    private function remove(Request $request, bool $isBonus): JsonResponse
+    private function remove(Request $request, int $id, bool $isBonus): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        [$id, $existing] = $this->target($request, $tenantId, $isBonus);
+        [$id, $existing] = $this->target($id, $tenantId, $isBonus);
 
         DB::table(self::table($isBonus))->where('id', $id)->where('tenant_id', $tenantId)->delete();
 
@@ -172,9 +172,8 @@ final class ManualAdjustmentController
     /**
      * @return array{0: int, 1: array<string, mixed>}
      */
-    private function target(Request $request, int $tenantId, bool $isBonus): array
+    private function target(int $id, int $tenantId, bool $isBonus): array
     {
-        $id = Value::int($request->input('id'));
 
         $row = $id > 0
             ? DB::table(self::table($isBonus))->where('id', $id)->where('tenant_id', $tenantId)->first()

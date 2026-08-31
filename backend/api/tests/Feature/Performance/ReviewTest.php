@@ -83,6 +83,15 @@ final class ReviewTest extends TestCase
     }
 
     /**
+     * @param  array<string, mixed>  $payload
+     * @return TestResponse<\Illuminate\Http\JsonResponse>
+     */
+    private function sendDelete(string $path, array $payload = [], ?string $token = null): TestResponse
+    {
+        return $this->withHeader('X-Firebase-Token', $token ?? $this->adminToken)->deleteJson($path, $payload);
+    }
+
+    /**
      * @param  array<string, mixed>  $overrides
      * @return TestResponse<\Illuminate\Http\JsonResponse>
      */
@@ -192,14 +201,14 @@ final class ReviewTest extends TestCase
     {
         $id = Value::int($this->create()->assertStatus(201)->json('data.id'));
 
-        $this->send('/v1/performance/reviews/delete', ['id' => $id])->assertOk();
+        $this->sendDelete('/v1/performance/reviews/'.$id)->assertOk();
 
         $this->assertDatabaseMissing('performance_reviews', ['id' => $id]);
     }
 
     public function test_deleting_an_unknown_review_is_a_404(): void
     {
-        $this->send('/v1/performance/reviews/delete', ['id' => 99999999])->assertStatus(404);
+        $this->sendDelete('/v1/performance/reviews/'.'99999999')->assertStatus(404);
     }
 
     public function test_a_branch_manager_cannot_review_outside_their_branch(): void
@@ -225,7 +234,7 @@ final class ReviewTest extends TestCase
         ]);
 
         // The branch check follows the review's subject, not the review.
-        $this->send('/v1/performance/reviews/delete', ['id' => $id], $this->admin('branch_manager', $otherBranch))
+        $this->sendDelete('/v1/performance/reviews/'.$id, [], $this->admin('branch_manager', $otherBranch))
             ->assertStatus(403);
 
         $this->assertDatabaseHas('performance_reviews', ['id' => $id]);

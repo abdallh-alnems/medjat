@@ -83,11 +83,11 @@ final class RequiredDocumentController
         return ApiResponse::success(['required_document_id' => $id], 201);
     }
 
-    public function update(Request $request): JsonResponse
+    public function update(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        $id = self::existing($request, $tenantId);
+        $id = self::existing($id, $tenantId);
 
         $fields = self::optionalFields($request);
 
@@ -121,11 +121,11 @@ final class RequiredDocumentController
         return ApiResponse::success(['required_document_id' => $id]);
     }
 
-    public function delete(Request $request): JsonResponse
+    public function delete(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        $id = self::existing($request, $tenantId);
+        $id = self::existing($id, $tenantId);
 
         if (! RequiredDocument::delete($id, $tenantId)) {
             throw new ApiFailure('Failed to delete required document', 500);
@@ -141,7 +141,6 @@ final class RequiredDocumentController
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
         $id = Value::int($request->input('id'));
-
         $existing = RequiredDocument::find($id, $tenantId);
 
         if ($existing === null) {
@@ -338,10 +337,8 @@ final class RequiredDocumentController
         ));
     }
 
-    private static function existing(Request $request, int $tenantId): int
+    private static function existing(int $id, int $tenantId): int
     {
-        $id = Value::int($request->input('id'));
-
         if (RequiredDocument::find($id, $tenantId) === null) {
             throw new ApiFailure('Required document not found', 404, 'not_found');
         }

@@ -327,10 +327,10 @@ Route::middleware(['app.secret', 'throttle:api'])->group(function (): void {
         Route::get('v1/employees', ListEmployeesController::class)->name('employees.list');
         Route::get('v1/employees/terminated', ListTerminatedController::class)
             ->name('employees.terminated');
-        Route::post('v1/employees/delete', DeleteEmployeeController::class)->name('employees.delete');
+        Route::post('v1/employees/{id}/terminate', DeleteEmployeeController::class)->name('employees.terminate');
 
         Route::post('v1/employees', CreateEmployeeController::class)->name('employees.create');
-        Route::post('v1/employees/update', UpdateEmployeeController::class)->name('employees.update');
+        Route::patch('v1/employees/{id}', UpdateEmployeeController::class)->name('employees.update');
 
         Route::get('v1/employees/suspensions', [SuspensionController::class, 'index'])
             ->name('employees.suspensions');
@@ -359,9 +359,9 @@ Route::middleware(['app.secret', 'throttle:api'])->group(function (): void {
                 ->name('documents.index');
             Route::get('v1/employees/documents/missing', [EmployeeDocumentsController::class, 'missing'])
                 ->name('documents.missing');
-            Route::post('v1/employees/documents/update', [ReviewDocumentController::class, 'update'])
+            Route::patch('v1/employees/documents/{id}', [ReviewDocumentController::class, 'update'])
                 ->name('documents.update');
-            Route::post('v1/employees/documents/delete', [ReviewDocumentController::class, 'destroy'])
+            Route::delete('v1/employees/documents/{id}', [ReviewDocumentController::class, 'destroy'])
                 ->name('documents.delete');
 
         });
@@ -457,21 +457,21 @@ Route::middleware(['app.secret', 'throttle:api'])->group(function (): void {
 
         Route::post('v1/deductions/manual', [ManualAdjustmentController::class, 'addDeduction'])
             ->name('deductions.manual.add');
-        Route::post('v1/deductions/manual/update', [ManualAdjustmentController::class, 'updateDeduction'])
+        Route::patch('v1/deductions/manual/{id}', [ManualAdjustmentController::class, 'updateDeduction'])
             ->name('deductions.manual.update');
-        Route::post('v1/deductions/manual/delete', [ManualAdjustmentController::class, 'deleteDeduction'])
+        Route::delete('v1/deductions/manual/{id}', [ManualAdjustmentController::class, 'deleteDeduction'])
             ->name('deductions.manual.delete');
         Route::post('v1/bonuses/manual', [ManualAdjustmentController::class, 'addBonus'])
             ->name('bonuses.manual.add');
-        Route::post('v1/bonuses/manual/update', [ManualAdjustmentController::class, 'updateBonus'])
+        Route::patch('v1/bonuses/manual/{id}', [ManualAdjustmentController::class, 'updateBonus'])
             ->name('bonuses.manual.update');
-        Route::post('v1/bonuses/manual/delete', [ManualAdjustmentController::class, 'deleteBonus'])
+        Route::delete('v1/bonuses/manual/{id}', [ManualAdjustmentController::class, 'deleteBonus'])
             ->name('bonuses.manual.delete');
 
         Route::get('v1/allowances', [AllowanceController::class, 'index'])->name('allowances.index');
         Route::post('v1/allowances', [AllowanceController::class, 'create'])->name('allowances.create');
-        Route::post('v1/allowances/update', [AllowanceController::class, 'update'])->name('allowances.update');
-        Route::post('v1/allowances/delete', [AllowanceController::class, 'delete'])->name('allowances.delete');
+        Route::patch('v1/allowances/{id}', [AllowanceController::class, 'update'])->name('allowances.update');
+        Route::delete('v1/allowances/{id}', [AllowanceController::class, 'delete'])->name('allowances.delete');
 
         Route::get('v1/bulk-adjustments', [BulkAdjustmentBatchController::class, 'index'])
             ->name('bulk-adjustments.index');
@@ -479,9 +479,9 @@ Route::middleware(['app.secret', 'throttle:api'])->group(function (): void {
             ->name('bulk-adjustments.show');
         Route::post('v1/bulk-adjustments', [BulkAdjustmentBatchController::class, 'create'])
             ->name('bulk-adjustments.create');
-        Route::post('v1/bulk-adjustments/update', [BulkAdjustmentBatchController::class, 'update'])
+        Route::patch('v1/bulk-adjustments/{id}', [BulkAdjustmentBatchController::class, 'update'])
             ->name('bulk-adjustments.update');
-        Route::post('v1/bulk-adjustments/delete', [BulkAdjustmentBatchController::class, 'delete'])
+        Route::delete('v1/bulk-adjustments/{id}', [BulkAdjustmentBatchController::class, 'delete'])
             ->name('bulk-adjustments.delete');
         Route::post('v1/bulk-adjustments/remove-member', [BulkAdjustmentBatchController::class, 'removeMember'])
             ->name('bulk-adjustments.remove-member');
@@ -546,7 +546,7 @@ Route::middleware(['app.secret', 'throttle:api'])->group(function (): void {
     });
 
     Route::middleware(['auth.admin', 'tenant', 'can.do:biometric_delete'])->group(function (): void {
-        Route::post('v1/biometric/delete', [EnrollmentController::class, 'delete'])
+        Route::delete('v1/biometric/{id}', [EnrollmentController::class, 'delete'])
             ->name('biometric.delete');
         // The original also answered DELETE here. Both verbs are kept: the
         // published app bundles speak POST and cannot be changed.
@@ -664,7 +664,7 @@ Route::middleware(['app.secret', 'throttle:api'])->group(function (): void {
         Route::get('v1/performance/reviews', [ReviewController::class, 'index'])->name('performance.reviews');
         Route::post('v1/performance/reviews', [ReviewController::class, 'create'])
             ->name('performance.reviews.create');
-        Route::post('v1/performance/reviews/delete', [ReviewController::class, 'delete'])
+        Route::delete('v1/performance/reviews/{id}', [ReviewController::class, 'delete'])
             ->name('performance.reviews.delete');
 
     });
@@ -696,7 +696,7 @@ Route::middleware(['app.secret', 'throttle:api'])->group(function (): void {
 
     Route::middleware(['auth.admin', 'tenant', 'can.do:manage_employees'])->group(function (): void {
         Route::post('v1/warnings', [WarningController::class, 'create'])->name('warnings.create');
-        Route::post('v1/warnings/delete', [WarningController::class, 'delete'])->name('warnings.delete');
+        Route::delete('v1/warnings/{id}', [WarningController::class, 'delete'])->name('warnings.delete');
 
     });
 
@@ -808,7 +808,7 @@ Route::middleware(['app.secret', 'throttle:api'])->group(function (): void {
     });
 
     Route::middleware('auth.super:admin')->group(function (): void {
-        Route::post('v1/admin/tenants/update', [SuperAdminTenantController::class, 'update'])
+        Route::patch('v1/admin/tenants/{id}', [SuperAdminTenantController::class, 'update'])
             ->name('super.tenants.update');
         Route::post('v1/admin/tenants/activate', [SuperAdminTenantController::class, 'activate'])
             ->name('super.tenants.activate');
@@ -858,7 +858,7 @@ Route::middleware(['app.secret', 'throttle:api'])->group(function (): void {
         Route::get('v1/leaves/mine', [MyLeaveController::class, 'index'])->name('leaves.mine');
         Route::get('v1/leaves/my-balance', [MyLeaveController::class, 'balance'])->name('leaves.my-balance');
         Route::post('v1/leaves/cancel', [MyLeaveController::class, 'cancel'])->name('leaves.cancel');
-        Route::post('v1/leaves/update', [MyLeaveController::class, 'update'])->name('leaves.update');
+        Route::patch('v1/leaves/{id}', [MyLeaveController::class, 'update'])->name('leaves.update');
 
     });
 
@@ -885,7 +885,7 @@ Route::middleware(['app.secret', 'throttle:api'])->group(function (): void {
             ->name('leaves.carryover-policies');
         Route::post('v1/leaves/carryover-policies', [CarryoverController::class, 'save'])
             ->name('leaves.carryover-policy-save');
-        Route::post('v1/leaves/carryover-policies/delete', [CarryoverController::class, 'delete'])
+        Route::delete('v1/leaves/carryover-policies/{id}', [CarryoverController::class, 'delete'])
             ->name('leaves.carryover-policy-delete');
         Route::post('v1/leaves/rollover', [CarryoverController::class, 'rollover'])->name('leaves.rollover');
         Route::get('v1/leaves/encashments', [CarryoverController::class, 'encashments'])
@@ -965,9 +965,9 @@ Route::middleware(['app.secret', 'throttle:api'])->group(function (): void {
 
         Route::post('v1/documents/required', [RequiredDocumentController::class, 'create'])
             ->middleware('can.do:documents_manage_types')->name('documents.required.create');
-        Route::post('v1/documents/required/update', [RequiredDocumentController::class, 'update'])
+        Route::patch('v1/documents/required/{id}', [RequiredDocumentController::class, 'update'])
             ->middleware('can.do:documents_manage_types')->name('documents.required.update');
-        Route::post('v1/documents/required/delete', [RequiredDocumentController::class, 'delete'])
+        Route::delete('v1/documents/required/{id}', [RequiredDocumentController::class, 'delete'])
             ->middleware('can.do:documents_manage_types')->name('documents.required.delete');
         Route::post('v1/documents/required/toggle', [RequiredDocumentController::class, 'toggle'])
             ->middleware('can.do:documents_manage_types')->name('documents.required.toggle');
@@ -997,7 +997,7 @@ Route::middleware(['app.secret', 'throttle:api'])->group(function (): void {
 
     Route::middleware(['auth.admin', 'tenant', 'can.do:add_managers'])->group(function (): void {
         Route::get('v1/team', [TeamController::class, 'index'])->name('team.list');
-        Route::post('v1/team/update', [TeamController::class, 'update'])->name('team.update');
+        Route::patch('v1/team/{id}', [TeamController::class, 'update'])->name('team.update');
         Route::post('v1/team/set-active', [TeamController::class, 'setActive'])->name('team.set-active');
         Route::post('v1/team/remove', [TeamController::class, 'remove'])->name('team.remove');
 
@@ -1073,9 +1073,9 @@ Route::middleware(['app.secret', 'throttle:api'])->group(function (): void {
 
         Route::post('v1/devices', [DeviceFleetController::class, 'register'])
             ->middleware('can.do:manage_company_settings')->name('devices.register');
-        Route::post('v1/devices/update', [DeviceFleetController::class, 'update'])
+        Route::patch('v1/devices/{id}', [DeviceFleetController::class, 'update'])
             ->middleware('can.do:manage_company_settings')->name('devices.update');
-        Route::post('v1/devices/delete', [DeviceFleetController::class, 'delete'])
+        Route::delete('v1/devices/{id}', [DeviceFleetController::class, 'delete'])
             ->middleware('can.do:manage_company_settings')->name('devices.delete');
         Route::post('v1/devices/command', [DeviceFleetController::class, 'command'])
             ->middleware('can.do:manage_company_settings')->name('devices.command');
@@ -1131,7 +1131,7 @@ Route::middleware(['app.secret', 'throttle:api'])->group(function (): void {
 
     Route::middleware(['auth.admin', 'tenant', 'can.do:manage_company_settings'])->group(function (): void {
         Route::post('v1/branches', [BranchController::class, 'create'])->name('branches.create');
-        Route::post('v1/branches/update', [BranchController::class, 'update'])->name('branches.update');
+        Route::patch('v1/branches/{id}', [BranchController::class, 'update'])->name('branches.update');
         Route::post('v1/branches/generate-qr', [BranchController::class, 'generateQr'])->name('branches.generate-qr');
         Route::post('v1/branches/attendance-method', [BranchController::class, 'updateAttendanceMethod'])
             ->name('branches.attendance-method');
@@ -1166,8 +1166,8 @@ Route::middleware(['app.secret', 'throttle:api'])->group(function (): void {
     Route::middleware(['auth.admin', 'tenant', 'can.do:manage_assets'])->group(function (): void {
         Route::get('v1/assets', [AssetController::class, 'index'])->name('assets.list');
         Route::post('v1/assets', [AssetController::class, 'create'])->name('assets.create');
-        Route::post('v1/assets/update', [AssetController::class, 'update'])->name('assets.update');
-        Route::post('v1/assets/delete', [AssetController::class, 'delete'])->name('assets.delete');
+        Route::patch('v1/assets/{id}', [AssetController::class, 'update'])->name('assets.update');
+        Route::delete('v1/assets/{id}', [AssetController::class, 'delete'])->name('assets.delete');
         Route::post('v1/assets/approve-return', [AssetController::class, 'approveReturn'])
             ->name('assets.approve-return');
         Route::post('v1/assets/reject-return', [AssetController::class, 'rejectReturn'])
@@ -1205,8 +1205,8 @@ Route::middleware(['app.secret', 'throttle:api'])->group(function (): void {
 
     Route::middleware(['auth.admin', 'tenant', 'can.do:manage_company_settings'])->group(function (): void {
         Route::post('v1/shifts', [ShiftController::class, 'create'])->name('shifts.create');
-        Route::post('v1/shifts/update', [ShiftController::class, 'update'])->name('shifts.update');
-        Route::post('v1/shifts/delete', [ShiftController::class, 'delete'])->name('shifts.delete');
+        Route::patch('v1/shifts/{id}', [ShiftController::class, 'update'])->name('shifts.update');
+        Route::delete('v1/shifts/{id}', [ShiftController::class, 'delete'])->name('shifts.delete');
         Route::post('v1/shifts/assign', [ShiftController::class, 'assign'])->name('shifts.assign');
         Route::post('v1/shifts/unassign', [ShiftController::class, 'unassign'])->name('shifts.unassign');
 
@@ -1214,8 +1214,8 @@ Route::middleware(['app.secret', 'throttle:api'])->group(function (): void {
 
     Route::middleware(['auth.admin', 'tenant', 'can.do:manage_employees'])->group(function (): void {
         Route::post('v1/categories', [CategoryController::class, 'create'])->name('categories.create');
-        Route::post('v1/categories/update', [CategoryController::class, 'update'])->name('categories.update');
-        Route::post('v1/categories/delete', [CategoryController::class, 'delete'])->name('categories.delete');
+        Route::patch('v1/categories/{id}', [CategoryController::class, 'update'])->name('categories.update');
+        Route::delete('v1/categories/{id}', [CategoryController::class, 'delete'])->name('categories.delete');
         Route::post('v1/categories/assign', [CategoryController::class, 'assign'])->name('categories.assign');
 
     });

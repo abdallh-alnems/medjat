@@ -113,11 +113,11 @@ final class DeviceFleetController
         ]);
     }
 
-    public function update(Request $request): JsonResponse
+    public function update(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        $deviceId = self::existing($request, $tenantId);
+        $deviceId = self::existing($id, $tenantId);
 
         $fields = [];
 
@@ -169,11 +169,11 @@ final class DeviceFleetController
      * The attendance already recorded from it stays: those hours were worked,
      * and they belong to the company, not to the hardware.
      */
-    public function delete(Request $request): JsonResponse
+    public function delete(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        $deviceId = self::existing($request, $tenantId);
+        $deviceId = self::existing($id, $tenantId);
 
         $serial = DB::table('attendance_devices')->where('id', $deviceId)->value('serial_number');
 
@@ -196,7 +196,7 @@ final class DeviceFleetController
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        $deviceId = self::existing($request, $tenantId);
+        $deviceId = self::existing(Value::int($request->input('device_id')), $tenantId);
         $kind = Value::string($request->input('kind'));
 
         if (! in_array($kind, ZktecoProtocol::COMMAND_KINDS, true)) {
@@ -292,10 +292,8 @@ final class DeviceFleetController
         return $age !== null && $age <= AttendanceDevice::ONLINE_GRACE_SECONDS;
     }
 
-    private static function existing(Request $request, int $tenantId): int
+    private static function existing(int $deviceId, int $tenantId): int
     {
-        $deviceId = Value::int($request->input('device_id'));
-
         if ($deviceId <= 0 || AttendanceDevice::find($deviceId, $tenantId) === null) {
             throw new ApiFailure('Device not found', 404, 'not_found');
         }

@@ -124,7 +124,7 @@ final class BranchTest extends TestCase
     public function test_changing_a_branch_needs_the_settings_permission(): void
     {
         $this->withHeader('X-Firebase-Token', $this->viewerToken)
-            ->postJson('/v1/branches/update', ['branch_id' => $this->branchId, 'name' => 'Nope'])
+            ->patchJson('/v1/branches/'.$this->branchId, ['name' => 'Nope'])
             ->assertForbidden();
     }
 
@@ -132,37 +132,29 @@ final class BranchTest extends TestCase
 
     public function test_a_branch_can_override_the_pay_cycle_or_inherit_it(): void
     {
-        $this->asAdmin()->postJson('/v1/branches/update', [
-            'branch_id' => $this->branchId,
-            'cycle_start_day' => 26,
-        ])->assertOk();
+        $this->asAdmin()->patchJson('/v1/branches/'.$this->branchId, [
+            'cycle_start_day' => 26])->assertOk();
 
         $this->assertDatabaseHas('branches', ['id' => $this->branchId, 'cycle_start_day' => 26]);
 
         // Null means inherit the company's, which is different from choosing
         // the first of the month.
-        $this->asAdmin()->postJson('/v1/branches/update', [
-            'branch_id' => $this->branchId,
-            'cycle_start_day' => null,
-        ])->assertOk();
+        $this->asAdmin()->patchJson('/v1/branches/'.$this->branchId, [
+            'cycle_start_day' => null])->assertOk();
 
         $this->assertNull(DB::table('branches')->where('id', $this->branchId)->value('cycle_start_day'));
     }
 
     public function test_a_cycle_day_past_the_end_of_february_is_refused(): void
     {
-        $this->asAdmin()->postJson('/v1/branches/update', [
-            'branch_id' => $this->branchId,
-            'cycle_start_day' => 30,
-        ])->assertStatus(422)->assertJsonPath('error_code', 'cycle_start_day_between_1');
+        $this->asAdmin()->patchJson('/v1/branches/'.$this->branchId, [
+            'cycle_start_day' => 30])->assertStatus(422)->assertJsonPath('error_code', 'cycle_start_day_between_1');
     }
 
     public function test_an_absurd_geofence_radius_is_refused(): void
     {
-        $this->asAdmin()->postJson('/v1/branches/update', [
-            'branch_id' => $this->branchId,
-            'gps_radius_meters' => 99999,
-        ])->assertStatus(422)->assertJsonPath('error_code', 'gps_radius_meters_between_5');
+        $this->asAdmin()->patchJson('/v1/branches/'.$this->branchId, [
+            'gps_radius_meters' => 99999])->assertStatus(422)->assertJsonPath('error_code', 'gps_radius_meters_between_5');
     }
 
     public function test_a_qr_payload_is_kept_unless_regeneration_is_asked_for(): void

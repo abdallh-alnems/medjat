@@ -92,6 +92,15 @@ final class SuperAdminPanelTest extends TestCase
     }
 
     /**
+     * @param  array<string, mixed>  $payload
+     * @return TestResponse<\Illuminate\Http\JsonResponse>
+     */
+    private function sendPatch(string $path, array $payload = [], ?string $token = null): TestResponse
+    {
+        return $this->withHeader('Authorization', 'Bearer '.($token ?? $this->token))->patchJson($path, $payload);
+    }
+
+    /**
      * @return TestResponse<\Illuminate\Http\JsonResponse>
      */
     private function read(string $path, ?string $token = null): TestResponse
@@ -183,9 +192,7 @@ final class SuperAdminPanelTest extends TestCase
     {
         // An agent correcting a phone number must not silently reset a timezone
         // they never saw.
-        $this->send('/v1/admin/tenants/update', [
-            'id' => $this->tenantId, 'contact_phone' => '+201111111111',
-        ])->assertOk()->assertJsonPath('data.updated', ['contact_phone']);
+        $this->sendPatch('/v1/admin/tenants/'.$this->tenantId, ['contact_phone' => '+201111111111'])->assertOk()->assertJsonPath('data.updated', ['contact_phone']);
 
         $this->assertDatabaseHas('tenants', [
             'id' => $this->tenantId, 'timezone' => 'Africa/Cairo', 'contact_phone' => '+201111111111',
@@ -194,16 +201,14 @@ final class SuperAdminPanelTest extends TestCase
 
     public function test_a_contact_field_can_be_cleared_but_a_setting_cannot(): void
     {
-        $this->send('/v1/admin/tenants/update', [
-            'id' => $this->tenantId, 'contact_phone' => '+201111111111',
-        ])->assertOk();
+        $this->sendPatch('/v1/admin/tenants/'.$this->tenantId, ['contact_phone' => '+201111111111'])->assertOk();
 
         // Erasing a stale phone number is a normal support action.
-        $this->send('/v1/admin/tenants/update', ['id' => $this->tenantId, 'contact_phone' => ''])->assertOk();
+        $this->sendPatch('/v1/admin/tenants/'.$this->tenantId, ['contact_phone' => ''])->assertOk();
         $this->assertDatabaseHas('tenants', ['id' => $this->tenantId, 'contact_phone' => null]);
 
         // An empty timezone is not a request to have no timezone.
-        $this->send('/v1/admin/tenants/update', ['id' => $this->tenantId, 'timezone' => ''])->assertStatus(422);
+        $this->sendPatch('/v1/admin/tenants/'.$this->tenantId, ['timezone' => ''])->assertStatus(422);
     }
 
     public function test_a_company_can_be_suspended_and_restored(): void

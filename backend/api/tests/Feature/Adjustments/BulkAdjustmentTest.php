@@ -93,6 +93,24 @@ final class BulkAdjustmentTest extends TestCase
     }
 
     /**
+     * @param  array<string, mixed>  $payload
+     * @return TestResponse<\Illuminate\Http\JsonResponse>
+     */
+    private function sendPatch(string $path, array $payload = []): TestResponse
+    {
+        return $this->withHeader('X-Firebase-Token', $this->adminToken)->patchJson($path, $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return TestResponse<\Illuminate\Http\JsonResponse>
+     */
+    private function sendDelete(string $path, array $payload = []): TestResponse
+    {
+        return $this->withHeader('X-Firebase-Token', $this->adminToken)->deleteJson($path, $payload);
+    }
+
+    /**
      * @param  array<string, mixed>  $overrides
      * @return TestResponse<\Illuminate\Http\JsonResponse>
      */
@@ -317,12 +335,10 @@ final class BulkAdjustmentTest extends TestCase
     {
         $batchId = Value::int($this->apply()->json('data.id'));
 
-        $this->send('/v1/bulk-adjustments/update', [
-            'id' => $batchId,
+        $this->sendPatch('/v1/bulk-adjustments/'.$batchId, [
             'amount' => 750,
             'amount_type' => 'fixed',
-            'reason' => 'Increased',
-        ])->assertOk()->assertJsonPath('data.updated', 2);
+            'reason' => 'Increased'])->assertOk()->assertJsonPath('data.updated', 2);
 
         $this->assertSame(2, DB::table('manual_bonuses')
             ->where('batch_id', $batchId)->where('amount', 750.00)->count());
@@ -337,12 +353,10 @@ final class BulkAdjustmentTest extends TestCase
         // the original run happened to compute.
         DB::table('employees')->where('id', $this->branchStaff[0])->update(['base_salary' => 8000]);
 
-        $this->send('/v1/bulk-adjustments/update', [
-            'id' => $batchId,
+        $this->sendPatch('/v1/bulk-adjustments/'.$batchId, [
             'amount' => 10,
             'amount_type' => 'percent',
-            'reason' => 'Ramadan bonus',
-        ])->assertOk();
+            'reason' => 'Ramadan bonus'])->assertOk();
 
         $this->assertDatabaseHas('manual_bonuses', [
             'batch_id' => $batchId, 'employee_id' => $this->branchStaff[0], 'amount' => 800.00,
@@ -353,7 +367,7 @@ final class BulkAdjustmentTest extends TestCase
     {
         $batchId = Value::int($this->apply()->json('data.id'));
 
-        $this->send('/v1/bulk-adjustments/delete', ['id' => $batchId])
+        $this->sendDelete('/v1/bulk-adjustments/'.$batchId)
             ->assertOk()
             ->assertJsonPath('data.removed', 2);
 
@@ -366,7 +380,7 @@ final class BulkAdjustmentTest extends TestCase
         $batchId = Value::int($this->apply()->json('data.id'));
         DB::table('notifications')->where('tenant_id', $this->tenantId)->delete();
 
-        $this->send('/v1/bulk-adjustments/delete', ['id' => $batchId])->assertOk();
+        $this->sendDelete('/v1/bulk-adjustments/'.$batchId)->assertOk();
 
         $this->assertSame(2, DB::table('notifications')
             ->where('tenant_id', $this->tenantId)
@@ -416,7 +430,7 @@ final class BulkAdjustmentTest extends TestCase
             'month' => self::MONTH,
         ]);
 
-        $this->send('/v1/bulk-adjustments/delete', ['id' => $foreign])->assertStatus(404);
+        $this->sendDelete('/v1/bulk-adjustments/'.$foreign)->assertStatus(404);
         $this->assertDatabaseHas('bulk_adjustments', ['id' => $foreign]);
     }
 

@@ -248,9 +248,7 @@ final class ReviewDocumentTest extends TestCase
     public function test_an_expiry_can_be_set_and_cleared(): void
     {
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/v1/employees/documents/update', [
-                'document_id' => $this->documentId, 'expires_at' => '2027-01-01',
-            ])->assertOk();
+            ->patchJson('/v1/employees/documents/'.$this->documentId, ['expires_at' => '2027-01-01'])->assertOk();
 
         $this->assertSame(
             '2027-01-01',
@@ -258,9 +256,7 @@ final class ReviewDocumentTest extends TestCase
         );
 
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/v1/employees/documents/update', [
-                'document_id' => $this->documentId, 'expires_at' => '',
-            ])->assertOk();
+            ->patchJson('/v1/employees/documents/'.$this->documentId, ['expires_at' => ''])->assertOk();
 
         $this->assertNull(
             DB::table('employee_documents')->where('id', $this->documentId)->value('expires_at')
@@ -270,9 +266,7 @@ final class ReviewDocumentTest extends TestCase
     public function test_a_malformed_expiry_is_refused(): void
     {
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/v1/employees/documents/update', [
-                'document_id' => $this->documentId, 'expires_at' => 'next tuesday',
-            ])->assertStatus(400)->assertJsonPath('error_code', 'invalid_date');
+            ->patchJson('/v1/employees/documents/'.$this->documentId, ['expires_at' => 'next tuesday'])->assertStatus(400)->assertJsonPath('error_code', 'invalid_date');
     }
 
     public function test_the_checklist_lists_requirements_with_nothing_uploaded(): void
@@ -325,7 +319,7 @@ final class ReviewDocumentTest extends TestCase
     public function test_deleting_removes_the_upload_but_leaves_the_requirement(): void
     {
         $this->withHeader('X-Firebase-Token', $this->token)
-            ->postJson('/v1/employees/documents/delete', ['document_id' => $this->documentId])
+            ->deleteJson('/v1/employees/documents/'.$this->documentId)
             ->assertOk();
 
         $this->assertDatabaseMissing('employee_documents', ['id' => $this->documentId]);

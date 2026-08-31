@@ -55,11 +55,11 @@ final class CategoryController
         return ApiResponse::success(['category_id' => $id], 201);
     }
 
-    public function update(Request $request): JsonResponse
+    public function update(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        $id = self::existing($request, $tenantId);
+        $id = self::existing($id, $tenantId);
 
         $fields = [];
 
@@ -94,11 +94,11 @@ final class CategoryController
         return ApiResponse::success(['category_id' => $id]);
     }
 
-    public function delete(Request $request): JsonResponse
+    public function delete(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        $id = self::existing($request, $tenantId);
+        $id = self::existing($id, $tenantId);
 
         // Deleting it would drop the document requirement scoped to it, not
         // just the label.
@@ -164,7 +164,7 @@ final class CategoryController
             );
         }
 
-        $id = self::existing($request, $tenantId);
+        $id = self::existing(Value::int($request->input('id')), $tenantId);
         $raw = $request->input('web_attendance_allowed');
 
         if ($raw === null || $raw === '') {
@@ -193,10 +193,8 @@ final class CategoryController
         ]);
     }
 
-    private static function existing(Request $request, int $tenantId): int
+    private static function existing(int $id, int $tenantId): int
     {
-        $id = Value::int($request->input('id'));
-
         if ($id <= 0 || EmployeeCategories::find($id, $tenantId) === null) {
             throw new ApiFailure('Category not found', 404, 'not_found');
         }

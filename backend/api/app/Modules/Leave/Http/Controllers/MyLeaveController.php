@@ -81,11 +81,11 @@ final class MyLeaveController
         return ApiResponse::success(['message' => 'Leave request cancelled']);
     }
 
-    public function update(Request $request): JsonResponse
+    public function update(Request $request, int $id): JsonResponse
     {
         $employee = self::employee($request);
         $tenantId = Value::int($request->attributes->get('tenant_id'));
-        $leaveId = self::leaveId($request);
+        $leaveId = $id;
 
         $type = Value::string($request->input('type'));
         $start = Value::string($request->input('start_date') ?? $request->input('date'));

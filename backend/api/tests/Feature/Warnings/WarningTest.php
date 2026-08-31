@@ -76,6 +76,15 @@ final class WarningTest extends TestCase
     }
 
     /**
+     * @param  array<string, mixed>  $payload
+     * @return TestResponse<\Illuminate\Http\JsonResponse>
+     */
+    private function sendDelete(string $path, array $payload = [], ?string $token = null): TestResponse
+    {
+        return $this->withHeader('X-Firebase-Token', $token ?? $this->adminToken)->deleteJson($path, $payload);
+    }
+
+    /**
      * @param  array<string, mixed>  $overrides
      * @return TestResponse<\Illuminate\Http\JsonResponse>
      */
@@ -123,7 +132,7 @@ final class WarningTest extends TestCase
     {
         $id = Value::int($this->issue()->assertOk()->json('data.id'));
 
-        $this->send('/v1/warnings/delete', ['id' => $id])->assertOk();
+        $this->sendDelete('/v1/warnings/'.$id)->assertOk();
 
         $this->assertDatabaseMissing('warnings', ['id' => $id]);
     }
@@ -139,7 +148,7 @@ final class WarningTest extends TestCase
             'reason' => 'Signed in from a new device',
         ]);
 
-        $this->send('/v1/warnings/delete', ['id' => $id])->assertStatus(403);
+        $this->sendDelete('/v1/warnings/'.$id)->assertStatus(403);
 
         $this->assertDatabaseHas('warnings', ['id' => $id]);
     }
@@ -164,7 +173,7 @@ final class WarningTest extends TestCase
         ]);
 
         $this->issue(['employee_id' => $stranger])->assertStatus(404);
-        $this->send('/v1/warnings/delete', ['id' => $foreign])->assertStatus(404);
+        $this->sendDelete('/v1/warnings/'.$foreign)->assertStatus(404);
     }
 
     public function test_a_viewer_cannot_warn_anybody(): void

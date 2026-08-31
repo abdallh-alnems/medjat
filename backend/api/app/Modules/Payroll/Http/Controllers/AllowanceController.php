@@ -77,11 +77,11 @@ final class AllowanceController
         return ApiResponse::success(['id' => $id, 'message' => 'Allowance created']);
     }
 
-    public function update(Request $request): JsonResponse
+    public function update(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        [$id, $existing] = $this->target($request, $tenantId);
+        [$id, $existing] = $this->target($id, $tenantId);
 
         $fields = $this->fields($request);
 
@@ -97,11 +97,11 @@ final class AllowanceController
         return ApiResponse::success(['message' => 'Allowance updated']);
     }
 
-    public function delete(Request $request): JsonResponse
+    public function delete(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        [$id, $existing] = $this->target($request, $tenantId);
+        [$id, $existing] = $this->target($id, $tenantId);
 
         DB::table('employee_allowances')->where('id', $id)->where('tenant_id', $tenantId)->delete();
 
@@ -170,9 +170,8 @@ final class AllowanceController
     /**
      * @return array{0: int, 1: array<string, mixed>}
      */
-    private function target(Request $request, int $tenantId): array
+    private function target(int $id, int $tenantId): array
     {
-        $id = Value::int($request->input('id'));
         $row = $id > 0
             ? DB::table('employee_allowances')->where('id', $id)->where('tenant_id', $tenantId)->first()
             : null;

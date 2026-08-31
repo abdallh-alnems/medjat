@@ -154,11 +154,9 @@ final class TeamManagementTest extends TestCase
     {
         [$hrId] = $this->member('hr', 'HR Person');
 
-        $this->as($this->gmToken)->postJson('/v1/team/update', [
-            'admin_id' => $hrId,
+        $this->as($this->gmToken)->patchJson('/v1/team/'.$hrId, [
             'role' => 'branch_manager',
-            'branch_id' => $this->branchId,
-        ])->assertOk();
+            'branch_id' => $this->branchId])->assertOk();
 
         $this->assertDatabaseHas('admins', [
             'id' => $hrId,
@@ -174,27 +172,23 @@ final class TeamManagementTest extends TestCase
         [$hrId] = $this->member('hr', 'HR Person');
         $this->customise($hrId, ['manage_employees', 'manage_payroll']);
 
-        $this->as($this->gmToken)->postJson('/v1/team/update', [
-            'admin_id' => $hrId,
-            'role' => 'viewer',
-        ])->assertOk();
+        $this->as($this->gmToken)->patchJson('/v1/team/'.$hrId, [
+            'role' => 'viewer'])->assertOk();
 
         $this->assertDatabaseMissing('custom_roles', ['admin_id' => $hrId]);
     }
 
     public function test_nobody_edits_their_own_role(): void
     {
-        $this->as($this->gmToken)->postJson('/v1/team/update', [
-            'admin_id' => $this->gmId,
-            'role' => 'viewer',
-        ])->assertForbidden();
+        $this->as($this->gmToken)->patchJson('/v1/team/'.$this->gmId, [
+            'role' => 'viewer'])->assertForbidden();
     }
 
     public function test_a_change_with_nothing_in_it_is_refused(): void
     {
         [$hrId] = $this->member('hr', 'HR Person');
 
-        $this->as($this->gmToken)->postJson('/v1/team/update', ['admin_id' => $hrId])
+        $this->as($this->gmToken)->patchJson('/v1/team/'.$hrId)
             ->assertStatus(422)->assertJsonPath('error_code', 'no_changes');
     }
 
@@ -205,10 +199,8 @@ final class TeamManagementTest extends TestCase
         $this->customise($hrId, Permissions::CATALOGUE);
 
         // Even holding every listed permission is not the same as full access.
-        $this->as($hrToken)->postJson('/v1/team/update', [
-            'admin_id' => $otherGmId,
-            'role' => 'viewer',
-        ])->assertForbidden();
+        $this->as($hrToken)->patchJson('/v1/team/'.$otherGmId, [
+            'role' => 'viewer'])->assertForbidden();
     }
 
     public function test_nobody_edits_somebody_who_outranks_them(): void
@@ -218,10 +210,8 @@ final class TeamManagementTest extends TestCase
         $this->customise($juniorId, ['manage_employees', 'add_managers']);
         $this->customise($seniorId, ['manage_employees', 'add_managers', 'manage_payroll']);
 
-        $this->as($juniorToken)->postJson('/v1/team/update', [
-            'admin_id' => $seniorId,
-            'role' => 'viewer',
-        ])->assertForbidden();
+        $this->as($juniorToken)->patchJson('/v1/team/'.$seniorId, [
+            'role' => 'viewer'])->assertForbidden();
     }
 
     public function test_nobody_grants_a_role_above_their_own_access(): void
@@ -230,20 +220,16 @@ final class TeamManagementTest extends TestCase
         [$viewerId] = $this->member('viewer', 'A Viewer');
         $this->customise($hrId, ['manage_employees', 'add_managers']);
 
-        $this->as($hrToken)->postJson('/v1/team/update', [
-            'admin_id' => $viewerId,
-            'role' => 'general_manager',
-        ])->assertForbidden();
+        $this->as($hrToken)->patchJson('/v1/team/'.$viewerId, [
+            'role' => 'general_manager'])->assertForbidden();
     }
 
     public function test_an_unknown_branch_is_refused(): void
     {
         [$hrId] = $this->member('hr', 'HR Person');
 
-        $this->as($this->gmToken)->postJson('/v1/team/update', [
-            'admin_id' => $hrId,
-            'branch_id' => 9999999,
-        ])->assertNotFound()->assertJsonPath('error_code', 'branch_not_found');
+        $this->as($this->gmToken)->patchJson('/v1/team/'.$hrId, [
+            'branch_id' => 9999999])->assertNotFound()->assertJsonPath('error_code', 'branch_not_found');
     }
 
     // ── Suspending and removing ──────────────────────────────────────────

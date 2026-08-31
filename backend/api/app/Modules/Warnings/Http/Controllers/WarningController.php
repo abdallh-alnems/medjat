@@ -74,12 +74,11 @@ final class WarningController
         return ApiResponse::success(['id' => $id, 'message' => 'Warning issued']);
     }
 
-    public function delete(Request $request): JsonResponse
+    public function delete(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $admin = self::admin($request);
 
-        $id = Value::int($request->input('id'));
         $warning = $id > 0
             ? DB::table('warnings')->where('id', $id)->where('tenant_id', $tenantId)->first()
             : null;

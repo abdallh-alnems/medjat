@@ -103,6 +103,15 @@ final class EnrollmentTest extends TestCase
         return $this->withHeader('X-Firebase-Token', $token ?? $this->adminToken)->postJson($path, $payload);
     }
 
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return TestResponse<\Illuminate\Http\JsonResponse>
+     */
+    private function sendDelete(string $path, array $payload = [], ?string $token = null): TestResponse
+    {
+        return $this->withHeader('X-Firebase-Token', $token ?? $this->adminToken)->deleteJson($path, $payload);
+    }
+
     public function test_a_face_enrollment_records_the_vector_and_derives_the_status(): void
     {
         $this->send('/v1/biometric/face', [
@@ -164,9 +173,7 @@ final class EnrollmentTest extends TestCase
             'template_base64' => base64_encode('template-bytes'),
         ])->assertStatus(201);
 
-        $this->send('/v1/biometric/delete', [
-            'employee_id' => $this->employeeId, 'type' => 'face',
-        ])->assertOk()->assertJsonPath('data.deleted_type', 'face');
+        $this->sendDelete('/v1/biometric/'.$this->employeeId, ['type' => 'face'])->assertOk()->assertJsonPath('data.deleted_type', 'face');
 
         $row = $this->employeeRow();
         $this->assertNull($row['face_embedding']);
@@ -183,7 +190,7 @@ final class EnrollmentTest extends TestCase
             'quality_score' => 0.9,
         ])->assertStatus(201);
 
-        $this->send('/v1/biometric/delete', ['employee_id' => $this->employeeId])->assertOk();
+        $this->sendDelete('/v1/biometric/'.$this->employeeId)->assertOk();
 
         $this->assertDatabaseHas('employees', [
             'id' => $this->employeeId, 'biometric_enrollment_status' => 'not_enrolled',
@@ -192,9 +199,7 @@ final class EnrollmentTest extends TestCase
 
     public function test_an_unknown_removal_type_is_refused(): void
     {
-        $this->send('/v1/biometric/delete', [
-            'employee_id' => $this->employeeId, 'type' => 'retina',
-        ])->assertStatus(422);
+        $this->sendDelete('/v1/biometric/'.$this->employeeId, ['type' => 'retina'])->assertStatus(422);
     }
 
     public function test_enrolling_does_not_confer_the_right_to_clear(): void
@@ -209,7 +214,7 @@ final class EnrollmentTest extends TestCase
             'quality_score' => 0.9,
         ], $clerk)->assertStatus(201);
 
-        $this->send('/v1/biometric/delete', ['employee_id' => $this->employeeId], $clerk)
+        $this->sendDelete('/v1/biometric/'.$this->employeeId, [], $clerk)
             ->assertStatus(403);
     }
 

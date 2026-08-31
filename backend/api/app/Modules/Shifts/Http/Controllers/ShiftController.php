@@ -57,11 +57,11 @@ final class ShiftController
         return ApiResponse::success(['id' => $id, 'message' => 'Shift created'], 201);
     }
 
-    public function update(Request $request): JsonResponse
+    public function update(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        $id = self::existing($request, $tenantId);
+        $id = self::existing($id, $tenantId);
 
         $changes = [];
 
@@ -94,11 +94,11 @@ final class ShiftController
      * working hours are set to what the shift said, so their day is unchanged
      * after the shift is gone.
      */
-    public function delete(Request $request): JsonResponse
+    public function delete(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        $id = self::existing($request, $tenantId);
+        $id = self::existing($id, $tenantId);
         $shift = Shifts::find($id, $tenantId) ?? [];
 
         $transferTo = Value::int($request->input('transfer_to_shift_id'));
@@ -194,10 +194,8 @@ final class ShiftController
         return ApiResponse::success([$assigning ? 'assigned' : 'unassigned' => $count]);
     }
 
-    private static function existing(Request $request, int $tenantId): int
+    private static function existing(int $id, int $tenantId): int
     {
-        $id = Value::int($request->input('id')) ?: Value::int($request->query('id'));
-
         if ($id <= 0) {
             throw new ApiFailure('Shift ID required', 422, 'shift_id_required');
         }

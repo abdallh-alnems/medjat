@@ -220,7 +220,7 @@ final class EmployeeListTest extends TestCase
         ]);
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/v1/employees/delete', ['employee_id' => $this->employee->id])
+            ->postJson('/v1/employees/'.$this->employee->id.'/terminate')
             ->assertOk();
 
         $this->assertDatabaseHas('employees', ['id' => $this->employee->id, 'status' => 'terminated']);
@@ -234,7 +234,7 @@ final class EmployeeListTest extends TestCase
         $other = $this->createEmployee($this->createTenant());
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/v1/employees/delete', ['employee_id' => $other->id])
+            ->postJson('/v1/employees/'.$other->id.'/terminate')
             ->assertNotFound();
     }
 
@@ -243,7 +243,7 @@ final class EmployeeListTest extends TestCase
         [$admin, $token] = $this->admin();
 
         $this->withHeader('X-Firebase-Token', $token)
-            ->postJson('/v1/employees/delete', ['employee_id' => $this->employee->id])
+            ->postJson('/v1/employees/'.$this->employee->id.'/terminate')
             ->assertOk();
 
         $this->assertDatabaseHas('audit_log', [

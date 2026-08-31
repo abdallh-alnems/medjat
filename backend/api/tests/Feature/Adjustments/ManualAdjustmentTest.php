@@ -67,6 +67,24 @@ final class ManualAdjustmentTest extends TestCase
         return $this->withHeader('X-Firebase-Token', $this->adminToken)->postJson($path, $payload);
     }
 
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return TestResponse<\Illuminate\Http\JsonResponse>
+     */
+    private function sendPatch(string $path, array $payload = []): TestResponse
+    {
+        return $this->withHeader('X-Firebase-Token', $this->adminToken)->patchJson($path, $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return TestResponse<\Illuminate\Http\JsonResponse>
+     */
+    private function sendDelete(string $path, array $payload = []): TestResponse
+    {
+        return $this->withHeader('X-Firebase-Token', $this->adminToken)->deleteJson($path, $payload);
+    }
+
     public function test_a_manual_deduction_is_recorded_against_the_current_month(): void
     {
         $response = $this->send('/v1/deductions/manual', [
@@ -167,11 +185,9 @@ final class ManualAdjustmentTest extends TestCase
             'reason' => 'Typo',
         ])->json('data.id'));
 
-        $this->send('/v1/bonuses/manual/update', [
-            'id' => $id,
+        $this->sendPatch('/v1/bonuses/manual/'.$id, [
             'amount' => 350,
-            'reason' => 'Corrected',
-        ])->assertOk();
+            'reason' => 'Corrected'])->assertOk();
 
         $this->assertDatabaseHas('manual_bonuses', [
             'id' => $id, 'amount' => 350.00, 'reason' => 'Corrected',
@@ -186,7 +202,7 @@ final class ManualAdjustmentTest extends TestCase
             'reason' => 'Applied by mistake',
         ])->json('data.id'));
 
-        $this->send('/v1/deductions/manual/delete', ['id' => $id])->assertOk();
+        $this->sendDelete('/v1/deductions/manual/'.$id)->assertOk();
 
         $this->assertDatabaseMissing('manual_deductions', ['id' => $id]);
     }
@@ -202,11 +218,9 @@ final class ManualAdjustmentTest extends TestCase
             'reason' => 'Bonus',
         ])->json('data.id'));
 
-        $this->send('/v1/deductions/manual/update', [
-            'id' => $bonusId,
+        $this->sendPatch('/v1/deductions/manual/'.$bonusId, [
             'amount' => 200,
-            'reason' => 'Crossed over',
-        ])->assertStatus(404);
+            'reason' => 'Crossed over'])->assertStatus(404);
     }
 
     public function test_a_viewer_cannot_record_an_adjustment(): void

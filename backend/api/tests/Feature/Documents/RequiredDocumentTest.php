@@ -175,10 +175,8 @@ final class RequiredDocumentTest extends TestCase
             'scope_employee_ids' => [$this->employeeId],
         ]);
 
-        $this->asAdmin()->postJson('/v1/documents/required/update', [
-            'id' => $id,
-            'scope_type' => 'all',
-        ])->assertOk();
+        $this->asAdmin()->patchJson('/v1/documents/required/'.$id, [
+            'scope_type' => 'all'])->assertOk();
 
         $this->assertDatabaseMissing('required_document_employees', ['required_document_id' => $id]);
     }
@@ -198,10 +196,8 @@ final class RequiredDocumentTest extends TestCase
             'scope_employee_ids' => [$this->employeeId],
         ]);
 
-        $this->asAdmin()->postJson('/v1/documents/required/update', [
-            'id' => $id,
-            'scope_employee_ids' => [$other],
-        ])->assertOk();
+        $this->asAdmin()->patchJson('/v1/documents/required/'.$id, [
+            'scope_employee_ids' => [$other]])->assertOk();
 
         $this->assertDatabaseHas('required_document_employees', [
             'required_document_id' => $id, 'employee_id' => $other,
@@ -226,7 +222,7 @@ final class RequiredDocumentTest extends TestCase
     {
         $id = $this->createType();
 
-        $this->asAdmin()->postJson('/v1/documents/required/delete', ['id' => $id])->assertOk();
+        $this->asAdmin()->deleteJson('/v1/documents/required/'.$id)->assertOk();
 
         $this->assertDatabaseMissing('required_documents', ['id' => $id]);
     }
@@ -240,7 +236,7 @@ final class RequiredDocumentTest extends TestCase
             'scope_type' => 'all',
         ]);
 
-        $this->asAdmin()->postJson('/v1/documents/required/delete', ['id' => $stranger])
+        $this->asAdmin()->deleteJson('/v1/documents/required/'.$stranger)
             ->assertNotFound();
         $this->assertDatabaseHas('required_documents', ['id' => $stranger]);
     }

@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\DB;
  */
 final class DeleteEmployeeController
 {
-    public function __invoke(Request $request): JsonResponse
+    public function __invoke(Request $request, int $id): JsonResponse
     {
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
@@ -32,7 +32,7 @@ final class DeleteEmployeeController
         }
 
         $tenantId = Value::int($request->attributes->get('tenant_id'));
-        $employeeId = Value::int($request->input('employee_id'));
+        $employeeId = $id;
 
         if ($employeeId <= 0) {
             throw new ApiFailure('employee_id is required', 422, 'missing_fields');

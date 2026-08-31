@@ -69,6 +69,24 @@ final class AllowanceTest extends TestCase
     }
 
     /**
+     * @param  array<string, mixed>  $payload
+     * @return TestResponse<\Illuminate\Http\JsonResponse>
+     */
+    private function sendPatch(string $path, array $payload = []): TestResponse
+    {
+        return $this->withHeader('X-Firebase-Token', $this->adminToken)->patchJson($path, $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return TestResponse<\Illuminate\Http\JsonResponse>
+     */
+    private function sendDelete(string $path, array $payload = []): TestResponse
+    {
+        return $this->withHeader('X-Firebase-Token', $this->adminToken)->deleteJson($path, $payload);
+    }
+
+    /**
      * @param  array<string, mixed>  $overrides
      */
     private function create(array $overrides = []): int
@@ -157,13 +175,11 @@ final class AllowanceTest extends TestCase
     {
         $id = $this->create();
 
-        $this->send('/v1/allowances/update', [
-            'id' => $id,
+        $this->sendPatch('/v1/allowances/'.$id, [
             'type' => 'housing',
             'amount' => 800,
             'start_month' => '2026-01',
-            'end_month' => '2026-06',
-        ])->assertOk();
+            'end_month' => '2026-06'])->assertOk();
 
         $this->assertDatabaseHas('employee_allowances', ['id' => $id, 'end_month' => '2026-06']);
     }
@@ -172,7 +188,7 @@ final class AllowanceTest extends TestCase
     {
         $id = $this->create();
 
-        $this->send('/v1/allowances/delete', ['id' => $id])->assertOk();
+        $this->sendDelete('/v1/allowances/'.$id)->assertOk();
 
         $this->assertDatabaseMissing('employee_allowances', ['id' => $id]);
     }
@@ -199,7 +215,7 @@ final class AllowanceTest extends TestCase
             'start_month' => '2026-01',
         ]);
 
-        $this->send('/v1/allowances/delete', ['id' => $foreign])->assertStatus(404);
+        $this->sendDelete('/v1/allowances/'.$foreign)->assertStatus(404);
         $this->assertDatabaseHas('employee_allowances', ['id' => $foreign]);
     }
 }

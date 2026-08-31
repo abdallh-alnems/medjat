@@ -55,11 +55,11 @@ final class BranchController
         return ApiResponse::success(['branch_id' => $branchId], 201);
     }
 
-    public function update(Request $request): JsonResponse
+    public function update(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        $branchId = self::existing($request, $tenantId);
+        $branchId = self::existing($id, $tenantId);
 
         $changes = [];
 
@@ -118,7 +118,7 @@ final class BranchController
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        $branchId = self::existing($request, $tenantId);
+        $branchId = self::existing(Value::int($request->input('branch_id')), $tenantId);
 
         $code = Branches::ensureQrCode($branchId, $tenantId, Value::int($request->input('force')) === 1);
 
@@ -138,7 +138,7 @@ final class BranchController
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        $branchId = self::existing($request, $tenantId);
+        $branchId = self::existing(Value::int($request->input('branch_id')), $tenantId);
         $branch = Branches::find($branchId, $tenantId) ?? [];
 
         $methods = $this->methods($request);
@@ -294,10 +294,8 @@ final class BranchController
         return $value;
     }
 
-    public static function existing(Request $request, int $tenantId): int
+    public static function existing(int $branchId, int $tenantId): int
     {
-        $branchId = Value::int($request->input('branch_id'));
-
         if ($branchId <= 0 || Branches::find($branchId, $tenantId) === null) {
             throw new ApiFailure('Branch not found', 404, 'not_found');
         }

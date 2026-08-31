@@ -98,11 +98,10 @@ final class CarryoverController
         return ApiResponse::success(['message' => 'Carryover policy saved']);
     }
 
-    public function delete(Request $request): JsonResponse
+    public function delete(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        $id = Value::int($request->input('id'));
 
         if ($id <= 0) {
             throw new ApiFailure('id is required', 422, 'id_required');

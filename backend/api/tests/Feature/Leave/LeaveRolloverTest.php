@@ -309,7 +309,7 @@ final class LeaveRolloverTest extends TestCase
         $this->assertSame(7, Value::int($saved['carryover_max_days']));
 
         $this->withHeader('X-Firebase-Token', $this->adminToken)
-            ->postJson('/v1/leaves/carryover-policies/delete', ['id' => Value::int($saved['id'])])
+            ->deleteJson('/v1/leaves/carryover-policies/'.Value::int($saved['id']))
             ->assertOk();
 
         $this->assertDatabaseMissing('leave_carryover_policies', ['id' => Value::int($saved['id'])]);

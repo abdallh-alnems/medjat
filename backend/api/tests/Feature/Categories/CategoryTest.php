@@ -108,7 +108,7 @@ final class CategoryTest extends TestCase
         $this->created('Drivers');
         $second = $this->created('Cleaners');
 
-        $this->asAdmin()->postJson('/v1/categories/update', ['id' => $second, 'name' => 'Drivers'])
+        $this->asAdmin()->patchJson('/v1/categories/'.$second, ['name' => 'Drivers'])
             ->assertStatus(409)->assertJsonPath('error_code', 'category_name_exists');
     }
 
@@ -116,7 +116,7 @@ final class CategoryTest extends TestCase
     {
         $id = $this->created();
 
-        $this->asAdmin()->postJson('/v1/categories/update', ['id' => $id, 'name' => 'Drivers'])->assertOk();
+        $this->asAdmin()->patchJson('/v1/categories/'.$id, ['name' => 'Drivers'])->assertOk();
     }
 
     public function test_the_headcount_counts_who_is_still_here(): void
@@ -199,7 +199,7 @@ final class CategoryTest extends TestCase
             'tenant_id' => $this->tenantId,
         ]);
 
-        $this->asAdmin()->postJson('/v1/categories/delete', ['id' => $id])
+        $this->asAdmin()->deleteJson('/v1/categories/'.$id)
             ->assertStatus(409)->assertJsonPath('error_code', 'category_cannot_delete');
     }
 
@@ -207,7 +207,7 @@ final class CategoryTest extends TestCase
     {
         $id = $this->created();
 
-        $this->asAdmin()->postJson('/v1/categories/delete', ['id' => $id])->assertOk();
+        $this->asAdmin()->deleteJson('/v1/categories/'.$id)->assertOk();
 
         $this->assertDatabaseMissing('employee_categories', ['id' => $id]);
     }
@@ -250,7 +250,7 @@ final class CategoryTest extends TestCase
         $id = $this->created();
 
         $this->withHeader('X-Firebase-Token', $this->hrToken)
-            ->postJson('/v1/categories/update', ['id' => $id, 'name' => 'Renamed'])
+            ->patchJson('/v1/categories/'.$id, ['name' => 'Renamed'])
             ->assertOk();
 
         $this->withHeader('X-Firebase-Token', $this->hrToken)

@@ -73,11 +73,11 @@ final class AssetController
         return ApiResponse::success(['id' => $id, 'message' => 'Custody assigned']);
     }
 
-    public function update(Request $request): JsonResponse
+    public function update(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        [$id, $asset] = $this->target($request, $tenantId);
+        [$id, $asset] = $this->target($id, $tenantId);
 
         // A returned item is a historical record: editing it would rewrite what
         // was handed back, after the fact.
@@ -94,11 +94,11 @@ final class AssetController
         return ApiResponse::success(['message' => 'Custody updated']);
     }
 
-    public function delete(Request $request): JsonResponse
+    public function delete(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        [$id, $asset] = $this->target($request, $tenantId);
+        [$id, $asset] = $this->target($id, $tenantId);
 
         AssetCustody::delete($id, $tenantId);
 
@@ -120,7 +120,7 @@ final class AssetController
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        [$id, $asset] = $this->target($request, $tenantId);
+        [$id, $asset] = $this->target(Value::int($request->input('id')) ?: Value::int($request->query('id')), $tenantId);
 
         if (! in_array(Value::string($asset['status'] ?? null), ['assigned', 'return_requested'], true)) {
             throw new ApiFailure('This custody item is already returned', 409, 'custody_item_already_returned');
@@ -147,7 +147,7 @@ final class AssetController
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $adminId = self::admin($request)->id;
-        [$id, $asset] = $this->target($request, $tenantId);
+        [$id, $asset] = $this->target(Value::int($request->input('id')) ?: Value::int($request->query('id')), $tenantId);
 
         if (Value::string($asset['status'] ?? null) !== 'return_requested') {
             throw new ApiFailure(
@@ -233,9 +233,8 @@ final class AssetController
     /**
      * @return array{0: int, 1: array<string, mixed>}
      */
-    private function target(Request $request, int $tenantId): array
+    private function target(int $id, int $tenantId): array
     {
-        $id = Value::int($request->input('id')) ?: Value::int($request->query('id'));
         $asset = $id > 0 ? AssetCustody::find($id, $tenantId) : null;
 
         if ($asset === null) {

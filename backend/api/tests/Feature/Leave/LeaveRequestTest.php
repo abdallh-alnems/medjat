@@ -345,13 +345,11 @@ final class LeaveRequestTest extends TestCase
     {
         $id = $this->existingLeave($this->future, $this->farFuture);
 
-        $this->asEmployee()->postJson('/v1/leaves/update', [
-            'leave_id' => $id,
+        $this->asEmployee()->patchJson('/v1/leaves/'.$id, [
             'type' => 'sick',
             'start_date' => $this->shift(11),
             'end_date' => $this->shift(12),
-            'reason' => 'Changed my mind',
-        ])->assertOk();
+            'reason' => 'Changed my mind'])->assertOk();
 
         $this->assertDatabaseHas('leaves', [
             'id' => $id,
@@ -367,36 +365,30 @@ final class LeaveRequestTest extends TestCase
         // the overlap check takes an id to ignore.
         $id = $this->existingLeave($this->future, $this->farFuture);
 
-        $this->asEmployee()->postJson('/v1/leaves/update', [
-            'leave_id' => $id,
+        $this->asEmployee()->patchJson('/v1/leaves/'.$id, [
             'type' => 'annual',
             'start_date' => $this->future,
-            'end_date' => $this->farFuture,
-        ])->assertOk();
+            'end_date' => $this->farFuture])->assertOk();
     }
 
     public function test_an_end_date_before_the_start_is_refused(): void
     {
         $id = $this->existingLeave($this->future, $this->farFuture);
 
-        $this->asEmployee()->postJson('/v1/leaves/update', [
-            'leave_id' => $id,
+        $this->asEmployee()->patchJson('/v1/leaves/'.$id, [
             'type' => 'annual',
             'start_date' => $this->shift(14),
-            'end_date' => $this->shift(10),
-        ])->assertStatus(422)->assertJsonPath('error_code', 'invalid_date_range');
+            'end_date' => $this->shift(10)])->assertStatus(422)->assertJsonPath('error_code', 'invalid_date_range');
     }
 
     public function test_an_approved_request_cannot_be_amended(): void
     {
         $id = $this->existingLeave($this->future, $this->farFuture, 'approved');
 
-        $this->asEmployee()->postJson('/v1/leaves/update', [
-            'leave_id' => $id,
+        $this->asEmployee()->patchJson('/v1/leaves/'.$id, [
             'type' => 'sick',
             'start_date' => $this->future,
-            'end_date' => $this->farFuture,
-        ])->assertStatus(409)->assertJsonPath('error_code', 'leave_not_editable');
+            'end_date' => $this->farFuture])->assertStatus(409)->assertJsonPath('error_code', 'leave_not_editable');
     }
 
     // ── The management side ──────────────────────────────────────────────

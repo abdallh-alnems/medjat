@@ -121,7 +121,7 @@ final class TenantController
      */
     public function show(Request $request): JsonResponse
     {
-        $tenantId = self::existing($request);
+        $tenantId = self::existing(Value::int($request->input('id')) ?: Value::int($request->query('id')));
 
         $row = DB::table('tenants')->where('id', $tenantId)->first();
 
@@ -364,10 +364,10 @@ final class TenantController
      * Only fields actually present are written: an agent correcting a phone
      * number must not silently reset a timezone they never saw.
      */
-    public function update(Request $request): JsonResponse
+    public function update(Request $request, int $id): JsonResponse
     {
         $admin = self::admin($request);
-        $tenantId = self::existing($request);
+        $tenantId = self::existing($id);
 
         $updates = [];
 
@@ -429,7 +429,7 @@ final class TenantController
     private function setActive(Request $request, bool $active): JsonResponse
     {
         $admin = self::admin($request);
-        $tenantId = self::existing($request);
+        $tenantId = self::existing(Value::int($request->input('id')) ?: Value::int($request->query('id')));
 
         DB::table('tenants')->where('id', $tenantId)->update(['is_active' => $active ? 1 : 0]);
 
@@ -518,10 +518,8 @@ final class TenantController
         return $fields;
     }
 
-    private static function existing(Request $request): int
+    private static function existing(int $id): int
     {
-        $id = Value::int($request->input('id')) ?: Value::int($request->query('id'));
-
         if ($id <= 0) {
             throw new ApiFailure('معرّف الشركة مطلوب', 422, 'id_required');
         }

@@ -192,7 +192,7 @@ final class ShiftTest extends TestCase
         $id = $this->created(['start_time' => '07:00:00', 'end_time' => '15:00:00']);
         DB::table('employees')->where('id', $this->employeeId)->update(['shift_id' => $id]);
 
-        $this->asAdmin()->postJson('/v1/shifts/delete', ['id' => $id])
+        $this->asAdmin()->deleteJson('/v1/shifts/'.$id)
             ->assertOk()
             ->assertJsonPath('data.action', 'kept_times')
             ->assertJsonPath('data.affected', 1);
@@ -211,10 +211,8 @@ final class ShiftTest extends TestCase
         $to = $this->created(['name' => 'Staying']);
         DB::table('employees')->where('id', $this->employeeId)->update(['shift_id' => $from]);
 
-        $this->asAdmin()->postJson('/v1/shifts/delete', [
-            'id' => $from,
-            'transfer_to_shift_id' => $to,
-        ])->assertOk()->assertJsonPath('data.action', 'transferred');
+        $this->asAdmin()->deleteJson('/v1/shifts/'.$from, [
+            'transfer_to_shift_id' => $to])->assertOk()->assertJsonPath('data.action', 'transferred');
 
         $this->assertDatabaseHas('employees', ['id' => $this->employeeId, 'shift_id' => $to]);
     }
@@ -233,10 +231,8 @@ final class ShiftTest extends TestCase
             'status' => 'published',
         ]);
 
-        $this->asAdmin()->postJson('/v1/shifts/delete', [
-            'id' => $from,
-            'transfer_to_shift_id' => $to,
-        ])->assertOk()->assertJsonPath('data.schedule_moved', 1);
+        $this->asAdmin()->deleteJson('/v1/shifts/'.$from, [
+            'transfer_to_shift_id' => $to])->assertOk()->assertJsonPath('data.schedule_moved', 1);
 
         $this->assertDatabaseHas('employee_shift_schedule', [
             'employee_id' => $this->employeeId,
@@ -249,20 +245,16 @@ final class ShiftTest extends TestCase
     {
         $id = $this->created();
 
-        $this->asAdmin()->postJson('/v1/shifts/delete', [
-            'id' => $id,
-            'transfer_to_shift_id' => $id,
-        ])->assertStatus(422)->assertJsonPath('error_code', 'cannot_transfer_employees_shift_being');
+        $this->asAdmin()->deleteJson('/v1/shifts/'.$id, [
+            'transfer_to_shift_id' => $id])->assertStatus(422)->assertJsonPath('error_code', 'cannot_transfer_employees_shift_being');
     }
 
     public function test_an_unknown_target_shift_is_refused(): void
     {
         $id = $this->created();
 
-        $this->asAdmin()->postJson('/v1/shifts/delete', [
-            'id' => $id,
-            'transfer_to_shift_id' => 9999999,
-        ])->assertStatus(422)->assertJsonPath('error_code', 'target_shift_not_found');
+        $this->asAdmin()->deleteJson('/v1/shifts/'.$id, [
+            'transfer_to_shift_id' => 9999999])->assertStatus(422)->assertJsonPath('error_code', 'target_shift_not_found');
     }
 
     public function test_a_shift_from_another_company_is_not_found(): void
@@ -275,7 +267,7 @@ final class ShiftTest extends TestCase
             'end_time' => '16:00:00',
         ]);
 
-        $this->asAdmin()->postJson('/v1/shifts/update', ['id' => $stranger, 'name' => 'Mine now'])
+        $this->asAdmin()->patchJson('/v1/shifts/'.$stranger, ['name' => 'Mine now'])
             ->assertNotFound();
     }
 }

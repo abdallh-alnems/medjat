@@ -28,7 +28,7 @@ final class ReviewDocumentController
 
     public function verify(Request $request): JsonResponse
     {
-        [$admin, $tenantId, $document] = $this->context($request);
+        [$admin, $tenantId, $document] = $this->context($request, Value::int($request->input('document_id')));
 
         // 'uploaded' with a verified_at, not a 'verified' status: the column's
         // enum has no such value, and approval is recorded by *who and when*
@@ -59,7 +59,7 @@ final class ReviewDocumentController
 
     public function reject(Request $request): JsonResponse
     {
-        [$admin, $tenantId, $document] = $this->context($request);
+        [$admin, $tenantId, $document] = $this->context($request, Value::int($request->input('document_id')));
 
         $reason = trim(Value::string($request->input('reason')));
         if ($reason === '') {
@@ -95,9 +95,9 @@ final class ReviewDocumentController
         return ApiResponse::success(['document_id' => Value::int($document->id)]);
     }
 
-    public function update(Request $request): JsonResponse
+    public function update(Request $request, int $id): JsonResponse
     {
-        [$admin, $tenantId, $document] = $this->context($request);
+        [$admin, $tenantId, $document] = $this->context($request, $id);
 
         $changes = [];
 
@@ -124,9 +124,9 @@ final class ReviewDocumentController
         return ApiResponse::success(['document_id' => Value::int($document->id)]);
     }
 
-    public function destroy(Request $request): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
-        [$admin, $tenantId, $document] = $this->context($request);
+        [$admin, $tenantId, $document] = $this->context($request, $id);
 
         DB::table('employee_documents')->where('id', $document->id)->delete();
 
@@ -138,7 +138,7 @@ final class ReviewDocumentController
     /**
      * @return array{Admin, int, object{id: int, employee_id: int, original_name: string|null, document_name: string|null}}
      */
-    private function context(Request $request): array
+    private function context(Request $request, int $documentId): array
     {
         $admin = $request->attributes->get('admin');
         if (! $admin instanceof Admin) {
@@ -146,7 +146,6 @@ final class ReviewDocumentController
         }
 
         $tenantId = Value::int($request->attributes->get('tenant_id'));
-        $documentId = Value::int($request->input('document_id'));
 
         if ($documentId <= 0) {
             throw new ApiFailure('document_id is required', 422, 'missing_fields');

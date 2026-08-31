@@ -168,10 +168,8 @@ final class AssetCustodyTest extends TestCase
     {
         $id = $this->assigned();
 
-        $this->asAdmin()->postJson('/v1/assets/update', [
-            'id' => $id,
-            'name' => 'Laptop (renamed)',
-        ])->assertOk();
+        $this->asAdmin()->patchJson('/v1/assets/'.$id, [
+            'name' => 'Laptop (renamed)'])->assertOk();
 
         $this->assertDatabaseHas('asset_custody', [
             'id' => $id,
@@ -184,7 +182,7 @@ final class AssetCustodyTest extends TestCase
     {
         $id = $this->assigned();
 
-        $this->asAdmin()->postJson('/v1/assets/update', ['id' => $id, 'value' => ''])->assertOk();
+        $this->asAdmin()->patchJson('/v1/assets/'.$id, ['value' => ''])->assertOk();
 
         $this->assertNull(DB::table('asset_custody')->where('id', $id)->value('value'));
     }
@@ -195,7 +193,7 @@ final class AssetCustodyTest extends TestCase
         $id = $this->assigned();
         $this->asAdmin()->postJson('/v1/assets/approve-return', ['id' => $id])->assertOk();
 
-        $this->asAdmin()->postJson('/v1/assets/update', ['id' => $id, 'name' => 'Changed'])
+        $this->asAdmin()->patchJson('/v1/assets/'.$id, ['name' => 'Changed'])
             ->assertStatus(409)->assertJsonPath('error_code', 'asset_returned_locked');
     }
 
@@ -203,7 +201,7 @@ final class AssetCustodyTest extends TestCase
     {
         $id = $this->assigned();
 
-        $this->asAdmin()->postJson('/v1/assets/delete', ['id' => $id])->assertOk();
+        $this->asAdmin()->deleteJson('/v1/assets/'.$id)->assertOk();
 
         $this->assertDatabaseMissing('asset_custody', ['id' => $id]);
     }

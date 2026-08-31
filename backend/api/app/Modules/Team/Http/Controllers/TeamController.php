@@ -70,13 +70,13 @@ final class TeamController
      * the old role, and carrying it across would leave somebody holding
      * permissions their new role never granted.
      */
-    public function update(Request $request): JsonResponse
+    public function update(Request $request, int $id): JsonResponse
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $caller = self::admin($request);
-        $targetId = Value::int($request->input('admin_id'));
+        $targetId = $id;
 
-        $target = self::target($request, $caller, $tenantId, 'لا يمكنك تعديل دورك أو فرعك بنفسك', 'لا يمكنك تعديل مدير عام', 'لا يمكنك تعديل مدير يعلوك في الصلاحيات الإدارية');
+        $target = self::target($targetId, $caller, $tenantId, 'لا يمكنك تعديل دورك أو فرعك بنفسك', 'لا يمكنك تعديل مدير عام', 'لا يمكنك تعديل مدير يعلوك في الصلاحيات الإدارية');
 
         $newRole = $request->has('role') ? trim(Value::string($request->input('role'))) : null;
         $hasBranch = $request->has('branch_id');
@@ -136,7 +136,7 @@ final class TeamController
             throw new ApiFailure('is_active مطلوب', 422, 'is_active_required');
         }
 
-        self::target($request, $caller, $tenantId, 'لا يمكنك تعطيل حسابك بنفسك', 'لا يمكنك تعطيل مدير عام', 'لا يمكنك تعطيل مدير يعلوك في الصلاحيات الإدارية');
+        self::target(Value::int($request->input('admin_id')), $caller, $tenantId, 'لا يمكنك تعطيل حسابك بنفسك', 'لا يمكنك تعطيل مدير عام', 'لا يمكنك تعطيل مدير يعلوك في الصلاحيات الإدارية');
 
         DB::table('admins')->where('id', $targetId)->where('tenant_id', $tenantId)
             ->update(['is_active' => $isActive ? 1 : 0]);
@@ -166,7 +166,7 @@ final class TeamController
         $caller = self::admin($request);
         $targetId = Value::int($request->input('admin_id'));
 
-        $target = self::target($request, $caller, $tenantId, 'لا يمكنك إزالة نفسك من الفريق', 'لا يمكنك إزالة مدير عام', 'لا يمكنك إزالة مدير يعلوك في الصلاحيات الإدارية');
+        $target = self::target(Value::int($request->input('admin_id')), $caller, $tenantId, 'لا يمكنك إزالة نفسك من الفريق', 'لا يمكنك إزالة مدير عام', 'لا يمكنك إزالة مدير يعلوك في الصلاحيات الإدارية');
 
         // A company with no general manager has nobody who can appoint one.
         if (Value::string($target['role'] ?? null) === 'general_manager') {
@@ -202,14 +202,13 @@ final class TeamController
      * @return array<string, mixed>
      */
     private static function target(
-        Request $request,
+        int $targetId,
         Admin $caller,
         int $tenantId,
         string $selfMessage,
         string $generalManagerMessage,
         string $outrankMessage,
     ): array {
-        $targetId = Value::int($request->input('admin_id'));
 
         if ($targetId <= 0) {
             throw new ApiFailure('admin_id مطلوب', 422, 'admin_id_required');
