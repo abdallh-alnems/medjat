@@ -1,9 +1,15 @@
-import { apiGet, apiPost, unwrapList } from "./client";
+import {
+  apiDelete,
+  apiGet,
+  apiPatch,
+  apiPost,
+  unwrapList,
+} from "./client";
 import type { EmployeeCategory, AssetCustody } from "@/lib/types";
 
 export async function listCategories(): Promise<EmployeeCategory[]> {
   // Backend returns `{ categories }`.
-  const raw = await apiGet<unknown>("app/categories/list.php");
+  const raw = await apiGet<unknown>("v1/categories");
   return unwrapList<EmployeeCategory>(raw, ["categories", "items", "data"]);
 }
 
@@ -12,7 +18,7 @@ export function createCategory(
   color?: string,
   description?: string,
 ) {
-  return apiPost<EmployeeCategory>("app/categories/create.php", {
+  return apiPost<EmployeeCategory>("v1/categories", {
     name,
     color,
     description,
@@ -20,15 +26,15 @@ export function createCategory(
 }
 
 export function updateCategory(id: number, data: Partial<EmployeeCategory>) {
-  return apiPost<EmployeeCategory>("app/categories/update.php", { id, ...data });
+  return apiPatch<EmployeeCategory>(`v1/categories/${id}`, data);
 }
 
 export function deleteCategory(id: number) {
-  return apiPost<{ status?: string }>("app/categories/delete.php", { id });
+  return apiDelete<{ status?: string }>(`v1/categories/${id}`);
 }
 
 export function assignCategory(employeeId: number, categoryId: number) {
-  return apiPost<{ status?: string }>("app/categories/assign.php", {
+  return apiPost<{ status?: string }>("v1/categories/assign", {
     employee_id: employeeId,
     category_id: categoryId,
   });
@@ -36,26 +42,26 @@ export function assignCategory(employeeId: number, categoryId: number) {
 
 export async function listAssets(): Promise<AssetCustody[]> {
   // Backend returns `{ items }`.
-  const raw = await apiGet<unknown>("app/assets/list.php");
+  const raw = await apiGet<unknown>("v1/assets");
   return unwrapList<AssetCustody>(raw, ["items", "data"]);
 }
 
 export function createAsset(data: Partial<AssetCustody>) {
-  return apiPost<AssetCustody>("app/assets/create.php", data);
+  return apiPost<AssetCustody>("v1/assets", data);
 }
 
 export function updateAsset(id: number, data: Partial<AssetCustody>) {
-  return apiPost<AssetCustody>("app/assets/update.php", { id, ...data });
+  return apiPatch<AssetCustody>(`v1/assets/${id}`, data);
 }
 
 export function deleteAsset(id: number) {
-  return apiPost<{ status?: string }>("app/assets/delete.php", { id });
+  return apiDelete<{ status?: string }>(`v1/assets/${id}`);
 }
 
 export function approveReturn(id: number) {
-  return apiPost<AssetCustody>("app/assets/approve_return.php", { id });
+  return apiPost<AssetCustody>("v1/assets/approve-return", { id });
 }
 
 export function rejectReturn(id: number) {
-  return apiPost<AssetCustody>("app/assets/reject_return.php", { id });
+  return apiPost<AssetCustody>("v1/assets/reject-return", { id });
 }

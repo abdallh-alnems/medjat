@@ -1,16 +1,23 @@
-import { apiGet, apiPost, unwrapList, asObject } from "./client";
+import {
+  apiDelete,
+  apiGet,
+  apiPatch,
+  apiPost,
+  asObject,
+  unwrapList,
+} from "./client";
 import type { BulkAdjustment } from "@/lib/types";
 
 export async function listBulkAdjustments(): Promise<BulkAdjustment[]> {
   // Backend returns `{ items }`.
-  const raw = await apiGet<unknown>("app/bulk_adjustments/list.php");
+  const raw = await apiGet<unknown>("v1/bulk-adjustments");
   return unwrapList<BulkAdjustment>(raw, ["items", "data"]);
 }
 
 export async function getBulkAdjustment(id: number): Promise<BulkAdjustment> {
   // Backend returns `{ batch, members }`; the detail page reads the batch fields
   // at the top level plus `members`. A flat batch object is accepted too.
-  const raw = asObject(await apiGet<unknown>("app/bulk_adjustments/get.php", { id }));
+  const raw = asObject(await apiGet<unknown>("v1/bulk-adjustments/get", { id }));
   const batch = asObject(raw?.batch) ?? raw;
   if (!batch || typeof batch.id !== "number") {
     throw new Error("Unexpected bulk adjustment response");
@@ -24,23 +31,20 @@ export async function getBulkAdjustment(id: number): Promise<BulkAdjustment> {
 }
 
 export function createBulkAdjustment(data: Partial<BulkAdjustment>) {
-  return apiPost<BulkAdjustment>("app/bulk_adjustments/create.php", data);
+  return apiPost<BulkAdjustment>("v1/bulk-adjustments", data);
 }
 
 export function updateBulkAdjustment(id: number, data: Partial<BulkAdjustment>) {
-  return apiPost<BulkAdjustment>("app/bulk_adjustments/update.php", {
-    id,
-    ...data,
-  });
+  return apiPatch<BulkAdjustment>(`v1/bulk-adjustments/${id}`, data);
 }
 
 export function deleteBulkAdjustment(id: number) {
-  return apiPost<{ status?: string }>("app/bulk_adjustments/delete.php", { id });
+  return apiDelete<{ status?: string }>(`v1/bulk-adjustments/${id}`);
 }
 
 export function removeBulkAdjustmentMember(id: number, employeeId: number) {
   return apiPost<{ status?: string }>(
-    "app/bulk_adjustments/remove_member.php",
+    "v1/bulk-adjustments/remove-member",
     { id, employee_id: employeeId },
   );
 }
@@ -52,5 +56,5 @@ export function quickBulkAdjust(data: {
   month: string;
   employee_ids: number[];
 }) {
-  return apiPost<{ status?: string }>("app/payroll/bulk_adjust.php", data);
+  return apiPost<{ status?: string }>("v1/payroll/bulk-adjust", data);
 }

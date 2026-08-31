@@ -1,4 +1,10 @@
-import { apiGet, apiPost, unwrapList, asObject } from "./client";
+import {
+  apiGet,
+  apiPatch,
+  apiPost,
+  asObject,
+  unwrapList,
+} from "./client";
 import type {
   Employee,
   TerminatedEmployee,
@@ -34,7 +40,7 @@ export async function listEmployees(
 ): Promise<EmployeeListResponse> {
   // Backend returns `{ items, stats, total, page }`; normalise to the
   // `EmployeeListResponse` shape (`data`) the page already understands.
-  const raw = await apiGet<unknown>("app/employees/list.php", params);
+  const raw = await apiGet<unknown>("v1/employees", params);
   const meta = (raw ?? {}) as {
     total?: number;
     page?: number;
@@ -52,7 +58,7 @@ export async function getEmployeeProfile(id: number): Promise<Employee> {
   // Backend returns `{ employee, documents, warnings, leave_balance, ... }`;
   // the detail page reads the employee fields at the top level. A flat object
   // (already an employee) is accepted too.
-  const raw = asObject(await apiGet<unknown>(`app/employees/get_profile.php`, { id }));
+  const raw = asObject(await apiGet<unknown>(`v1/employees/profile`, { id }));
   const employee = asObject(raw?.employee) ?? raw;
   if (!employee || typeof employee.id !== "number") {
     throw new Error("Unexpected employee profile response");
@@ -89,11 +95,11 @@ export interface EmployeeCreateFields {
 }
 
 export function createEmployee(data: Partial<EmployeeCreateFields>) {
-  return apiPost<Employee>("app/employees/create.php", data);
+  return apiPost<Employee>("v1/employees", data);
 }
 
 export function updateEmployee(id: number, data: Partial<Employee>) {
-  return apiPost<Employee>("app/employees/update.php", { id, ...data });
+  return apiPatch<Employee>(`v1/employees/${id}`, data);
 }
 
 /**
@@ -106,24 +112,24 @@ export function updateEmployee(id: number, data: Partial<Employee>) {
  * audit entry.
  */
 export function setCrewSupervisor(employeeId: number, supervisorId: number | null) {
-  return apiPost<{ message: string }>("app/employees/set_crew_supervisor.php", {
+  return apiPost<{ message: string }>("v1/employees/crew-supervisor", {
     employee_id: employeeId,
     supervisor_id: supervisorId,
   });
 }
 
 export function deleteEmployee(id: number) {
-  return apiPost<{ status?: string }>("app/employees/delete.php", { id });
+  return apiPost<{ status?: string }>(`v1/employees/${id}/terminate`);
 }
 
 export async function listTerminated(): Promise<TerminatedEmployee[]> {
   // Backend returns `{ items, total, currency }`.
-  const raw = await apiGet<unknown>("app/employees/list_terminated.php");
+  const raw = await apiGet<unknown>("v1/employees/terminated");
   return unwrapList<TerminatedEmployee>(raw, ["items", "data"]);
 }
 
 export function reactivateEmployee(id: number) {
-  return apiPost<Employee>("app/employees/reactivate.php", { id });
+  return apiPost<Employee>("v1/employees/reactivate", { id });
 }
 
 export async function getSuspensions(
@@ -132,7 +138,7 @@ export async function getSuspensions(
   const raw = await apiGet<{
     suspensions?: Suspension[];
     active?: Suspension | null;
-  }>("app/employees/get_suspensions.php", { employee_id: employeeId });
+  }>("v1/employees/suspensions", { employee_id: employeeId });
   return {
     suspensions: Array.isArray(raw?.suspensions) ? raw.suspensions : [],
     active: raw?.active ?? null,
@@ -148,13 +154,13 @@ export function suspendEmployee(data: {
   end_date?: string | null;
 }) {
   return apiPost<{ id: number; message?: string }>(
-    "app/employees/suspend.php",
+    "v1/employees/suspend",
     data,
   );
 }
 
 export function endSuspension(employeeId: number) {
-  return apiPost<{ status?: string }>("app/employees/end_suspension.php", {
+  return apiPost<{ status?: string }>("v1/employees/end-suspension", {
     employee_id: employeeId,
   });
 }
@@ -165,7 +171,7 @@ export async function getAttendanceHistory(
 ): Promise<AttendanceRecord[]> {
   // Backend returns `{ records, summary, from, to }`.
   const raw = await apiGet<unknown>(
-    "app/employees/get_attendance_history.php",
+    "v1/employees/attendance-history",
     { employee_id: employeeId, ...range },
   );
   return unwrapList<AttendanceRecord>(raw, ["records", "items", "data"]);
@@ -179,7 +185,7 @@ export async function getFinancialSummary(
 ): Promise<FinancialSummary> {
   // Backend returns `{ month, employee, current: { net_salary, total_deductions, … }, … }`.
   const raw = asObject(
-    await apiGet<unknown>("app/employees/get_financial_summary.php", {
+    await apiGet<unknown>("v1/employees/financial-summary", {
       employee_id: employeeId,
       month,
     }),
@@ -202,7 +208,7 @@ export async function getYearToDate(
 ): Promise<YearToDate> {
   // Backend returns `{ year, employee, totals: { total_net, total_deductions, … }, monthly }`.
   const raw = asObject(
-    await apiGet<unknown>("app/employees/get_year_to_date.php", {
+    await apiGet<unknown>("v1/employees/year-to-date", {
       employee_id: employeeId,
       year,
     }),
@@ -219,7 +225,7 @@ export async function getYearToDate(
 
 export function getMissingDocuments(employeeId: number) {
   return apiGet<RequiredDocument[]>(
-    "app/employees/get_missing_documents.php",
+    "v1/employees/documents/missing",
     { employee_id: employeeId },
   );
 }
@@ -239,19 +245,19 @@ export interface ActivationInfo {
 }
 
 export function getActivationCode(id: number) {
-  return apiGet<ActivationInfo>("app/employees/activation_code.php", { id });
+  return apiGet<ActivationInfo>("v1/employees/activation-code", { id });
 }
 
 /** Regenerate the activation code. For an active employee this also revokes the
  *  bound device (id must go in the query string — the endpoint reads $_GET). */
 export function regenerateActivationCode(id: number) {
   return apiPost<ActivationInfo>(
-    `app/employees/activation_code.php?id=${id}`,
+    `v1/employees/activation-code?id=${id}`,
   );
 }
 
 export async function getExpiringCompliance(): Promise<ComplianceItem[]> {
   // Backend returns `{ items, count, expired_count, expiring_count, days }`.
-  const raw = await apiGet<unknown>("app/employees/expiring_compliance.php");
+  const raw = await apiGet<unknown>("v1/employees/expiring-compliance");
   return unwrapList<ComplianceItem>(raw, ["items", "data"]);
 }

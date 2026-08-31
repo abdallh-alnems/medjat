@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
  */
 
 const API_HOST =
-  process.env.NEXT_PUBLIC_API_HOST ?? "https://api.medjatapp.com/backend/api";
+  process.env.NEXT_PUBLIC_API_HOST ?? "https://api.medjatapp.com/backend";
 
 const SECURITY_USER = process.env.SECURITY_USER ?? "";
 const SECURITY_KEY = process.env.SECURITY_KEY ?? "";
@@ -22,8 +22,8 @@ export const EMPLOYEE_SESSION_COOKIE = "medjat_emp_session";
 
 /** Endpoints this route is allowed to call. An open relay would let any backend path be reached. */
 const ENDPOINTS = {
-  activate: "app/auth/employee_web_activate.php",
-  login: "app/auth/employee_web_login.php",
+  activate: "v1/auth/employee/web/activate",
+  login: "v1/auth/employee/web/login",
 } as const;
 
 type Action = keyof typeof ENDPOINTS;
@@ -97,7 +97,7 @@ export async function DELETE(request: NextRequest) {
 
   if (token) {
     try {
-      await fetch(`${API_HOST}/app/auth/employee_web_logout.php`, {
+      await fetch(`${API_HOST}/v1/auth/employee/web/logout`, {
         method: "POST",
         headers: {
           Authorization: `Basic ${btoa(`${SECURITY_USER}:${SECURITY_KEY}`)}`,

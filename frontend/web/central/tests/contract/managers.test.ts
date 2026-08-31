@@ -13,7 +13,7 @@ const API = "/api";
 describe("managers contract", () => {
   it("list admins: success", async () => {
     server.use(
-      http.get(`${API}/app/managers/list_admins.php`, () =>
+      http.get(`${API}/v1/team`, () =>
         HttpResponse.json([
           {
             id: 1,
@@ -33,7 +33,7 @@ describe("managers contract", () => {
 
   it("list invitations: empty", async () => {
     server.use(
-      http.get(`${API}/app/managers/list_invitations.php`, () =>
+      http.get(`${API}/v1/team/invitations`, () =>
         HttpResponse.json([]),
       ),
     );
@@ -43,7 +43,7 @@ describe("managers contract", () => {
 
   it("list admins: 4xx permission-denied", async () => {
     server.use(
-      http.get(`${API}/app/managers/list_admins.php`, () =>
+      http.get(`${API}/v1/team`, () =>
         HttpResponse.json({ message: "denied" }, { status: 403 }),
       ),
     );
@@ -53,7 +53,7 @@ describe("managers contract", () => {
 
   it("invite admin: success", async () => {
     server.use(
-      http.post(`${API}/app/managers/invite.php`, () =>
+      http.post(`${API}/v1/team/invitations`, () =>
         HttpResponse.json({
           invitation_id: 1,
           invitation_code: "CODE-123",
@@ -68,7 +68,7 @@ describe("managers contract", () => {
 
   it("update permissions: success", async () => {
     server.use(
-      http.post(`${API}/app/managers/update_admin_permissions.php`, () =>
+      http.post(`${API}/v1/team/permissions`, () =>
         HttpResponse.json({ status: "ok" }),
       ),
     );
@@ -78,7 +78,7 @@ describe("managers contract", () => {
 
   it("list admins: offline rejects", async () => {
     server.use(
-      http.get(`${API}/app/managers/list_admins.php`, () =>
+      http.get(`${API}/v1/team`, () =>
         HttpResponse.error(),
       ),
     );

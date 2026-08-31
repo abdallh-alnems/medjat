@@ -50,7 +50,7 @@ export interface KioskListResponse {
 }
 
 export function listKiosks(branchId?: number) {
-  return apiPost<KioskListResponse>("app/kiosk/list.php", {
+  return apiPost<KioskListResponse>("v1/kiosk/stations", {
     ...(branchId ? { branch_id: branchId } : {}),
   });
 }
@@ -63,7 +63,7 @@ export function listKiosks(branchId?: number) {
  */
 export function createKioskPairingCode(branchId: number, name?: string) {
   return apiPost<{ code: string; expires_at: string; branch: { id: number; name: string } }>(
-    "app/kiosk/create_pairing_code.php",
+    "v1/kiosk/pairing-code",
     { branch_id: branchId, ...(name ? { name } : {}) },
   );
 }
@@ -71,7 +71,7 @@ export function createKioskPairingCode(branchId: number, name?: string) {
 /** Opens a kiosk's settings on the tablet. Six digits, five minutes, single use. */
 export function createKioskAccessCode(stationId: number) {
   return apiPost<{ code: string; expires_at: string }>(
-    "app/kiosk/create_access_code.php",
+    "v1/kiosk/access-code",
     { station_id: stationId },
   );
 }
@@ -85,7 +85,7 @@ export function createKioskAccessCode(stationId: number) {
  */
 export function revokeKiosk(stationId: number, reason?: string) {
   return apiPost<{ station_id: number; status: string }>(
-    "app/kiosk/revoke.php",
+    "v1/kiosk/revoke",
     { station_id: stationId, ...(reason ? { reason } : {}) },
   );
 }
@@ -118,7 +118,7 @@ export function listKioskAttempts(params: {
   result?: string;
   limit?: number;
 }) {
-  return apiPost<{ logs: KioskAttempt[] }>("app/kiosk/recognition_logs.php", {
+  return apiPost<{ logs: KioskAttempt[] }>("v1/kiosk/recognition-logs", {
     view: "list",
     ...(params.branchId ? { branch_id: params.branchId } : {}),
     ...(params.stationId ? { station_id: params.stationId } : {}),
@@ -150,7 +150,7 @@ export function kioskScoreDistribution(branchId?: number) {
       rejected_attempts: number;
       current_defaults: { threshold: number; margin: number };
     };
-  }>("app/kiosk/recognition_logs.php", {
+  }>("v1/kiosk/recognition-logs", {
     view: "distribution",
     ...(branchId ? { branch_id: branchId } : {}),
   });
@@ -159,7 +159,7 @@ export function kioskScoreDistribution(branchId?: number) {
 /** Costs `kiosk_evidence`, and every call is written to the audit log. */
 export function kioskCapture(recognitionLogId: number) {
   return apiPost<{ image_base64: string; captured_at: string; expires_at: string }>(
-    "app/kiosk/capture.php",
+    "v1/kiosk/capture",
     { recognition_log_id: recognitionLogId },
   );
 }
@@ -167,7 +167,7 @@ export function kioskCapture(recognitionLogId: number) {
 /** Issues or clears an employee's personal fallback code. Plaintext once. */
 export function setEmployeeKioskCode(employeeId: number, clear = false) {
   return apiPost<{ code?: string; has_code: boolean }>(
-    "app/kiosk/set_pin.php",
+    "v1/kiosk/set-pin",
     { employee_id: employeeId, ...(clear ? { clear: true } : {}) },
   );
 }

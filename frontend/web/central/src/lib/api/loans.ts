@@ -3,14 +3,14 @@ import type { Loan } from "@/lib/types";
 
 export async function listLoans(): Promise<Loan[]> {
   // Backend returns `{ items }`.
-  const raw = await apiGet<unknown>("app/loans/list.php");
+  const raw = await apiGet<unknown>("v1/loans");
   return unwrapList<Loan>(raw, ["items", "data"]);
 }
 
 export async function getLoan(id: number): Promise<Loan> {
   // Backend returns `{ loan }` (with installments merged in); a flat loan object
   // is accepted too.
-  const raw = asObject(await apiGet<unknown>("app/loans/get.php", { id }));
+  const raw = asObject(await apiGet<unknown>("v1/loans/show", { id }));
   const loan = asObject(raw?.loan) ?? raw;
   if (!loan || typeof loan.id !== "number") {
     throw new Error("Unexpected loan response");
@@ -19,13 +19,13 @@ export async function getLoan(id: number): Promise<Loan> {
 }
 
 export function createLoan(data: Partial<Loan>) {
-  return apiPost<Loan>("app/loans/create.php", data);
+  return apiPost<Loan>("v1/loans", data);
 }
 
 export function approveLoan(id: number) {
-  return apiPost<Loan>("app/loans/approve.php", { id });
+  return apiPost<Loan>("v1/loans/approve", { id });
 }
 
 export function cancelLoan(id: number) {
-  return apiPost<Loan>("app/loans/cancel.php", { id });
+  return apiPost<Loan>("v1/loans/cancel", { id });
 }

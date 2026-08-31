@@ -16,7 +16,7 @@ describe("dashboard contract", () => {
 
   it("overview: empty/no-data response", async () => {
     server.use(
-      http.get(`${API}/app/dashboard/overview.php`, () => HttpResponse.json(null)),
+      http.get(`${API}/v1/dashboard/overview`, () => HttpResponse.json(null)),
     );
     const res = await getDashboardOverview();
     expect(res).toBeNull();
@@ -24,7 +24,7 @@ describe("dashboard contract", () => {
 
   it("overview: 4xx permission-denied", async () => {
     server.use(
-      http.get(`${API}/app/dashboard/overview.php`, () =>
+      http.get(`${API}/v1/dashboard/overview`, () =>
         HttpResponse.json({ message: "denied" }, { status: 403 }),
       ),
     );
@@ -34,7 +34,7 @@ describe("dashboard contract", () => {
 
   it("overview: offline rejects", async () => {
     server.use(
-      http.get(`${API}/app/dashboard/overview.php`, () => HttpResponse.error()),
+      http.get(`${API}/v1/dashboard/overview`, () => HttpResponse.error()),
     );
     await expect(getDashboardOverview()).rejects.toBeDefined();
   });

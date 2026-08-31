@@ -26,7 +26,7 @@ const sessionSuperseded = () =>
  */
 export const handlers = [
   // ── Auth ──
-  http.post(`${API}/app/auth/login.php`, async ({ request }) => {
+  http.post(`${API}/v1/auth/admin/login`, async ({ request }) => {
     const body = (await request.json().catch(() => ({}))) as {
       token?: string;
     };
@@ -49,34 +49,34 @@ export const handlers = [
     });
   }),
 
-  http.post(`${API}/app/auth/logout.php`, () => ok({ status: "ok" })),
-  http.post(`${API}/app/auth/send_verification.php`, () =>
+  http.post(`${API}/v1/auth/admin/logout`, () => ok({ status: "ok" })),
+  http.post(`${API}/v1/auth/verification`, () =>
     ok({ status: "ok" }),
   ),
-  http.post(`${API}/app/auth/send_password_reset.php`, () =>
+  http.post(`${API}/v1/auth/password-reset`, () =>
     ok({ status: "ok" }),
   ),
-  http.post(`${API}/app/auth/delete_account.php`, () => ok({ status: "ok" })),
-  http.get(`${API}/app/auth/notification_prefs.php`, () =>
+  http.post(`${API}/v1/auth/account`, () => ok({ status: "ok" })),
+  http.get(`${API}/v1/auth/notification-prefs`, () =>
     ok({ email: true, push: false, in_app: true }),
   ),
 
   // ── Tenant ── (mirrors live backend shape: { success, tenant, user })
-  http.post(`${API}/app/tenant/create.php`, () =>
+  http.post(`${API}/v1/tenants`, () =>
     ok({
       success: true,
       tenant: { id: 2, name: "شركة جديدة" },
       user: { id: 1, tenant_id: 2, role: "general_manager", role_key: "general_manager" },
     }),
   ),
-  http.post(`${API}/app/tenant/join.php`, () =>
+  http.post(`${API}/v1/tenants/join`, () =>
     ok({
       success: true,
       tenant: { id: 3, name: "شركة منضم إليها" },
       user: { id: 1, tenant_id: 3, role: "hr", role_key: "hr" },
     }),
   ),
-  http.post(`${API}/app/tenant/accept_invitation.php`, () =>
+  http.post(`${API}/v1/tenants/accept-invitation`, () =>
     ok({
       success: true,
       tenant: { id: 4, name: "شركة الدعوة" },
@@ -87,7 +87,7 @@ export const handlers = [
   // ── Dashboard ──
   // Mirrors the live backend shape (app/dashboard/overview.php); the api layer
   // adapts it to the DashboardOverview the UI consumes.
-  http.get(`${API}/app/dashboard/overview.php`, () =>
+  http.get(`${API}/v1/dashboard/overview`, () =>
     ok({
       total_employees: 50,
       active_in_scope: 50,
@@ -134,7 +134,7 @@ export const handlers = [
       current_month: "2026-06",
     }),
   ),
-  http.get(`${API}/app/dashboard/live_attendance.php`, () =>
+  http.get(`${API}/v1/dashboard/live-attendance`, () =>
     ok({
       employees: [
         {
@@ -152,8 +152,8 @@ export const handlers = [
   ),
 
   // ── Generic empty/error escape hatches for contract tests ──
-  http.get(`${API}/app/employees/list.php`, () => ok([])),
-  http.get(`${API}/app/dashboard/overview.php/empty`, () => ok(null)),
-  http.get(`${API}/app/employees/list.php/denied`, () => permissionDenied()),
-  http.get(`${API}/app/employees/list.php/offline`, () => offline()),
+  http.get(`${API}/v1/employees`, () => ok([])),
+  http.get(`${API}/v1/dashboard/overview/empty`, () => ok(null)),
+  http.get(`${API}/v1/employees/denied`, () => permissionDenied()),
+  http.get(`${API}/v1/employees/offline`, () => offline()),
 ];

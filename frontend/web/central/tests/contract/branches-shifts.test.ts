@@ -31,7 +31,7 @@ const SHIFT: Shift = {
 describe("branches & shifts contract", () => {
   it("branches list: success", async () => {
     server.use(
-      http.get(`${API}/app/branches/list.php`, () => HttpResponse.json([BRANCH])),
+      http.get(`${API}/v1/branches`, () => HttpResponse.json([BRANCH])),
     );
     const res = await listBranches();
     expect(res[0]?.name).toBe("الفرع الأول");
@@ -39,7 +39,7 @@ describe("branches & shifts contract", () => {
 
   it("branches list: empty", async () => {
     server.use(
-      http.get(`${API}/app/branches/list.php`, () => HttpResponse.json([])),
+      http.get(`${API}/v1/branches`, () => HttpResponse.json([])),
     );
     const res = await listBranches();
     expect(res).toHaveLength(0);
@@ -47,7 +47,7 @@ describe("branches & shifts contract", () => {
 
   it("branches list: 4xx permission-denied", async () => {
     server.use(
-      http.get(`${API}/app/branches/list.php`, () =>
+      http.get(`${API}/v1/branches`, () =>
         HttpResponse.json({ message: "denied" }, { status: 403 }),
       ),
     );
@@ -57,14 +57,14 @@ describe("branches & shifts contract", () => {
 
   it("branches list: offline rejects", async () => {
     server.use(
-      http.get(`${API}/app/branches/list.php`, () => HttpResponse.error()),
+      http.get(`${API}/v1/branches`, () => HttpResponse.error()),
     );
     await expect(listBranches()).rejects.toBeDefined();
   });
 
   it("create branch: success", async () => {
     server.use(
-      http.post(`${API}/app/branches/create.php`, () => HttpResponse.json(BRANCH)),
+      http.post(`${API}/v1/branches`, () => HttpResponse.json(BRANCH)),
     );
     const res = await createBranch({ name: "الفرع الأول" });
     expect(res.id).toBe(1);
@@ -72,7 +72,7 @@ describe("branches & shifts contract", () => {
 
   it("generate qr: success", async () => {
     server.use(
-      http.get(`${API}/app/branches/generate_qr.php`, () =>
+      http.get(`${API}/v1/branches/generate-qr`, () =>
         HttpResponse.json({ qr_token: "tok-123" }),
       ),
     );
@@ -82,7 +82,7 @@ describe("branches & shifts contract", () => {
 
   it("shifts list: success", async () => {
     server.use(
-      http.get(`${API}/app/shifts/list.php`, () => HttpResponse.json([SHIFT])),
+      http.get(`${API}/v1/shifts`, () => HttpResponse.json([SHIFT])),
     );
     const res = await listShifts();
     expect(res[0]?.start_time).toBe("08:00");
@@ -90,7 +90,7 @@ describe("branches & shifts contract", () => {
 
   it("create shift: success", async () => {
     server.use(
-      http.post(`${API}/app/shifts/create.php`, () => HttpResponse.json(SHIFT)),
+      http.post(`${API}/v1/shifts`, () => HttpResponse.json(SHIFT)),
     );
     const res = await createShift({ name: "صباحية" });
     expect(res.id).toBe(1);
@@ -98,7 +98,7 @@ describe("branches & shifts contract", () => {
 
   it("weekly schedule: success", async () => {
     server.use(
-      http.get(`${API}/app/schedule/week.php`, () =>
+      http.get(`${API}/v1/schedule/week`, () =>
         HttpResponse.json({
           week: "2026-06-20",
           published: false,

@@ -11,7 +11,7 @@ export async function getBranchAttendance(
 ): Promise<AttendanceRecord[]> {
   // Backend returns `{ records, date }`.
   const raw = await apiGet<unknown>(
-    "app/attendance/get_branch_attendance.php",
+    "v1/attendance/branch",
     params,
   );
   const rows = unwrapList<Record<string, unknown>>(raw, [
@@ -42,7 +42,7 @@ export async function fetchPunchPhoto(
   attendanceId: number,
   which: "check_in" | "check_out",
 ): Promise<string> {
-  const res = await apiClient.get<Blob>("app/attendance/punch_photo.php", {
+  const res = await apiClient.get<Blob>("v1/attendance/photo", {
     params: { attendance_id: attendanceId, which },
     responseType: "blob",
   });
@@ -59,11 +59,11 @@ export interface ManualCheckInData {
 }
 
 export function manualCheckIn(data: ManualCheckInData) {
-  return apiPost<AttendanceRecord>("app/attendance/manual_check_in.php", data);
+  return apiPost<AttendanceRecord>("v1/attendance/manual", data);
 }
 
 export function manualCheckInBatch(records: ManualCheckInData[]) {
-  return apiPost<{ status?: string }>("app/attendance/manual_check_in.php", {
+  return apiPost<{ status?: string }>("v1/attendance/manual", {
     batch: records,
   });
 }
@@ -73,7 +73,7 @@ export function setDayStatus(
   date: string,
   status: string,
 ) {
-  return apiPost<AttendanceRecord>("app/attendance/set_day_status.php", {
+  return apiPost<AttendanceRecord>("v1/attendance/day-status", {
     employee_id: employeeId,
     date,
     status,
@@ -85,7 +85,7 @@ export function updateNote(
   date: string,
   note: string | null,
 ) {
-  return apiPost<AttendanceRecord>("app/attendance/update_note.php", {
+  return apiPost<AttendanceRecord>("v1/attendance/note", {
     employee_id: employeeId,
     date,
     note,
@@ -99,7 +99,7 @@ export function setMethodOverride(data: {
   method: string;
 }) {
   return apiPost<{ status?: string }>(
-    "app/attendance/set_method_override.php",
+    "v1/attendance/method-override",
     data,
   );
 }

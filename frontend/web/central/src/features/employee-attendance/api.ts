@@ -131,7 +131,7 @@ export async function logout() {
 }
 
 export function fetchStatus() {
-  return post<WebStatus>("/api/employee/app/attendance/web_status.php", {});
+  return post<WebStatus>("/api/employee/v1/attendance/web-status", {});
 }
 
 export function checkIn(input: {
@@ -141,14 +141,14 @@ export function checkIn(input: {
   photo_base64?: string;
 }) {
   return post<{ time: string; branch: string }>(
-    "/api/employee/app/attendance/check_in.php",
+    "/api/employee/v1/attendance/check-in",
     input,
   );
 }
 
 export function checkOut(input: { latitude?: number; longitude?: number; photo_base64?: string }) {
   return post<{ time: string; session_ended: boolean }>(
-    "/api/employee/app/attendance/check_out.php",
+    "/api/employee/v1/attendance/check-out",
     input,
   );
 }

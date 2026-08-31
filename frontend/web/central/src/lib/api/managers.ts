@@ -1,4 +1,9 @@
-import { apiGet, apiPost, unwrapList } from "./client";
+import {
+  apiGet,
+  apiPatch,
+  apiPost,
+  unwrapList,
+} from "./client";
 import type { Admin, ManagerInvitation } from "@/lib/types";
 
 export interface InviteAdminInput {
@@ -18,19 +23,19 @@ export interface InviteAdminResult {
 }
 
 export function inviteAdmin(data: InviteAdminInput) {
-  return apiPost<InviteAdminResult>("app/managers/invite.php", data);
+  return apiPost<InviteAdminResult>("v1/team/invitations", data);
 }
 
 export async function listInvitations(): Promise<ManagerInvitation[]> {
   // All invitations; the page filters by status client-side (matches the app).
-  const raw = await apiGet<unknown>("app/managers/list_invitations.php");
+  const raw = await apiGet<unknown>("v1/team/invitations");
   return unwrapList<ManagerInvitation>(raw, ["items", "data"]);
 }
 
 export function cancelInvitation(id: number) {
   // Backend reads the id from the query string ($_GET['id']).
   return apiPost<{ status?: string }>(
-    `app/managers/cancel_invitation.php?id=${id}`,
+    `v1/team/invitations/cancel?id=${id}`,
   );
 }
 
@@ -42,12 +47,12 @@ export function resendInvitation(id: number) {
     expires_at: string;
     expires_in_hours: number;
     message?: string;
-  }>("app/managers/resend_invitation.php", { id });
+  }>("v1/team/invitations/resend", { id });
 }
 
 export async function listAdmins(): Promise<Admin[]> {
   // Backend returns `{ items }`.
-  const raw = await apiGet<unknown>("app/managers/list_admins.php");
+  const raw = await apiGet<unknown>("v1/team");
   return unwrapList<Admin>(raw, ["items", "data"]);
 }
 
@@ -56,21 +61,18 @@ export function updateAdmin(
   id: number,
   data: { role?: string; branch_id?: number | null },
 ) {
-  return apiPost<{ status?: string }>("app/managers/update_admin.php", {
-    admin_id: id,
-    ...data,
-  });
+  return apiPatch<{ status?: string }>(`v1/team/${id}`, data);
 }
 
 export function setAdminActive(id: number, active: boolean) {
-  return apiPost<{ status?: string }>("app/managers/set_admin_active.php", {
+  return apiPost<{ status?: string }>("v1/team/set-active", {
     admin_id: id,
     is_active: active,
   });
 }
 
 export function removeAdmin(id: number) {
-  return apiPost<{ status?: string }>("app/managers/remove_admin.php", {
+  return apiPost<{ status?: string }>("v1/team/remove", {
     admin_id: id,
   });
 }
@@ -85,7 +87,7 @@ export interface AdminPermissions {
 }
 
 export function getAdminPermissions(adminId: number) {
-  return apiGet<AdminPermissions>("app/managers/get_admin_permissions.php", {
+  return apiGet<AdminPermissions>("v1/team/permissions", {
     admin_id: adminId,
   });
 }
@@ -93,14 +95,14 @@ export function getAdminPermissions(adminId: number) {
 export function updateAdminPermissions(adminId: number, permissions: string[]) {
   // Backend expects an array of permission codes.
   return apiPost<{ status?: string }>(
-    "app/managers/update_admin_permissions.php",
+    "v1/team/permissions",
     { admin_id: adminId, permissions },
   );
 }
 
 export function resetAdminPermissions(adminId: number) {
   return apiPost<{ status?: string }>(
-    "app/managers/reset_admin_permissions.php",
+    "v1/team/permissions/reset",
     { admin_id: adminId },
   );
 }

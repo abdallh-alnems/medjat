@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
  * while injecting `Authorization: Basic …` server-side.
  */
 const API_HOST =
-  process.env.NEXT_PUBLIC_API_HOST ?? "https://api.medjatapp.com/backend/api";
+  process.env.NEXT_PUBLIC_API_HOST ?? "https://api.medjatapp.com/backend";
 
 const SECURITY_USER = process.env.SECURITY_USER ?? "";
 const SECURITY_KEY = process.env.SECURITY_KEY ?? "";
@@ -41,12 +41,28 @@ export async function POST(
   return proxyRequest(request, path);
 }
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> },
+) {
+  const { path } = await params;
+  return proxyRequest(request, path);
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> },
+) {
+  const { path } = await params;
+  return proxyRequest(request, path);
+}
+
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
     headers: {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
       "Access-Control-Allow-Headers":
         "Authorization, Content-Type, X-Firebase-Token, X-Tenant-Id, X-Device-Id",
     },

@@ -14,7 +14,7 @@ const API = "/api";
 describe("settings contract", () => {
   it("company settings: success", async () => {
     server.use(
-      http.get(`${API}/app/settings/company.php`, () =>
+      http.get(`${API}/v1/settings/company`, () =>
         HttpResponse.json({
           id: 1,
           name: "شركة اختبار",
@@ -29,7 +29,7 @@ describe("settings contract", () => {
 
   it("leave settings: success", async () => {
     server.use(
-      http.get(`${API}/app/settings/leave_settings.php`, () =>
+      http.get(`${API}/v1/settings/leave`, () =>
         HttpResponse.json({
           default_annual_leave_days: 21,
           carryover_enabled: true,
@@ -48,7 +48,7 @@ describe("settings contract", () => {
 
   it("statutory payroll: 4xx permission-denied", async () => {
     server.use(
-      http.get(`${API}/app/settings/statutory_payroll.php`, () =>
+      http.get(`${API}/v1/settings/statutory-payroll`, () =>
         HttpResponse.json({ message: "denied" }, { status: 403 }),
       ),
     );
@@ -58,7 +58,7 @@ describe("settings contract", () => {
 
   it("update company settings: success", async () => {
     server.use(
-      http.post(`${API}/app/settings/company.php`, () =>
+      http.post(`${API}/v1/settings/company`, () =>
         HttpResponse.json({ id: 1, name: "محّدث", radius: 100 }),
       ),
     );
@@ -68,7 +68,7 @@ describe("settings contract", () => {
 
   it("required documents: success", async () => {
     server.use(
-      http.get(`${API}/app/documents/get_required.php`, () =>
+      http.get(`${API}/v1/documents/required`, () =>
         HttpResponse.json([
           { id: 1, name: "إقامة", required: true, expires: true },
         ]),
@@ -80,7 +80,7 @@ describe("settings contract", () => {
 
   it("required documents: offline rejects", async () => {
     server.use(
-      http.get(`${API}/app/documents/get_required.php`, () =>
+      http.get(`${API}/v1/documents/required`, () =>
         HttpResponse.error(),
       ),
     );

@@ -65,7 +65,7 @@ export function importPunches(params: {
   preview: boolean;
 }) {
   return apiPost<ImportPunchesPreview | ImportPunchesResult>(
-    "app/devices/import_punches.php",
+    "v1/devices/import-punches",
     {
       csv_text: params.csvText,
       ...(params.branchId ? { branch_id: params.branchId } : {}),

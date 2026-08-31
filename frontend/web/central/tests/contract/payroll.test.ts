@@ -28,7 +28,7 @@ const SAMPLE: Payslip = {
 describe("payroll contract", () => {
   it("list_slips: success", async () => {
     server.use(
-      http.get(`${API}/app/payroll/list_slips.php`, () =>
+      http.get(`${API}/v1/payroll/slips`, () =>
         HttpResponse.json([SAMPLE]),
       ),
     );
@@ -38,7 +38,7 @@ describe("payroll contract", () => {
 
   it("list_slips: empty", async () => {
     server.use(
-      http.get(`${API}/app/payroll/list_slips.php`, () =>
+      http.get(`${API}/v1/payroll/slips`, () =>
         HttpResponse.json([]),
       ),
     );
@@ -48,7 +48,7 @@ describe("payroll contract", () => {
 
   it("list_slips: 4xx permission-denied", async () => {
     server.use(
-      http.get(`${API}/app/payroll/list_slips.php`, () =>
+      http.get(`${API}/v1/payroll/slips`, () =>
         HttpResponse.json({ message: "denied" }, { status: 403 }),
       ),
     );
@@ -58,14 +58,14 @@ describe("payroll contract", () => {
 
   it("list_slips: offline rejects", async () => {
     server.use(
-      http.get(`${API}/app/payroll/list_slips.php`, () => HttpResponse.error()),
+      http.get(`${API}/v1/payroll/slips`, () => HttpResponse.error()),
     );
     await expect(listSlips({ month: "2026-06" })).rejects.toBeDefined();
   });
 
   it("generate: success", async () => {
     server.use(
-      http.post(`${API}/app/payroll/generate.php`, () =>
+      http.post(`${API}/v1/payroll/generate`, () =>
         HttpResponse.json([SAMPLE]),
       ),
     );
@@ -75,7 +75,7 @@ describe("payroll contract", () => {
 
   it("approve: success", async () => {
     server.use(
-      http.post(`${API}/app/payroll/approve.php`, () =>
+      http.post(`${API}/v1/payroll/approve`, () =>
         HttpResponse.json({ ...SAMPLE, status: "approved" }),
       ),
     );
@@ -85,7 +85,7 @@ describe("payroll contract", () => {
 
   it("override_line: success", async () => {
     server.use(
-      http.post(`${API}/app/payroll/override_line.php`, () =>
+      http.post(`${API}/v1/payroll/override-line`, () =>
         HttpResponse.json(SAMPLE),
       ),
     );

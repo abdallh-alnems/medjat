@@ -47,7 +47,7 @@ function toSettlement(raw: unknown, employeeId: number): Settlement {
 }
 
 export async function getSettlement(employeeId: number): Promise<Settlement> {
-  const raw = await apiGet<unknown>("app/settlements/get.php", {
+  const raw = await apiGet<unknown>("v1/settlements", {
     employee_id: employeeId,
   });
   return toSettlement(raw, employeeId);
@@ -57,7 +57,7 @@ export async function previewSettlement(
   employeeId: number,
   lastWorkingDay: string,
 ): Promise<Settlement> {
-  const raw = await apiGet<unknown>("app/settlements/preview.php", {
+  const raw = await apiGet<unknown>("v1/settlements/preview", {
     employee_id: employeeId,
     last_working_day: lastWorkingDay,
   });
@@ -65,17 +65,17 @@ export async function previewSettlement(
 }
 
 export function saveSettlement(data: Partial<Settlement> & { employee_id: number }) {
-  return apiPost<Settlement>("app/settlements/save.php", data);
+  return apiPost<Settlement>("v1/settlements", data);
 }
 
 export function approveSettlement(employeeId: number) {
-  return apiPost<Settlement>("app/settlements/approve.php", {
+  return apiPost<Settlement>("v1/settlements/approve", {
     employee_id: employeeId,
   });
 }
 
 export function markSettlementPaid(employeeId: number) {
-  return apiPost<Settlement>("app/settlements/mark_paid.php", {
+  return apiPost<Settlement>("v1/settlements/mark-paid", {
     employee_id: employeeId,
   });
 }

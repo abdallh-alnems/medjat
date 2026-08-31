@@ -107,7 +107,7 @@ export interface LivePayrollOverview {
 export async function getLivePayrollOverview(
   month: string,
 ): Promise<LivePayrollOverview> {
-  const raw = await apiGet<unknown>("app/payroll/live.php", { month });
+  const raw = await apiGet<unknown>("v1/payroll/live", { month });
   const obj = asObject(raw) ?? {};
   const rows = unwrapList<LivePayrollRow>(raw, ["items", "data"]);
   const prev = asObject(obj.previous_summary);
@@ -130,7 +130,7 @@ export async function getLivePayrollOverview(
 /** One-tap disburse for a single employee — walks generate → approve → pay. */
 export function disburseEmployee(employeeId: number, month: string) {
   return apiPost<{ result?: string; payroll_id?: number }>(
-    "app/payroll/disburse.php",
+    "v1/payroll/disburse",
     { employee_id: employeeId, month },
   );
 }
@@ -144,7 +144,7 @@ export async function listSlips(
   params: PayrollPeriodParams,
 ): Promise<Payslip[]> {
   // Backend returns `{ items, page }`.
-  const raw = await apiGet<unknown>("app/payroll/list_slips.php", params);
+  const raw = await apiGet<unknown>("v1/payroll/slips", params);
   return unwrapList<Payslip>(raw, ["items", "data"]);
 }
 
@@ -152,37 +152,37 @@ export async function getLivePayroll(month: string): Promise<Payslip[]> {
   // Backend returns `{ items, total_count, ... }` where each row uses the
   // calculator's field names. Map them onto the Payslip shape the UI expects,
   // tagging un-generated rows as "live" (same as the mobile app's overview).
-  const raw = await apiGet<unknown>("app/payroll/live.php", { month });
+  const raw = await apiGet<unknown>("v1/payroll/live", { month });
   const rows = unwrapList<LivePayrollRow>(raw, ["items", "data"]);
   return rows.map(mapLiveRow);
 }
 
 export function generatePayroll(month: string) {
-  return apiPost<Payslip[]>("app/payroll/generate.php", { month });
+  return apiPost<Payslip[]>("v1/payroll/generate", { month });
 }
 
 export function approveSlip(id: number) {
-  return apiPost<Payslip>("app/payroll/approve.php", { id });
+  return apiPost<Payslip>("v1/payroll/approve", { id });
 }
 
 export function approveBulkSlips(ids: number[]) {
-  return apiPost<{ status?: string }>("app/payroll/approve_bulk.php", { ids });
+  return apiPost<{ status?: string }>("v1/payroll/approve-bulk", { ids });
 }
 
 export function revertSlip(id: number) {
-  return apiPost<Payslip>("app/payroll/revert.php", { id });
+  return apiPost<Payslip>("v1/payroll/revert", { id });
 }
 
 export function markPaid(id: number) {
-  return apiPost<Payslip>("app/payroll/mark_paid.php", { id });
+  return apiPost<Payslip>("v1/payroll/mark-paid", { id });
 }
 
 export function disburse(ids: number[]) {
-  return apiPost<{ status?: string }>("app/payroll/disburse.php", { ids });
+  return apiPost<{ status?: string }>("v1/payroll/disburse", { ids });
 }
 
 export function disburseAll(month: string) {
-  return apiPost<{ status?: string }>("app/payroll/disburse_all.php", { month });
+  return apiPost<{ status?: string }>("v1/payroll/disburse-all", { month });
 }
 
 export function overrideLine(
@@ -190,7 +190,7 @@ export function overrideLine(
   month: string,
   lines: PayslipLine[],
 ) {
-  return apiPost<Payslip>("app/payroll/override_line.php", {
+  return apiPost<Payslip>("v1/payroll/override-line", {
     employee_id: employeeId,
     month,
     lines,
@@ -198,33 +198,33 @@ export function overrideLine(
 }
 
 export function getSlipPdfUrl(employeeId: number, month: string) {
-  return apiGet<{ url: string }>("app/payroll/get_slip_pdf.php", {
+  return apiGet<{ url: string }>("v1/payroll/payslip.pdf", {
     employee_id: employeeId,
     month,
   });
 }
 
 export function eosbCalculate(employeeId: number) {
-  return apiGet<{ gratuity: number }>("app/payroll/eosb_calculate.php", {
+  return apiGet<{ gratuity: number }>("v1/payroll/eosb", {
     employee_id: employeeId,
   });
 }
 
 export function bankFilePreview(month: string) {
   return apiGet<{ rows: (string | number)[][] }>(
-    "app/payroll/bank_file_preview.php",
+    "v1/payroll/bank-file/preview",
     { month },
   );
 }
 
 export function exportBankFile(month: string) {
-  return apiGet<{ csv: string }>("app/payroll/export_bank_file.php", { month });
+  return apiGet<{ csv: string }>("v1/payroll/bank-file", { month });
 }
 
 export async function getPayrollAudit(
   month: string,
 ): Promise<PayrollAuditEntry[]> {
   // Backend returns `{ items, page, has_more }`.
-  const raw = await apiGet<unknown>("app/payroll/audit_log.php", { month });
+  const raw = await apiGet<unknown>("v1/payroll/audit-log", { month });
   return unwrapList<PayrollAuditEntry>(raw, ["items", "data"]);
 }

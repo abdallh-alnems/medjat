@@ -16,7 +16,7 @@ describe("auth + tenant contract", () => {
 
   it("login: session superseded forces sign-out response", async () => {
     server.use(
-      http.post(`${API}/app/auth/login.php`, () =>
+      http.post(`${API}/v1/auth/admin/login`, () =>
         HttpResponse.json(
           { status: "superseded", message: "session superseded" },
           { status: 401 },
@@ -29,7 +29,7 @@ describe("auth + tenant contract", () => {
 
   it("login: 4xx permission-denied / unauthorized", async () => {
     server.use(
-      http.post(`${API}/app/auth/login.php`, () =>
+      http.post(`${API}/v1/auth/admin/login`, () =>
         HttpResponse.json({ status: "error", message: "unauthorized" }),
       ),
     );
@@ -39,7 +39,7 @@ describe("auth + tenant contract", () => {
 
   it("login: offline returns a network error", async () => {
     server.use(
-      http.post(`${API}/app/auth/login.php`, () => HttpResponse.error()),
+      http.post(`${API}/v1/auth/admin/login`, () => HttpResponse.error()),
     );
     await expect(login("offline")).rejects.toBeDefined();
   });
@@ -62,7 +62,7 @@ describe("auth + tenant contract", () => {
 
   it("tenant: empty/missing-data response", async () => {
     server.use(
-      http.post(`${API}/app/tenant/create.php`, () =>
+      http.post(`${API}/v1/tenants`, () =>
         HttpResponse.json({ status: "success", data: null }),
       ),
     );

@@ -53,7 +53,7 @@ export async function createCompany(
   },
 ) {
   const token = await firebaseIdToken();
-  return apiPost<OnboardingResult>("app/tenant/create.php", {
+  return apiPost<OnboardingResult>("v1/tenants", {
     token,
     company_name: name,
     ...(locale ?? {}),
@@ -62,7 +62,7 @@ export async function createCompany(
 
 export async function joinCompany(code: string) {
   const token = await firebaseIdToken();
-  return apiPost<OnboardingResult>("app/tenant/join.php", {
+  return apiPost<OnboardingResult>("v1/tenants/join", {
     token,
     invite_code: code,
   });
@@ -71,7 +71,7 @@ export async function joinCompany(code: string) {
 /** Accept a pending invitation addressed to the signed-in email (no code). */
 export async function acceptInvitation(invitationId?: number) {
   const token = await firebaseIdToken();
-  return apiPost<OnboardingResult>("app/tenant/accept_invitation.php", {
+  return apiPost<OnboardingResult>("v1/tenants/accept-invitation", {
     token,
     ...(invitationId ? { invitation_id: invitationId } : {}),
   });

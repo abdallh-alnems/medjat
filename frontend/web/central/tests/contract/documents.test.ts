@@ -12,7 +12,7 @@ const API = "/api";
 describe("documents + biometric contract", () => {
   it("documents: list success", async () => {
     server.use(
-      http.get(`${API}/app/employees/get_documents.php`, () =>
+      http.get(`${API}/v1/employees/documents`, () =>
         HttpResponse.json([
           {
             id: 1,
@@ -31,7 +31,7 @@ describe("documents + biometric contract", () => {
 
   it("documents: empty", async () => {
     server.use(
-      http.get(`${API}/app/employees/get_documents.php`, () =>
+      http.get(`${API}/v1/employees/documents`, () =>
         HttpResponse.json([]),
       ),
     );
@@ -41,7 +41,7 @@ describe("documents + biometric contract", () => {
 
   it("documents: verify returns verified", async () => {
     server.use(
-      http.post(`${API}/app/employees/verify_document.php`, () =>
+      http.post(`${API}/v1/employees/documents/verify`, () =>
         HttpResponse.json({ id: 1, status: "verified" }),
       ),
     );
@@ -51,7 +51,7 @@ describe("documents + biometric contract", () => {
 
   it("biometric: status", async () => {
     server.use(
-      http.get(`${API}/app/biometric/status.php`, () =>
+      http.get(`${API}/v1/biometric/status`, () =>
         HttpResponse.json({ employee_id: 1, type: "face", enrolled: true }),
       ),
     );
@@ -61,7 +61,7 @@ describe("documents + biometric contract", () => {
 
   it("biometric: delete returns ok", async () => {
     server.use(
-      http.post(`${API}/app/biometric/delete.php`, () =>
+      http.delete(`${API}/v1/biometric/:id`, () =>
         HttpResponse.json({ status: "ok" }),
       ),
     );

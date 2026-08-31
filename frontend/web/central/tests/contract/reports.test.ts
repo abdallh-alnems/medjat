@@ -26,7 +26,7 @@ const SAMPLE: ReportData = {
 describe("reports contract", () => {
   it("attendance report: success", async () => {
     server.use(
-      http.get(`${API}/app/reports/attendance.php`, () =>
+      http.get(`${API}/v1/reports/attendance`, () =>
         HttpResponse.json(SAMPLE),
       ),
     );
@@ -36,7 +36,7 @@ describe("reports contract", () => {
 
   it("payroll report: empty", async () => {
     server.use(
-      http.get(`${API}/app/reports/payroll.php`, () =>
+      http.get(`${API}/v1/reports/payroll`, () =>
         HttpResponse.json({ ...SAMPLE, rows: [] }),
       ),
     );
@@ -46,7 +46,7 @@ describe("reports contract", () => {
 
   it("employees report: 4xx permission-denied", async () => {
     server.use(
-      http.get(`${API}/app/reports/employees.php`, () =>
+      http.get(`${API}/v1/reports/employees`, () =>
         HttpResponse.json({ message: "denied" }, { status: 403 }),
       ),
     );
@@ -57,7 +57,7 @@ describe("reports contract", () => {
 
   it("leaves report: offline rejects", async () => {
     server.use(
-      http.get(`${API}/app/reports/leaves.php`, () => HttpResponse.error()),
+      http.get(`${API}/v1/reports/leaves`, () => HttpResponse.error()),
     );
     await expect(getLeavesReport({})).rejects.toBeDefined();
   });
@@ -65,7 +65,7 @@ describe("reports contract", () => {
   it("overtime & lateness report: success", async () => {
     let sentUrl = "";
     server.use(
-      http.get(`${API}/app/reports/overtime_late.php`, ({ request }) => {
+      http.get(`${API}/v1/reports/overtime-late`, ({ request }) => {
         sentUrl = request.url;
         return HttpResponse.json({
           start_date: "2026-06-01",
@@ -109,7 +109,7 @@ describe("reports contract", () => {
 
   it("overtime & lateness report: 4xx yields an empty, zeroed report", async () => {
     server.use(
-      http.get(`${API}/app/reports/overtime_late.php`, () =>
+      http.get(`${API}/v1/reports/overtime-late`, () =>
         HttpResponse.json({ message: "denied" }, { status: 403 }),
       ),
     );
@@ -120,7 +120,7 @@ describe("reports contract", () => {
 
   it("document expiring soon: success", async () => {
     server.use(
-      http.get(`${API}/app/documents/reports_expiring_soon.php`, () =>
+      http.get(`${API}/v1/documents/reports/expiring-soon`, () =>
         HttpResponse.json([
           {
             id: 1,
@@ -138,7 +138,7 @@ describe("reports contract", () => {
 
   it("document stats: success", async () => {
     server.use(
-      http.get(`${API}/app/documents/reports_stats.php`, () =>
+      http.get(`${API}/v1/documents/reports/stats`, () =>
         HttpResponse.json({
           total: 100,
           verified: 60,

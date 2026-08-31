@@ -14,11 +14,11 @@ export function login(idToken: string) {
     pending_invitation?: PendingInvitation | null;
     message?: string;
     status?: string;
-  }>("app/auth/login.php", { token: idToken });
+  }>("v1/auth/admin/login", { token: idToken });
 }
 
 export function logout() {
-  return apiPost<{ status?: string }>("app/auth/logout.php");
+  return apiPost<{ status?: string }>("v1/auth/admin/logout");
 }
 
 /**
@@ -28,7 +28,7 @@ export function logout() {
  */
 export function desktopAuthorize(state: string) {
   return apiPost<{ code: string; expires_in_seconds: number }>(
-    "app/auth/desktop_authorize.php",
+    "v1/auth/desktop/authorize",
     { state },
   );
 }
@@ -38,42 +38,42 @@ export function desktopAuthorize(state: string) {
  * a Firebase custom token. Unauthenticated by design: the code is the credential.
  */
 export function desktopExchange(code: string, state: string) {
-  return apiPost<{ token: string }>("app/auth/desktop_exchange.php", { code, state });
+  return apiPost<{ token: string }>("v1/auth/desktop/exchange", { code, state });
 }
 
 export function sendVerification(email?: string) {
-  return apiPost<{ status?: string }>("app/auth/send_verification.php", {
+  return apiPost<{ status?: string }>("v1/auth/verification", {
     email,
   });
 }
 
 export function sendPasswordReset(email: string) {
-  return apiPost<{ status?: string }>("app/auth/send_password_reset.php", {
+  return apiPost<{ status?: string }>("v1/auth/password-reset", {
     email,
   });
 }
 
 export function updateProfile(data: Partial<Pick<Admin, "name" | "phone">>) {
-  return apiPost<{ user?: Admin }>("app/auth/update_profile.php", data);
+  return apiPost<{ user?: Admin }>("v1/auth/profile", data);
 }
 
 export function getNotificationPrefs() {
-  return apiGet<NotificationPrefs>("app/auth/notification_prefs.php");
+  return apiGet<NotificationPrefs>("v1/auth/notification-prefs");
 }
 
 export function setNotificationPrefs(prefs: NotificationPrefs) {
-  return apiPost<NotificationPrefs>("app/auth/notification_prefs.php", prefs);
+  return apiPost<NotificationPrefs>("v1/auth/notification-prefs", prefs);
 }
 
 export function deleteAccount(password?: string) {
   return apiPost<{ status?: string; last_gm?: boolean }>(
-    "app/auth/delete_account.php",
+    "v1/auth/account",
     { password },
   );
 }
 
 export function me() {
   return apiGet<{ user?: Admin; tenant_id?: number | null }>(
-    "app/auth/login.php",
+    "v1/auth/admin/login",
   );
 }

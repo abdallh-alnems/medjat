@@ -20,7 +20,7 @@ const SAMPLE: Loan = {
 describe("loans contract", () => {
   it("list: success", async () => {
     server.use(
-      http.get(`${API}/app/loans/list.php`, () => HttpResponse.json([SAMPLE])),
+      http.get(`${API}/v1/loans`, () => HttpResponse.json([SAMPLE])),
     );
     const res = await listLoans();
     expect(res[0]?.principal).toBe(5000);
@@ -28,7 +28,7 @@ describe("loans contract", () => {
 
   it("list: empty", async () => {
     server.use(
-      http.get(`${API}/app/loans/list.php`, () => HttpResponse.json([])),
+      http.get(`${API}/v1/loans`, () => HttpResponse.json([])),
     );
     const res = await listLoans();
     expect(res).toHaveLength(0);
@@ -36,7 +36,7 @@ describe("loans contract", () => {
 
   it("list: 4xx permission-denied", async () => {
     server.use(
-      http.get(`${API}/app/loans/list.php`, () =>
+      http.get(`${API}/v1/loans`, () =>
         HttpResponse.json({ message: "denied" }, { status: 403 }),
       ),
     );
@@ -46,14 +46,14 @@ describe("loans contract", () => {
 
   it("list: offline rejects", async () => {
     server.use(
-      http.get(`${API}/app/loans/list.php`, () => HttpResponse.error()),
+      http.get(`${API}/v1/loans`, () => HttpResponse.error()),
     );
     await expect(listLoans()).rejects.toBeDefined();
   });
 
   it("create: success", async () => {
     server.use(
-      http.post(`${API}/app/loans/create.php`, () => HttpResponse.json(SAMPLE)),
+      http.post(`${API}/v1/loans`, () => HttpResponse.json(SAMPLE)),
     );
     const res = await createLoan({ employee_id: 10, principal: 5000 });
     expect(res.status).toBe("pending");
@@ -61,7 +61,7 @@ describe("loans contract", () => {
 
   it("approve: success", async () => {
     server.use(
-      http.post(`${API}/app/loans/approve.php`, () =>
+      http.post(`${API}/v1/loans/approve`, () =>
         HttpResponse.json({ ...SAMPLE, status: "approved" }),
       ),
     );

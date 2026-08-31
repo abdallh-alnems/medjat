@@ -46,43 +46,43 @@ export interface StatutoryPayroll {
 }
 
 export function getCompanySettings() {
-  return apiGet<CompanySettings>("app/settings/company.php");
+  return apiGet<CompanySettings>("v1/settings/company");
 }
 
 export function updateCompanySettings(data: Partial<CompanySettings>) {
-  return apiPost<CompanySettings>("app/settings/company.php", data);
+  return apiPost<CompanySettings>("v1/settings/company", data);
 }
 
 export function getStatutoryPayroll() {
-  return apiGet<StatutoryPayroll>("app/settings/statutory_payroll.php");
+  return apiGet<StatutoryPayroll>("v1/settings/statutory-payroll");
 }
 
 export function updateStatutoryPayroll(data: Partial<StatutoryPayroll>) {
-  return apiPost<StatutoryPayroll>("app/settings/statutory_payroll.php", data);
+  return apiPost<StatutoryPayroll>("v1/settings/statutory-payroll", data);
 }
 
 export function getLeaveSettings() {
-  return apiGet<LeaveSettings>("app/settings/leave_settings.php");
+  return apiGet<LeaveSettings>("v1/settings/leave");
 }
 
 export function updateLeaveSettings(data: Partial<LeaveSettings>) {
-  return apiPost<LeaveSettings>("app/settings/leave_settings.php", data);
+  return apiPost<LeaveSettings>("v1/settings/leave", data);
 }
 
 export async function getDeductionSettings(): Promise<DeductionRule[]> {
   // Backend returns `{ rules, config }`.
-  const raw = await apiGet<unknown>("app/deductions/get_rules.php");
+  const raw = await apiGet<unknown>("v1/deduction-rules");
   return unwrapList<DeductionRule>(raw, ["rules", "items", "data"]);
 }
 
 export function saveDeductionSettings(rules: Partial<DeductionRule>[]) {
-  return apiPost<{ status?: string }>("app/deductions/save_config.php", {
+  return apiPost<{ status?: string }>("v1/deduction-rules", {
     rules,
   });
 }
 
 // ── Attendance method resolution (company > branch > category > employee) ──
-// All data is served by `app/settings/company.php` (GET). Writes go to
+// All data is served by `v1/settings/company` (GET). Writes go to
 // company.php (tenant-level), branches/update_attendance_method.php (branch),
 // and attendance/set_method_override.php (category / employee).
 
@@ -153,7 +153,7 @@ export interface AttendanceMethodConfig {
 
 /** Full attendance-method configuration comes from company.php. */
 export function getAttendanceMethodConfig() {
-  return apiGet<AttendanceMethodConfig>("app/settings/company.php");
+  return apiGet<AttendanceMethodConfig>("v1/settings/company");
 }
 
 /** Tenant-wide methods + manual admins + offline toggle. */
@@ -163,7 +163,7 @@ export function updateAttendanceConfig(data: {
   allow_offline_attendance?: boolean;
   reject_mock_location?: boolean;
 }) {
-  return apiPost<{ message?: string }>("app/settings/company.php", data);
+  return apiPost<{ message?: string }>("v1/settings/company", data);
 }
 
 /** Company-wide face-recognition settings for the face_selfie method. */
@@ -172,7 +172,7 @@ export function updateFaceSettings(data: {
   face_liveness_required?: boolean;
   face_enforce_mode?: "log_only" | "enforce";
 }) {
-  return apiPost<{ message?: string }>("app/settings/company.php", data);
+  return apiPost<{ message?: string }>("v1/settings/company", data);
 }
 
 /**
@@ -185,7 +185,7 @@ export function updateWebAttendanceSettings(data: {
   web_attendance_enabled?: boolean;
   web_attendance_photo_required?: boolean;
 }) {
-  return apiPost<{ message?: string }>("app/settings/company.php", data);
+  return apiPost<{ message?: string }>("v1/settings/company", data);
 }
 
 /** Per-category exception. null = inherit the company switch. */
@@ -194,7 +194,7 @@ export function updateCategoryWebAccess(data: {
   web_attendance_allowed: boolean | null;
 }) {
   return apiPost<{ category_id: number; web_attendance_allowed: boolean | null }>(
-    "app/categories/update_web_access.php",
+    "v1/categories/web-access",
     data,
   );
 }
@@ -205,7 +205,7 @@ export function setCompanyGeofence(data: {
   gps_longitude: number | null;
   gps_radius_meters: number | null;
 }) {
-  return apiPost<{ message?: string }>("app/settings/company.php", data);
+  return apiPost<{ message?: string }>("v1/settings/company", data);
 }
 
 /** Per-branch override (methods=null → inherit company). */
@@ -219,7 +219,7 @@ export function updateBranchAttendanceConfig(data: {
   face_liveness_required?: boolean | null;
 }) {
   return apiPost<{ message?: string }>(
-    "app/branches/update_attendance_method.php",
+    "v1/branches/attendance-method",
     data,
   );
 }
@@ -231,7 +231,7 @@ export function setScopeMethodOverride(data: {
   attendance_methods: AttendanceMethod[] | null;
 }) {
   return apiPost<{ message?: string }>(
-    "app/attendance/set_method_override.php",
+    "v1/attendance/method-override",
     data,
   );
 }
@@ -263,7 +263,7 @@ export interface BranchNetworkReport {
 
 /** Networks seen at a branch during the learning window. */
 export function getBranchNetworks(branchId: number, days?: number) {
-  return apiPost<BranchNetworkReport>("app/branches/network_sightings.php", {
+  return apiPost<BranchNetworkReport>("v1/branches/networks/sightings", {
     branch_id: branchId,
     ...(days ? { days } : {}),
   });
@@ -278,7 +278,7 @@ export function approveBranchNetworks(data: {
   wifi_match?: "bssid" | "ip" | "either";
 }) {
   return apiPost<{ approved: number; deactivated: number }>(
-    "app/branches/approve_networks.php",
+    "v1/branches/networks/approve",
     data,
   );
 }

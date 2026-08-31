@@ -26,7 +26,7 @@ const SAMPLE: LeaveRequest = {
 describe("leaves contract", () => {
   it("list: success", async () => {
     server.use(
-      http.get(`${API}/app/leaves/list.php`, () =>
+      http.get(`${API}/v1/leaves`, () =>
         HttpResponse.json([SAMPLE]),
       ),
     );
@@ -36,7 +36,7 @@ describe("leaves contract", () => {
 
   it("list: empty", async () => {
     server.use(
-      http.get(`${API}/app/leaves/list.php`, () => HttpResponse.json([])),
+      http.get(`${API}/v1/leaves`, () => HttpResponse.json([])),
     );
     const res = await listLeaves();
     expect(res).toHaveLength(0);
@@ -44,7 +44,7 @@ describe("leaves contract", () => {
 
   it("list: 4xx permission-denied", async () => {
     server.use(
-      http.get(`${API}/app/leaves/list.php`, () =>
+      http.get(`${API}/v1/leaves`, () =>
         HttpResponse.json({ message: "denied" }, { status: 403 }),
       ),
     );
@@ -54,14 +54,14 @@ describe("leaves contract", () => {
 
   it("list: offline rejects", async () => {
     server.use(
-      http.get(`${API}/app/leaves/list.php`, () => HttpResponse.error()),
+      http.get(`${API}/v1/leaves`, () => HttpResponse.error()),
     );
     await expect(listLeaves()).rejects.toBeDefined();
   });
 
   it("create: success", async () => {
     server.use(
-      http.post(`${API}/app/leaves/create.php`, () =>
+      http.post(`${API}/v1/leaves`, () =>
         HttpResponse.json(SAMPLE),
       ),
     );
@@ -75,7 +75,7 @@ describe("leaves contract", () => {
 
   it("approve: success", async () => {
     server.use(
-      http.post(`${API}/app/leaves/approve.php`, () =>
+      http.post(`${API}/v1/leaves/approve`, () =>
         HttpResponse.json({ ...SAMPLE, status: "approved" }),
       ),
     );
@@ -85,7 +85,7 @@ describe("leaves contract", () => {
 
   it("reject: success", async () => {
     server.use(
-      http.post(`${API}/app/leaves/reject.php`, () =>
+      http.post(`${API}/v1/leaves/reject`, () =>
         HttpResponse.json({ ...SAMPLE, status: "rejected" }),
       ),
     );
@@ -102,7 +102,7 @@ describe("leaves contract", () => {
       carried_over: 3,
     };
     server.use(
-      http.get(`${API}/app/leaves/get_balance.php`, () =>
+      http.get(`${API}/v1/leaves/balance`, () =>
         HttpResponse.json(BALANCE),
       ),
     );

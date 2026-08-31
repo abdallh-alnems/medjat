@@ -1,45 +1,51 @@
-import { apiGet, apiPost, unwrapList } from "./client";
+import {
+  apiDelete,
+  apiGet,
+  apiPatch,
+  apiPost,
+  unwrapList,
+} from "./client";
 import type { Branch, Shift, ScheduleAssignment } from "@/lib/types";
 
 export async function listBranches(): Promise<Branch[]> {
   // Backend returns `{ branches }`.
-  const raw = await apiGet<unknown>("app/branches/list.php");
+  const raw = await apiGet<unknown>("v1/branches");
   return unwrapList<Branch>(raw, ["branches", "items", "data"]);
 }
 
 export async function getBranch(id: number): Promise<Branch | undefined> {
-  const raw = await apiGet<unknown>("app/branches/list.php", { id });
+  const raw = await apiGet<unknown>("v1/branches", { id });
   return unwrapList<Branch>(raw, ["branches", "items", "data"]).find(
     (b) => b.id === id,
   );
 }
 
 export function createBranch(data: Partial<Branch>) {
-  return apiPost<Branch>("app/branches/create.php", data);
+  return apiPost<Branch>("v1/branches", data);
 }
 
 export function updateBranch(id: number, data: Partial<Branch>) {
-  return apiPost<Branch>("app/branches/update.php", { id, ...data });
+  return apiPatch<Branch>(`v1/branches/${id}`, data);
 }
 
 export function updateBranchAttendanceMethod(
   id: number,
   methods: string[],
 ) {
-  return apiPost<Branch>("app/branches/update_attendance_method.php", {
+  return apiPost<Branch>("v1/branches/attendance-method", {
     id,
     attendance_methods: methods,
   });
 }
 
 export function generateBranchQr(id: number) {
-  return apiGet<{ qr_token: string }>("app/branches/generate_qr.php", { id });
+  return apiGet<{ qr_token: string }>("v1/branches/generate-qr", { id });
 }
 
 /** Turn the rotating branch QR on or off for one branch. */
 export function setBranchRotatingQr(branchId: number, enabled: boolean) {
   return apiPost<{ message: string }>(
-    "app/branches/update_attendance_method.php",
+    "v1/branches/attendance-method",
     { branch_id: branchId, rotating_qr_enabled: enabled },
   );
 }
@@ -60,38 +66,38 @@ export type RotatingQrCode = {
  * POST (Auth::requirePost).
  */
 export function fetchBranchRotatingQr(branchId: number) {
-  return apiPost<RotatingQrCode>("app/attendance/branch_qr_code.php", {
+  return apiPost<RotatingQrCode>("v1/attendance/branch-qr", {
     branch_id: branchId,
   });
 }
 
 export async function listShifts(): Promise<Shift[]> {
   // Backend returns `{ items }`.
-  const raw = await apiGet<unknown>("app/shifts/list.php");
+  const raw = await apiGet<unknown>("v1/shifts");
   return unwrapList<Shift>(raw, ["items", "data"]);
 }
 
 export function createShift(data: Partial<Shift>) {
-  return apiPost<Shift>("app/shifts/create.php", data);
+  return apiPost<Shift>("v1/shifts", data);
 }
 
 export function updateShift(id: number, data: Partial<Shift>) {
-  return apiPost<Shift>("app/shifts/update.php", { id, ...data });
+  return apiPatch<Shift>(`v1/shifts/${id}`, data);
 }
 
 export function deleteShift(id: number) {
-  return apiPost<{ status?: string }>("app/shifts/delete.php", { id });
+  return apiDelete<{ status?: string }>(`v1/shifts/${id}`);
 }
 
 export function assignShift(shiftId: number, employeeIds: number[]) {
-  return apiPost<{ status?: string }>("app/shifts/assign.php", {
+  return apiPost<{ status?: string }>("v1/shifts/assign", {
     shift_id: shiftId,
     employee_ids: employeeIds,
   });
 }
 
 export function unassignShift(shiftId: number, employeeIds: number[]) {
-  return apiPost<{ status?: string }>("app/shifts/unassign.php", {
+  return apiPost<{ status?: string }>("v1/shifts/unassign", {
     shift_id: shiftId,
     employee_ids: employeeIds,
   });
@@ -99,26 +105,26 @@ export function unassignShift(shiftId: number, employeeIds: number[]) {
 
 export function getWeeklySchedule(week: string) {
   return apiGet<{ week: string; published: boolean; assignments: ScheduleAssignment[] }>(
-    "app/schedule/week.php",
+    "v1/schedule/week",
     { week },
   );
 }
 
 export function assignSchedule(data: ScheduleAssignment) {
-  return apiPost<{ status?: string }>("app/schedule/assign.php", data);
+  return apiPost<{ status?: string }>("v1/schedule/assign", data);
 }
 
 export function clearSchedule(data: ScheduleAssignment) {
-  return apiPost<{ status?: string }>("app/schedule/clear.php", data);
+  return apiPost<{ status?: string }>("v1/schedule/clear", data);
 }
 
 export function copyWeek(fromWeek: string, toWeek: string) {
-  return apiPost<{ status?: string }>("app/schedule/copy_week.php", {
+  return apiPost<{ status?: string }>("v1/schedule/copy-week", {
     from: fromWeek,
     to: toWeek,
   });
 }
 
 export function publishSchedule(week: string) {
-  return apiPost<{ status?: string }>("app/schedule/publish.php", { week });
+  return apiPost<{ status?: string }>("v1/schedule/publish", { week });
 }

@@ -90,7 +90,7 @@ function toDashboardOverview(raw: RawOverview): DashboardOverview {
 }
 
 export async function getDashboardOverview(): Promise<DashboardOverview> {
-  const raw = await apiGet<RawOverview>("app/dashboard/overview.php");
+  const raw = await apiGet<RawOverview>("v1/dashboard/overview");
   // Pass error/empty bodies (null, permission-denied, etc.) through untouched;
   // only adapt a genuine backend overview payload.
   if (!raw || typeof raw !== "object") {
@@ -141,6 +141,6 @@ function toLiveAttendance(raw: unknown): LiveAttendance[] {
 
 export async function getLiveAttendance(): Promise<LiveAttendance[]> {
   // Backend returns `{ employees, summary, ... }` with `derived_status` per row.
-  const raw = await apiGet<unknown>("app/dashboard/live_attendance.php");
+  const raw = await apiGet<unknown>("v1/dashboard/live-attendance");
   return toLiveAttendance(raw);
 }

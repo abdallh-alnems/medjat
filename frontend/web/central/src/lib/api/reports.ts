@@ -87,7 +87,7 @@ export async function getAttendanceReport(
   params: ReportPeriod,
 ): Promise<ReportData> {
   const raw = await apiGet<unknown>(
-    "app/reports/attendance.php",
+    "v1/reports/attendance",
     periodParams(params),
   );
   return toReportData(raw, "attendance_report");
@@ -98,7 +98,7 @@ export async function getPayrollReport(
 ): Promise<ReportData> {
   // Payroll cycles are monthly: the endpoint takes `month`, not a free range,
   // so the period picker's "from" decides which month is reported on.
-  const raw = await apiGet<unknown>("app/reports/payroll.php", {
+  const raw = await apiGet<unknown>("v1/reports/payroll", {
     branch_id: params.branch_id,
     month: params.month ?? (params.from ? params.from.slice(0, 7) : undefined),
   });
@@ -109,7 +109,7 @@ export async function getEmployeesReport(
   params: ReportPeriod,
 ): Promise<ReportData> {
   const raw = await apiGet<unknown>(
-    "app/reports/employees.php",
+    "v1/reports/employees",
     params as Record<string, unknown>,
   );
   return toReportData(raw, "employees_report");
@@ -119,7 +119,7 @@ export async function getLeavesReport(
   params: ReportPeriod,
 ): Promise<ReportData> {
   const raw = await apiGet<unknown>(
-    "app/reports/leaves.php",
+    "v1/reports/leaves",
     periodParams(params),
   );
   return toReportData(raw, "leaves_report");
@@ -141,7 +141,7 @@ export async function getOvertimeLateReport(
   params: OvertimeLateParams,
 ): Promise<OvertimeLateReport> {
   const raw = await apiGet<unknown>(
-    "app/reports/overtime_late.php",
+    "v1/reports/overtime-late",
     periodParams(params),
   );
   const obj = asObject(raw) ?? {};

@@ -26,7 +26,7 @@ const SAMPLE = {
 describe("employees contract", () => {
   it("list: success", async () => {
     server.use(
-      http.get(`${API}/app/employees/list.php`, () => HttpResponse.json([SAMPLE])),
+      http.get(`${API}/v1/employees`, () => HttpResponse.json([SAMPLE])),
     );
     const res = await listEmployees();
     // listEmployees normalises the backend `{ items }` payload to `{ data }`.
@@ -35,7 +35,7 @@ describe("employees contract", () => {
 
   it("list: empty", async () => {
     server.use(
-      http.get(`${API}/app/employees/list.php`, () => HttpResponse.json([])),
+      http.get(`${API}/v1/employees`, () => HttpResponse.json([])),
     );
     const res = await listEmployees();
     expect(res.data).toHaveLength(0);
@@ -43,7 +43,7 @@ describe("employees contract", () => {
 
   it("list: 4xx permission-denied", async () => {
     server.use(
-      http.get(`${API}/app/employees/list.php`, () =>
+      http.get(`${API}/v1/employees`, () =>
         HttpResponse.json({ message: "denied" }, { status: 403 }),
       ),
     );
@@ -54,14 +54,14 @@ describe("employees contract", () => {
 
   it("list: offline rejects", async () => {
     server.use(
-      http.get(`${API}/app/employees/list.php`, () => HttpResponse.error()),
+      http.get(`${API}/v1/employees`, () => HttpResponse.error()),
     );
     await expect(listEmployees()).rejects.toBeDefined();
   });
 
   it("get_profile: success", async () => {
     server.use(
-      http.get(`${API}/app/employees/get_profile.php`, () =>
+      http.get(`${API}/v1/employees/profile`, () =>
         HttpResponse.json(SAMPLE),
       ),
     );
@@ -71,7 +71,7 @@ describe("employees contract", () => {
 
   it("create: returns created employee", async () => {
     server.use(
-      http.post(`${API}/app/employees/create.php`, () =>
+      http.post(`${API}/v1/employees`, () =>
         HttpResponse.json({ ...SAMPLE, id: 2, name: "جديد" }),
       ),
     );
@@ -81,7 +81,7 @@ describe("employees contract", () => {
 
   it("reactivate: returns reactivated employee", async () => {
     server.use(
-      http.post(`${API}/app/employees/reactivate.php`, () =>
+      http.post(`${API}/v1/employees/reactivate`, () =>
         HttpResponse.json({ ...SAMPLE, status: "active" }),
       ),
     );

@@ -26,7 +26,7 @@ const SAMPLE: AttendanceRecord = {
 describe("attendance contract", () => {
   it("get_branch_attendance: success", async () => {
     server.use(
-      http.get(`${API}/app/attendance/get_branch_attendance.php`, () =>
+      http.get(`${API}/v1/attendance/branch`, () =>
         HttpResponse.json([SAMPLE]),
       ),
     );
@@ -36,7 +36,7 @@ describe("attendance contract", () => {
 
   it("get_branch_attendance: empty", async () => {
     server.use(
-      http.get(`${API}/app/attendance/get_branch_attendance.php`, () =>
+      http.get(`${API}/v1/attendance/branch`, () =>
         HttpResponse.json([]),
       ),
     );
@@ -46,7 +46,7 @@ describe("attendance contract", () => {
 
   it("get_branch_attendance: 4xx permission-denied", async () => {
     server.use(
-      http.get(`${API}/app/attendance/get_branch_attendance.php`, () =>
+      http.get(`${API}/v1/attendance/branch`, () =>
         HttpResponse.json({ message: "denied" }, { status: 403 }),
       ),
     );
@@ -56,7 +56,7 @@ describe("attendance contract", () => {
 
   it("get_branch_attendance: offline rejects", async () => {
     server.use(
-      http.get(`${API}/app/attendance/get_branch_attendance.php`, () =>
+      http.get(`${API}/v1/attendance/branch`, () =>
         HttpResponse.error(),
       ),
     );
@@ -65,7 +65,7 @@ describe("attendance contract", () => {
 
   it("manual_check_in: success", async () => {
     server.use(
-      http.post(`${API}/app/attendance/manual_check_in.php`, () =>
+      http.post(`${API}/v1/attendance/manual`, () =>
         HttpResponse.json(SAMPLE),
       ),
     );
@@ -79,7 +79,7 @@ describe("attendance contract", () => {
 
   it("set_day_status: success", async () => {
     server.use(
-      http.post(`${API}/app/attendance/set_day_status.php`, () =>
+      http.post(`${API}/v1/attendance/day-status`, () =>
         HttpResponse.json({ ...SAMPLE, status: "absent" }),
       ),
     );
@@ -89,7 +89,7 @@ describe("attendance contract", () => {
 
   it("update_note: success", async () => {
     server.use(
-      http.post(`${API}/app/attendance/update_note.php`, () =>
+      http.post(`${API}/v1/attendance/note`, () =>
         HttpResponse.json({ ...SAMPLE, note: "updated" }),
       ),
     );

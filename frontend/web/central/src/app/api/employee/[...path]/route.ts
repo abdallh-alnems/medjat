@@ -11,7 +11,7 @@ import { EMPLOYEE_SESSION_COOKIE } from "../session/route";
  */
 
 const API_HOST =
-  process.env.NEXT_PUBLIC_API_HOST ?? "https://api.medjatapp.com/backend/api";
+  process.env.NEXT_PUBLIC_API_HOST ?? "https://api.medjatapp.com/backend";
 
 const SECURITY_USER = process.env.SECURITY_USER ?? "";
 const SECURITY_KEY = process.env.SECURITY_KEY ?? "";
@@ -22,9 +22,9 @@ const SECURITY_KEY = process.env.SECURITY_KEY ?? "";
  * paths that only expect to be called by the other proxy.
  */
 const ALLOWED_PATHS = new Set([
-  "app/attendance/web_status.php",
-  "app/attendance/check_in.php",
-  "app/attendance/check_out.php",
+  "v1/attendance/web-status",
+  "v1/attendance/check-in",
+  "v1/attendance/check-out",
 ]);
 
 export async function POST(

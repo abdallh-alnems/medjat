@@ -6,7 +6,7 @@ import axios, {
 } from "axios";
 
 const API_HOST =
-  process.env.NEXT_PUBLIC_API_HOST ?? "https://api.medjatapp.com/backend/api";
+  process.env.NEXT_PUBLIC_API_HOST ?? "https://api.medjatapp.com/backend";
 
 const SECURITY_USER = process.env.SECURITY_USER ?? "";
 const SECURITY_KEY = process.env.SECURITY_KEY ?? "";
@@ -192,6 +192,24 @@ export async function apiPost<T>(
   config?: AxiosRequestConfig,
 ) {
   const res = await apiClient.post<T>(endpoint, data, config);
+  return res.data;
+}
+
+/**
+ * Replaces part of a resource. The id goes in the path, not the body: the API
+ * addresses resources rather than taking an action named "update".
+ */
+export async function apiPatch<T>(
+  endpoint: string,
+  data?: Record<string, unknown> | object,
+  config?: AxiosRequestConfig,
+) {
+  const res = await apiClient.patch<T>(endpoint, data, config);
+  return res.data;
+}
+
+export async function apiDelete<T>(endpoint: string, config?: AxiosRequestConfig) {
+  const res = await apiClient.delete<T>(endpoint, config);
   return res.data;
 }
 

@@ -13,7 +13,7 @@ const API = "/api";
 describe("warnings + performance contract", () => {
   it("warnings: add", async () => {
     server.use(
-      http.post(`${API}/app/warnings/add.php`, () =>
+      http.post(`${API}/v1/warnings`, () =>
         HttpResponse.json({ id: 1, employee_id: 1, reason: "تأخير", date: "2026-01-01" }),
       ),
     );
@@ -23,7 +23,7 @@ describe("warnings + performance contract", () => {
 
   it("warnings: delete", async () => {
     server.use(
-      http.post(`${API}/app/warnings/delete.php`, () =>
+      http.delete(`${API}/v1/warnings/:id`, () =>
         HttpResponse.json({ status: "ok" }),
       ),
     );
@@ -33,7 +33,7 @@ describe("warnings + performance contract", () => {
 
   it("performance: list", async () => {
     server.use(
-      http.get(`${API}/app/performance/review_list.php`, () =>
+      http.get(`${API}/v1/performance/reviews`, () =>
         HttpResponse.json([
           { id: 1, employee_id: 1, period: "2026-Q1", rating: 4 },
         ]),
@@ -45,7 +45,7 @@ describe("warnings + performance contract", () => {
 
   it("performance: create + delete", async () => {
     server.use(
-      http.post(`${API}/app/performance/review_create.php`, () =>
+      http.post(`${API}/v1/performance/reviews`, () =>
         HttpResponse.json({ id: 2, employee_id: 1, period: "2026-Q2", rating: 5 }),
       ),
     );
@@ -56,7 +56,7 @@ describe("warnings + performance contract", () => {
     expect(created.id).toBe(2);
 
     server.use(
-      http.post(`${API}/app/performance/review_delete.php`, () =>
+      http.delete(`${API}/v1/performance/reviews/:id`, () =>
         HttpResponse.json({ status: "ok" }),
       ),
     );
@@ -66,7 +66,7 @@ describe("warnings + performance contract", () => {
 
   it("warnings: add — permission denied (403)", async () => {
     server.use(
-      http.post(`${API}/app/warnings/add.php`, () =>
+      http.post(`${API}/v1/warnings`, () =>
         HttpResponse.json(
           { status: "error", message: "permission_denied" },
           { status: 403 },
@@ -79,14 +79,14 @@ describe("warnings + performance contract", () => {
 
   it("warnings: add — offline rejects", async () => {
     server.use(
-      http.post(`${API}/app/warnings/add.php`, () => HttpResponse.error()),
+      http.post(`${API}/v1/warnings`, () => HttpResponse.error()),
     );
     await expect(addWarning(1, "test")).rejects.toBeDefined();
   });
 
   it("performance: list — permission denied (403)", async () => {
     server.use(
-      http.get(`${API}/app/performance/review_list.php`, () =>
+      http.get(`${API}/v1/performance/reviews`, () =>
         HttpResponse.json(
           { status: "error", message: "permission_denied" },
           { status: 403 },
@@ -100,7 +100,7 @@ describe("warnings + performance contract", () => {
 
   it("performance: list — offline rejects", async () => {
     server.use(
-      http.get(`${API}/app/performance/review_list.php`, () =>
+      http.get(`${API}/v1/performance/reviews`, () =>
         HttpResponse.error(),
       ),
     );

@@ -1,4 +1,9 @@
-import { apiGet, apiPost, unwrapList } from "./client";
+import {
+  apiDelete,
+  apiGet,
+  apiPost,
+  unwrapList,
+} from "./client";
 import type {
   LeaveRequest,
   LeaveBalance,
@@ -51,7 +56,7 @@ export async function listLeaves(
   params: LeaveListParams = {},
 ): Promise<LeaveRequest[]> {
   // Backend returns `{ items, page }` with `start_date`/`end_date` (no `days`).
-  const raw = await apiGet<unknown>("app/leaves/list.php", params);
+  const raw = await apiGet<unknown>("v1/leaves", params);
   return unwrapList<RawLeave>(raw, ["items", "data"]).map(toLeave);
 }
 
@@ -65,64 +70,61 @@ export interface CreateLeaveInput {
 }
 
 export function createLeave(data: CreateLeaveInput) {
-  return apiPost<LeaveRequest>("app/leaves/create.php", {
+  return apiPost<LeaveRequest>("v1/leaves", {
     ...data,
     end_date: data.end_date ?? data.start_date,
   });
 }
 
 export function createRecurringLeave(data: Partial<LeaveRequest>) {
-  return apiPost<LeaveRequest>("app/leaves/create_recurring.php", data);
+  return apiPost<LeaveRequest>("v1/leaves/recurring", data);
 }
 
 export function approveLeave(id: number) {
   // Backend expects `leave_id` in the body.
-  return apiPost<LeaveRequest>("app/leaves/approve.php", { leave_id: id });
+  return apiPost<LeaveRequest>("v1/leaves/approve", { leave_id: id });
 }
 
 export function rejectLeave(id: number, reason?: string) {
-  return apiPost<LeaveRequest>("app/leaves/reject.php", {
+  return apiPost<LeaveRequest>("v1/leaves/reject", {
     leave_id: id,
     rejection_reason: reason,
   });
 }
 
 export function convertToAbsence(id: number) {
-  return apiPost<LeaveRequest>("app/leaves/convert_to_absence.php", { leave_id: id });
+  return apiPost<LeaveRequest>("v1/leaves/convert-to-absence", { leave_id: id });
 }
 
 export function getLeaveBalance(employeeId: number) {
-  return apiGet<LeaveBalance>("app/leaves/get_balance.php", {
+  return apiGet<LeaveBalance>("v1/leaves/balance", {
     employee_id: employeeId,
   });
 }
 
 export function rolloverLeaves() {
-  return apiPost<{ status?: string }>("app/leaves/rollover.php", {});
+  return apiPost<{ status?: string }>("v1/leaves/rollover", {});
 }
 
 export async function listCarryoverPolicies(): Promise<CarryoverPolicy[]> {
   // Backend returns `{ policies }`.
-  const raw = await apiGet<unknown>("app/leaves/carryover_policies_list.php");
+  const raw = await apiGet<unknown>("v1/leaves/carryover-policies");
   return unwrapList<CarryoverPolicy>(raw, ["policies", "items", "data"]);
 }
 
 export function saveCarryoverPolicy(data: Partial<CarryoverPolicy>) {
-  return apiPost<CarryoverPolicy>("app/leaves/carryover_policy_save.php", data);
+  return apiPost<CarryoverPolicy>("v1/leaves/carryover-policies", data);
 }
 
 export function deleteCarryoverPolicy(id: number) {
-  return apiPost<{ status?: string }>(
-    "app/leaves/carryover_policy_delete.php",
-    { id },
-  );
+  return apiDelete<{ status?: string }>(`v1/leaves/carryover-policies/${id}`);
 }
 
 export async function listEncashments(): Promise<
   { employee_id: number; employee_name?: string | null; amount: number }[]
 > {
   // Backend returns `{ encashments }`.
-  const raw = await apiGet<unknown>("app/leaves/encashments_list.php");
+  const raw = await apiGet<unknown>("v1/leaves/encashments");
   return unwrapList<{
     employee_id: number;
     employee_name?: string | null;

@@ -20,7 +20,7 @@ const API = "/api";
 describe("support, notifications & audit contract", () => {
   it("tickets list: success", async () => {
     server.use(
-      http.get(`${API}/app/support/list.php`, () =>
+      http.get(`${API}/v1/support/tickets`, () =>
         HttpResponse.json([
           {
             id: 1,
@@ -37,7 +37,7 @@ describe("support, notifications & audit contract", () => {
 
   it("create ticket: success", async () => {
     server.use(
-      http.post(`${API}/app/support/create.php`, () =>
+      http.post(`${API}/v1/support/tickets`, () =>
         HttpResponse.json({
           id: 1,
           subject: "موضوع",
@@ -52,7 +52,7 @@ describe("support, notifications & audit contract", () => {
 
   it("messages with after_id: success", async () => {
     server.use(
-      http.get(`${API}/app/support/messages.php`, () =>
+      http.get(`${API}/v1/support/messages`, () =>
         HttpResponse.json([
           {
             id: 5,
@@ -70,7 +70,7 @@ describe("support, notifications & audit contract", () => {
 
   it("reply: success", async () => {
     server.use(
-      http.post(`${API}/app/support/reply.php`, () =>
+      http.post(`${API}/v1/support/reply`, () =>
         HttpResponse.json({
           id: 6,
           ticket_id: 1,
@@ -86,7 +86,7 @@ describe("support, notifications & audit contract", () => {
 
   it("close ticket: success", async () => {
     server.use(
-      http.post(`${API}/app/support/close.php`, () =>
+      http.post(`${API}/v1/support/close`, () =>
         HttpResponse.json({ status: "ok" }),
       ),
     );
@@ -96,7 +96,7 @@ describe("support, notifications & audit contract", () => {
 
   it("notifications list: 4xx permission-denied", async () => {
     server.use(
-      http.get(`${API}/app/notifications/list.php`, () =>
+      http.get(`${API}/v1/notifications`, () =>
         HttpResponse.json({ message: "denied" }, { status: 403 }),
       ),
     );
@@ -106,7 +106,7 @@ describe("support, notifications & audit contract", () => {
 
   it("mark notification read: success", async () => {
     server.use(
-      http.post(`${API}/app/notifications/read.php`, () =>
+      http.post(`${API}/v1/notifications/read`, () =>
         HttpResponse.json({ status: "ok" }),
       ),
     );
@@ -116,7 +116,7 @@ describe("support, notifications & audit contract", () => {
 
   it("notification prefs: success", async () => {
     server.use(
-      http.get(`${API}/app/auth/notification_prefs.php`, () =>
+      http.get(`${API}/v1/auth/notification-prefs`, () =>
         HttpResponse.json({ email: true, push: false, in_app: true }),
       ),
     );
@@ -126,7 +126,7 @@ describe("support, notifications & audit contract", () => {
 
   it("audit list: success", async () => {
     server.use(
-      http.get(`${API}/app/audit/list.php`, () =>
+      http.get(`${API}/v1/audit`, () =>
         HttpResponse.json([
           {
             id: 1,
@@ -144,7 +144,7 @@ describe("support, notifications & audit contract", () => {
 
   it("tickets list: offline rejects", async () => {
     server.use(
-      http.get(`${API}/app/support/list.php`, () => HttpResponse.error()),
+      http.get(`${API}/v1/support/tickets`, () => HttpResponse.error()),
     );
     await expect(listTickets()).rejects.toBeDefined();
   });
