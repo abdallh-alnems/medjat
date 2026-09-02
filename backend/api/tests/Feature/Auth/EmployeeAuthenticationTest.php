@@ -21,6 +21,7 @@ use Tests\TestCase;
 final class EmployeeAuthenticationTest extends TestCase
 {
     use CreatesFixtures;
+
     // Not RefreshDatabase: the schema is owned by the old backend's migration
     // ledger, so tests read a real copy of it and roll back their own writes.
     use DatabaseTransactions;

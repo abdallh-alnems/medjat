@@ -23,12 +23,35 @@ return Application::configure(basePath: dirname(__DIR__))
     // discovers them. Both entry points to the scheduled work — the CLI and
     // the cron URL — now sit in one directory with the code they run.
     ->withCommands([
+        App\Modules\Cron\Console\BaselineSchemaCommand::class,
         App\Modules\Cron\Console\CatchUpAbsencesCommand::class,
         App\Modules\Cron\Console\PurgeKioskCapturesCommand::class,
         App\Modules\Cron\Console\RunDailyAlertsCommand::class,
         App\Shared\Docs\GenerateOpenApiCommand::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
+        // Who is allowed to tell us the client's address.
+        //
+        // Empty by default, and that is the correct setting for this
+        // deployment: nginx maps Cloudflare's CF-Connecting-IP onto REMOTE_ADDR
+        // before PHP sees the request, so the address is already right and
+        // trusting a forwarded header on top of it would let a client name its
+        // own IP by sending X-Forwarded-For. That would be worse than the
+        // problem, because the address is what rate limiting buckets on and
+        // what attendance_security_logs records.
+        //
+        // It is configured explicitly rather than left unset so the decision is
+        // visible. If this ever runs behind a proxy that does *not* rewrite
+        // REMOTE_ADDR, set TRUSTED_PROXIES to that proxy's addresses — never to
+        // '*', which trusts whatever the caller claims.
+        $proxies = array_values(array_filter(
+            array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', '')))
+        ));
+
+        if ($proxies !== []) {
+            $middleware->trustProxies(at: $proxies);
+        }
+
         // Every API request, before anything can produce a message: the reply
         // should be in the language the caller asked for, including the replies
         // from the guards below that reject it.
@@ -57,7 +80,13 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // 'v1/*', not Laravel's default 'api/*': apiPrefix is empty here, so
+        // every endpoint is /v1/… and the stock condition matched nothing at
+        // all. Clients that send Accept: application/json were carried by
+        // expectsJson(), which is why it went unnoticed — but a client that
+        // omits the header would have been handed an HTML error page by an API
+        // that answers JSON everywhere else.
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+            fn (Request $request) => $request->is('v1/*') || $request->expectsJson(),
         );
     })->create();

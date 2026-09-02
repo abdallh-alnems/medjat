@@ -77,6 +77,18 @@ final class TenantClock
         return self::now($tenantId)->format('Y-m-d');
     }
 
+    /**
+     * The current year as the company experiences it.
+     *
+     * Its own method because the leave balance is keyed by year: for the first
+     * hours of the first of January, a bare date('Y') under UTC still answers
+     * with the year that just ended, and hands the employee last year's balance.
+     */
+    public static function year(int $tenantId): int
+    {
+        return (int) self::now($tenantId)->format('Y');
+    }
+
     /** The wall-clock time (H:i:s) as the company experiences it. */
     public static function time(int $tenantId): string
     {

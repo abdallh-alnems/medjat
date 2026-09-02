@@ -11,6 +11,7 @@ use App\Modules\Attendance\Domain\AttendanceMethod;
 use App\Modules\Attendance\Services\ManualAttendanceAction;
 use App\Modules\Audit\Domain\AuditLog;
 use App\Shared\Http\ApiResponse;
+use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -41,7 +42,7 @@ final class ManualCheckInController
 
         $employeeId = Value::int($request->input('employee_id'));
         $branchId = Value::int($request->input('branch_id'));
-        $date = Value::string($request->input('date'), date('Y-m-d'));
+        $date = Value::string($request->input('date'), TenantClock::date($tenantId));
         $checkIn = $this->time($request, 'check_in_time');
         $checkOut = $this->time($request, 'check_out_time');
         $note = trim(Value::string($request->input('notes')));

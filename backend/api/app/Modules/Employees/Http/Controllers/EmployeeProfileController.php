@@ -14,6 +14,7 @@ use App\Modules\Employees\Domain\Suspension;
 use App\Modules\Leave\Domain\LeaveBalance;
 use App\Shared\Http\ApiResponse;
 use App\Shared\Http\Middleware\RequireBranchAccess;
+use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,7 +36,7 @@ final class EmployeeProfileController
 
         // Reconciled first, then read: the status shown has to reflect the
         // reactivation rather than the state a moment before it.
-        Suspension::reconcileExpired($tenantId, date('Y-m-d'));
+        Suspension::reconcileExpired($tenantId, TenantClock::date($tenantId));
 
         $employee = Employee::query()->forTenant($tenantId)->whereKey($id)->first();
         if ($employee === null) {
@@ -46,7 +47,7 @@ final class EmployeeProfileController
             'employee' => $this->present($employee, $tenantId),
             'documents' => DocumentChecklist::forEmployee($employee->id, $tenantId),
             'warnings' => $this->warnings($employee->id, $tenantId),
-            'leave_balance' => LeaveBalance::forEmployee($employee->id, $tenantId, (int) date('Y')),
+            'leave_balance' => LeaveBalance::forEmployee($employee->id, $tenantId, TenantClock::year($tenantId)),
             'activation_code' => $this->pendingCode($employee),
             'categories' => $this->categories($employee->id, $tenantId),
             'cycle_start_day' => $this->cycleStartDay($employee, $tenantId),
@@ -93,7 +94,7 @@ final class EmployeeProfileController
     {
         $tenantId = Value::int($request->attributes->get('tenant_id'));
         $employeeId = Value::int($request->query('employee_id'));
-        $year = Value::int($request->query('year'), (int) date('Y'));
+        $year = Value::int($request->query('year'), TenantClock::year($tenantId));
 
         if ($employeeId <= 0) {
             throw new ApiFailure(__('messages.employee_id_required'), 422, 'employee_id_required');

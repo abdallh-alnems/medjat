@@ -198,6 +198,60 @@ final class SuperAdminAuthTest extends TestCase
         ]);
     }
 
+    public function test_guessing_the_operator_password_is_locked_out_per_username(): void
+    {
+        // The most privileged credential in the product: not scoped to any
+        // company, and able to act on behalf of every one of them. It used to
+        // have nothing in front of it but the shared 600-a-minute per-IP
+        // throttle, while an employee's six-digit PIN had a per-phone limit and
+        // an account lockout. Ten wrong passwords is not somebody mistyping.
+        for ($attempt = 0; $attempt < 10; $attempt++) {
+            $this->login(['username' => $this->username, 'password' => 'wrong-'.$attempt])
+                ->assertStatus(401);
+        }
+
+        $this->login(['username' => $this->username, 'password' => 'wrong-again'])
+            ->assertStatus(429)
+            ->assertJsonPath('error_code', 'rate_limited');
+
+        // And the right password does not get through either, or the lockout
+        // would only be an inconvenience to whoever guessed correctly.
+        $this->login(['username' => $this->username, 'password' => self::PASSWORD])
+            ->assertStatus(429);
+    }
+
+    public function test_the_lockout_counts_a_username_not_an_account(): void
+    {
+        // Keyed on the username as typed. A name with no account behind it must
+        // be metered too — otherwise an attacker gets an unmetered channel
+        // simply by misspelling, and the per-IP ceiling is all that is left.
+        for ($attempt = 0; $attempt < 10; $attempt++) {
+            $this->login(['username' => 'no-such-operator', 'password' => 'wrong-'.$attempt])
+                ->assertStatus(401);
+        }
+
+        $this->login(['username' => 'no-such-operator', 'password' => 'x'])
+            ->assertStatus(429);
+
+        // A different operator is unaffected: one locked name must not lock the
+        // panel for everybody.
+        $this->login(['username' => $this->username, 'password' => self::PASSWORD])
+            ->assertOk();
+    }
+
+    public function test_a_successful_sign_in_clears_the_count(): void
+    {
+        for ($attempt = 0; $attempt < 9; $attempt++) {
+            $this->login(['username' => $this->username, 'password' => 'wrong'])->assertStatus(401);
+        }
+
+        $this->login(['username' => $this->username, 'password' => self::PASSWORD])->assertOk();
+
+        // Back to a full allowance, so somebody who mistypes on a bad morning
+        // is not one slip away from a lockout for the rest of the window.
+        $this->login(['username' => $this->username, 'password' => 'wrong'])->assertStatus(401);
+    }
+
     public function test_a_short_or_unchanged_new_password_is_refused(): void
     {
         $token = $this->openSession();

@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Notifications\Services;
 
 use App\Modules\Notifications\Domain\PushSender;
+use App\Shared\Async\AfterResponse;
 use App\Support\Value;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Contract\Messaging;
 use Kreait\Firebase\Messaging\CloudMessage;
 use Kreait\Firebase\Messaging\Notification;
-use Throwable;
 
 /**
  * The production sender, over FCM.
@@ -77,24 +76,25 @@ final class FirebasePushSender implements PushSender
             return false;
         }
 
-        try {
-            // An empty key would produce a malformed data block rather than a
-            // refused send, so it is dropped here.
-            $payload = array_filter($data, static fn (string $key): bool => $key !== '', ARRAY_FILTER_USE_KEY);
+        // An empty key would produce a malformed data block rather than a
+        // refused send, so it is dropped here.
+        $payload = array_filter($data, static fn (string $key): bool => $key !== '', ARRAY_FILTER_USE_KEY);
 
+        // The token lookup above stays on the request — it is one indexed read,
+        // and its answer is what the return value means. The round trip to
+        // Google is what waits. `true` here is "accepted for delivery", which
+        // is what the contract promises and all it ever promised: the send was
+        // already best-effort when it was synchronous.
+        AfterResponse::run('Push delivery', function () use ($tokens, $title, $body, $payload): void {
             $message = CloudMessage::new()
                 ->withNotification(Notification::create($title, $body))
                 ->withData($payload);
 
             /** @var list<string> $tokens */
             $this->messaging()->sendMulticast($message, $tokens);
+        }, ['admin_id' => $adminId]);
 
-            return true;
-        } catch (Throwable $e) {
-            Log::warning('Push delivery failed', ['admin_id' => $adminId, 'exception' => $e]);
-
-            return false;
-        }
+        return true;
     }
 
     /**
@@ -106,19 +106,15 @@ final class FirebasePushSender implements PushSender
             return false;
         }
 
-        try {
-            // Data-only, deliberately: this is a signal the app acts on, not
-            // something to show. A notification block here would put "system
-            // maintenance" on every lock screen in the country.
-            $payload = array_filter($data, static fn (string $key): bool => $key !== '', ARRAY_FILTER_USE_KEY);
+        // Data-only, deliberately: this is a signal the app acts on, not
+        // something to show. A notification block here would put "system
+        // maintenance" on every lock screen in the country.
+        $payload = array_filter($data, static fn (string $key): bool => $key !== '', ARRAY_FILTER_USE_KEY);
 
+        AfterResponse::run('Topic push', function () use ($topic, $payload): void {
             $this->messaging()->send(CloudMessage::new()->toTopic($topic)->withData($payload));
+        }, ['topic' => $topic]);
 
-            return true;
-        } catch (Throwable $e) {
-            Log::warning('Topic push failed', ['topic' => $topic, 'exception' => $e]);
-
-            return false;
-        }
+        return true;
     }
 }

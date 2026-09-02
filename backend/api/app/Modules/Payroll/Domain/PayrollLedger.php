@@ -138,17 +138,25 @@ final class PayrollLedger
         $employeeId = Value::int($slip->employee_id);
         $month = Value::string($slip->month);
 
-        $this->refreeze($payrollId, $tenantId, $employeeId, $month);
+        // One transaction for all three writes. They are one decision: the
+        // figures are frozen, the slip is marked approved, and the encashment
+        // the frozen figures already paid out is marked spent. Stopping between
+        // the second and the third leaves a slip that has paid an encashment
+        // the encashment table still believes is owed — so next cycle pays it
+        // again, and nothing in the data says it was already settled.
+        DB::transaction(function () use ($payrollId, $tenantId, $adminId, $employeeId, $month): void {
+            $this->refreeze($payrollId, $tenantId, $employeeId, $month);
 
-        DB::table('payroll')
-            ->where('id', $payrollId)->where('tenant_id', $tenantId)
-            ->update([
-                'status' => 'approved',
-                'approved_by' => $adminId,
-                'approved_at' => DB::raw('NOW()'),
-            ]);
+            DB::table('payroll')
+                ->where('id', $payrollId)->where('tenant_id', $tenantId)
+                ->update([
+                    'status' => 'approved',
+                    'approved_by' => $adminId,
+                    'approved_at' => DB::raw('NOW()'),
+                ]);
 
-        $this->encashments->markPaid([$employeeId], $month, $tenantId);
+            $this->encashments->markPaid([$employeeId], $month, $tenantId);
+        });
 
         return ['id' => $payrollId, 'employee_id' => $employeeId, 'month' => $month];
     }
@@ -232,27 +240,33 @@ final class PayrollLedger
             return [];
         }
 
-        foreach ($touched as $row) {
-            $this->refreeze(
-                Value::int($row['id'] ?? null),
-                $tenantId,
-                Value::int($row['employee_id'] ?? null),
-                Value::string($row['month'] ?? null),
-            );
-        }
+        // Same reasoning as the single approval, and more of it: a bulk run
+        // stopping half way would leave some slips frozen but still draft and
+        // some encashments paid but unmarked, with nothing to say where it got
+        // to. All or none.
+        DB::transaction(function () use ($touched, $tenantId, $adminId): void {
+            foreach ($touched as $row) {
+                $this->refreeze(
+                    Value::int($row['id'] ?? null),
+                    $tenantId,
+                    Value::int($row['employee_id'] ?? null),
+                    Value::string($row['month'] ?? null),
+                );
+            }
 
-        DB::table('payroll')
-            ->whereIn('id', array_map(static fn (array $r): int => Value::int($r['id'] ?? null), $touched))
-            ->where('tenant_id', $tenantId)
-            ->update(['status' => 'approved', 'approved_by' => $adminId, 'approved_at' => DB::raw('NOW()')]);
+            DB::table('payroll')
+                ->whereIn('id', array_map(static fn (array $r): int => Value::int($r['id'] ?? null), $touched))
+                ->where('tenant_id', $tenantId)
+                ->update(['status' => 'approved', 'approved_by' => $adminId, 'approved_at' => DB::raw('NOW()')]);
 
-        $byMonth = [];
-        foreach ($touched as $row) {
-            $byMonth[Value::string($row['month'] ?? null)][] = Value::int($row['employee_id'] ?? null);
-        }
-        foreach ($byMonth as $month => $employeeIds) {
-            $this->encashments->markPaid($employeeIds, (string) $month, $tenantId);
-        }
+            $byMonth = [];
+            foreach ($touched as $row) {
+                $byMonth[Value::string($row['month'] ?? null)][] = Value::int($row['employee_id'] ?? null);
+            }
+            foreach ($byMonth as $month => $employeeIds) {
+                $this->encashments->markPaid($employeeIds, (string) $month, $tenantId);
+            }
+        });
 
         return $touched;
     }

@@ -1,47 +1,50 @@
-<laravel-boost-guidelines>
-# Laravel Application
+# Working in backend/api
 
-This repository contains a Laravel application. Complete the following setup before working on the user's request.
+Read `README.md` first — it describes the layout, the four principals, the rules
+that bite, and how to deploy. This file is the short version for an agent.
 
-## Prerequisites
+## Before you push
 
-Verify that PHP and Composer are available:
+Three gates, all of which must be green. CI runs the same three plus a check
+that `docs/openapi.json` is current.
 
-```sh
-php -v
-composer -V
+```bash
+php vendor/bin/pint                    # formatting
+php vendor/bin/phpstan analyse         # static analysis, level max
+php artisan test                       # against real MySQL, not SQLite
+php artisan medjat:openapi             # after adding or changing a route
 ```
 
-If either command is unavailable, detect the user's operating system and install the prerequisites with the appropriate command:
+Use the MAMP binary, not the system one:
+`/Applications/MAMP/bin/php/php8.4.15/bin/php`. MySQL is on `127.0.0.1:8889`,
+`root`/`root`.
 
-macOS:
+## The traps, in the order they have actually bitten
 
-```sh
-/bin/bash -c "$(curl -fsSL https://php.new/install/mac/8.5)"
-```
+- **Time is per tenant.** PHP runs UTC and MySQL runs the server's zone. Resolve
+  "now" and "today" through `Shared\Time\TenantClock`, never a bare `date()` or
+  `now()`, and compute expiries in SQL (`DATE_ADD(NOW(), INTERVAL ? SECOND)`) so
+  they are not born expired. Zone *names*, never fixed offsets.
+- **Read the enum before writing to it.** `SELECT COLUMN_TYPE FROM
+  information_schema.COLUMNS`. MySQL truncates an unknown ENUM value silently,
+  and six bugs here came from inferring values from surrounding code. The same
+  goes for column names: check the schema rather than guessing from a sibling.
+- **Writes are POST, not PUT.** The apps in the stores still speak POST.
+- **Never trust a client's verdict.** The phone extracts a face embedding; the
+  server scores it.
+- **Migrations assume an empty database.** No `hasTable` guards, no MariaDB
+  `IF NOT EXISTS` — each runs once, in order. Adopting an existing database is
+  `php artisan medjat:baseline`, not `migrate`.
+- **Slow side effects go through `Shared\Async\AfterResponse`**, not inline and
+  not the queue. See README, "Rules that bite".
 
-Windows PowerShell:
+## Where things go
 
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://php.new/install/windows/8.5'))
-```
+A subject with an HTTP surface is a Module; a subject without one, reached only
+by other subjects, is Shared. Modules may depend on Shared and on each other;
+nothing in Shared reaches back into a Module. A subject owns all its entry
+points, including its console commands.
 
-Linux:
-
-```sh
-/bin/bash -c "$(curl -fsSL https://php.new/install/linux/8.5)"
-```
-
-After installation, ask the user to restart their terminal. If the agent needs the restarted shell to continue, ask the user to reopen their terminal and rerun their original prompt.
-
-## Agent Setup
-
-Install Laravel Boost from the application root before making application changes:
-
-```sh
-composer require laravel/boost --dev
-php artisan boost:install
-```
-
-Boost replaces these bootstrap instructions with guidelines tailored to the application. After installation, read `AGENTS.md` again and continue with the user's original request using the generated guidelines.
-</laravel-boost-guidelines>
+Everything this application configures lives in `config/medjat.php`, because
+`env()` returns null outside `config/` once the configuration is cached — which
+every deploy does.

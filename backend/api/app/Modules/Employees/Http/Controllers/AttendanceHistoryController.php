@@ -8,6 +8,7 @@ use App\Exceptions\ApiFailure;
 use App\Models\Employee;
 use App\Modules\Employees\Services\AttendanceCalendar;
 use App\Shared\Http\ApiResponse;
+use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -37,7 +38,7 @@ final class AttendanceHistoryController
             throw new ApiFailure(__('messages.employee_not_found'), 404);
         }
 
-        [$from, $to] = $this->range($request);
+        [$from, $to] = $this->range($request, $tenantId);
 
         // Best-effort: the calendar renders correct statuses regardless, and a
         // failure here must not cost somebody the view of their own month.
@@ -63,13 +64,16 @@ final class AttendanceHistoryController
      *
      * @return array{string, string}
      */
-    private function range(Request $request): array
+    private function range(Request $request, int $tenantId): array
     {
         $from = Value::string($request->query('from'));
         $to = Value::string($request->query('to'));
 
         if ($from === '' || $to === '') {
-            $month = Value::string($request->query('month'), date('Y-m'));
+            $month = Value::string(
+                $request->query('month'),
+                substr(TenantClock::date($tenantId), 0, 7)
+            );
 
             if (preg_match('/^\d{4}-\d{2}$/', $month) !== 1) {
                 throw new ApiFailure('Invalid month format (expected YYYY-MM)', 422, 'invalid_month_format_expected_yyyy');

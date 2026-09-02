@@ -8,13 +8,12 @@ use App\Exceptions\ApiFailure;
 use App\Mail\AuthActionMail;
 use App\Modules\Auth\Domain\AuthActionLink;
 use App\Modules\Auth\Services\FirebaseAccountManager;
+use App\Shared\Async\AfterResponse;
 use App\Shared\Http\ApiResponse;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Throwable;
 
 /**
  * Ports api/app/auth/send_password_reset.php and send_verification.php.
@@ -53,7 +52,13 @@ final class SendAuthActionController
             throw new ApiFailure(__('messages.email_invalid'), 400, 'invalid_email');
         }
 
-        try {
+        // After the response, not before it. This answers success no matter
+        // what happens below — that is the enumeration guard — so there is
+        // nothing the caller learns by waiting, and two network round trips
+        // (Firebase for the link, then SMTP) is a long time to say nothing.
+        // Failures are swallowed exactly as before: a send that failed must
+        // look identical to an address nobody has registered.
+        AfterResponse::run('Auth action email', function () use ($kind, $email, $lang, $name): void {
             $link = $kind === AuthActionMail::RESET
                 ? $this->firebase->passwordResetLink($email)
                 : $this->firebase->emailVerificationLink($email);
@@ -61,11 +66,7 @@ final class SendAuthActionController
             if ($link !== null) {
                 Mail::to($email)->send(new AuthActionMail($kind, $lang, $name, AuthActionLink::rebase($link)));
             }
-        } catch (Throwable $e) {
-            // Swallowed deliberately. A send failure must produce the same
-            // response as an address nobody has registered.
-            Log::warning('Auth action email not sent', ['kind' => $kind, 'exception' => $e->getMessage()]);
-        }
+        }, ['kind' => $kind]);
 
         return ApiResponse::success(['success' => true]);
     }

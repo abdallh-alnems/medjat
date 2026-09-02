@@ -9,6 +9,8 @@ use App\Models\Employee;
 use App\Modules\Auth\Services\FirebaseTokenVerifier;
 use App\Shared\Time\TenantClock;
 use App\Support\Value;
+use DateTimeImmutable;
+use DateTimeZone;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
@@ -106,6 +108,37 @@ final class ManualAttendanceTest extends TestCase
         $this->assertSame(45, Value::int($row->overtime_minutes));
         $this->assertSame(510, Value::int($row->worked_minutes));
         $this->assertSame('manual', $row->check_in_method);
+    }
+
+    public function test_an_omitted_date_lands_on_the_companys_day_not_the_servers(): void
+    {
+        // PHP runs UTC. A company far enough east is already on the next day
+        // while the server still thinks it is this one, and the default used to
+        // be a bare date('Y-m-d') — so an administrator in Kiritimati recording
+        // this morning's arrival got it filed against yesterday, silently, and
+        // only for part of each day.
+        DB::table('tenants')->where('id', $this->tenantId)->update(['timezone' => 'Pacific/Kiritimati']);
+        TenantClock::flush();
+
+        // 22:00 UTC is already 12:00 the following day there.
+        $this->travelTo(new DateTimeImmutable('2026-03-10 22:00:00', new DateTimeZone('UTC')));
+
+        $companyDate = TenantClock::date($this->tenantId);
+        $this->assertSame('2026-03-11', $companyDate, 'the fixture no longer straddles midnight');
+
+        [, $token] = $this->admin();
+
+        $this->withHeader('X-Firebase-Token', $token)
+            ->postJson('/v1/attendance/manual', [
+                'employee_id' => $this->employee->id,
+                'branch_id' => $this->branchId,
+                'check_in_time' => '09:00:00',
+            ])->assertOk();
+
+        $this->assertDatabaseHas('attendance', [
+            'employee_id' => $this->employee->id,
+            'date' => $companyDate,
+        ]);
     }
 
     public function test_a_check_in_alone_will_not_overwrite_a_real_punch(): void

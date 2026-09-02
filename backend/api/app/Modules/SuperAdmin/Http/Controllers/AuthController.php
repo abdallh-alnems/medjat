@@ -14,6 +14,7 @@ use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 
 /**
  * Ports of api/admin/auth/*.php.
@@ -25,6 +26,15 @@ use Illuminate\Support\Facades\DB;
 final class AuthController
 {
     private const MIN_PASSWORD_LENGTH = 8;
+
+    /**
+     * Tighter than the employee channel's twenty, because exactly one person
+     * uses this panel: ten wrong passwords in a quarter of an hour is not
+     * somebody who mistyped.
+     */
+    private const LOGIN_ATTEMPTS = 10;
+
+    private const LOGIN_WINDOW_SECONDS = 900;
 
     public function __construct(private readonly FirebaseTokenVerifier $verifier) {}
 
@@ -99,12 +109,25 @@ final class AuthController
             throw new ApiFailure(__('messages.password_unchanged'), 422, 'password_unchanged');
         }
 
+        // Also metered. Somebody holding a stolen session token can reach this
+        // endpoint, and guessing the current password here is how they would
+        // turn a borrowed session into a permanent one.
+        $key = 'super_password_change:'.$admin->id;
+
+        if (RateLimiter::tooManyAttempts($key, self::LOGIN_ATTEMPTS)) {
+            throw new ApiFailure(__('messages.too_many_attempts_soon'), 429, 'rate_limited');
+        }
+
         if (! password_verify($current, $admin->password_hash)) {
+            RateLimiter::hit($key, self::LOGIN_WINDOW_SECONDS);
+
             // Logged, because a run of these is somebody guessing.
             SuperAdminAudit::record($admin->id, 'auth.change_password_failed', 'super_admin', $admin->id);
 
             throw new ApiFailure(__('messages.current_password_wrong'), 401, 'wrong_password');
         }
+
+        RateLimiter::clear($key);
 
         DB::table('super_admins')->where('id', $admin->id)->update([
             'password_hash' => password_hash($new, PASSWORD_DEFAULT),
@@ -168,6 +191,24 @@ final class AuthController
             throw new ApiFailure('username and password are required', 422, 'credentials_required');
         }
 
+        // Per-username, on top of the shared per-IP throttle. This is the most
+        // privileged credential in the product — not scoped to any company, and
+        // able to act on behalf of every one of them — and until now it was the
+        // only password in the system with nothing but that shared 600-a-minute
+        // ceiling in front of it, while an employee's six-digit PIN had both a
+        // per-phone limit and an account lockout. The order was backwards.
+        //
+        // Keyed on the username as typed: a wrong one has no account to key on,
+        // and letting unknown usernames through unmetered would hand an
+        // attacker a free channel simply by misspelling.
+        $key = 'super_login:'.mb_strtolower($username);
+
+        if (RateLimiter::tooManyAttempts($key, self::LOGIN_ATTEMPTS)) {
+            throw new ApiFailure(__('messages.too_many_attempts_soon'), 429, 'rate_limited');
+        }
+
+        RateLimiter::hit($key, self::LOGIN_WINDOW_SECONDS);
+
         $admin = SuperAdmin::query()->where('username', $username)->first();
 
         // One message for every failure — a wrong username and a wrong password
@@ -185,6 +226,8 @@ final class AuthController
         if (! $verified || $admin === null) {
             throw new ApiFailure(__('messages.credentials_invalid'), 401, 'invalid_credentials');
         }
+
+        RateLimiter::clear($key);
 
         $session = $this->start($admin, $request);
 

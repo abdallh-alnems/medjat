@@ -124,6 +124,16 @@ but the apps in the stores still speak POST.
 every attempt is scored and nobody is refused, until the threshold is tuned on
 their own data.
 
+**Announcements happen after the answer.** A push or a transactional email is
+telling somebody about something that has already happened, so it has no
+business on the request's critical path — the old backend flushed the response
+first and sent afterwards, and losing that put an SMTP round trip inside every
+sign-in. `Shared\Async\AfterResponse::run()` puts it back. Not the queue: a
+queued job needs a worker this project has never run, and every notification in
+the product would stop the first time it died. The exception is the operator's
+own password-reset send, which reports failure honestly because somebody is
+watching one named account and "the email never arrived" is the support call.
+
 **Read the enum before writing to it.** `SELECT COLUMN_TYPE FROM
 information_schema.COLUMNS`. MySQL truncates an unknown ENUM value silently, and
 six bugs in this codebase came from inferring values from surrounding code —
@@ -185,6 +195,76 @@ backend's ledger still creates — `expense_claims`, `kiosk_pins` and
 `shift_swap_requests` — are deliberately absent: each was dropped by a migration
 that now lives in the old `migrations/archive/`, and no code in either backend
 refers to them.
+
+## Deploying
+
+Same four rules as the old backend, for the same reasons:
+
+1. **Never edit a file on the server.** Edit it here, then run `./deploy.sh`. A
+   file changed over SSH is invisible to git and gets reverted by the next
+   deploy.
+2. **Never run SQL on the server by hand.** Write a migration and let the deploy
+   apply it.
+3. **Never edit a migration that has already run** — write a new one.
+4. **Read `--dry-run` before you run the real thing.**
+
+```
+./deploy.sh --dry-run     # what would change, plus migrate:status
+./deploy.sh               # code, deps, migrations, caches, reload, smoke test
+./deploy.sh --code-only   # skip migrations
+```
+
+The smoke test is the part worth keeping honest. It asserts the application
+boots, that each of the four guards still refuses an unauthenticated call, and —
+because the docroot is `public/` and a vhost pointed one directory too high
+fails *silently* while every other URL keeps working — that `.env`, the source
+tree and `uploads/` are not readable over HTTP.
+
+`config:cache` runs on every deploy, which is why every tuned value lives in
+`config/medjat.php`: `env()` returns null outside `config/` once the cache
+exists, and a limit that silently becomes its default is worse than one that is
+wrong out loud.
+
+## Cutover
+
+The first time this application meets the production database is the one step
+`deploy.sh` will not do for you.
+
+Production has all 85 tables and an empty `migrations` table — the old backend
+recorded applied files in `schema_migrations` instead. The migrations here build
+every table from empty and none of them guards with `hasTable`, deliberately:
+MySQL 8 has no `ADD COLUMN IF NOT EXISTS`, so each runs once, in order. Point
+`artisan migrate` at production and it stops on `CREATE TABLE tenants`.
+
+```bash
+php artisan medjat:baseline --pretend   # read the plan
+php artisan medjat:baseline             # adopt the schema
+```
+
+It records the migrations whose tables already exist as applied without running
+them, and actually runs the ones whose tables are genuinely absent — which is
+how Laravel's own `cache` and `jobs` tables get created, since the old backend
+never had them. Deciding from the database rather than from the filenames is the
+point: skipping a table that was never created is the failure worth preventing.
+
+It is safe to repeat — anything already recorded is left alone — so an
+interrupted run can simply be run again. After it, `artisan migrate` behaves
+normally and `deploy.sh` is the whole story.
+
+Three things the server must carry across, none of which lives in this repo:
+
+- **`.env`**, hand-written, holding the database password, `SECURITY_USER` /
+  `SECURITY_KEY`, `CRON_SECRET`, `FIREBASE_CREDENTIALS_PATH` and
+  `CORS_ALLOWED_ORIGINS`. `.env.example` is the reference for what it must
+  contain.
+- **`UPLOADS_PATH`**, pointed at the existing `uploads/` directory. Payslips,
+  identity documents and face captures are already in there and are referenced
+  by path from rows in the database.
+- **The nginx `real_ip` block** that maps `CF-Connecting-IP` onto `REMOTE_ADDR`.
+  Without it every request appears to come from Cloudflare: one rate-limit
+  bucket for the whole platform, and an attendance security log that records the
+  wrong address for every entry. See `TRUSTED_PROXIES` in `.env.example` for the
+  case where a proxy does *not* rewrite it.
 
 ## The API description
 

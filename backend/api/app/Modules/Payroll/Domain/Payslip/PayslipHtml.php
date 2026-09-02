@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Payroll\Domain\Payslip;
 
+use App\Shared\Time\TenantClock;
 use App\Support\Value;
 
 /**
@@ -46,7 +47,11 @@ final class PayslipHtml
         $resultLabel = $partial ? 'المستحق حتى اليوم' : 'صافي الراتب';
         $result = Value::float($breakdown[$partial ? 'earned_to_date' : 'net_salary'] ?? null);
 
-        $today = date('Y-m-d');
+        // Printed on the slip as "issued on", so it has to be the company's
+        // date. A slip generated at 01:00 in Cairo would otherwise be stamped
+        // with yesterday, which is exactly the kind of thing an employee
+        // queries and nobody can explain.
+        $today = TenantClock::date(Value::int($tenant['id'] ?? null));
         $cycleFrom = self::clean(Value::string($breakdown['cycle_start'] ?? null));
         $cycleTo = self::clean(Value::string($breakdown['cycle_end'] ?? null));
 

@@ -8,6 +8,7 @@ use App\Exceptions\ApiFailure;
 use App\Models\ActivationCode;
 use App\Modules\Audit\Domain\AuditLog;
 use App\Shared\Contact\PhoneValidator;
+use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Support\Facades\DB;
 
@@ -56,7 +57,7 @@ final class CreateEmployeeAction
         }
 
         $phone = $this->phone($input);
-        $hireDate = Value::string($input['hire_date'] ?? null, date('Y-m-d'));
+        $hireDate = Value::string($input['hire_date'] ?? null, TenantClock::date($tenantId));
 
         $values = $this->baseValues($input, $tenantId, $branchId, $name, $phone, $hireDate);
 
@@ -114,7 +115,10 @@ final class CreateEmployeeAction
         }
 
         if (! empty($input['auto_terminate_at'])) {
-            $values['auto_terminate_at'] = $this->autoTerminateAt(Value::string($input['auto_terminate_at']));
+            $values['auto_terminate_at'] = $this->autoTerminateAt(
+                Value::string($input['auto_terminate_at']),
+                $tenantId
+            );
         }
 
         foreach (self::COMPLIANCE_FIELDS as $field) {
@@ -175,15 +179,18 @@ final class CreateEmployeeAction
         return $days === [] ? null : implode(',', $days);
     }
 
-    private function autoTerminateAt(string $date): string
+    private function autoTerminateAt(string $date, int $tenantId): string
     {
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
             throw new ApiFailure('Invalid auto_terminate_at date. Use Y-m-d', 400, 'invalid_date');
         }
 
         // A fixed-term contract that ends today or earlier is a contradiction:
-        // the employee is being created already finished.
-        if ($date <= date('Y-m-d')) {
+        // the employee is being created already finished. "Today" is the
+        // company's, not the server's: under UTC a Gulf company creating a
+        // contract that ends tomorrow would be refused for the first hours of
+        // its working day.
+        if ($date <= TenantClock::date($tenantId)) {
             throw new ApiFailure('auto_terminate_at must be a future date', 422, 'auto_terminate_at_future_date');
         }
 

@@ -6,8 +6,10 @@ namespace Tests\Feature\Payroll;
 
 use App\Modules\Payroll\Domain\PayrollLedger;
 use App\Support\Value;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 use Tests\Support\CreatesFixtures;
 use Tests\TestCase;
 
@@ -160,6 +162,46 @@ final class PayrollLedgerTest extends TestCase
 
         $this->assertSame('approved', $this->slipStatus());
         $this->assertSame('2500.00', DB::table('payroll')->where('id', $this->slipId())->value('net_salary'));
+    }
+
+    public function test_approval_is_all_or_nothing(): void
+    {
+        // The three writes approval makes are one decision: freeze the figures,
+        // flip the status, mark the encashment those frozen figures already
+        // paid. They used to run unwrapped, so stopping between the second and
+        // the third left a slip marked approved having paid an encashment the
+        // encashment table still believed was owed — and next cycle paid it
+        // again, with nothing in the data to say it had been settled.
+        $this->ledger->generate($this->tenantId, self::MONTH, null);
+
+        DB::table('leave_encashments')->insert([
+            'tenant_id' => $this->tenantId,
+            'employee_id' => $this->employeeId,
+            'source_year' => 2025,
+            'days' => 5,
+            'daily_rate' => 100,
+            'amount' => 500,
+            'status' => 'pending',
+        ]);
+
+        // Fails the run at its last write, which is the worst moment: everything
+        // before it has already succeeded.
+        DB::listen(function (QueryExecuted $query): void {
+            if (str_contains($query->sql, 'leave_encashments') && str_starts_with($query->sql, 'update')) {
+                throw new RuntimeException('the connection dropped');
+            }
+        });
+
+        try {
+            $this->ledger->approve($this->slipId(), $this->tenantId, $this->adminId);
+            $this->fail('the approval should have carried the failure out');
+        } catch (RuntimeException) {
+            // Expected — what matters is what it left behind.
+        }
+
+        $this->assertSame('draft', $this->slipStatus(), 'the slip was approved despite the failure');
+        $this->assertSame('pending', DB::table('leave_encashments')
+            ->where('employee_id', $this->employeeId)->value('status'));
     }
 
     public function test_approval_settles_a_pending_leave_encashment(): void

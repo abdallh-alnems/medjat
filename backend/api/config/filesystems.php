@@ -45,10 +45,18 @@ return [
             'throw' => true,
         ],
 
+        /*
+         * No 'serve' => true. The skeleton ships that on, and it registers an
+         * unauthenticated GET and PUT on /storage/{path}. Both demand a signed
+         * URL, so nothing was reachable — but this API hands out no signed URLs
+         * and writes nothing to this disk, so the routes were pure surface: two
+         * file endpoints on a payroll API that no part of the product uses.
+         * Every file this application stores goes to the 'uploads' disk above
+         * and is streamed by a controller that checks who is asking.
+         */
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
             'throw' => false,
             'report' => false,
         ],

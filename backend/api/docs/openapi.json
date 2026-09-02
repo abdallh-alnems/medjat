@@ -96,7 +96,7 @@
     "paths": {
         "/": {
             "get": {
-                "operationId": "get",
+                "operationId": "root",
                 "tags": [
                     "Other"
                 ],

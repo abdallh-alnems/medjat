@@ -9,6 +9,7 @@ use App\Models\Employee;
 use App\Modules\Documents\Domain\DocumentChecklist;
 use App\Modules\Leave\Domain\LeaveBalance;
 use App\Shared\Http\ApiResponse;
+use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,7 +31,7 @@ final class MyProfileController
         return ApiResponse::success([
             'employee' => $employee->toArray(),
             'documents' => DocumentChecklist::forEmployee($employee->id, $tenantId),
-            'leave_balance' => LeaveBalance::forEmployee($employee->id, $tenantId, (int) date('Y')),
+            'leave_balance' => LeaveBalance::forEmployee($employee->id, $tenantId, TenantClock::year($tenantId)),
         ]);
     }
 }

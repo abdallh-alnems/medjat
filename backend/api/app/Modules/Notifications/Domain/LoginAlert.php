@@ -7,6 +7,8 @@ namespace App\Modules\Notifications\Domain;
 use App\Mail\NewDeviceLoginMail;
 use App\Models\Admin;
 use App\Modules\Audit\Domain\AuditLog;
+use App\Shared\Async\AfterResponse;
+use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -85,7 +87,12 @@ final class LoginAlert
 
     private function fire(Admin $admin, string $ip, string $userAgent): void
     {
-        $at = now()->format('Y-m-d H:i');
+        // The company's clock, not the server's: this timestamp is the whole
+        // point of the alert — the administrator has to decide whether they
+        // were the one signing in at that hour, and a UTC one asks them about
+        // a time they were asleep. tenant_id is nullable, and TenantClock
+        // answers an unknown tenant with the Cairo fallback.
+        $at = TenantClock::now(Value::int($admin->tenant_id))->format('Y-m-d H:i');
 
         $titleAr = 'تسجيل دخول جديد';
         $title = 'New login';
@@ -124,12 +131,11 @@ final class LoginAlert
         $email = Value::nullableString($admin->getAttribute('email'));
 
         if ($email !== null && $email !== '') {
-            try {
+            // The in-app notice already landed; the email is the extra, and
+            // nobody should wait on a mail server to finish signing in.
+            AfterResponse::run('Login alert email', static function () use ($email, $at, $ip): void {
                 Mail::to($email)->send(new NewDeviceLoginMail($at, $ip));
-            } catch (Throwable $e) {
-                // The in-app notice already landed; the email is the extra.
-                Log::warning('Login alert email failed', ['admin_id' => $admin->id, 'exception' => $e]);
-            }
+            }, ['admin_id' => $admin->id]);
         }
     }
 }

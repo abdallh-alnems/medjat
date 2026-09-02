@@ -5,13 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Team\Domain;
 
 use App\Mail\TeamInvitationMail;
+use App\Shared\Async\AfterResponse;
 use App\Support\Value;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Throwable;
 
 /**
  * An invitation to join a company's management team.
@@ -247,10 +246,8 @@ final class ManagerInvitation
      */
     public static function email(string $to, string $code, string $role, string $companyName): void
     {
-        try {
+        AfterResponse::run('Invitation email', static function () use ($to, $code, $role, $companyName): void {
             Mail::to($to)->send(new TeamInvitationMail($code, $role, $companyName));
-        } catch (Throwable $e) {
-            Log::warning('Invitation email failed', ['email' => $to, 'exception' => $e]);
-        }
+        }, ['email' => $to]);
     }
 }

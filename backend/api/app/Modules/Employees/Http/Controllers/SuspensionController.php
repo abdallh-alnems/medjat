@@ -10,6 +10,7 @@ use App\Models\Employee;
 use App\Modules\Audit\Domain\AuditLog;
 use App\Modules\Employees\Domain\Suspension;
 use App\Shared\Http\ApiResponse;
+use App\Shared\Time\TenantClock;
 use App\Support\Value;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,7 +28,7 @@ final class SuspensionController
 
         // Reconciled on the way in: a suspension that quietly outlives its own
         // end date is somebody unable to work for a reason nobody remembers.
-        Suspension::reconcileExpired($tenantId, date('Y-m-d'));
+        Suspension::reconcileExpired($tenantId, TenantClock::date($tenantId));
 
         $history = DB::table('employee_suspensions as s')
             ->leftJoin('admins as c', 'c.id', '=', 's.created_by')
@@ -77,7 +78,7 @@ final class SuspensionController
             }
         }
 
-        $startDate = $this->date($request, 'start_date', date('Y-m-d'));
+        $startDate = $this->date($request, 'start_date', TenantClock::date($tenantId));
         $endDate = $this->date($request, 'end_date', null);
 
         if ($endDate !== null && $endDate < $startDate) {
