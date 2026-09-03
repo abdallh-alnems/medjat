@@ -11,7 +11,7 @@
 #   ./deploy.sh              push code, apply pending migrations, verify
 #   ./deploy.sh --code-only  push code, skip migrations
 #
-# Requires an `permedjat` host in ~/.ssh/config.
+# Requires a `permedjat` host in ~/.ssh/config.
 
 set -euo pipefail
 

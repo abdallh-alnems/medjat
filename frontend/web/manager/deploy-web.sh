@@ -8,7 +8,7 @@
 #   ./deploy-web.sh --dry-run   show what would change, touch nothing
 #   ./deploy-web.sh             push source, install, build, restart, verify
 #
-# Requires an `permedjat` host in ~/.ssh/config.
+# Requires a `permedjat` host in ~/.ssh/config.
 
 set -euo pipefail
 
