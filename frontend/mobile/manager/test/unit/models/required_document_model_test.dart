@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:medjat_central/data/model/required_document_model.dart';
+import 'package:permedjat_central/data/model/required_document_model.dart';
 
 void main() {
   group('RequiredDocumentModel.fromJson', () {

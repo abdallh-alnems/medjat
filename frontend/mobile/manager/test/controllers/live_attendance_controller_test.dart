@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:medjat_central/core/class/status_request.dart';
-import 'package:medjat_central/data/data_source/remote/live_attendance_data/live_attendance_data.dart';
-import 'package:medjat_central/data/data_source/remote/branch_data/branch_data.dart';
-import 'package:medjat_central/data/model/live_attendance_model.dart';
-import 'package:medjat_central/logic/controller/live_attendance/live_attendance_controller.dart';
+import 'package:permedjat_central/core/class/status_request.dart';
+import 'package:permedjat_central/data/data_source/remote/live_attendance_data/live_attendance_data.dart';
+import 'package:permedjat_central/data/data_source/remote/branch_data/branch_data.dart';
+import 'package:permedjat_central/data/model/live_attendance_model.dart';
+import 'package:permedjat_central/logic/controller/live_attendance/live_attendance_controller.dart';
 import '../helpers/test_helpers.dart';
 
 class MockLiveAttendanceData extends Mock implements LiveAttendanceData {}

@@ -82,7 +82,7 @@ fi
 
 step "5/7  Caches"
 # config:cache is what makes env() return null outside config/, which is why
-# every tuned value in this application lives in config/medjat.php. Rebuilt
+# every tuned value in this application lives in config/permedjat.php. Rebuilt
 # rather than merely cleared: a cold cache means the first request after every
 # deploy pays for compiling all of it.
 ssh "$REMOTE" "cd $REMOTE_DIR && \

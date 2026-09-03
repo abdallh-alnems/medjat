@@ -35,7 +35,7 @@ class AppServiceProvider extends ServiceProvider
     private function configureRateLimiting(): void
     {
         RateLimiter::for('api', function (Request $request): Limit {
-            return Limit::perMinute(Config::integer('medjat.rate_limit.per_minute'))
+            return Limit::perMinute(Config::integer('permedjat.rate_limit.per_minute'))
                 ->by($request->ip() ?? 'unknown')
                 ->response(fn (): mixed => ApiResponse::fail(
                     __('messages.too_many_requests_soon'),

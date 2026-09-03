@@ -1,4 +1,4 @@
-name: medjat_app
+name: permedjat_app
 description: "Medjat Employee App — HR Attendance & Payroll"
 publish_to: 'none'
 version: 1.0.3+7
@@ -15,7 +15,7 @@ dependencies:
   # Face pipeline + the MobileFaceNet model, shared with the kiosk app.
   # The server matches embeddings from both products against one stored vector
   # per employee, so extraction must be identical — hence one copy, not two.
-  medjat_shared:
+  permedjat_shared:
     path: ../shared
 
   cupertino_icons: ^1.0.8

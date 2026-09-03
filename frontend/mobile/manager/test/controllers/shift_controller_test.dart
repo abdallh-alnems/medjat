@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:medjat_central/core/class/status_request.dart';
-import 'package:medjat_central/data/data_source/remote/shift_data/shift_data.dart';
-import 'package:medjat_central/logic/controller/shift/shift_controller.dart';
+import 'package:permedjat_central/core/class/status_request.dart';
+import 'package:permedjat_central/data/data_source/remote/shift_data/shift_data.dart';
+import 'package:permedjat_central/logic/controller/shift/shift_controller.dart';
 import '../helpers/test_helpers.dart';
 
 class MockShiftData extends Mock implements ShiftData {}

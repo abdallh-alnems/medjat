@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:medjat_central/data/model/manager_invitation_model.dart';
+import 'package:permedjat_central/data/model/manager_invitation_model.dart';
 
 void main() {
   group('ManagerInvitationModel.fromJson', () {

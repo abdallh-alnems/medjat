@@ -72,7 +72,7 @@ Shared and on each other; nothing in Shared reaches back into a Module.
 
 ```
 routes/api.php            every route, grouped by module, gate visible on each
-config/medjat.php         everything this application configures
+config/permedjat.php         everything this application configures
 resources/views/mail/     transactional email
 resources/views/landing/  deep-link fallback pages
 resources/well-known/     App Links / Universal Links association files
@@ -221,7 +221,7 @@ fails *silently* while every other URL keeps working — that `.env`, the source
 tree and `uploads/` are not readable over HTTP.
 
 `config:cache` runs on every deploy, which is why every tuned value lives in
-`config/medjat.php`: `env()` returns null outside `config/` once the cache
+`config/permedjat.php`: `env()` returns null outside `config/` once the cache
 exists, and a limit that silently becomes its default is worse than one that is
 wrong out loud.
 

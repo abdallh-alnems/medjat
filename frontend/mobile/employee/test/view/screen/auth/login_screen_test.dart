@@ -4,13 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
-import 'package:medjat_app/core/class/status_request.dart';
-import 'package:medjat_app/core/constant/locale/translations.dart';
-import 'package:medjat_app/core/constant/theme/app_theme.dart';
-import 'package:medjat_app/core/services/locale_service.dart';
-import 'package:medjat_app/data/model/user_model.dart';
-import 'package:medjat_app/logic/controller/auth/auth_controller.dart';
-import 'package:medjat_app/view/screen/auth/login_screen.dart';
+import 'package:permedjat_app/core/class/status_request.dart';
+import 'package:permedjat_app/core/constant/locale/translations.dart';
+import 'package:permedjat_app/core/constant/theme/app_theme.dart';
+import 'package:permedjat_app/core/services/locale_service.dart';
+import 'package:permedjat_app/data/model/user_model.dart';
+import 'package:permedjat_app/logic/controller/auth/auth_controller.dart';
+import 'package:permedjat_app/view/screen/auth/login_screen.dart';
 
 import '../../../helpers/test_helpers.dart';
 

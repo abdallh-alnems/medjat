@@ -21,7 +21,7 @@ final class AuthActionLink
 {
     public static function rebase(string $link): string
     {
-        $base = Config::string('medjat.mail.action_url');
+        $base = Config::string('permedjat.mail.action_url');
         $query = parse_url($link, PHP_URL_QUERY);
 
         if ($base === '' || ! is_string($query) || $query === '') {

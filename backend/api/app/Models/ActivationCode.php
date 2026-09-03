@@ -128,7 +128,7 @@ final class ActivationCode extends Model
     /** The deep link an employee opens to join. */
     public static function joinLink(string $token): string
     {
-        $base = rtrim(Config::string('medjat.join.base_url'), '/');
+        $base = rtrim(Config::string('permedjat.join.base_url'), '/');
 
         return $base.'/join?token='.urlencode($token);
     }

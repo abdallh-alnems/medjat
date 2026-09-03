@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:medjat_central/core/class/status_request.dart';
-import 'package:medjat_central/data/data_source/remote/loan_data/loan_data.dart';
-import 'package:medjat_central/logic/controller/loan/loan_controller.dart';
+import 'package:permedjat_central/core/class/status_request.dart';
+import 'package:permedjat_central/data/data_source/remote/loan_data/loan_data.dart';
+import 'package:permedjat_central/logic/controller/loan/loan_controller.dart';
 import '../helpers/test_helpers.dart';
 
 class MockLoanData extends Mock implements LoanData {}

@@ -48,7 +48,7 @@ final class DeepLinkTest extends TestCase
 
     public function test_an_invitation_link_offers_the_web_app_when_one_is_configured(): void
     {
-        Config::set('medjat.web.base_url', 'https://app.medjatapp.com');
+        Config::set('permedjat.web.base_url', 'https://app.medjatapp.com');
 
         $this->get('/join_team?code=AB12CD34')
             ->assertOk()
@@ -73,7 +73,7 @@ final class DeepLinkTest extends TestCase
     public function test_an_unpublished_store_listing_is_left_out(): void
     {
         // A dead link is worse than none.
-        Config::set('medjat.stores.employee_ios', '');
+        Config::set('permedjat.stores.employee_ios', '');
 
         $this->get('/join?token='.str_repeat('a1', 12))
             ->assertOk()

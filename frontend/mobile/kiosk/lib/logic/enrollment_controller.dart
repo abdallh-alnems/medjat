@@ -5,7 +5,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
-import 'package:medjat_shared/medjat_shared.dart';
+import 'package:permedjat_shared/permedjat_shared.dart';
 
 import '../core/api/kiosk_api.dart';
 import '../core/kiosk_lock.dart';

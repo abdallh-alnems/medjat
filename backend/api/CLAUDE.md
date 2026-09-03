@@ -45,6 +45,6 @@ by other subjects, is Shared. Modules may depend on Shared and on each other;
 nothing in Shared reaches back into a Module. A subject owns all its entry
 points, including its console commands.
 
-Everything this application configures lives in `config/medjat.php`, because
+Everything this application configures lives in `config/permedjat.php`, because
 `env()` returns null outside `config/` once the configuration is cached — which
 every deploy does.

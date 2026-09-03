@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:medjat_app/core/class/status_request.dart';
+import 'package:permedjat_app/core/class/status_request.dart';
 
 void main() {
   group('StatusRequest', () {

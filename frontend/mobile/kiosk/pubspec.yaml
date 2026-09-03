@@ -1,4 +1,4 @@
-name: medjat_kiosk
+name: permedjat_kiosk
 description: "Medjat branch kiosk — shared tablet attendance"
 publish_to: 'none'
 version: 1.0.0+1
@@ -16,7 +16,7 @@ dependencies:
   # Face pipeline + the MobileFaceNet model, shared with medjat_app.
   # The server matches embeddings from both products against one stored vector
   # per employee, so extraction must be identical. One copy, not two.
-  medjat_shared:
+  permedjat_shared:
     path: ../shared
 
   # Version constraints deliberately match medjat_app.

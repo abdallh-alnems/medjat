@@ -1,4 +1,4 @@
-name: medjat_shared
+name: permedjat_shared
 description: >-
   Face identity pipeline shared by the Medjat employee app and the branch kiosk.
   Both products must produce byte-identical embeddings, because the server
