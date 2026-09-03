@@ -109,6 +109,9 @@ run "chown -R permedjat-alerts:permedjat-alerts /var/lib/permedjat-alerts 2>/dev
 run "systemctl daemon-reload"
 
 step "7. cron and helper scripts"
+# The cron URLs keep calling api.medjatapp.com on purpose. The new host does not
+# resolve yet, and a cron repointed at it would fail silently every night. They
+# move in the same change that adds the new server_name.
 for f in medjat-alert-sender.py medjat-alerting-selftest.sh medjat-backup.sh \
          medjat-cron-absences.sh medjat-cron-alerts.sh medjat-cron-kiosk-purge.sh \
          medjat-cron-run.sh medjat-node-metrics.sh; do
@@ -117,7 +120,7 @@ done
 run "mv /etc/cron.d/medjat            /etc/cron.d/permedjat"
 run "mv /etc/cron.d/medjat-monitoring /etc/cron.d/permedjat-monitoring"
 run "mv /var/log/medjat-cron.log      /var/log/permedjat-cron.log 2>/dev/null || true"
-run "sed -i 's#/usr/local/bin/medjat-#/usr/local/bin/permedjat-#g; s#/var/www/medjat#/var/www/permedjat#g; s#/var/log/medjat-cron.log#/var/log/permedjat-cron.log#g; s#medjatapp.com#permedjat.com#g' /etc/cron.d/permedjat /etc/cron.d/permedjat-monitoring /usr/local/bin/permedjat-*"
+run "sed -i 's#/usr/local/bin/medjat-#/usr/local/bin/permedjat-#g; s#/var/www/medjat#/var/www/permedjat#g; s#/var/log/medjat-cron.log#/var/log/permedjat-cron.log#g' /etc/cron.d/permedjat /etc/cron.d/permedjat-monitoring /usr/local/bin/permedjat-*"
 run "sed -i 's#/var/lib/medjat-alerts#/var/lib/permedjat-alerts#g; s#/var/www/medjat#/var/www/permedjat#g' /usr/local/bin/permedjat-* 2>/dev/null || true"
 
 step "8. back up"

@@ -29,33 +29,32 @@ Host map, old to new:
 
 ---
 
-## 1. The old domain is retired last, not first
+## 1. The old domain is retired last, but it is retired
 
-The destination is `permedjat.com` alone. The order that gets there without an
-outage switches the old domain off at the **end**.
+The destination is `permedjat.com` alone, and it is reachable, because the
+**application ids did not change**. `com.khawarizmie.medjat*` is a store
+listing's primary key, not a brand: the display name is editable, the id is
+not. Keeping it means the rebrand reaches existing customers as an ordinary
+update — same listing, same install, same Firebase project, same push tokens.
 
-Every build already in Google Play, the App Store and AppGallery calls
-`https://api.medjatapp.com/backend`, and the older ones call `/backend_medjet`.
-Those strings are frozen inside binaries on people's phones. Deleting the DNS
-record does not migrate those users, it takes them offline with no way back:
-the replacement apps carry **new package ids**, so they are different listings
-that a phone will never receive as an update.
+That is what makes retiring `medjatapp.com` a normal migration rather than a
+cliff. Everyone can be moved onto the new host; nobody is stranded on a build
+that cannot be replaced.
 
-So:
+The order:
 
 1. **Add** `permedjat.com` beside `medjatapp.com`. Both resolve to the same
-   origin, document root and database. Nothing is duplicated; only `server_name`
-   grows. That is sections 2-7.
-2. Ship the new apps, on the new ids and the new domain (sections 9-11).
-3. **Measure** rather than guess. Section 15 turns "is anyone still calling the
-   old host?" into a number.
-4. Retire `medjatapp.com` once that number is zero, per section 15.
+   origin, document root and database. Only `server_name` grows. Sections 2-7.
+2. Ship an app update that points at `permedjat.com`, and rename the listings.
+   Section 11 — it is a normal release.
+3. Raise `medjat_*_min_version` in Remote Config so the stragglers are walled
+   into updating. This is why those keys were left on their old names: the
+   console already holds them and every published build already reads them.
+4. Watch the old host go quiet, then retire it. Section 15.
 
-Jumping straight to step 4 is the one action in this document that cannot be
-undone by putting something back.
+Only step 4 is irreversible, and by the time you reach it the traffic is gone.
 
-The `/backend_medjet` location block follows the same rule: it lives until the
-old host is retired, then goes with it.
+The `/backend_medjet` location block retires with the host.
 
 ---
 
@@ -228,117 +227,99 @@ working. `ssh medjat` no longer resolves.
 
 ## 9. Deep links
 
-`.well-known/assetlinks.json` and `apple-app-site-association` now carry
-`com.khawarizmie.medjat*`. They must be served from **both** domains, because
-the installed apps verify against `medjatapp.com` and the new ones against
-`permedjat.com`.
+The association files are unchanged in substance: same package names, same
+SHA-256 fingerprints, because neither the application id nor the signing
+certificate moved. The only change is *where* they are served.
 
-The SHA-256 certificate fingerprints in `assetlinks.json` are still the old
-ones. A new Play listing gets a **new** Play App Signing certificate, so those
-fingerprints have to be replaced with the ones Play shows for the new app —
-after the listing exists, not before. Until then, Android App Links will not
-verify for the new build.
+Serve `.well-known/assetlinks.json` and `apple-app-site-association` from
+**both** hosts for the whole transition — installed apps verify against
+`medjatapp.com`, updated ones against `permedjat.com`.
 
-The iOS `Runner.entitlements` `applinks:` entries were renamed too, which means
-a new provisioning profile for the new bundle id.
+The iOS `Runner.entitlements` `applinks:` entries now name `permedjat.com`.
+That is a normal rebuild against the existing bundle id and provisioning
+profile; nothing in the developer portal changes.
 
----
-
-## 10. Firebase — this is a new project, not a rename
-
-**A Firebase project id cannot be changed.** Only the display name can. The
-repo therefore still points at project `medjat` in exactly six places, on
-purpose:
-
-```
-frontend/mobile/{employee,kiosk,manager,superadmin}/android/app/google-services.json
-frontend/mobile/{employee,manager}/ios/Runner/GoogleService-Info.plist
-frontend/mobile/{employee,manager}/lib/core/constant/firebase_options.dart
-frontend/mobile/{employee,manager}/firebase.json
-frontend/desktop/manager/src/main.js          (AUTH_HOSTS)
-backend/legacy/public/auth-action.html        (authDomain, projectId)
-```
-
-Editing the id in those files next to API keys and app ids that belong to the
-old project produces a file that simply fails to connect. They are regenerated,
-not renamed:
-
-1. Create a Firebase project `permedjat`.
-2. Register the four Android apps and two iOS apps under their **new**
-   identifiers (section 11).
-3. `flutterfire configure` in each app directory — it rewrites
-   `google-services.json`, `GoogleService-Info.plist` and `firebase_options.dart`.
-4. Update `AUTH_HOSTS` and `auth-action.html` to `permedjat.firebaseapp.com`,
-   and the web app's `NEXT_PUBLIC_FIREBASE_*` values in `.env.local` on the server.
-5. Add the new service-account JSON at `FIREBASE_CREDENTIALS_PATH`.
-
-What does not survive the move:
-
-- **Every FCM token is invalidated.** Push stops for everyone until each device
-  registers against the new project. Data-only maintenance and force-update
-  messages included.
-- **Auth users do not move by themselves.** Export with
-  `firebase auth:export` and import with `firebase auth:import --hash-algo=SCRYPT`
-  plus the old project's hash parameters, or every account has to sign up again.
-- **Crashlytics and Analytics history stays behind.** It cannot be transferred.
-- **Remote Config is empty.** Recreate every key. The keys themselves were
-  renamed in this repo (`medjat_app_min_version`,
-  `maintenance_medjat_kiosk`, …), and published builds read the **old**
-  names — so the old project's Remote Config must keep working for them while
-  the new one serves the new builds.
-- The custom email-action domain and the branded verification/reset templates
-  are configured per project and must be set up again.
+The custom URL schemes (`medjatcentral://`, `medjat://`) were deliberately left
+alone. An installed app registers them and the backend emits them, and those
+two halves do not ship together — changing both at once breaks every
+invitation link for anyone who has not updated yet.
 
 ---
 
-## 11. Store listings — these are new apps
+## 10. Firebase — unchanged, and that is the point
 
-`applicationId` and `PRODUCT_BUNDLE_IDENTIFIER` are the primary key of a store
-listing. Changing them does not rename an app; it creates a different one.
+Nothing to do. The Firebase project stays `medjat`, because the application ids
+stay and a Firebase app is keyed by application id.
 
-| | old | new |
-|---|---|---|
-| Employee (Android) | `com.khawarizmie.medjat` | `com.khawarizmie.medjat` |
-| Manager (Android) | `com.khawarizmie.medjat_central` | `com.khawarizmie.medjat_central` |
-| Kiosk (Android) | `com.khawarizmie.medjat.kiosk` | `com.khawarizmie.medjat.kiosk` |
-| Super-admin (Android) | `com.khawarizmie.medjat_admin` | `com.khawarizmie.medjat_admin` |
-| Employee (iOS) | `com.khawarizmie.medjat` | `com.khawarizmie.medjat` |
-| Manager (iOS) | `com.khawarizmie.medjat-central` | `com.khawarizmie.medjat-central` |
+So none of the following happens: no new project, no `flutterfire configure`,
+no regenerated `google-services.json` or `GoogleService-Info.plist`, no
+invalidated FCM tokens, no `auth:export` / `auth:import` of every user, no lost
+Crashlytics history, no Remote Config rebuilt from scratch.
 
-Consequences, so they are not a surprise:
+A Firebase project id was never renameable anyway. Keeping the application ids
+turned that from a migration into a non-event.
 
-- Existing installs **never** update to the new app. They keep running the old
-  build against the old domain, which is why section 1 exists.
-- Ratings, reviews and install counts start at zero.
-- Play App Signing issues a new upload/signing certificate → new SHA-256 for
-  `assetlinks.json` (section 9).
-- App Store Connect needs new app records, new bundle ids in the developer
-  portal, new provisioning profiles, and a fresh review.
-- Huawei AppGallery (`com.khawarizmie.medjat`) is a third listing to recreate.
-- The store URLs in `config/permedjat.php` (`STORE_URL_*`) point at listings
-  that do not exist yet. Set them only once the new listings are live, or the
-  `/join` page hands people a dead link.
-- The store screenshots and feature graphics under `store_assets/` are rendered
-  images with the old wordmark in them. They have to be re-exported.
+Two things still point at the project by name, correctly, and stay:
+`medjat.firebaseapp.com` in the desktop shell's `AUTH_HOSTS` and in
+`backend/legacy/public/auth-action.html`.
 
-Plan a migration message inside the old apps — the admin panel's maintenance /
-force-update screen is the existing channel for exactly this.
+The one Firebase item that is real: if you want the auth emails to come from
+`permedjat.com`, add that domain in Authentication → Templates → customise, and
+paste the two `firebase*._domainkey` CNAMEs it issues. Section 15 covers mail.
+
+---
+
+## 11. The apps — an ordinary release
+
+No new listings. For each of the four apps:
+
+1. Point it at `permedjat.com` (already done in the repo) and bump the version.
+2. Build and upload to the same listing, signed with the same upload keystore.
+3. Rename the listing and update its graphics — the title, the short and full
+   description, the screenshots and the feature graphic. Those are editable
+   fields on an existing app in both stores, plus Huawei AppGallery.
+4. Once adoption is where you want it, raise `medjat_*_min_version` in Remote
+   Config to wall the remainder into updating.
+
+The store assets under `store_assets/` still carry the old wordmark and have to
+be re-exported. `make_feature_graphic.py` renders one of them.
+
+`REVIEW_DEMO_CODE=MEDJAT2026` and the demo phone are printed in the store
+review notes. Change them together with the listing text or the reviewer is
+handed a code that no longer works.
 
 ---
 
 ## 12. What was deliberately left alone
 
-| | why |
+Kept because an already-installed client has the value baked in and the two
+sides do not ship together:
+
+| | |
 |---|---|
-| `/backend_medjet` URL prefix | published builds call it; it retires together with the old host, section 15 |
-| `medjatapp.com` and its DNS/TLS | kept alive until section 15 says it is safe to switch off |
-| `SECURITY_USER=khawarizmie_medjat` | a shared credential, not a name. Rotating it means changing it in the server env, all four apps and the web app in one shot |
+| `com.khawarizmie.medjat*` | application and bundle ids — a listing's primary key |
+| the Kotlin package dirs, iOS RunnerTests ids, desktop appId | must match the above |
+| `assetlinks.json` / AASA package names + SHA-256 | same ids, same signing certificate |
+| `medjatcentral://`, `medjat://` | schemes an installed app registers |
+| `window.medjat` | the bridge the web app reads from the desktop shell |
+| `medjat_*_min_version`, `*_maintenance_enabled` | Remote Config keys published builds read |
+| `maintenance_<slug>` FCM topics, and the `medjat_app` / `medjat_central` / `medjat_kiosk` / `medjat_admin` slugs the topic name is built from | published builds subscribe to these |
+| Firebase project `medjat`, `medjat.firebaseapp.com` | keyed by application id; unchanged, section 10 |
+
+Kept because it is a credential or an external resource, not a name:
+
+| | |
+|---|---|
+| `SECURITY_USER=khawarizmie_medjat` | shared secret. Rotating it means the server env, four apps and the web app in one shot |
 | `REVIEW_DEMO_CODE=MEDJAT2026` | printed in the store review notes; change it with the listing |
-| S3 bucket `medjat-documents` | renaming a bucket means creating a new one and copying every object |
-| `~/.ssh/medjat_hetzner` | a local filename |
-| Firebase project `medjat` | cannot be renamed — section 10 |
-| Remote Config keys in published builds | old builds read the old keys; both sets must exist during the transition |
-| Client storage keys | `permedjat-auth`, `permedjat-tenant`, `permedjat_emp_session`, … were renamed in the repo, which signs every web user out once on the deploy after the cutover. Expected, worth announcing |
+| S3 bucket `medjat-documents` | a new bucket plus copying every object |
+
+Kept until section 15 retires it:
+
+| | |
+|---|---|
+| `medjatapp.com`, its DNS and TLS | serves the installs that have not updated yet |
+| `/backend_medjet` URL prefix | the oldest builds call it |
 
 ---
 
@@ -359,8 +340,10 @@ sudo -u www-data /usr/local/bin/permedjat-cron-absences.sh   # exits 0
 Sections 2–6 reverse cleanly: move the paths and units back, `RENAME TABLE` the
 other way, reload. Nothing in them destroys data.
 
-Sections 10 and 11 do not reverse. Do not start them until the rest has been
-running for a while.
+Section 11 is a normal app release: it reverses by shipping another one.
+
+Section 15 does not reverse, which is why it is gated on a measurement rather
+than a date.
 
 ---
 
@@ -400,12 +383,11 @@ panel. Then the decision is a graph that reaches zero and stays there.
 
 ### Before it can reach zero
 
-- The new apps are live in all three stores under the new ids.
-- The old apps have told their users to move. The admin panel's maintenance /
-  force-update screen is the channel: point the old builds' force-update message
-  at the new listing, so opening the old app becomes a wall with a store link.
-  Remote Config for the **old** Firebase project drives those builds, so it has
-  to still exist at that point (section 10).
+- The updated apps are live in all three stores — same listings, section 11.
+- `medjat_*_min_version` has been raised in Remote Config, so anyone still on a
+  build that calls the old host is walled into updating. This is the lever that
+  actually empties the old domain, and it works because the ids, the project and
+  the keys all stayed put.
 - The web app and the desktop shell are on `app.permedjat.com`, and anyone with
   the old URL bookmarked is being redirected (see below).
 
