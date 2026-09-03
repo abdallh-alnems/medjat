@@ -45,10 +45,10 @@ https://digitalassetlinks.googleapis.com/v1/statements:list?source.web.site=http
 
 For `applinks:api.permedjat.com` (added to `Runner.entitlements`) to work:
 - In **Certificates, Identifiers & Profiles → Identifiers →
-  `com.khawarizmie.permedjat-central`**, enable **Associated Domains**.
+  `com.khawarizmie.medjat-central`**, enable **Associated Domains**.
 - Regenerate the provisioning profile, then build & release the app.
 
-Team ID used: `PN886D65DG` (appID `PN886D65DG.com.khawarizmie.permedjat-central`).
+Team ID used: `PN886D65DG` (appID `PN886D65DG.com.khawarizmie.medjat-central`).
 
 ## 3) Android — fingerprint
 

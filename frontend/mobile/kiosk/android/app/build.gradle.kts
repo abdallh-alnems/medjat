@@ -5,7 +5,7 @@ plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
-    // Reads android/app/google-services.json (package com.khawarizmie.permedjat.kiosk,
+    // Reads android/app/google-services.json (package com.khawarizmie.medjat.kiosk,
     // registered in the `permedjat` Firebase project).
     id("com.google.gms.google-services")
     // Uploads the mapping/symbol files so a crash on a wall-mounted tablet
@@ -23,7 +23,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.khawarizmie.permedjat.kiosk"
+    namespace = "com.khawarizmie.medjat.kiosk"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -33,7 +33,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.khawarizmie.permedjat.kiosk"
+        applicationId = "com.khawarizmie.medjat.kiosk"
         // Android 10+. Screen pinning (lock task) and the boot receiver both
         // behave predictably from here; below it they do not.
         minSdk = 29

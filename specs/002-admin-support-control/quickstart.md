@@ -22,7 +22,7 @@ Admin app:
 Backend:
 1. `core/RemoteConfigService.php` — `getAll()` reads template params; `setVersion(app, v)` / `setMaintenance(app, bool)` update + publish.
 2. `admin_app_control/get.php` and `set.php` (role `superadmin`, validation per `contracts/app_control.md`, audit).
-App-side RC wiring: ensure Employee app reads `permedjat_app_min_version` + `permedjat_app_maintenance_enabled` (mirror HR app `UpdateService`/`MaintenanceGate`); add `permedjat_admin_min_version` force-update check to the Admin app (version-only).
+App-side RC wiring: ensure Employee app reads `medjat_app_min_version` + `medjat_app_maintenance_enabled` (mirror HR app `UpdateService`/`MaintenanceGate`); add `medjat_admin_min_version` force-update check to the Admin app (version-only).
 Admin app:
 1. `app_control_model.dart`, `app_control_data/app_control_data.dart` (`get`, `set`).
 2. `app_control/app_control_controller.dart`, `app_control/app_control_screen.dart` (per-app card: version field + save, maintenance toggle for Employee/HR only; confirm dialog for high-impact actions).

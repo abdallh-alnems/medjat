@@ -1,4 +1,4 @@
-package com.khawarizmie.permedjat
+package com.khawarizmie.medjat
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

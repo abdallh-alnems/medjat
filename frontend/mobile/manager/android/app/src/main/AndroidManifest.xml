@@ -49,7 +49,7 @@
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="permedjatcentral"/>
+                <data android:scheme="medjatcentral"/>
             </intent-filter>
             <!-- App Link: team-invitation email link opens the app directly.
                  Verified via https://api.permedjat.com/.well-known/assetlinks.json -->

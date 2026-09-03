@@ -34,7 +34,7 @@ dependencies:
   device_info_plus: ^11.2.0
 
   # Reports the running version on every heartbeat; the server compares it
-  # against permedjat_kiosk_min_version and answers 426 when it is too old.
+  # against medjat_kiosk_min_version and answers 426 when it is too old.
   package_info_plus: ^8.1.2
 
   cupertino_icons: ^1.0.8
@@ -53,7 +53,7 @@ dependencies:
   firebase_crashlytics: ^4.3.0
   # Branch/station-level usage only — never anything identifying an employee.
   firebase_analytics: ^11.4.0
-  # Data-only messages on `maintenance_permedjat_kiosk`. No notification is ever
+  # Data-only messages on `maintenance_medjat_kiosk`. No notification is ever
   # shown: a kiosk must not carry a surface an employee can tap out of.
   firebase_messaging: ^15.2.0
   # Realtime config updates. The kiosk is permanently foregrounded, so

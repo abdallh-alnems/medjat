@@ -3,7 +3,7 @@
 //
 // Email clients only allow http(s) links, so the invitation email points here.
 // This page then bridges into the Permedjat management app via its custom scheme
-// (permedjatcentral://join?code=...). If the app is installed it opens straight to
+// (medjatcentral://join?code=...). If the app is installed it opens straight to
 // the join screen; otherwise the visitor gets web/store fallbacks. Standalone
 // (no bootstrap / no auth) — it only reads the code from the URL.
 
@@ -11,7 +11,7 @@ $code = isset($_GET['code']) ? trim((string) $_GET['code']) : '';
 // Invitation codes are 8 hex chars, but stay tolerant.
 $valid = $code !== '' && preg_match('/^[A-Za-z0-9]{4,32}$/', $code) === 1;
 
-$appUrl = $valid ? 'permedjatcentral://join?code=' . rawurlencode($code) : '';
+$appUrl = $valid ? 'medjatcentral://join?code=' . rawurlencode($code) : '';
 
 $webBase = rtrim((string) (getenv('CENTRAL_WEB_URL') ?: ''), '/');
 $webUrl  = ($valid && $webBase !== '')
@@ -19,7 +19,7 @@ $webUrl  = ($valid && $webBase !== '')
     : '';
 
 // TODO: replace with the real store listing URLs once published.
-$playStoreUrl = 'https://play.google.com/store/apps/details?id=com.khawarizmie.permedjat_central';
+$playStoreUrl = 'https://play.google.com/store/apps/details?id=com.khawarizmie.medjat_central';
 $appStoreUrl  = 'https://apps.apple.com/app/permedjat/idREPLACE_WITH_APPSTORE_ID';
 
 header('Content-Type: text/html; charset=utf-8');

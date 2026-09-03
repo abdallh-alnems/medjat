@@ -131,9 +131,9 @@ npm run dev
 
 | التطبيق | المنصّات | معرّف التطبيق (Android) |
 |---------|----------|--------------------------|
-| permedjat_app | Android · iOS | `com.khawarizmie.permedjat` |
-| permedjat_central | Android · iOS | `com.khawarizmie.permedjatCentral` |
-| permedjat_admin | Android | `com.khawarizmie.permedjat_admin` |
+| permedjat_app | Android · iOS | `com.khawarizmie.medjat` |
+| permedjat_central | Android · iOS | `com.khawarizmie.medjatCentral` |
+| permedjat_admin | Android | `com.khawarizmie.medjat_admin` |
 | permedjat_central_web | الويب | `app.permedjat.com` |
 
 ---

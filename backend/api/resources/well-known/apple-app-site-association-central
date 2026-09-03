@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appID": "PN886D65DG.com.khawarizmie.permedjat-central",
+        "appID": "PN886D65DG.com.khawarizmie.medjat-central",
         "paths": ["/backend/join_team.php*", "/backend_medjet/join_team.php*"]
       }
     ]

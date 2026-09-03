@@ -141,7 +141,7 @@ ipcMain.handle('zk:read', async (_event, { ip, port = 4370 }) => {
 
 ```js
 // src/preload.js — the only surface the page can see
-contextBridge.exposeInMainWorld('permedjat', {
+contextBridge.exposeInMainWorld('medjat', {
   isDesktop: true,
   readDevice: (options) => ipcRenderer.invoke('zk:read', options),
 });
@@ -149,8 +149,8 @@ contextBridge.exposeInMainWorld('permedjat', {
 
 ```ts
 // permedjat_central_web — feature-detected, so browsers are unaffected
-if (window.permedjat?.isDesktop) {
-  const punches = await window.permedjat.readDevice({ ip });
+if (window.medjat?.isDesktop) {
+  const punches = await window.medjat.readDevice({ ip });
 }
 ```
 
@@ -180,14 +180,14 @@ by a passkey therefore cannot finish signing in in this window — Google offers
 cross-device fallback, which needs integration Electron also lacks, and the flow dead-ends
 on "Something went wrong … Make sure Bluetooth is on".
 
-So the login page shows a **"تسجيل الدخول عبر المتصفح"** button when `window.permedjat` is
+So the login page shows a **"تسجيل الدخول عبر المتصفح"** button when `window.medjat` is
 present:
 
 1. `auth:browser` generates a nonce and opens `${APP_URL}/login?desktop=<nonce>` in the
    system browser.
 2. The user signs in there — passkeys work, because it is a real browser.
 3. The page calls `v1/auth/desktop/authorize` for a single-use code and redirects to
-   `permedjat://auth?code=…&state=<nonce>`.
+   `medjat://auth?code=…&state=<nonce>`.
 4. `handleAuthLink` checks the nonce against the one this process generated (anything else
    is ignored) and loads `${APP_URL}/desktop-auth?code=…`.
 5. That page calls `v1/auth/desktop/exchange`, which claims the code and mints a Firebase

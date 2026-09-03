@@ -15,9 +15,9 @@ final class FakeRemoteConfigAdmin implements RemoteConfigAdmin
 {
     /** @var array<string, array{min_version: string, maintenance: bool}> */
     public array $state = [
-        'permedjat_app' => ['min_version' => '1.0.0', 'maintenance' => false],
-        'permedjat_central' => ['min_version' => '1.0.0', 'maintenance' => false],
-        'permedjat_kiosk' => ['min_version' => '1.0.0', 'maintenance' => false],
+        'medjat_app' => ['min_version' => '1.0.0', 'maintenance' => false],
+        'medjat_central' => ['min_version' => '1.0.0', 'maintenance' => false],
+        'medjat_kiosk' => ['min_version' => '1.0.0', 'maintenance' => false],
     ];
 
     /** @return list<array{key: string, name: string, min_version: string, maintenance: bool, supports_maintenance: bool}> */

@@ -53,7 +53,7 @@ final class KioskSessionController
 
         // Cached and fail-open: a configuration outage must not stop every
         // kiosk in every company from recording attendance.
-        $gate = $this->gate->forApp('permedjat_kiosk');
+        $gate = $this->gate->forApp('medjat_kiosk');
 
         if ($gate->maintenance) {
             throw new ApiFailure(__('messages.kiosk_maintenance'), 503, 'kiosk_maintenance');

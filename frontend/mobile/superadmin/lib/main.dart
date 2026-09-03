@@ -20,7 +20,7 @@ import 'core/constant/theme/theme.dart';
 /// so `Firebase.initializeApp()` threw and was swallowed below, which is why
 /// support push notifications never actually arrived here. The Android app is
 /// now registered in the `permedjat` Firebase project as
-/// `com.khawarizmie.permedjat_admin` and both Gradle plugins are applied.
+/// `com.khawarizmie.medjat_admin` and both Gradle plugins are applied.
 bool firebaseReady = false;
 
 void main() async {

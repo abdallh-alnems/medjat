@@ -7,9 +7,9 @@ Reads the current Remote Config template values for all governed apps.
 Response `data`:
 ```json
 { "apps": [
-  { "key": "permedjat_app",     "name": "Employee App",     "min_version": "1.2.0", "maintenance": false, "supports_maintenance": true },
-  { "key": "permedjat_central", "name": "HR Management App", "min_version": "1.4.1", "maintenance": false, "supports_maintenance": true },
-  { "key": "permedjat_admin",   "name": "Admin App",        "min_version": "1.0.0", "maintenance": null,  "supports_maintenance": false }
+  { "key": "medjat_app",     "name": "Employee App",     "min_version": "1.2.0", "maintenance": false, "supports_maintenance": true },
+  { "key": "medjat_central", "name": "HR Management App", "min_version": "1.4.1", "maintenance": false, "supports_maintenance": true },
+  { "key": "medjat_admin",   "name": "Admin App",        "min_version": "1.0.0", "maintenance": null,  "supports_maintenance": false }
 ] }
 ```
 On RC fetch failure: 503 with a clear message (the app shows an error, never assumes values).
@@ -17,7 +17,7 @@ On RC fetch failure: 503 with a clear message (the app shows an error, never ass
 ## POST `/admin_app_control/set.php` — NEW
 Body (one field per call, or both):
 ```json
-{ "app": "permedjat_app", "min_version": "1.3.0", "maintenance": true }
+{ "app": "medjat_app", "min_version": "1.3.0", "maintenance": true }
 ```
 Rules:
 - `app ∈ {permedjat_app, permedjat_central, permedjat_admin}`.

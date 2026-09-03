@@ -3,7 +3,7 @@
 كل ما تحتاجه لرفع بطاقة المتجر لتطبيق **الإدارة** (permedjat_central)، في مكان واحد.
 
 > ملاحظة: هذا تطبيق **المدير / صاحب العمل** لإدارة الموظفين والحضور والرواتب — وليس تطبيق الموظف.
-> اسم الحزمة (applicationId): `com.khawarizmie.permedjatCentral`
+> اسم الحزمة (applicationId): `com.khawarizmie.medjatCentral`
 
 ## 📁 محتويات المجلد
 

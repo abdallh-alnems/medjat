@@ -12,7 +12,7 @@ $token = isset($_GET['token']) ? trim((string) $_GET['token']) : '';
 $valid = $token !== '' && preg_match('/^[a-f0-9]{16,64}$/i', $token) === 1;
 
 // TODO: replace with the real store listing URLs once published.
-$playStoreUrl = 'https://play.google.com/store/apps/details?id=com.khawarizmie.permedjat';
+$playStoreUrl = 'https://play.google.com/store/apps/details?id=com.khawarizmie.medjat';
 $appStoreUrl  = 'https://apps.apple.com/app/permedjat/idREPLACE_WITH_APPSTORE_ID';
 
 header('Content-Type: text/html; charset=utf-8');

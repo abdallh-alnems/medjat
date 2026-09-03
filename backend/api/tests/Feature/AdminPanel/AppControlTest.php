@@ -78,21 +78,21 @@ final class AppControlTest extends TestCase
             ->getJson('/v1/admin/app-control')
             ->assertOk()
             ->assertJsonCount(3, 'data.apps')
-            ->assertJsonPath('data.apps.0.key', 'permedjat_app');
+            ->assertJsonPath('data.apps.0.key', 'medjat_app');
     }
 
     public function test_the_kiosk_is_listed_and_settable_like_the_others(): void
     {
         // Its card is rendered from the same list, so leaving it out of the
         // save path made the card answer 422 on every press.
-        $this->save(['app' => 'permedjat_kiosk', 'maintenance' => true])->assertOk();
+        $this->save(['app' => 'medjat_kiosk', 'maintenance' => true])->assertOk();
 
-        $this->assertTrue($this->config->state['permedjat_kiosk']['maintenance']);
+        $this->assertTrue($this->config->state['medjat_kiosk']['maintenance']);
     }
 
     public function test_raising_the_minimum_version_records_what_it_was(): void
     {
-        $this->save(['app' => 'permedjat_app', 'min_version' => '2.4.0'])
+        $this->save(['app' => 'medjat_app', 'min_version' => '2.4.0'])
             ->assertOk()
             ->assertJsonPath('data.min_version', '2.4.0');
 
@@ -113,25 +113,25 @@ final class AppControlTest extends TestCase
         // Remote Config's realtime stream only reaches a foregrounded app, so
         // without this the switch takes effect whenever each device next
         // happens to look.
-        $this->save(['app' => 'permedjat_central', 'maintenance' => true])->assertOk();
+        $this->save(['app' => 'medjat_central', 'maintenance' => true])->assertOk();
 
         $this->assertCount(1, $this->push->sentToTopics);
-        $this->assertSame('maintenance_permedjat_central', $this->push->sentToTopics[0]['topic']);
+        $this->assertSame('maintenance_medjat_central', $this->push->sentToTopics[0]['topic']);
         $this->assertSame('1', $this->push->sentToTopics[0]['data']['enabled']);
     }
 
     public function test_turning_maintenance_off_pushes_too(): void
     {
-        $this->config->state['permedjat_app']['maintenance'] = true;
+        $this->config->state['medjat_app']['maintenance'] = true;
 
-        $this->save(['app' => 'permedjat_app', 'maintenance' => false])->assertOk();
+        $this->save(['app' => 'medjat_app', 'maintenance' => false])->assertOk();
 
         $this->assertSame('0', $this->push->sentToTopics[0]['data']['enabled']);
     }
 
     public function test_both_can_be_changed_in_one_call(): void
     {
-        $this->save(['app' => 'permedjat_app', 'min_version' => '3.0.0', 'maintenance' => true])
+        $this->save(['app' => 'medjat_app', 'min_version' => '3.0.0', 'maintenance' => true])
             ->assertOk()
             ->assertJsonPath('data.min_version', '3.0.0')
             ->assertJsonPath('data.maintenance', true);
@@ -139,25 +139,25 @@ final class AppControlTest extends TestCase
 
     public function test_an_unknown_app_is_refused(): void
     {
-        $this->save(['app' => 'permedjat_watch', 'maintenance' => true])->assertStatus(422);
+        $this->save(['app' => 'medjat_watch', 'maintenance' => true])->assertStatus(422);
     }
 
     public function test_a_malformed_version_is_refused(): void
     {
-        $this->save(['app' => 'permedjat_app', 'min_version' => 'v2'])->assertStatus(422);
-        $this->save(['app' => 'permedjat_app', 'min_version' => '2.4.0-beta'])->assertStatus(422);
+        $this->save(['app' => 'medjat_app', 'min_version' => 'v2'])->assertStatus(422);
+        $this->save(['app' => 'medjat_app', 'min_version' => '2.4.0-beta'])->assertStatus(422);
 
-        $this->assertSame('1.0.0', $this->config->state['permedjat_app']['min_version']);
+        $this->assertSame('1.0.0', $this->config->state['medjat_app']['min_version']);
     }
 
     public function test_a_non_boolean_maintenance_flag_is_refused(): void
     {
-        $this->save(['app' => 'permedjat_app', 'maintenance' => 'yes'])->assertStatus(422);
+        $this->save(['app' => 'medjat_app', 'maintenance' => 'yes'])->assertStatus(422);
     }
 
     public function test_a_call_that_changes_nothing_is_refused(): void
     {
-        $this->save(['app' => 'permedjat_app'])->assertStatus(422);
+        $this->save(['app' => 'medjat_app'])->assertStatus(422);
     }
 
     public function test_only_a_superadmin_may_operate_the_gate(): void
@@ -166,7 +166,7 @@ final class AppControlTest extends TestCase
         // the kiosk somebody must physically visit each branch.
         [, $token] = $this->operator('admin');
 
-        $this->save(['app' => 'permedjat_app', 'maintenance' => true], $token)->assertStatus(403);
+        $this->save(['app' => 'medjat_app', 'maintenance' => true], $token)->assertStatus(403);
 
         $this->withHeader('Authorization', 'Bearer '.$token)
             ->getJson('/v1/admin/app-control')

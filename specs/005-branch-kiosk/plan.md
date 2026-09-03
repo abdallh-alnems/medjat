@@ -191,7 +191,7 @@ anyway.
 > alone decides, and nothing on the tablet overrides it — but the Firebase SDK
 > is now on the kiosk for a reason this section did not weigh: a wall-mounted
 > tablet that crashes reports it to nobody. Crashlytics answers that; Analytics
-> counts branch-level outcomes; FCM (`maintenance_permedjat_kiosk`) and Remote
+> counts branch-level outcomes; FCM (`maintenance_medjat_kiosk`) and Remote
 > Config's realtime stream only make the tablet re-ask the server at once
 > instead of waiting out its two-minute heartbeat. All of it is initialised
 > after the first frame and bounded by a timeout, so a tablet with no Play

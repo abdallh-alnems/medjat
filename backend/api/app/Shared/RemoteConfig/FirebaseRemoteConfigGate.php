@@ -32,20 +32,20 @@ final class FirebaseRemoteConfigGate implements RemoteConfigGate
      * @var array<string, array{min_version: string, maintenance: string}>
      */
     private const APPS = [
-        'permedjat_app' => [
-            'min_version' => 'permedjat_app_min_version',
-            'maintenance' => 'permedjat_app_maintenance_enabled',
+        'medjat_app' => [
+            'min_version' => 'medjat_app_min_version',
+            'maintenance' => 'medjat_app_maintenance_enabled',
         ],
-        'permedjat_central' => [
-            'min_version' => 'permedjat_central_min_version',
-            'maintenance' => 'permedjat_central_maintenance_enabled',
+        'medjat_central' => [
+            'min_version' => 'medjat_central_min_version',
+            'maintenance' => 'medjat_central_maintenance_enabled',
         ],
         // Raising the kiosk minimum takes branches offline: the store apps can
         // send a user to a store, but a directly-installed kiosk has nowhere to
         // be sent, so somebody must physically visit each tablet.
-        'permedjat_kiosk' => [
-            'min_version' => 'permedjat_kiosk_min_version',
-            'maintenance' => 'permedjat_kiosk_maintenance_enabled',
+        'medjat_kiosk' => [
+            'min_version' => 'medjat_kiosk_min_version',
+            'maintenance' => 'medjat_kiosk_maintenance_enabled',
         ],
     ];
 

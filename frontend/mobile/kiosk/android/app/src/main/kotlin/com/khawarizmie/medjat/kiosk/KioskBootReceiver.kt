@@ -1,4 +1,4 @@
-package com.khawarizmie.permedjat.kiosk
+package com.khawarizmie.medjat.kiosk
 
 import android.content.BroadcastReceiver
 import android.content.Context

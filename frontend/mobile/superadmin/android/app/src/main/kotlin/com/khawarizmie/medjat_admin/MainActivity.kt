@@ -1,4 +1,4 @@
-package com.khawarizmie.permedjat_admin
+package com.khawarizmie.medjat_admin
 
 import io.flutter.embedding.android.FlutterActivity
 

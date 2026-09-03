@@ -8,16 +8,16 @@ use Kreait\Firebase\RemoteConfig\Template;
 
 final class RemoteConfigService {
     private const APPS = [
-        'permedjat_app' => [
+        'medjat_app' => [
             'name' => 'Employee App',
-            'min_version_key' => 'permedjat_app_min_version',
-            'maintenance_key' => 'permedjat_app_maintenance_enabled',
+            'min_version_key' => 'medjat_app_min_version',
+            'maintenance_key' => 'medjat_app_maintenance_enabled',
             'supports_maintenance' => true,
         ],
-        'permedjat_central' => [
+        'medjat_central' => [
             'name' => 'HR Management App',
-            'min_version_key' => 'permedjat_central_min_version',
-            'maintenance_key' => 'permedjat_central_maintenance_enabled',
+            'min_version_key' => 'medjat_central_min_version',
+            'maintenance_key' => 'medjat_central_maintenance_enabled',
             'supports_maintenance' => true,
         ],
         // The branch kiosk reports its version on every heartbeat and the
@@ -32,10 +32,10 @@ final class RemoteConfigService {
         // raising this takes those branches OFFLINE until somebody installs the
         // new build on each tablet. Check app/kiosk/list.php for
         // `below_min_version` before changing it.
-        'permedjat_kiosk' => [
+        'medjat_kiosk' => [
             'name' => 'Branch Kiosk',
-            'min_version_key' => 'permedjat_kiosk_min_version',
-            'maintenance_key' => 'permedjat_kiosk_maintenance_enabled',
+            'min_version_key' => 'medjat_kiosk_min_version',
+            'maintenance_key' => 'medjat_kiosk_maintenance_enabled',
             'supports_maintenance' => true,
         ],
     ];

@@ -1,4 +1,4 @@
-package com.khawarizmie.permedjat_central
+package com.khawarizmie.medjat_central
 
 import io.flutter.embedding.android.FlutterActivity
 

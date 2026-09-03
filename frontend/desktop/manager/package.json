@@ -21,7 +21,7 @@
     "electron-builder": "^26.0.0"
   },
   "build": {
-    "appId": "com.khawarizmie.permedjat.desktop",
+    "appId": "com.khawarizmie.medjat.desktop",
     "productName": "Permedjat Central",
     "copyright": "Copyright © 2026 Khawarizmie",
     "directories": {

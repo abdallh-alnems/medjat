@@ -3,8 +3,8 @@
 /**
  * The bridge between the web app and the desktop shell.
  *
- * Everything exposed here is callable from the page as `window.permedjat.*`. The web
- * app should feature-detect with `window.permedjat?.isDesktop` so the same deploy keeps
+ * Everything exposed here is callable from the page as `window.medjat.*`. The web
+ * app should feature-detect with `window.medjat?.isDesktop` so the same deploy keeps
  * working in a plain browser, where this object simply does not exist.
  *
  * Native capabilities the browser cannot reach — reading a ZKTeco terminal over the
@@ -22,12 +22,12 @@ const appOrigin = originArg ? originArg.slice('--permedjat-app-origin='.length) 
 const isTrustedPage = location.protocol === 'file:' || location.origin === appOrigin;
 
 if (isTrustedPage) {
-  contextBridge.exposeInMainWorld('permedjat', {
+  contextBridge.exposeInMainWorld('medjat', {
     isDesktop: true,
     retry: () => ipcRenderer.invoke('app:retry'),
     info: () => ipcRenderer.invoke('app:info'),
     // Passkeys cannot be answered in this window; the real browser can, and
-    // returns the session over permedjat://auth.
+    // returns the session over medjat://auth.
     signInWithBrowser: () => ipcRenderer.invoke('auth:browser'),
     // Reads a fingerprint terminal over the LAN. Resolves to
     // { ok: false, error } rather than rejecting, so the page always has

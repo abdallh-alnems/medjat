@@ -64,7 +64,7 @@ final class JoinLinkController
             'heading' => 'دعوة للانضمام إلى الفريق',
             'valid' => $valid,
             'code' => $code,
-            'appUrl' => $valid ? 'permedjatcentral://join?code='.rawurlencode($code) : '',
+            'appUrl' => $valid ? 'medjatcentral://join?code='.rawurlencode($code) : '',
             'webUrl' => $valid && $webBase !== '' ? $webBase.'/onboarding?code='.rawurlencode($code) : '',
             'android' => Config::string('permedjat.stores.central_android'),
             'ios' => Config::string('permedjat.stores.central_ios'),

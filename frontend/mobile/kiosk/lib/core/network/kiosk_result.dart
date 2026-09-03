@@ -16,7 +16,7 @@ enum KioskStatus {
   /// pairing (FR-005).
   unauthorised,
 
-  /// This build is below `permedjat_kiosk_min_version`. Addressed to a supervisor:
+  /// This build is below `medjat_kiosk_min_version`. Addressed to a supervisor:
   /// a directly-installed kiosk has no store to send anyone to (FR-053).
   updateRequired,
 

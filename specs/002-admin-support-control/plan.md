@@ -95,7 +95,7 @@ frontend/mobile/superadmin/lib/
     ├── support/support_thread_screen.dart  # NEW
     └── app_control/app_control_screen.dart # NEW
 
-frontend/mobile/employee/  (Employee) — verify/add RC read of permedjat_app_min_version + permedjat_app_maintenance_enabled
+frontend/mobile/employee/  (Employee) — verify/add RC read of medjat_app_min_version + medjat_app_maintenance_enabled
 frontend/mobile/manager/ (HR) — already reads permedjat_central_* keys (no change)
 ```
 
@@ -109,7 +109,7 @@ frontend/mobile/manager/ (HR) — already reads permedjat_central_* keys (no cha
 
 - **Support push (FR-010b / SC-009) is the largest new surface.** permedjat_admin has **no Firebase** today (username/password auth, no `firebase_*` packages). Delivering push requires adding `firebase_core`+`firebase_messaging`, a `google-services.json`/`GoogleService-Info.plist`, a new `super_admin_devices` table, a device-register endpoint, and `NotificationService::sendToSupportTeam()`. **Mitigation**: ship US1 (inbox+reply+live refresh via polling) and US2 (app control) first; push can land as a follow-up slice without blocking core value. In-app unread indicators (`unread_for_support`) work without Firebase.
 - **App-control is backend-only Firebase.** The admin app calls `admin_app_control/{get,set}.php`; the backend uses `kreait/firebase-php` to read/update the Remote Config template. The admin app needs **no** Firebase for this. Confirm a service-account credential is available to the backend (same one used by existing `NotificationService`).
-- **Employee + Admin app RC wiring.** The HR app already reads its keys. Confirm the Employee app reads `permedjat_app_min_version` / `permedjat_app_maintenance_enabled`; add the gate/service if missing. The Admin app needs a `permedjat_admin_min_version` force-update check (version-only, no maintenance).
+- **Employee + Admin app RC wiring.** The HR app already reads its keys. Confirm the Employee app reads `medjat_app_min_version` / `medjat_app_maintenance_enabled`; add the gate/service if missing. The Admin app needs a `medjat_admin_min_version` force-update check (version-only, no maintenance).
 - **Live refresh = polling.** Reuse the existing `after_id` parameter on `admin_support/messages.php`; controller polls every ~5s while a thread is open (meets SC-003's 10s).
 - **Roles.** Support endpoints require `admin`; app-control endpoints require `superadmin` (`AdminAuth::require('superadmin')`), matching the existing force-update endpoint.
 

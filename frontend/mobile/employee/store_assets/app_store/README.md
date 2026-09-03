@@ -1,6 +1,6 @@
 # أصول App Store — بيرمدجات (تطبيق الموظف) iOS
 
-تطبيق الموظف (bundle `com.khawarizmie.permedjat`). iPhone.
+تطبيق الموظف (bundle `com.khawarizmie.medjat`). iPhone.
 
 ## 📁 المحتويات
 ```

@@ -203,8 +203,8 @@ backend_medjet/check-drift.sh          # must come back clean
 Both of these were completed for the 2026-08-05 deploy; they are recorded here
 because a fresh environment still needs them.
 
-1. **Remote Config parameters.** ✅ Done — `permedjat_kiosk_min_version` (`0.0.0`)
-   and `permedjat_kiosk_maintenance_enabled` (`false`) exist in project `permedjat`
+1. **Remote Config parameters.** ✅ Done — `medjat_kiosk_min_version` (`0.0.0`)
+   and `medjat_kiosk_maintenance_enabled` (`false`) exist in project `permedjat`
    (template v15). `RemoteConfigService::APPS` reads them by name; without them
    the kiosk entry resolves to `0.0.0` and no version gate exists.
 2. **Cron.** ✅ Done — `/usr/local/bin/permedjat-cron-kiosk-purge.sh` runs at 03:30

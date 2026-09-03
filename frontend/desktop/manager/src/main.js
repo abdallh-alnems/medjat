@@ -49,7 +49,7 @@ let mainWindow = null;
  * Electron reports no platform authenticator, so a Google account protected by a
  * passkey dead-ends in this window: Google offers the cross-device fallback and
  * that needs integration Electron does not have either. Sign-in therefore runs in
- * the user's real browser, which hands the session back over `permedjat://auth`.
+ * the user's real browser, which hands the session back over `medjat://auth`.
  *
  * The nonce below is what makes the returning link trustworthy — anything
  * arriving on the protocol that does not carry the value this process just
@@ -238,15 +238,15 @@ function createWindow() {
 // ---------------------------------------------------------------- session
 
 /**
- * Claims `permedjat://` so the browser can hand a finished sign-in back to us. In
+ * Claims `medjat://` so the browser can hand a finished sign-in back to us. In
  * development the executable is Electron itself, so the script path has to ride
  * along or the OS launches a bare Electron with no app.
  */
 function registerProtocol() {
   if (process.defaultApp && process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient('permedjat', process.execPath, [path.resolve(process.argv[1])]);
+    app.setAsDefaultProtocolClient('medjat', process.execPath, [path.resolve(process.argv[1])]);
   } else {
-    app.setAsDefaultProtocolClient('permedjat');
+    app.setAsDefaultProtocolClient('medjat');
   }
 }
 
@@ -398,7 +398,7 @@ if (!app.requestSingleInstanceLock()) {
   // Windows and Linux deliver the protocol URL as an argument to a second launch
   // rather than through open-url.
   app.on('second-instance', (_event, argv) => {
-    const link = argv.find((arg) => arg.startsWith('permedjat://'));
+    const link = argv.find((arg) => arg.startsWith('medjat://'));
     if (link) handleAuthLink(link);
     if (!mainWindow) return;
     if (mainWindow.isMinimized()) mainWindow.restore();

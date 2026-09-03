@@ -1,15 +1,15 @@
 /**
  * The bridge the Electron shell injects (see frontend/desktop/manager/src/preload.js).
  *
- * Everything here is feature-detected: in a plain browser `window.permedjat` does
+ * Everything here is feature-detected: in a plain browser `window.medjat` does
  * not exist and the desktop-only paths simply never render.
  */
 
 declare global {
   interface Window {
-    permedjat?: {
+    medjat?: {
       isDesktop?: boolean;
-      /** Opens the system browser to sign in there, then returns over permedjat://. */
+      /** Opens the system browser to sign in there, then returns over medjat://. */
       signInWithBrowser?: () => Promise<void>;
       /**
        * Reads the attendance log off a ZKTeco terminal on the local network.
@@ -47,7 +47,7 @@ declare global {
 
 /** True only inside the desktop shell. Safe to call during SSR. */
 export function isDesktopApp(): boolean {
-  return typeof window !== "undefined" && window.permedjat?.isDesktop === true;
+  return typeof window !== "undefined" && window.medjat?.isDesktop === true;
 }
 
 /**

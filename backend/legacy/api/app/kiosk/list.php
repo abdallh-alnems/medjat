@@ -4,7 +4,7 @@
  *
  * `below_min_version` is the field that matters most here and the reason this
  * endpoint reports each tablet's version at all. Raising
- * `permedjat_kiosk_min_version` takes every outdated tablet OFFLINE, and unlike
+ * `medjat_kiosk_min_version` takes every outdated tablet OFFLINE, and unlike
  * the store apps there is nowhere to send them to update — somebody has to walk
  * to each branch. So the blast radius has to be answerable *before* the minimum
  * changes, not discovered afterwards from support calls.
@@ -28,7 +28,7 @@ if ($branchId !== null && !BranchModel::findById($branchId, $tenantId)) {
     Response::notFound('Branch');
 }
 
-$gate = RemoteConfigService::gateFor('permedjat_kiosk');
+$gate = RemoteConfigService::gateFor('medjat_kiosk');
 $minVersion = $gate['min_version'] ?? '0.0.0';
 
 $stations = array_map(static function (array $s) use ($minVersion): array {

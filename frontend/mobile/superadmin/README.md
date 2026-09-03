@@ -78,7 +78,7 @@ lib/
 
 اللغة الافتراضية **العربية** فقط (RTL)، والثيم الافتراضي **Light** (مع دعم Dark).
 
-**المنصّات المدعومة:** Android فقط — معرّف التطبيق `com.khawarizmie.permedjat_admin`.
+**المنصّات المدعومة:** Android فقط — معرّف التطبيق `com.khawarizmie.medjat_admin`.
 
 ---
 

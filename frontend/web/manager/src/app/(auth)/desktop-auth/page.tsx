@@ -5,7 +5,7 @@
  *
  * The user signed in in their real browser (where passkeys work; Electron
  * reports no platform authenticator, so they cannot), the browser handed a
- * single-use code back over permedjat://auth, and the app opened this page with it.
+ * single-use code back over medjat://auth, and the app opened this page with it.
  * We trade the code for a Firebase custom token and then follow the ordinary
  * login path, so the session that results is indistinguishable from any other.
  *

@@ -3,7 +3,7 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.khawarizmie.permedjat_central",
+      "package_name": "com.khawarizmie.medjat_central",
       "sha256_cert_fingerprints": [
         "A0:FD:3A:9B:B3:E3:CC:5B:8F:5E:0F:CD:19:F5:85:3B:C3:BE:2B:0F:78:96:36:99:2B:CD:C8:36:A6:B3:A1:D3",
         "3A:E3:39:7D:81:EE:2F:5C:4C:AF:07:F8:95:82:17:35:20:3C:1E:9E:8B:67:D0:F8:28:89:AF:7C:DC:59:FA:F5"

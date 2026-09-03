@@ -89,7 +89,7 @@ lib/
 
 اللغة الافتراضية **العربية** (RTL) مع دعم الإنجليزية، والثيم الافتراضي **Light** (مع دعم Dark).
 
-**المنصّات المدعومة:** Android و iOS — معرّف التطبيق `com.khawarizmie.permedjat` (منشور أيضًا على Huawei AppGallery).
+**المنصّات المدعومة:** Android و iOS — معرّف التطبيق `com.khawarizmie.medjat` (منشور أيضًا على Huawei AppGallery).
 
 ---
 

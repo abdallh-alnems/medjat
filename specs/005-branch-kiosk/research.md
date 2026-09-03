@@ -193,8 +193,8 @@ attendance clerk enrolls faces but does not browse colleagues' stored captures.
 ## R-007 — Fleet versioning rides the existing Remote Config mechanism
 
 **Decision**: Register the kiosk as a third app in
-`RemoteConfigService::APPS` with `permedjat_kiosk_min_version` and
-`permedjat_kiosk_maintenance_enabled`.
+`RemoteConfigService::APPS` with `medjat_kiosk_min_version` and
+`medjat_kiosk_maintenance_enabled`.
 
 **Rationale**: `core/RemoteConfigService.php:10` hardcodes a two-app list
 (`permedjat_app`, `permedjat_central`), each with `min_version_key`, `maintenance_key`,
@@ -236,7 +236,7 @@ unlink before deleting.
 
 **Decision**: Ship the kiosk as its own Flutter project,
 `frontend/mobile/kiosk/`, with its own `applicationId`
-(`com.khawarizmie.permedjat.kiosk`), manifest, signing key, and release cadence.
+(`com.khawarizmie.medjat.kiosk`), manifest, signing key, and release cadence.
 Share **only** the face pipeline, through a new `frontend/mobile/shared/`
 package that both apps depend on by path.
 

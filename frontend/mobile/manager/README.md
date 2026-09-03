@@ -106,7 +106,7 @@ lib/
 
 **اللغات:** العربية (RTL، افتراضي) والإنجليزية (LTR) عبر `LocaleService`؛ الاتجاه يتبدّل تلقائيًا. **الثيم:** يتبع النظام (Light/Dark).
 
-**المنصّات المدعومة:** Android و iOS — معرّف التطبيق `com.khawarizmie.permedjatCentral`.
+**المنصّات المدعومة:** Android و iOS — معرّف التطبيق `com.khawarizmie.medjatCentral`.
 
 ---
 

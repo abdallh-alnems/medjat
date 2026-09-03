@@ -24,7 +24,7 @@ export function logout() {
 /**
  * Desktop sign-in, step 1 — called in the *browser* right after a successful
  * login that carried a ?desktop=<state> parameter. Returns a single-use code to
- * hand back to the desktop app over its permedjat:// link.
+ * hand back to the desktop app over its medjat:// link.
  */
 export function desktopAuthorize(state: string) {
   return apiPost<{ code: string; expires_in_seconds: number }>(

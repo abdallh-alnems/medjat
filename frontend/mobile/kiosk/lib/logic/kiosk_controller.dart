@@ -30,7 +30,7 @@ enum KioskState {
   /// Cannot reach the server. Records nothing, and says so (FR-024).
   offline,
 
-  /// Below `permedjat_kiosk_min_version`. The message is for a supervisor —
+  /// Below `medjat_kiosk_min_version`. The message is for a supervisor —
   /// there is no store to send anyone to (FR-053).
   updateRequired,
 

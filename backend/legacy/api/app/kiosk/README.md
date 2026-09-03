@@ -111,7 +111,7 @@ that cannot reach it records nothing and says so. The trade is that **no
 biometric data exists at rest on the tablet** — a stolen wall-mounted device
 carries no face templates for anybody. The two cannot be separated.
 
-**Raising `permedjat_kiosk_min_version` takes branches offline.** The store apps can
+**Raising `medjat_kiosk_min_version` takes branches offline.** The store apps can
 send a user to a store; a directly-installed kiosk has nowhere to be sent, so
 somebody must physically visit each tablet. Check the blast radius first:
 

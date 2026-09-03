@@ -48,10 +48,10 @@ return [
         // Where a visitor without the app is sent. Per app, because the
         // employee app and the management app are separate listings.
         'employee_android' => (string) env('STORE_URL_EMPLOYEE_ANDROID',
-            'https://play.google.com/store/apps/details?id=com.khawarizmie.permedjat'),
+            'https://play.google.com/store/apps/details?id=com.khawarizmie.medjat'),
         'employee_ios' => (string) env('STORE_URL_EMPLOYEE_IOS', ''),
         'central_android' => (string) env('STORE_URL_CENTRAL_ANDROID',
-            'https://play.google.com/store/apps/details?id=com.khawarizmie.permedjat_central'),
+            'https://play.google.com/store/apps/details?id=com.khawarizmie.medjat_central'),
         'central_ios' => (string) env('STORE_URL_CENTRAL_IOS', ''),
     ],
 

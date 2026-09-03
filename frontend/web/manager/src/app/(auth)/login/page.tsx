@@ -53,7 +53,7 @@ export default function LoginPage() {
   const subscribe = () => () => {};
 
   // Set when this page is the browser half of a desktop sign-in: the app opened
-  // us with ?desktop=<nonce> and is waiting on permedjat:// for the result.
+  // us with ?desktop=<nonce> and is waiting on medjat:// for the result.
   const desktopState = useSyncExternalStore(
     subscribe,
     () => new URLSearchParams(window.location.search).get("desktop"),
@@ -78,7 +78,7 @@ export default function LoginPage() {
         const { code } = await desktopAuthorize(desktopState);
         setHandedOff(true);
         window.location.href =
-          `permedjat://auth?code=${encodeURIComponent(code)}` +
+          `medjat://auth?code=${encodeURIComponent(code)}` +
           `&state=${encodeURIComponent(desktopState)}`;
         return;
       } catch (err) {
@@ -168,7 +168,7 @@ export default function LoginPage() {
   function handOffToBrowser(provider: "google" | "apple") {
     setBusy(provider);
     setWaitingOnBrowser(true);
-    window.permedjat?.signInWithBrowser?.();
+    window.medjat?.signInWithBrowser?.();
   }
 
   async function onGoogle() {
@@ -202,7 +202,7 @@ export default function LoginPage() {
   }
 
   // Browser half of the desktop flow: the session has been handed back over
-  // permedjat:// and this tab has nothing left to do.
+  // medjat:// and this tab has nothing left to do.
   if (handedOff) {
     return (
       <Card>

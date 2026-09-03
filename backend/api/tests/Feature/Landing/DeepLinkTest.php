@@ -43,7 +43,7 @@ final class DeepLinkTest extends TestCase
         // Both: a custom-scheme link is silently dropped by some in-app
         // browsers, and the code can always be typed.
         $response->assertSee('AB12CD34', false);
-        $response->assertSee('permedjatcentral://join?code=AB12CD34', false);
+        $response->assertSee('medjatcentral://join?code=AB12CD34', false);
     }
 
     public function test_an_invitation_link_offers_the_web_app_when_one_is_configured(): void
@@ -60,7 +60,7 @@ final class DeepLinkTest extends TestCase
         $response = $this->get('/join_team?code=<script>')->assertOk();
 
         $response->assertSee('غير صالح', false);
-        $response->assertDontSee('permedjatcentral://', false);
+        $response->assertDontSee('medjatcentral://', false);
     }
 
     public function test_the_page_does_not_echo_an_injected_code_as_markup(): void
@@ -92,7 +92,7 @@ final class DeepLinkTest extends TestCase
         $this->get('http://api.permedjat.com/.well-known/assetlinks.json')
             ->assertOk()
             ->assertHeader('Content-Type', 'application/json')
-            ->assertSee('permedjat_central', false);
+            ->assertSee('medjat_central', false);
     }
 
     public function test_the_bare_domain_serves_the_employee_apps_association_files(): void
@@ -101,8 +101,8 @@ final class DeepLinkTest extends TestCase
         // the link just quietly opens a web page instead of the app.
         $this->get('http://permedjat.com/.well-known/assetlinks.json')
             ->assertOk()
-            ->assertSee('com.khawarizmie.permedjat', false)
-            ->assertDontSee('permedjat_central', false);
+            ->assertSee('com.khawarizmie.medjat', false)
+            ->assertDontSee('medjat_central', false);
     }
 
     public function test_the_extensionless_apple_file_is_served_as_json(): void

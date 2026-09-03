@@ -86,8 +86,8 @@
 
 ### App-side Remote Config wiring (other apps)
 
-- [x] T018 [P] [US2] Ensure the Employee app reads `permedjat_app_min_version` + `permedjat_app_maintenance_enabled` — mirror the HR app's `UpdateService`/`MaintenanceGate` in `frontend/mobile/employee/lib/core/` (add gate/service if missing); fall back to a safe non-locking state on RC failure (FR-019/SC-008)
-- [x] T019 [P] [US2] Add a `permedjat_admin_min_version` force-update check to `frontend/mobile/superadmin` (version-only, no maintenance gate)
+- [x] T018 [P] [US2] Ensure the Employee app reads `medjat_app_min_version` + `medjat_app_maintenance_enabled` — mirror the HR app's `UpdateService`/`MaintenanceGate` in `frontend/mobile/employee/lib/core/` (add gate/service if missing); fall back to a safe non-locking state on RC failure (FR-019/SC-008)
+- [x] T019 [P] [US2] Add a `medjat_admin_min_version` force-update check to `frontend/mobile/superadmin` (version-only, no maintenance gate)
 
 ### Flutter (admin) — app control screen
 

@@ -63,9 +63,9 @@ App-control values live as Remote Config parameters (read/written by the backend
 ```json
 {
   "apps": [
-    { "key": "permedjat_app",     "name": "Employee App",       "min_version": "1.2.0", "maintenance": false, "supports_maintenance": true },
-    { "key": "permedjat_central", "name": "HR Management App",   "min_version": "1.4.1", "maintenance": false, "supports_maintenance": true },
-    { "key": "permedjat_admin",   "name": "Admin App",          "min_version": "1.0.0", "maintenance": null,  "supports_maintenance": false }
+    { "key": "medjat_app",     "name": "Employee App",       "min_version": "1.2.0", "maintenance": false, "supports_maintenance": true },
+    { "key": "medjat_central", "name": "HR Management App",   "min_version": "1.4.1", "maintenance": false, "supports_maintenance": true },
+    { "key": "medjat_admin",   "name": "Admin App",          "min_version": "1.0.0", "maintenance": null,  "supports_maintenance": false }
   ]
 }
 ```

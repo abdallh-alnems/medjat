@@ -229,7 +229,7 @@ working. `ssh medjat` no longer resolves.
 ## 9. Deep links
 
 `.well-known/assetlinks.json` and `apple-app-site-association` now carry
-`com.khawarizmie.permedjat*`. They must be served from **both** domains, because
+`com.khawarizmie.medjat*`. They must be served from **both** domains, because
 the installed apps verify against `medjatapp.com` and the new ones against
 `permedjat.com`.
 
@@ -282,8 +282,8 @@ What does not survive the move:
   plus the old project's hash parameters, or every account has to sign up again.
 - **Crashlytics and Analytics history stays behind.** It cannot be transferred.
 - **Remote Config is empty.** Recreate every key. The keys themselves were
-  renamed in this repo (`permedjat_app_min_version`,
-  `maintenance_permedjat_kiosk`, …), and published builds read the **old**
+  renamed in this repo (`medjat_app_min_version`,
+  `maintenance_medjat_kiosk`, …), and published builds read the **old**
   names — so the old project's Remote Config must keep working for them while
   the new one serves the new builds.
 - The custom email-action domain and the branded verification/reset templates
@@ -298,12 +298,12 @@ listing. Changing them does not rename an app; it creates a different one.
 
 | | old | new |
 |---|---|---|
-| Employee (Android) | `com.khawarizmie.medjat` | `com.khawarizmie.permedjat` |
-| Manager (Android) | `com.khawarizmie.medjat_central` | `com.khawarizmie.permedjat_central` |
-| Kiosk (Android) | `com.khawarizmie.medjat.kiosk` | `com.khawarizmie.permedjat.kiosk` |
-| Super-admin (Android) | `com.khawarizmie.medjat_admin` | `com.khawarizmie.permedjat_admin` |
-| Employee (iOS) | `com.khawarizmie.medjat` | `com.khawarizmie.permedjat` |
-| Manager (iOS) | `com.khawarizmie.medjat-central` | `com.khawarizmie.permedjat-central` |
+| Employee (Android) | `com.khawarizmie.medjat` | `com.khawarizmie.medjat` |
+| Manager (Android) | `com.khawarizmie.medjat_central` | `com.khawarizmie.medjat_central` |
+| Kiosk (Android) | `com.khawarizmie.medjat.kiosk` | `com.khawarizmie.medjat.kiosk` |
+| Super-admin (Android) | `com.khawarizmie.medjat_admin` | `com.khawarizmie.medjat_admin` |
+| Employee (iOS) | `com.khawarizmie.medjat` | `com.khawarizmie.medjat` |
+| Manager (iOS) | `com.khawarizmie.medjat-central` | `com.khawarizmie.medjat-central` |
 
 Consequences, so they are not a surprise:
 
