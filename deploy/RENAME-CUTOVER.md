@@ -185,20 +185,20 @@ Also rotate the logrotate stanza if one names the old log file.
 
 ---
 
-## 8. The SSH alias
+## 8. The SSH alias — already done
 
 `backend/legacy/deploy.sh` and `frontend/web/manager/deploy-web.sh` both default
-to a host called `permedjat`, overridable with `PERMEDJAT_SSH_HOST`. Rename the
-block in `~/.ssh/config` on the Mac:
+to a host called `permedjat`, overridable with `PERMEDJAT_SSH_HOST`. The block in
+`~/.ssh/config` on the Mac has been renamed to match, and the key file with it:
 
 ```
-Host permedjat            # was: Host medjat
-    HostName <unchanged>
-    User <unchanged>
-    IdentityFile ~/.ssh/medjat_hetzner
+Host permedjat                              # was: Host medjat
+    IdentityFile ~/.ssh/permedjat_hetzner   # was: medjat_hetzner
 ```
 
-Keeping the key file's name is fine — it is a local filename, not an identity.
+Nothing changed on the server side — the key material and the authorized_keys
+entry are untouched, only the local filename. `ssh permedjat` is verified
+working. `ssh medjat` no longer resolves.
 
 ---
 
