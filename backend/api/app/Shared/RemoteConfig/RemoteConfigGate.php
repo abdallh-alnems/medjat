@@ -14,8 +14,8 @@ namespace App\Shared\RemoteConfig;
 interface RemoteConfigGate
 {
     /**
-     * The gate for one app, by its key: medjat_app, medjat_central,
-     * medjat_kiosk.
+     * The gate for one app, by its key: permedjat_app, permedjat_central,
+     * permedjat_kiosk.
      *
      * Implementations must fail open. A configuration outage must never stop
      * every kiosk in every company from recording attendance — the worst

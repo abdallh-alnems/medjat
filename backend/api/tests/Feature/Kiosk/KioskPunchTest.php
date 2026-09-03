@@ -161,7 +161,7 @@ final class KioskPunchTest extends TestCase
 
     public function test_an_outdated_build_is_told_to_update_rather_than_served(): void
     {
-        $this->gate->set('medjat_kiosk', '2.0.0');
+        $this->gate->set('permedjat_kiosk', '2.0.0');
 
         $this->asKiosk()->postJson('/v1/kiosk/heartbeat', ['app_version' => '1.0.0'])
             ->assertStatus(426)
@@ -171,7 +171,7 @@ final class KioskPunchTest extends TestCase
 
     public function test_maintenance_takes_the_tablet_out_of_service(): void
     {
-        $this->gate->set('medjat_kiosk', '0.0.0', maintenance: true);
+        $this->gate->set('permedjat_kiosk', '0.0.0', maintenance: true);
 
         $this->asKiosk()->postJson('/v1/kiosk/heartbeat')
             ->assertStatus(503)

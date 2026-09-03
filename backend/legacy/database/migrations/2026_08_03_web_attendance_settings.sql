@@ -4,7 +4,7 @@
 -- Feature: specs/004-web-attendance-checkin
 -- ============================================
 --
--- DEFAULT 0. The browser is the weakest verification surface Medjat has — no
+-- DEFAULT 0. The browser is the weakest verification surface Permedjat has — no
 -- WiFi access-point check, no location-spoofing signal, no face model — so
 -- shipping it enabled would quietly lower the standard for every company that
 -- already exists. Each one opts in knowingly instead. Deploying this migration

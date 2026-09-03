@@ -11,21 +11,21 @@
 #   ./deploy.sh               push code, install deps, migrate, cache, verify
 #   ./deploy.sh --code-only   push code and reload, skip migrations
 #
-# Requires a `medjat` host in ~/.ssh/config.
+# Requires a `permedjat` host in ~/.ssh/config.
 #
 # NOT for the cutover itself. The first time this application meets the
 # production database, its `migrations` table is empty while the schema is
 # already there, and `artisan migrate` would try to CREATE TABLE tenants and
-# stop. Run `php artisan medjat:baseline --pretend` on the server once, read the
+# stop. Run `php artisan permedjat:baseline --pretend` on the server once, read the
 # plan, run it for real, and only then use this script. See README, "Cutover".
 
 set -euo pipefail
 
-REMOTE="${MEDJAT_SSH_HOST:-medjat}"
-REMOTE_DIR="${MEDJAT_REMOTE_DIR:-/var/www/medjat/api}"
+REMOTE="${PERMEDJAT_SSH_HOST:-permedjat}"
+REMOTE_DIR="${PERMEDJAT_REMOTE_DIR:-/var/www/permedjat/api}"
 LOCAL_DIR="$(cd "$(dirname "$0")" && pwd)"
-API_URL="${MEDJAT_API_URL:-https://api.medjatapp.com/backend}"
-PHP_FPM="${MEDJAT_PHP_FPM:-php8.5-fpm}"
+API_URL="${PERMEDJAT_API_URL:-https://api.permedjatapp.com/backend}"
+PHP_FPM="${PERMEDJAT_PHP_FPM:-php8.5-fpm}"
 
 DRY=0; CODE_ONLY=0
 case "${1:-}" in

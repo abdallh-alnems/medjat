@@ -127,11 +127,11 @@ Background::defer(static function () use (
     // Email.
     if ($removedEmail !== '') {
         try {
-            $safeName = htmlspecialchars($removedName !== '' ? $removedName : 'مستخدم Medjat', ENT_QUOTES, 'UTF-8');
+            $safeName = htmlspecialchars($removedName !== '' ? $removedName : 'مستخدم Permedjat', ENT_QUOTES, 'UTF-8');
             $safeCompany = htmlspecialchars($companyName, ENT_QUOTES, 'UTF-8');
             $companyLine = $companyName !== ''
-                ? "تمت إزالتك من فريق «{$safeCompany}» على Medjat."
-                : 'تمت إزالتك من الشركة على Medjat.';
+                ? "تمت إزالتك من فريق «{$safeCompany}» على Permedjat."
+                : 'تمت إزالتك من الشركة على Permedjat.';
             $html = '<!DOCTYPE html><html dir="rtl" lang="ar">'
                 . '<head><meta charset="UTF-8"></head>'
                 . '<body style="font-family:\'IBM Plex Sans Arabic\',Tahoma,Arial,sans-serif;direction:rtl;text-align:right;padding:24px;background:#f9f9f9;">'
@@ -142,7 +142,7 @@ Background::defer(static function () use (
                 . '<hr style="border:none;border-top:1px solid #eee;margin:20px 0;">'
                 . '<p style="color:#888;font-size:13px;line-height:1.6;">إن كنت تعتقد أن ذلك تم عن طريق الخطأ، يُرجى التواصل مع مسؤول الشركة.</p>'
                 . '</div></body></html>';
-            EmailService::send($removedEmail, 'تمت إزالتك من الشركة في Medjat', $html);
+            EmailService::send($removedEmail, 'تمت إزالتك من الشركة في Permedjat', $html);
         } catch (\Throwable $e) {
             error_log('Remove admin email failed: ' . $e->getMessage());
         }

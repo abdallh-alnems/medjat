@@ -14,14 +14,14 @@ export default function AuthLayout({
       >
         <Image
           src="/logo.png"
-          alt="Medjat Central"
+          alt="Permedjat Central"
           width={64}
           height={64}
           priority
           className="h-14 w-14 rounded-2xl shadow-elev-sm sm:h-16 sm:w-16"
         />
         <span className="text-headline-sm font-bold text-foreground sm:text-headline-md">
-          Medjat Central
+          Permedjat Central
         </span>
       </Link>
       <div className="w-full max-w-md">{children}</div>

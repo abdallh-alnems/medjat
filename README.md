@@ -1,11 +1,11 @@
-# Medjat — منصّة إدارة الحضور والرواتب (HR SaaS)
+# Permedjat — منصّة إدارة الحضور والرواتب (HR SaaS)
 
-**Medjat** منصّة متكاملة لإدارة الموارد البشرية (الحضور والانصراف، الورديات، الإجازات، الرواتب، المستندات) مصمّمة لسوق **مصر وشمال إفريقيا**، بواجهات عربية (RTL) أولًا مع دعم الإنجليزية في تطبيق الموظف وتطبيق الإدارة ونسخة الويب (لوحة الـ Super Admin بالعربية فقط). المنصّة **متعدّدة المستأجرين (Multi-tenant)**: كل شركة عميلة بياناتها معزولة، وتُدار اشتراكاتها مركزيًا من فريق Medjat.
+**Permedjat** منصّة متكاملة لإدارة الموارد البشرية (الحضور والانصراف، الورديات، الإجازات، الرواتب، المستندات) مصمّمة لسوق **مصر وشمال إفريقيا**، بواجهات عربية (RTL) أولًا مع دعم الإنجليزية في تطبيق الموظف وتطبيق الإدارة ونسخة الويب (لوحة الـ Super Admin بالعربية فقط). المنصّة **متعدّدة المستأجرين (Multi-tenant)**: كل شركة عميلة بياناتها معزولة، وتُدار اشتراكاتها مركزيًا من فريق Permedjat.
 
 تتكوّن المنصّة من **باك إند PHP واحد** يخدم **ثلاثة تطبيقات Flutter** و**نسخة ويب** بـ Next.js:
 
 ```
-Medjat/
+Permedjat/
 ├── backend_medjet/          ← REST API بلغة PHP 8.x (MySQL 8) — قلب المنصّة
 ├── frontend/
 │   ├── mobile/              ← تطبيقات Flutter — أداة `flutter`
@@ -13,7 +13,7 @@ Medjat/
 │   │   ├── manager/         ← تطبيق الإدارة والموارد البشرية للشركة (Android / iOS)
 │   │   ├── kiosk/           ← كشك الفرع (تابلت Android) — حضور بجهاز مشترك
 │   │   ├── superadmin/      ← لوحة الـ Super Admin للفريق الداخلي (Android)
-│   │   └── shared/          ← حزمة `medjat_shared` المشتركة بين تطبيقات Flutter
+│   │   └── shared/          ← حزمة `permedjat_shared` المشتركة بين تطبيقات Flutter
 │   ├── web/                 ← أداة `npm`
 │   │   ├── manager/         ← نسخة الويب من تطبيق الإدارة (Next.js 16)
 │   │   └── site/            ← الموقع التعريفي والصفحات الثابتة (الخصوصية، حذف الحساب، الدعم)
@@ -42,7 +42,7 @@ REST API بلغة **PHP 8.x** على قاعدة **MySQL 8**، مستضاف عل�
 مركز التحكّم الكامل للشركة: إدارة الموظفين والفروع والفئات، تصميم الورديات والجدول الأسبوعي، اعتماد الإجازات، تشغيل الرواتب والتعديلات الجماعية والتسويات، ضبط طرق الحضور وشبكات الفروع وأجهزة البصمة، والتقارير مع التصدير (PDF/Word/DOCX). يدعم العربية والإنجليزية. (Android + iOS)
 
 ### 4) نسخة الويب — `frontend/web/manager/`
-منفذ ويب لتطبيق الإدارة بـ **Next.js 16 (App Router)** و React 19 و TypeScript، يتحدّث إلى **نفس الباك إند ونفس مشروع Firebase** عبر وسيط `/api/[...path]` يحقن بيانات الـ Basic-auth على الخادم. مُستضاف ذاتيًا على نفس خادم Hetzner على `app.medjatapp.com`.
+منفذ ويب لتطبيق الإدارة بـ **Next.js 16 (App Router)** و React 19 و TypeScript، يتحدّث إلى **نفس الباك إند ونفس مشروع Firebase** عبر وسيط `/api/[...path]` يحقن بيانات الـ Basic-auth على الخادم. مُستضاف ذاتيًا على نفس خادم Hetzner على `app.permedjatapp.com`.
 
 ### 5) لوحة الـ Super Admin — `frontend/mobile/superadmin/`
 للفريق الداخلي: إدارة الشركات العميلة (Tenants) والمستخدمين الداخليين، الدعم الفني، سجل التدقيق، والتحكّم عن بُعد في حالة التطبيقات (تحديث إجباري/صيانة) عبر Firebase Remote Config. (Android)
@@ -55,7 +55,7 @@ REST API بلغة **PHP 8.x** على قاعدة **MySQL 8**، مستضاف عل�
 - **الواجهات:** Flutter / Dart 3.11، إدارة الحالة **GetX**، نمط **MVVM** (طبقات `core / data / logic / view`).
 - **الويب:** Next.js 16 · React 19 · TypeScript · TanStack Query · Zustand · shadcn + Tailwind · RTL.
 - **الشبكة:** كل تطبيق يغلّف نداءات الـ API في `core/class/crud.dart`، وكل عمليات الكتابة تستخدم **POST** (وليس PUT).
-- **Firebase:** مشروع `medjat` — Messaging، Analytics، Crashlytics، Remote Config (+ Auth/Google Sign-In في تطبيق الإدارة، App Check في تطبيق الموظف).
+- **Firebase:** مشروع `permedjat` — Messaging، Analytics، Crashlytics، Remote Config (+ Auth/Google Sign-In في تطبيق الإدارة، App Check في تطبيق الموظف).
 - **التصميم:** خطوط **IBM Plex Sans Arabic** (عربي) و**Geist** (لاتيني/أرقام)، `flutter_screenutil`، `lottie`، دعم Light/Dark.
 
 ---
@@ -69,7 +69,7 @@ REST API بلغة **PHP 8.x** على قاعدة **MySQL 8**، مستضاف عل�
 - **مكافحة التلاعب:** رفض الموقع المزيّف (`is_mock_location`) اختياري لكل شركة وعلى Android فقط، وكل محاولة محجوبة تُسجَّل في `attendance_security_logs`.
 - **التوقيت لكل شركة:** كل حساب للوقت يمرّ عبر `TenantClock` (من `tenants.timezone`) لا عبر `date()`/`NOW()` المباشرة، وباسم المنطقة الزمنية لا بإزاحة ثابتة.
 - **قفل الرواتب عند الاعتماد:** الاعتماد يُجمّد أرقام الدورة كاملة؛ يُعرض الرقم المجمّد للمعتمد/المدفوع وتقدير حيّ للمسوّدة.
-- **روابط الانضمام:** الرمز + الرابط + الـ QR يتشاركون صفّ تفعيل أحادي الاستخدام، و deep links على `medjatapp.com/join`.
+- **روابط الانضمام:** الرمز + الرابط + الـ QR يتشاركون صفّ تفعيل أحادي الاستخدام، و deep links على `permedjatapp.com/join`.
 - **التحكّم عن بُعد:** قيم التحديث الإجباري/الصيانة في Firebase Remote Config، يُحرّرها فريق الـ Admin وتقرؤها التطبيقات عند الإقلاع (مع رسالة FCM للتأثير الفوري).
 
 ---
@@ -80,10 +80,10 @@ REST API بلغة **PHP 8.x** على قاعدة **MySQL 8**، مستضاف عل�
 - PHP 8.x + MySQL 8 (الأسهل عبر **MAMP**)
 - Flutter SDK ‏`^3.11.1`
 - Node.js 22+ (لنسخة الويب)
-- إعداد Firebase (مشروع `medjat`) لملفّات التطبيقات
+- إعداد Firebase (مشروع `permedjat`) لملفّات التطبيقات
 
 ### 1) قاعدة البيانات والباك إند (MAMP)
-- شغّل MAMP — MySQL على المنفذ **`8889`**، المستخدم/كلمة المرور `root/root`، القاعدة `medjat`.
+- شغّل MAMP — MySQL على المنفذ **`8889`**، المستخدم/كلمة المرور `root/root`، القاعدة `permedjat`.
 - طبّق المخطّط/الـ migrations من `backend_medjet/migrations/`.
   > ملاحظة: `schema.sql` يستخدم صياغة `ADD COLUMN IF NOT EXISTS` الخاصة بـ MariaDB؛ على MySQL 8 الحيّة تُكتب الـ migrations الجديدة يدويًا وتُشغَّل يدويًا.
 - لتشغيل/فحص PHP محليًا استخدم نسخة MAMP: `/Applications/MAMP/bin/php/php8.4.15/bin/php`.
@@ -131,10 +131,10 @@ npm run dev
 
 | التطبيق | المنصّات | معرّف التطبيق (Android) |
 |---------|----------|--------------------------|
-| medjat_app | Android · iOS | `com.khawarizmie.medjat` |
-| medjat_central | Android · iOS | `com.khawarizmie.medjatCentral` |
-| medjat_admin | Android | `com.khawarizmie.medjat_admin` |
-| medjat_central_web | الويب | `app.medjatapp.com` |
+| permedjat_app | Android · iOS | `com.khawarizmie.permedjat` |
+| permedjat_central | Android · iOS | `com.khawarizmie.permedjatCentral` |
+| permedjat_admin | Android | `com.khawarizmie.permedjat_admin` |
+| permedjat_central_web | الويب | `app.permedjatapp.com` |
 
 ---
 
@@ -144,13 +144,13 @@ npm run dev
 
 | النطاق | الخدمة |
 |--------|--------|
-| `api.medjatapp.com/backend_medjet` | الباك إند PHP |
-| `app.medjatapp.com` | نسخة الويب (Next.js عبر systemd `medjat-web.service`) |
-| `medjatapp.com` + `www` | الموقع التعريفي الثابت + `/join` و`/.well-known/*` |
-| `grafana.medjatapp.com` | مراقبة (Grafana + Prometheus) |
-| `db.medjatapp.com` | Adminer لعرض القاعدة (خلف basic-auth) |
+| `api.permedjatapp.com/backend_medjet` | الباك إند PHP |
+| `app.permedjatapp.com` | نسخة الويب (Next.js عبر systemd `permedjat-web.service`) |
+| `permedjatapp.com` + `www` | الموقع التعريفي الثابت + `/join` و`/.well-known/*` |
+| `grafana.permedjatapp.com` | مراقبة (Grafana + Prometheus) |
+| `db.permedjatapp.com` | Adminer لعرض القاعدة (خلف basic-auth) |
 | المنفذ `8090` (بـ IP مباشرة) | أجهزة البصمة ZKTeco — HTTP عادي خارج Cloudflare |
 
-- **المهام المجدولة:** `/etc/cron.d/medjat` بتوقيت القاهرة — ترحيل أرصدة الإجازات 00:00/00:30، تدارك الغياب 23:50، التنبيهات اليومية 07:00، ونسخة احتياطية للقاعدة 02:00 (يُحتفظ بها 14 يومًا).
-- **النطاق والبريد:** `medjatapp.com` موثّق بالكامل للبريد (SMTP من Hostinger + نطاق مخصّص لـ Firebase)؛ سجلات البريد تبقى DNS-only ولا تُمرَّر عبر Cloudflare.
-- **Firebase:** مشروع `medjat` (FCM + Remote Config + Analytics/Crashlytics + Auth).
+- **المهام المجدولة:** `/etc/cron.d/permedjat` بتوقيت القاهرة — ترحيل أرصدة الإجازات 00:00/00:30، تدارك الغياب 23:50، التنبيهات اليومية 07:00، ونسخة احتياطية للقاعدة 02:00 (يُحتفظ بها 14 يومًا).
+- **النطاق والبريد:** `permedjatapp.com` موثّق بالكامل للبريد (SMTP من Hostinger + نطاق مخصّص لـ Firebase)؛ سجلات البريد تبقى DNS-only ولا تُمرَّر عبر Cloudflare.
+- **Firebase:** مشروع `permedjat` (FCM + Remote Config + Analytics/Crashlytics + Auth).

@@ -7,7 +7,7 @@ import 'dart:async';
 /// Google — those calls hang rather than throw. Anything that touches a
 /// Firebase API must gate on this instead of assuming `initializeApp` ran.
 ///
-/// Lifted from medjat_app, which learned it on Huawei handsets. A branch buys
+/// Lifted from permedjat_app, which learned it on Huawei handsets. A branch buys
 /// the cheapest tablet that has a front camera, so the kiosk is at least as
 /// exposed to it.
 class FirebaseReady {

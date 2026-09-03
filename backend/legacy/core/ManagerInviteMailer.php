@@ -25,7 +25,7 @@ final class ManagerInviteMailer {
     /**
      * Public URL of the bridge page that opens the app via its custom scheme and
      * falls back to web/store. Derived from the current request so it works on
-     * whatever host the backend is being served from (api.medjatapp.com live,
+     * whatever host the backend is being served from (api.permedjatapp.com live,
      * localhost:8888 under MAMP).
      */
     public static function joinUrl(string $code): string {
@@ -36,7 +36,7 @@ final class ManagerInviteMailer {
         $apiPos = strpos($scriptName, '/api/');
         $backendRoot = $apiPos !== false ? substr($scriptName, 0, $apiPos) : '';
         $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? 'api.medjatapp.com';
+        $host = $_SERVER['HTTP_HOST'] ?? 'api.permedjatapp.com';
 
         return $scheme . '://' . $host . $backendRoot
             . '/join_team.php?code=' . rawurlencode($code);
@@ -54,7 +54,7 @@ final class ManagerInviteMailer {
             try {
                 EmailService::send(
                     $email,
-                    'دعوة للانضمام إلى فريق على Medjat',
+                    'دعوة للانضمام إلى فريق على Permedjat',
                     self::html($code, $role, $companyName, $joinUrl, $webBase)
                 );
             } catch (\Throwable $e) {
@@ -76,8 +76,8 @@ final class ManagerInviteMailer {
         $safeCode = htmlspecialchars($code, ENT_QUOTES, 'UTF-8');
 
         $intro = $companyName !== ''
-            ? "تمت دعوتك للانضمام إلى فريق «{$safeCompany}» على Medjat بدور <strong>{$safeRole}</strong>."
-            : "تمت دعوتك للانضمام إلى فريق على Medjat بدور <strong>{$safeRole}</strong>.";
+            ? "تمت دعوتك للانضمام إلى فريق «{$safeCompany}» على Permedjat بدور <strong>{$safeRole}</strong>."
+            : "تمت دعوتك للانضمام إلى فريق على Permedjat بدور <strong>{$safeRole}</strong>.";
 
         $safeJoin = htmlspecialchars($joinUrl, ENT_QUOTES, 'UTF-8');
         $linkBlock =
@@ -111,7 +111,7 @@ final class ManagerInviteMailer {
             . '</div>'
             . $linkBlock
             . '<p style="color:#444;font-size:14px;line-height:1.8;">'
-            . 'افتح تطبيق Medjat للإدارة (أو الموقع)، ثم اختر «الانضمام إلى شركة» وأدخل هذا الرمز. '
+            . 'افتح تطبيق Permedjat للإدارة (أو الموقع)، ثم اختر «الانضمام إلى شركة» وأدخل هذا الرمز. '
             . 'إن لم يكن لديك حساب بعد، أنشئ حسابًا بنفس هذا البريد الإلكتروني أولًا.'
             . '</p>'
             . '<hr style="border:none;border-top:1px solid #eee;margin:20px 0;">'

@@ -1,10 +1,10 @@
-# Store Assets — ميدجات للإدارة
+# Store Assets — بيرمدجات للإدارة
 
 كل أصول رفع التطبيق على المتجرين في مكان واحد.
 
 ```
 store_assets/
-├── google_play/   ← أصول Google Play (Android · حزمة com.khawarizmie.medjat_central)
+├── google_play/   ← أصول Google Play (Android · حزمة com.khawarizmie.permedjat_central)
 │   ├── icon/                  أيقونة 512×512 + المصدر 1024
 │   ├── feature_graphic/       الرسم المميز 1024×500
 │   ├── screenshots/           لقطات الهاتف 1080×1920
@@ -12,7 +12,7 @@ store_assets/
 │   ├── make_screenshots.py    سكربت تأطير اللقطات
 │   └── README.md              نصوص بطاقة المتجر + بيانات المراجعة
 │
-└── app_store/     ← أصول App Store (iOS · حزمة com.khawarizmie.medjatCentral)
+└── app_store/     ← أصول App Store (iOS · حزمة com.khawarizmie.permedjatCentral)
     ├── icon/                  أيقونة 1024×1024 (بلا شفافية)
     ├── screenshots/iphone_6_9/
     │   ├── en/  (8 لقطات إنجليزي 1320×2868)

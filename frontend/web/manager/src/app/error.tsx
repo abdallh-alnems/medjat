@@ -17,7 +17,7 @@ export default function Error({
 }) {
   useEffect(() => {
     // Surface to console; a production logger can hook in here.
-    console.error("[medjat] route error:", error);
+    console.error("[permedjat] route error:", error);
   }, [error]);
 
   return (

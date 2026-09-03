@@ -1,9 +1,9 @@
-# أصول متجر Google Play — ميدجات (تطبيق الإدارة / Central)
+# أصول متجر Google Play — بيرمدجات (تطبيق الإدارة / Central)
 
-كل ما تحتاجه لرفع بطاقة المتجر لتطبيق **الإدارة** (medjat_central)، في مكان واحد.
+كل ما تحتاجه لرفع بطاقة المتجر لتطبيق **الإدارة** (permedjat_central)، في مكان واحد.
 
 > ملاحظة: هذا تطبيق **المدير / صاحب العمل** لإدارة الموظفين والحضور والرواتب — وليس تطبيق الموظف.
-> اسم الحزمة (applicationId): `com.khawarizmie.medjatCentral`
+> اسم الحزمة (applicationId): `com.khawarizmie.permedjatCentral`
 
 ## 📁 محتويات المجلد
 
@@ -24,7 +24,7 @@ play_store_assets/
 
 ### ما الجاهز وما المتبقّي
 - ✅ **الأيقونة** (512 + المصدر 1024) — منسوخة من `branding/icon_master.png`.
-- ✅ **الرسم المميز (Feature graphic)** — مُولّد بنفس أسلوب التطبيق الأول (تدرّج أخضر + أيقونة + "ميدجات للإدارة").
+- ✅ **الرسم المميز (Feature graphic)** — مُولّد بنفس أسلوب التطبيق الأول (تدرّج أخضر + أيقونة + "بيرمدجات للإدارة").
 - ✅ **أمان البيانات (Data Safety CSV)** — مُولّد من قالب Play الرسمي ومضبوط على بيانات تطبيق الإدارة (783 سطراً). للاستيراد: Play Console → App content → Data safety → Import. أبرز ما صُرّح به: الاسم/البريد/الهاتف/الحساب، الموقع (دقيق+تقريبي عبر geolocator)، المعرّفات (FCM)، الملفات والمستندات، سجلّات الأعطال والأداء (Crashlytics)، تفاعل المستخدم (Analytics) — كله **مُجمَّع وغير مُشارَك** ومشفّر أثناء النقل. طريقة إنشاء الحساب: بريد + كلمة مرور + Google/Apple.
 - ⏳ **لقطات الشاشة (الوحيد المتبقّي):** تحتاج صوراً حقيقية من شاشات التطبيق (Google تشترط أن تمثّل التطبيق فعلاً — لا تُختلق). الخطوات:
   1. شغّل التطبيق على حساب المراجعة (بعد ملئه ببيانات تجريبية).
@@ -37,7 +37,7 @@ play_store_assets/
 
 **اسم التطبيق (≤30):**
 ```
-ميدجات للإدارة
+بيرمدجات للإدارة
 ```
 
 **الوصف المختصر (≤80):**
@@ -47,9 +47,9 @@ play_store_assets/
 
 **الوصف الكامل (≤4000):**
 ```
-ميدجات للإدارة — تطبيق صاحب العمل ومدير الموارد البشرية لإدارة فريقك بالكامل من هاتفك.
+بيرمدجات للإدارة — تطبيق صاحب العمل ومدير الموارد البشرية لإدارة فريقك بالكامل من هاتفك.
 
-ميدجات للإدارة مخصّص لأصحاب الأعمال والمديرين لإدارة شؤون الموظفين والحضور والرواتب في مكان واحد، بواجهة عربية بسيطة.
+بيرمدجات للإدارة مخصّص لأصحاب الأعمال والمديرين لإدارة شؤون الموظفين والحضور والرواتب في مكان واحد، بواجهة عربية بسيطة.
 
 أبرز المزايا:
 
@@ -81,14 +81,14 @@ play_store_assets/
 تُنقل بياناتك عبر اتصال مشفّر، وتقتصر صلاحية الوصول على المديرين المصرّح لهم.
 
 ملاحظة مهمة:
-هذا التطبيق مخصّص لأصحاب الأعمال والمديرين المشتركين في نظام ميدجات. ينشئ صاحب العمل شركته ويدير موظفيه من داخل التطبيق.
+هذا التطبيق مخصّص لأصحاب الأعمال والمديرين المشتركين في نظام بيرمدجات. ينشئ صاحب العمل شركته ويدير موظفيه من داخل التطبيق.
 ```
 
 ## 📝 Store listing text (English — en-US)
 
 **App name (≤30):**
 ```
-Medjat Manager
+Permedjat Manager
 ```
 
 **Short description (≤80):**
@@ -98,9 +98,9 @@ Manage your team: attendance, payroll, leaves, documents & reports in one app
 
 **Full description (≤4000):**
 ```
-Medjat Manager — the employer & HR app to run your whole team from your phone.
+Permedjat Manager — the employer & HR app to run your whole team from your phone.
 
-Medjat Manager is built for business owners and managers to handle employees, attendance and payroll in one place, with a simple Arabic-first interface.
+Permedjat Manager is built for business owners and managers to handle employees, attendance and payroll in one place, with a simple Arabic-first interface.
 
 Key features:
 
@@ -132,7 +132,7 @@ Your privacy & security:
 Your data is transmitted over an encrypted connection, and access is limited to authorized managers only.
 
 Please note:
-This app is intended for business owners and managers subscribed to the Medjat system. The owner creates the company and manages employees from within the app.
+This app is intended for business owners and managers subscribed to the Permedjat system. The owner creates the company and manages employees from within the app.
 ```
 
 ## 🔑 بيانات مراجعة المتجر (للمراجعين) — App access
@@ -140,8 +140,8 @@ This app is intended for business owners and managers subscribed to the Medjat s
 أنشئ هذا الحساب وفعّل بريده وأضف له شركة فيها بيانات، ثم لا تسجّل الدخول به حتى تنتهي المراجعة
 (التطبيق يسمح بجلسة نشطة واحدة فقط لكل حساب):
 
-- **البريد:** `review@medjatapp.com`
-- **كلمة المرور:** `Medjat#Review2026`
+- **البريد:** `review@permedjatapp.com`
+- **كلمة المرور:** `Permedjat#Review2026`
 - طريقة الدخول: **بريد + كلمة مرور** (وليس Google أو Apple).
 
 **نص خانة "App access → Other instructions" (إنجليزي، <500 حرف):**

@@ -51,7 +51,7 @@ class AuthController extends GetxController {
   /// one-tap "Join {company}". Null when there's no pending invitation.
   Map<String, dynamic>? pendingInvitation;
 
-  /// Invite code captured from a `medjatcentral://join?code=...` deep link
+  /// Invite code captured from a `permedjatcentral://join?code=...` deep link
   /// (the email's "open the app and join" button). Consumed by the onboarding
   /// screen, which joins the company automatically once the user is signed in.
   String? pendingInviteCode;
@@ -62,7 +62,7 @@ class AuthController extends GetxController {
 
   bool get isAppleSignInAvailable => Platform.isIOS || Platform.isMacOS;
 
-  static const _kDeepLinkScheme = 'medjatcentral';
+  static const _kDeepLinkScheme = 'permedjatcentral';
 
   @override
   void onInit() {
@@ -139,8 +139,8 @@ class AuthController extends GetxController {
 
   void _handleDeepLink(Uri uri) {
     // Team-invitation hand-off from the email, via either:
-    //   • Universal / App Link:  https://medjatapp.com/join_team?code=XXXX
-    //   • custom-scheme bridge:  medjatcentral://join?code=XXXX
+    //   • Universal / App Link:  https://permedjatapp.com/join_team?code=XXXX
+    //   • custom-scheme bridge:  permedjatcentral://join?code=XXXX
     final isHttpsInvite =
         (uri.scheme == 'https' || uri.scheme == 'http') &&
             uri.path.contains('join_team');

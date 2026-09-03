@@ -2,7 +2,7 @@
 
 @section('body')
     @if ($valid)
-        <p>اضغط الزر أدناه لفتح تطبيق Medjat للإدارة والانضمام إلى الشركة. إن لم يفتح التطبيق تلقائيًا، استخدم رمز الدعوة:</p>
+        <p>اضغط الزر أدناه لفتح تطبيق Permedjat للإدارة والانضمام إلى الشركة. إن لم يفتح التطبيق تلقائيًا، استخدم رمز الدعوة:</p>
 
         {{-- Shown as well as the button: a custom-scheme link is silently
              dropped by some in-app browsers, and the code can always be typed. --}}

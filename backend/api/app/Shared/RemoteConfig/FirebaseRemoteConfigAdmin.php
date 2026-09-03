@@ -25,24 +25,24 @@ final class FirebaseRemoteConfigAdmin implements RemoteConfigAdmin
      * @var array<string, array{name: string, min_version: non-empty-string, maintenance: non-empty-string}>
      */
     private const APPS = [
-        'medjat_app' => [
+        'permedjat_app' => [
             'name' => 'Employee App',
-            'min_version' => 'medjat_app_min_version',
-            'maintenance' => 'medjat_app_maintenance_enabled',
+            'min_version' => 'permedjat_app_min_version',
+            'maintenance' => 'permedjat_app_maintenance_enabled',
         ],
-        'medjat_central' => [
+        'permedjat_central' => [
             'name' => 'HR Management App',
-            'min_version' => 'medjat_central_min_version',
-            'maintenance' => 'medjat_central_maintenance_enabled',
+            'min_version' => 'permedjat_central_min_version',
+            'maintenance' => 'permedjat_central_maintenance_enabled',
         ],
         // The kiosk belongs here even though raising its minimum is the most
         // dangerous button on the screen: a store app can send somebody to a
         // store, but a directly-installed tablet has nowhere to be sent, so
         // somebody must physically visit each branch.
-        'medjat_kiosk' => [
+        'permedjat_kiosk' => [
             'name' => 'Branch Kiosk',
-            'min_version' => 'medjat_kiosk_min_version',
-            'maintenance' => 'medjat_kiosk_maintenance_enabled',
+            'min_version' => 'permedjat_kiosk_min_version',
+            'maintenance' => 'permedjat_kiosk_maintenance_enabled',
         ],
     ];
 

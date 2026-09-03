@@ -7,9 +7,9 @@ Reads the current Remote Config template values for all governed apps.
 Response `data`:
 ```json
 { "apps": [
-  { "key": "medjat_app",     "name": "Employee App",     "min_version": "1.2.0", "maintenance": false, "supports_maintenance": true },
-  { "key": "medjat_central", "name": "HR Management App", "min_version": "1.4.1", "maintenance": false, "supports_maintenance": true },
-  { "key": "medjat_admin",   "name": "Admin App",        "min_version": "1.0.0", "maintenance": null,  "supports_maintenance": false }
+  { "key": "permedjat_app",     "name": "Employee App",     "min_version": "1.2.0", "maintenance": false, "supports_maintenance": true },
+  { "key": "permedjat_central", "name": "HR Management App", "min_version": "1.4.1", "maintenance": false, "supports_maintenance": true },
+  { "key": "permedjat_admin",   "name": "Admin App",        "min_version": "1.0.0", "maintenance": null,  "supports_maintenance": false }
 ] }
 ```
 On RC fetch failure: 503 with a clear message (the app shows an error, never assumes values).
@@ -17,12 +17,12 @@ On RC fetch failure: 503 with a clear message (the app shows an error, never ass
 ## POST `/admin_app_control/set.php` — NEW
 Body (one field per call, or both):
 ```json
-{ "app": "medjat_app", "min_version": "1.3.0", "maintenance": true }
+{ "app": "permedjat_app", "min_version": "1.3.0", "maintenance": true }
 ```
 Rules:
-- `app ∈ {medjat_app, medjat_central, medjat_admin}`.
+- `app ∈ {permedjat_app, permedjat_central, permedjat_admin}`.
 - `min_version` (if present): non-empty, regex `^\d+(\.\d+){0,3}$` → writes `<app>_min_version`. Reject malformed (422, FR-017).
-- `maintenance` (if present): boolean → writes `<app>_maintenance_enabled`. **Rejected (422) when `app=medjat_admin`** (FR-014: Admin not stoppable).
+- `maintenance` (if present): boolean → writes `<app>_maintenance_enabled`. **Rejected (422) when `app=permedjat_admin`** (FR-014: Admin not stoppable).
 - Publishes the updated Remote Config template.
 - Audit `app_control.set_version` and/or `app_control.set_maintenance` with `{app, from, to}`.
 Response `data`: `{ app, min_version?, maintenance? }` (echo of new state).

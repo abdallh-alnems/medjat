@@ -8,14 +8,14 @@
 ## Summary
 
 Put a **shared tablet at the branch door** so employees can record attendance
-without a smartphone and without the Medjat employee app on a personal device.
+without a smartphone and without the Permedjat employee app on a personal device.
 
-Every attendance method Medjat supports today for self check-in — QR + GPS, GPS
+Every attendance method Permedjat supports today for self check-in — QR + GPS, GPS
 only, WiFi + GPS, face selfie — assumes the same thing: **the employee owns a
 working smartphone and has the app installed on it.** A company with forty
 factory workers, cleaners, or drivers will not install forty apps on forty
 personal phones, and many of those phones do not exist. Today those companies
-have exactly two options in Medjat: buy a ZKTeco terminal, or have a supervisor
+have exactly two options in Permedjat: buy a ZKTeco terminal, or have a supervisor
 type every punch in by hand.
 
 This is the single largest functional gap against every competitor
@@ -25,7 +25,7 @@ it as a **separate application** from their employee app, and the fourth
 (Jibble) gates it behind an administrator account. None of them expose it to
 ordinary employees.
 
-Medjat built this once and removed it. The removal was only half applied: the
+Permedjat built this once and removed it. The removal was only half applied: the
 tables (`attendance_stations`, `station_recognition_logs`, `kiosk_pins`) are gone
 from production, but **the per-branch configuration columns and the attendance
 columns are still live** — `branches.station_*`, `attendance.station_id`,
@@ -49,7 +49,7 @@ rather than starting from nothing.
    into kiosk mode, and the server — not the device — is what enforces that.
 
 **Why the trust model is different from every existing method:** every other
-self-service method in Medjat carries a token that can only record attendance for
+self-service method in Permedjat carries a token that can only record attendance for
 **one** employee. A kiosk carries a token that can record attendance for
 **anyone in the branch**. That difference drives most of the requirements below:
 the device is bound to one branch, its credential is revocable, every
@@ -124,7 +124,7 @@ worker is done they close the administration area and the tablet returns to the
 kiosk screen, ready for the shift.
 
 **Why this priority**: User Story 3 is unreachable without it **for exactly the
-people this feature exists for**. Every enrollment path in Medjat today assumes a
+people this feature exists for**. Every enrollment path in Permedjat today assumes a
 phone in the employee's hand; an employee with no smartphone currently has no way
 to enroll a face at all. Without kiosk-side enrollment the feature ships as
 something only already-enrolled smartphone owners can use, which is nobody's
@@ -168,7 +168,7 @@ with their name and the time. The whole interaction takes seconds and requires n
 typing, no card, and no phone.
 
 **Why this priority**: This is the reason the feature exists. It is the only path
-in Medjat by which a worker without a smartphone can record their own attendance
+in Permedjat by which a worker without a smartphone can record their own attendance
 without a supervisor or a hardware terminal.
 
 **Independent Test**: Can be fully tested on a paired kiosk with an enrolled

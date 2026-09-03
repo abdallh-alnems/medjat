@@ -1,6 +1,6 @@
 export const ar = {
   // ── App / general ──
-  app_name: "Medjat Central",
+  app_name: "Permedjat Central",
   admin_panel: "لوحة الإدارة",
   hr_management_panel: "لوحة إدارة الموارد البشرية",
   loading: "جاري التحميل...",
@@ -978,13 +978,13 @@ export const ar = {
 
   // ── Install as an app (PWA) ──
   install_title: "تثبيت التطبيق",
-  install_heading: "ثبّت Medjat Central على جهازك",
+  install_heading: "ثبّت Permedjat Central على جهازك",
   install_subheading:
     "نفس اللوحة، تفتح من أيقونة على سطح المكتب في نافذة مستقلة — دون تنزيل أي ملف.",
   install_action: "تثبيت التطبيق",
   install_working: "جارٍ الفتح…",
   install_installed_title: "تم التثبيت",
-  install_installed_body: "ستجد Medjat Central في قائمة ابدأ وعلى سطح المكتب.",
+  install_installed_body: "ستجد Permedjat Central في قائمة ابدأ وعلى سطح المكتب.",
   install_standalone_title: "أنت تستخدم النسخة المثبّتة",
   install_standalone_body: "التطبيق مثبّت على هذا الجهاز بالفعل.",
   install_dismissed: "أُلغي التثبيت. يمكنك المحاولة مرة أخرى في أي وقت.",

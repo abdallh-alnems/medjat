@@ -15,7 +15,7 @@ use Illuminate\Console\Command;
  */
 final class RunDailyAlertsCommand extends Command
 {
-    protected $signature = 'medjat:run-alerts';
+    protected $signature = 'permedjat:run-alerts';
 
     protected $description = 'Sends the daily manager alerts.';
 

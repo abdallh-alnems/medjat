@@ -4,7 +4,7 @@ import { apiPost } from "./client";
  * Branch kiosks — the shared tablets employees clock in on.
  *
  * Not to be confused with `devices.ts`, which handles third-party fingerprint
- * terminals. A kiosk runs Medjat's own app and authenticates as a **branch**,
+ * terminals. A kiosk runs Permedjat's own app and authenticates as a **branch**,
  * so a kiosk credential can record attendance for anyone enrolled there. That
  * is why pairing, revoking, and viewing captures are three separate
  * permissions rather than one.

@@ -1,7 +1,7 @@
 {
-  "name": "Medjat Central",
-  "short_name": "Medjat",
-  "description": "لوحة إدارة الموارد البشرية والرواتب — Medjat Central",
+  "name": "Permedjat Central",
+  "short_name": "Permedjat",
+  "description": "لوحة إدارة الموارد البشرية والرواتب — Permedjat Central",
   "lang": "ar",
   "dir": "rtl",
   "start_url": "/dashboard",

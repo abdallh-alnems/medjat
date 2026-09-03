@@ -95,7 +95,7 @@ class AdminImpersonateApi extends AdminBaseApi {
                 );
             }
 
-            $webBase = rtrim((string) (getenv('CENTRAL_WEB_URL') ?: 'https://app.medjatapp.com'), '/');
+            $webBase = rtrim((string) (getenv('CENTRAL_WEB_URL') ?: 'https://app.permedjatapp.com'), '/');
 
             $this->success([
                 'admin' => [

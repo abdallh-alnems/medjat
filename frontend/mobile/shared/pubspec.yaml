@@ -1,6 +1,6 @@
 name: permedjat_shared
 description: >-
-  Face identity pipeline shared by the Medjat employee app and the branch kiosk.
+  Face identity pipeline shared by the Permedjat employee app and the branch kiosk.
   Both products must produce byte-identical embeddings, because the server
   matches them against one column.
 version: 1.0.0
@@ -13,7 +13,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Face pipeline. These versions must stay in step with medjat_app —
+  # Face pipeline. These versions must stay in step with permedjat_app —
   # a different tflite or ML Kit build can change the numbers coming out of
   # the model, and the server would silently stop matching.
   google_mlkit_face_detection: ^0.13.1

@@ -2,8 +2,8 @@
 // Landing page for team-invitation links: https://<domain>/.../join_team.php?code=XXXX
 //
 // Email clients only allow http(s) links, so the invitation email points here.
-// This page then bridges into the Medjat management app via its custom scheme
-// (medjatcentral://join?code=...). If the app is installed it opens straight to
+// This page then bridges into the Permedjat management app via its custom scheme
+// (permedjatcentral://join?code=...). If the app is installed it opens straight to
 // the join screen; otherwise the visitor gets web/store fallbacks. Standalone
 // (no bootstrap / no auth) — it only reads the code from the URL.
 
@@ -11,7 +11,7 @@ $code = isset($_GET['code']) ? trim((string) $_GET['code']) : '';
 // Invitation codes are 8 hex chars, but stay tolerant.
 $valid = $code !== '' && preg_match('/^[A-Za-z0-9]{4,32}$/', $code) === 1;
 
-$appUrl = $valid ? 'medjatcentral://join?code=' . rawurlencode($code) : '';
+$appUrl = $valid ? 'permedjatcentral://join?code=' . rawurlencode($code) : '';
 
 $webBase = rtrim((string) (getenv('CENTRAL_WEB_URL') ?: ''), '/');
 $webUrl  = ($valid && $webBase !== '')
@@ -19,8 +19,8 @@ $webUrl  = ($valid && $webBase !== '')
     : '';
 
 // TODO: replace with the real store listing URLs once published.
-$playStoreUrl = 'https://play.google.com/store/apps/details?id=com.khawarizmie.medjat_central';
-$appStoreUrl  = 'https://apps.apple.com/app/medjat/idREPLACE_WITH_APPSTORE_ID';
+$playStoreUrl = 'https://play.google.com/store/apps/details?id=com.khawarizmie.permedjat_central';
+$appStoreUrl  = 'https://apps.apple.com/app/permedjat/idREPLACE_WITH_APPSTORE_ID';
 
 header('Content-Type: text/html; charset=utf-8');
 ?>
@@ -29,7 +29,7 @@ header('Content-Type: text/html; charset=utf-8');
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>الانضمام إلى الفريق على Medjat</title>
+  <title>الانضمام إلى الفريق على Permedjat</title>
   <style>
     body{font-family:'IBM Plex Sans Arabic',Tahoma,Arial,sans-serif;background:#f9f9f9;margin:0;padding:24px;color:#1a1a1a}
     .card{max-width:480px;margin:40px auto;background:#fff;border-radius:14px;padding:32px;box-shadow:0 2px 12px rgba(0,0,0,.06);text-align:center}
@@ -47,7 +47,7 @@ header('Content-Type: text/html; charset=utf-8');
   <main class="card">
     <h1>دعوة للانضمام إلى الفريق</h1>
     <?php if ($valid): ?>
-      <p>اضغط الزر أدناه لفتح تطبيق Medjat للإدارة والانضمام إلى الشركة. إن لم يفتح التطبيق تلقائيًا، استخدم رمز الدعوة:</p>
+      <p>اضغط الزر أدناه لفتح تطبيق Permedjat للإدارة والانضمام إلى الشركة. إن لم يفتح التطبيق تلقائيًا، استخدم رمز الدعوة:</p>
       <div class="code"><?= htmlspecialchars($code, ENT_QUOTES) ?></div>
       <a class="btn" id="openApp" href="<?= htmlspecialchars($appUrl, ENT_QUOTES) ?>">فتح التطبيق والانضمام</a>
       <?php if ($webUrl !== ''): ?>

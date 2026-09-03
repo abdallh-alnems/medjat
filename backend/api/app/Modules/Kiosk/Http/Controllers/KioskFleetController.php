@@ -47,7 +47,7 @@ final class KioskFleetController
             throw new ApiFailure(__('messages.branch_not_found'), 404, 'not_found');
         }
 
-        $gate = $this->gate->forApp('medjat_kiosk');
+        $gate = $this->gate->forApp('permedjat_kiosk');
         $stations = [];
         $wouldBlock = 0;
 

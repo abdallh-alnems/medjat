@@ -5,13 +5,13 @@ All spec-level NEEDS CLARIFICATION were resolved in the two `/speckit.clarify` s
 ## D1. App-control delivery mechanism
 
 - **Decision**: The PHP backend writes the per-app values to **Firebase Remote Config** using the vendored `kreait/firebase-php` Admin SDK. The apps keep reading Remote Config exactly as today.
-- **Rationale**: The HR app (`medjat_central`) already reads `medjat_central_min_version` (force update, `UpdateService`) and `medjat_central_maintenance_enabled` (kill switch, `MaintenanceGate`). Writing the same keys means zero change to the apps' update/maintenance logic and instant propagation (RC `onConfigUpdated` + on-launch/foreground fetch).
+- **Rationale**: The HR app (`permedjat_central`) already reads `permedjat_central_min_version` (force update, `UpdateService`) and `permedjat_central_maintenance_enabled` (kill switch, `MaintenanceGate`). Writing the same keys means zero change to the apps' update/maintenance logic and instant propagation (RC `onConfigUpdated` + on-launch/foreground fetch).
 - **Keys**:
   | App | min-version key | maintenance key |
   |-----|-----------------|-----------------|
-  | Employee (`medjat_app`) | `medjat_app_min_version` | `medjat_app_maintenance_enabled` |
-  | HR Management (`medjat_central`) | `medjat_central_min_version` | `medjat_central_maintenance_enabled` |
-  | Admin (`medjat_admin`) | `medjat_admin_min_version` | *(none — Admin not stoppable)* |
+  | Employee (`permedjat_app`) | `permedjat_app_min_version` | `permedjat_app_maintenance_enabled` |
+  | HR Management (`permedjat_central`) | `permedjat_central_min_version` | `permedjat_central_maintenance_enabled` |
+  | Admin (`permedjat_admin`) | `permedjat_admin_min_version` | *(none — Admin not stoppable)* |
 - **Alternatives considered**: (a) New MySQL config table polled by apps — rejected: forces rewriting update/maintenance logic in every app and loses RC's live push. (b) Admin app writes RC directly — rejected: embeds privileged Firebase credentials in a mobile client.
 - **Implementation note**: Use the Remote Config template API — fetch current template, set parameter `defaultValue`, validate, then publish. Wrap in `core/RemoteConfigService.php`. Reuse the service-account credential already configured for `NotificationService` (FCM).
 
@@ -24,7 +24,7 @@ All spec-level NEEDS CLARIFICATION were resolved in the two `/speckit.clarify` s
 ## D3. Minimum-version granularity
 
 - **Decision**: One min-version value per app; no iOS/Android split.
-- **Rationale**: Matches the single `medjat_central_min_version` key in use today. Fewer keys, simpler UI.
+- **Rationale**: Matches the single `permedjat_central_min_version` key in use today. Fewer keys, simpler UI.
 - **Version comparison**: dotted-numeric, same semantics the HR app's `isVersionLower(current, minRequired)` already implements; min-version of empty or `0.0.0` means "no force update".
 
 ## D4. Stoppable apps
@@ -55,9 +55,9 @@ All spec-level NEEDS CLARIFICATION were resolved in the two `/speckit.clarify` s
 
 ## D9. Support push notifications (new infrastructure)
 
-- **Decision**: Add Firebase Cloud Messaging to medjat_admin and store super-admin device tokens in a new `super_admin_devices` table. On a new user message/ticket (tenant side `support/create.php` and `support/reply.php` where `sender_type='user'`), the backend sends a push to all active support-team devices via a new `NotificationService::sendToSupportTeam()`.
+- **Decision**: Add Firebase Cloud Messaging to permedjat_admin and store super-admin device tokens in a new `super_admin_devices` table. On a new user message/ticket (tenant side `support/create.php` and `support/reply.php` where `sender_type='user'`), the backend sends a push to all active support-team devices via a new `NotificationService::sendToSupportTeam()`.
 - **Rationale**: Required by FR-010b / SC-009 (user-selected, beyond the in-app-only recommendation). The existing `admin_devices` table references **`admins`** (tenant admins), not `super_admins`, so a separate token store is needed.
-- **Cost / risk**: medjat_admin currently ships **no Firebase** (`pubspec.yaml` has none; auth is username/password via `admin_token`). This adds `firebase_core`+`firebase_messaging`, platform Firebase config files, init, permission prompt, and a token-register endpoint. Treated as its own user story (US: support push) so US1/US2 are not blocked.
+- **Cost / risk**: permedjat_admin currently ships **no Firebase** (`pubspec.yaml` has none; auth is username/password via `admin_token`). This adds `firebase_core`+`firebase_messaging`, platform Firebase config files, init, permission prompt, and a token-register endpoint. Treated as its own user story (US: support push) so US1/US2 are not blocked.
 - **Alternatives considered**: In-app unread badge only — simpler and recommended, but the user explicitly chose push; kept badges as the always-on fallback.
 
 ## D10. Reuse vs new — backend endpoint inventory
@@ -76,4 +76,4 @@ All spec-level NEEDS CLARIFICATION were resolved in the two `/speckit.clarify` s
 ## D11. App-side Remote Config wiring
 
 - **Decision**: Confirm/add Remote Config gates in the Employee and Admin apps; HR app unchanged.
-- **Details**: Employee app must read `medjat_app_min_version` + `medjat_app_maintenance_enabled` (mirror HR app's `UpdateService`/`MaintenanceGate`). Admin app must read `medjat_admin_min_version` for force-update only (no maintenance gate). HR app already complete.
+- **Details**: Employee app must read `permedjat_app_min_version` + `permedjat_app_maintenance_enabled` (mirror HR app's `UpdateService`/`MaintenanceGate`). Admin app must read `permedjat_admin_min_version` for force-update only (no maintenance gate). HR app already complete.

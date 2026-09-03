@@ -6,7 +6,7 @@ import axios, {
 } from "axios";
 
 const API_HOST =
-  process.env.NEXT_PUBLIC_API_HOST ?? "https://api.medjatapp.com/backend";
+  process.env.NEXT_PUBLIC_API_HOST ?? "https://api.permedjatapp.com/backend";
 
 const SECURITY_USER = process.env.SECURITY_USER ?? "";
 const SECURITY_KEY = process.env.SECURITY_KEY ?? "";
@@ -44,7 +44,7 @@ const browserClient: AxiosInstance = axios.create({
  * Token/tenant/device are read lazily (via dynamic import) to avoid circular deps with
  * firebase/auth and the zustand stores.
  */
-async function attachMedjatHeaders(
+async function attachPermedjatHeaders(
   config: InternalAxiosRequestConfig,
 ): Promise<InternalAxiosRequestConfig> {
   if (typeof window === "undefined") return config;
@@ -85,10 +85,10 @@ async function attachMedjatHeaders(
   return config;
 }
 
-browserClient.interceptors.request.use(attachMedjatHeaders);
+browserClient.interceptors.request.use(attachPermedjatHeaders);
 
 /**
- * Unwrap the backend success envelope. The Medjat backend wraps every successful
+ * Unwrap the backend success envelope. The Permedjat backend wraps every successful
  * payload as `{ status: "success", data: <payload> }` (see the ApiResponse envelope), while
  * the whole frontend (and its contract mocks) treats the JSON body itself as the typed
  * payload. So on a 2xx success envelope we hoist `data` up to be the response body.
@@ -214,7 +214,7 @@ export async function apiDelete<T>(endpoint: string, config?: AxiosRequestConfig
 }
 
 /**
- * Pull the array out of a backend list payload. The Medjat backend wraps list
+ * Pull the array out of a backend list payload. The Permedjat backend wraps list
  * results under a top-level key that varies per endpoint (`items`, `records`,
  * `branches`, `breaks`, `tickets`, …) *inside* the success envelope. Once the
  * envelope is unwrapped (see onFulfilled) the caller is left with
@@ -255,7 +255,7 @@ export function asObject(payload: unknown): Record<string, unknown> | null {
 /** Stable per-browser device id, generated once and stored in localStorage. */
 export function getDeviceId(): string {
   if (typeof window === "undefined") return "ssr";
-  const KEY = "medjat-device-id";
+  const KEY = "permedjat-device-id";
   try {
     let id = window.localStorage?.getItem?.(KEY);
     if (!id) {

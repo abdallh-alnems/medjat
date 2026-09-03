@@ -1,5 +1,5 @@
 <?php
-// Step 2 of desktop sign-in: the app received medjat://auth?code=…&state=… and
+// Step 2 of desktop sign-in: the app received permedjat://auth?code=…&state=… and
 // trades the code for a Firebase custom token, which it exchanges for a real
 // session through signInWithCustomToken — the same mechanism the support-desk
 // impersonation link already uses.

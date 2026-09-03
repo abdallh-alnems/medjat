@@ -3,7 +3,7 @@
 **Feature Branch**: `002-admin-support-control`
 **Created**: 2026-06-10
 **Status**: Draft
-**Input**: User description: "Build the medjat_admin app — the support-team app. Read medjat_app and medjat_central. Enable replying to user communications from administration. There is a minimum app version in Remote Config and the ability to stop any of the apps; do this through the admin app. I want it to control everything."
+**Input**: User description: "Build the permedjat_admin app — the support-team app. Read permedjat_app and permedjat_central. Enable replying to user communications from administration. There is a minimum app version in Remote Config and the ability to stop any of the apps; do this through the admin app. I want it to control everything."
 
 ## Overview
 
@@ -15,9 +15,9 @@ This feature extends the Admin app so the support team can (1) **read and reply 
 
 ### Session 2026-06-10
 
-- Q: How do app-control changes (minimum version / stop switch) reach the live apps? → A: The backend writes to the same Firebase Remote Config keys the apps already read (`medjat_*_min_version`, `medjat_*_maintenance_enabled`), using the already-vendored Firebase Admin SDK; the apps' existing update/maintenance logic is unchanged.
+- Q: How do app-control changes (minimum version / stop switch) reach the live apps? → A: The backend writes to the same Firebase Remote Config keys the apps already read (`permedjat_*_min_version`, `permedjat_*_maintenance_enabled`), using the already-vendored Firebase Admin SDK; the apps' existing update/maintenance logic is unchanged.
 - Q: Which operator role is required for each capability? → A: App control (version + stop switch) requires the `superadmin` role; support reply/inbox requires the `admin` role (matching the existing endpoints).
-- Q: What granularity should the minimum-version setting have? → A: A single minimum version per app — no separate iOS/Android values — matching the current `medjat_central_min_version` key.
+- Q: What granularity should the minimum-version setting have? → A: A single minimum version per app — no separate iOS/Android values — matching the current `permedjat_central_min_version` key.
 - Q: Which apps can be put into the stop/maintenance state? → A: The Employee app and the HR Management app can be stopped; the Admin app supports minimum-version control only (no kill switch) so the support team cannot lock itself out of the control plane.
 - Q: Is the forced-update/maintenance screen message operator-customizable or fixed in-app? → A: Fixed in-app text (as the apps already display); operators only toggle the state, no custom message. (FR-020 removed.)
 - Q: Do support replies support attachments, or text only? → A: Text only for v1; the message store keeps the attachment columns for future use but the reply experience is text-only.
@@ -154,8 +154,8 @@ Because stopping an app or forcing an update affects real users immediately, the
 - "Stop an app" means putting that app into a full maintenance/offline state for its users (a kill switch), not a partial feature toggle. Arbitrary per-feature flags are out of scope for this version. The Admin app itself is not stoppable.
 - Support replies are text-only in v1 (the message store keeps attachment columns for later, but no upload experience is built). Tickets are a shared queue with no per-member assignment in v1. The forced-update/maintenance screens show the apps' built-in text (no operator-authored message).
 - Support members are alerted of new user messages/tickets via push to their registered Admin-app devices; this assumes Admin-app device-token registration and a push-send path exist or are added for the support team.
-- Each app has a single minimum required version (no per-platform split), matching the existing `medjat_central_min_version` Remote Config key. Per-platform minimum versions are out of scope for this version.
-- App-control changes are applied by the backend writing the shared Firebase Remote Config keys (`medjat_*_min_version`, `medjat_*_maintenance_enabled`) via the already-vendored Firebase Admin SDK; the apps' existing on-launch/on-foreground Remote Config checks are reused unchanged.
+- Each app has a single minimum required version (no per-platform split), matching the existing `permedjat_central_min_version` Remote Config key. Per-platform minimum versions are out of scope for this version.
+- App-control changes are applied by the backend writing the shared Firebase Remote Config keys (`permedjat_*_min_version`, `permedjat_*_maintenance_enabled`) via the already-vendored Firebase Admin SDK; the apps' existing on-launch/on-foreground Remote Config checks are reused unchanged.
 - "Control everything" is interpreted as making the Admin app the single control plane: this feature adds support replies and app control to the existing admin capabilities (companies, subscriptions, plans, users, audit, notifications) rather than introducing unbounded new control surfaces. Additional control areas can be specified separately.
 - The Admin app's existing authentication and operator-role model is reused; no new identity system is introduced.
 - Version comparison follows standard dotted numeric version semantics.

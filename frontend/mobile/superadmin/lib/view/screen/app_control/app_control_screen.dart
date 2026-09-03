@@ -98,13 +98,13 @@ class _AppCard extends StatelessWidget {
 
   IconData _appIcon(String key) {
     switch (key) {
-      case 'medjat_app':
+      case 'permedjat_app':
         return Icons.person;
-      case 'medjat_central':
+      case 'permedjat_central':
         return Icons.business_center;
-      case 'medjat_admin':
+      case 'permedjat_admin':
         return Icons.admin_panel_settings;
-      case 'medjat_kiosk':
+      case 'permedjat_kiosk':
         return Icons.tablet_android;
       default:
         return Icons.phone_android;

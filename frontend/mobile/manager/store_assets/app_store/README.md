@@ -1,4 +1,4 @@
-# أصول App Store — ميدجات للإدارة (iOS)
+# أصول App Store — بيرمدجات للإدارة (iOS)
 
 كل ما تحتاجه لرفع التطبيق على App Store Connect. (iPhone فقط — تم ضبط `TARGETED_DEVICE_FAMILY = "1"`.)
 
@@ -21,7 +21,7 @@ app_store_assets/
 ## 📝 نصوص App Store (عربي)
 **اسم التطبيق (≤30):**
 ```
-ميدجات للإدارة
+بيرمدجات للإدارة
 ```
 **العنوان الفرعي Subtitle (≤30):**
 ```
@@ -33,9 +33,9 @@ app_store_assets/
 ```
 **الوصف (≤4000):** (نفس وصف Google Play)
 ```
-ميدجات للإدارة — تطبيق صاحب العمل ومدير الموارد البشرية لإدارة فريقك بالكامل من هاتفك.
+بيرمدجات للإدارة — تطبيق صاحب العمل ومدير الموارد البشرية لإدارة فريقك بالكامل من هاتفك.
 
-ميدجات للإدارة مخصّص لأصحاب الأعمال والمديرين لإدارة شؤون الموظفين والحضور والرواتب في مكان واحد، بواجهة عربية بسيطة.
+بيرمدجات للإدارة مخصّص لأصحاب الأعمال والمديرين لإدارة شؤون الموظفين والحضور والرواتب في مكان واحد، بواجهة عربية بسيطة.
 
 أبرز المزايا:
 
@@ -49,11 +49,11 @@ app_store_assets/
 
 خصوصيتك وأمانك: تُنقل بياناتك عبر اتصال مشفّر، ويقتصر الوصول على المديرين المصرّح لهم.
 
-ملاحظة: هذا التطبيق مخصّص لأصحاب الأعمال والمديرين المشتركين في نظام ميدجات.
+ملاحظة: هذا التطبيق مخصّص لأصحاب الأعمال والمديرين المشتركين في نظام بيرمدجات.
 ```
 
 ## 📝 App Store text (English)
-**App Name (≤30):** `Medjat Manager`
+**App Name (≤30):** `Permedjat Manager`
 **Subtitle (≤30):** `HR, attendance & payroll`
 **Keywords (≤100):**
 ```
@@ -62,9 +62,9 @@ HR,attendance,payroll,employees,leaves,time tracking,manager,shifts,workforce,cl
 **Description (≤4000):** (same as the Google Play English full description)
 
 ## 🔗 روابط App Store Connect
-- **Privacy Policy URL:** `https://medjatapp.com/privacy-policy`
-- **Support URL:** `https://medjatapp.com`
-- **Marketing URL (اختياري):** `https://medjatapp.com`
+- **Privacy Policy URL:** `https://permedjatapp.com/privacy-policy`
+- **Support URL:** `https://permedjatapp.com`
+- **Marketing URL (اختياري):** `https://permedjatapp.com`
 
 ## 🔑 بيانات مراجعة App Store (Sign-in)
 نفس فكرة Google: زوّد المراجع ببريد + كلمة مرور حساب فيه بيانات (لا تستخدمه أثناء المراجعة — جلسة واحدة نشطة لكل حساب). Google/Apple sign-in اختياري.

@@ -19,7 +19,7 @@
 
 **Purpose**: Confirm the environment and existing assets the feature builds on.
 
-- [x] T001 Verify MAMP MySQL is reachable (`medjat` @ 127.0.0.1:8889, root/root) and that `support_tickets` + `support_messages` exist (from `backend_medjet/migrations/2026_06_support.sql`)
+- [x] T001 Verify MAMP MySQL is reachable (`permedjat` @ 127.0.0.1:8889, root/root) and that `support_tickets` + `support_messages` exist (from `backend_medjet/migrations/2026_06_support.sql`)
 - [x] T002 Confirm a Firebase service-account credential is available to the backend (same one used by `backend_medjet/core/NotificationService.php`) — required for Remote Config writes and FCM
 - [x] T003 [P] Run `flutter pub get` in `frontend/mobile/superadmin` and confirm the app builds on the current branch
 
@@ -81,13 +81,13 @@
 ### Backend — Remote Config service + endpoints
 
 - [x] T015 [US2] Create `backend_medjet/core/RemoteConfigService.php` wrapping `kreait/firebase-php` Remote Config: `getAll()` (read template params for all apps), `setVersion(app, value)`, `setMaintenance(app, bool)` (fetch → set `defaultValue` → publish)
-- [x] T016 [US2] Create `backend_medjet/app/admin_app_control/get.php` (role `superadmin`): return the `apps[]` shape from `contracts/app_control.md` (medjat_app, medjat_central, medjat_admin; `supports_maintenance` flags); 503 on RC fetch failure
-- [x] T017 [US2] Create `backend_medjet/app/admin_app_control/set.php` (role `superadmin`): validate `app` enum + `min_version` regex `^\d+(\.\d+){0,3}$` + reject `maintenance` when `app=medjat_admin`; write via RemoteConfigService + publish; audit `app_control.set_version`/`app_control.set_maintenance` with `{from,to}`; 422 invalid, 503 write failure
+- [x] T016 [US2] Create `backend_medjet/app/admin_app_control/get.php` (role `superadmin`): return the `apps[]` shape from `contracts/app_control.md` (permedjat_app, permedjat_central, permedjat_admin; `supports_maintenance` flags); 503 on RC fetch failure
+- [x] T017 [US2] Create `backend_medjet/app/admin_app_control/set.php` (role `superadmin`): validate `app` enum + `min_version` regex `^\d+(\.\d+){0,3}$` + reject `maintenance` when `app=permedjat_admin`; write via RemoteConfigService + publish; audit `app_control.set_version`/`app_control.set_maintenance` with `{from,to}`; 422 invalid, 503 write failure
 
 ### App-side Remote Config wiring (other apps)
 
-- [x] T018 [P] [US2] Ensure the Employee app reads `medjat_app_min_version` + `medjat_app_maintenance_enabled` — mirror the HR app's `UpdateService`/`MaintenanceGate` in `frontend/mobile/employee/lib/core/` (add gate/service if missing); fall back to a safe non-locking state on RC failure (FR-019/SC-008)
-- [x] T019 [P] [US2] Add a `medjat_admin_min_version` force-update check to `frontend/mobile/superadmin` (version-only, no maintenance gate)
+- [x] T018 [P] [US2] Ensure the Employee app reads `permedjat_app_min_version` + `permedjat_app_maintenance_enabled` — mirror the HR app's `UpdateService`/`MaintenanceGate` in `frontend/mobile/employee/lib/core/` (add gate/service if missing); fall back to a safe non-locking state on RC failure (FR-019/SC-008)
+- [x] T019 [P] [US2] Add a `permedjat_admin_min_version` force-update check to `frontend/mobile/superadmin` (version-only, no maintenance gate)
 
 ### Flutter (admin) — app control screen
 
@@ -117,7 +117,7 @@
 
 ## Phase 6: User Story (Push) - Alert the support team of new messages (FR-010b / SC-009)
 
-**Goal**: Support-team devices receive a push when a new user message/ticket arrives. Isolated slice — adds Firebase to medjat_admin; does NOT block US1/US2 (in-app `unread_for_support` badges already cover awareness).
+**Goal**: Support-team devices receive a push when a new user message/ticket arrives. Isolated slice — adds Firebase to permedjat_admin; does NOT block US1/US2 (in-app `unread_for_support` badges already cover awareness).
 
 **Independent Test**: As a tenant, create a ticket / send a message → support devices receive a push; tapping opens the ticket thread.
 

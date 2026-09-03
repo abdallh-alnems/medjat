@@ -1,9 +1,9 @@
 'use strict';
 
 /**
- * Medjat Central — desktop shell.
+ * Permedjat Central — desktop shell.
  *
- * The window renders the live web app (app.medjatapp.com), so every `deploy-web.sh`
+ * The window renders the live web app (app.permedjatapp.com), so every `deploy-web.sh`
  * reaches installed copies without shipping a new installer. Anything the browser
  * cannot do — local network, file system, silent printing — belongs here in the main
  * process and is handed to the page through `src/preload.js`.
@@ -22,7 +22,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
 
-const APP_URL = process.env.MEDJAT_URL || 'https://app.medjatapp.com';
+const APP_URL = process.env.PERMEDJAT_URL || 'https://app.permedjatapp.com';
 const APP_ORIGIN = new URL(APP_URL).origin;
 const IS_MAC = process.platform === 'darwin';
 
@@ -39,7 +39,7 @@ const AUTH_HOSTS = [
   'appleid.cdn-apple.com',
 ];
 
-app.setName('Medjat Central');
+app.setName('Permedjat Central');
 
 let mainWindow = null;
 
@@ -49,7 +49,7 @@ let mainWindow = null;
  * Electron reports no platform authenticator, so a Google account protected by a
  * passkey dead-ends in this window: Google offers the cross-device fallback and
  * that needs integration Electron does not have either. Sign-in therefore runs in
- * the user's real browser, which hands the session back over `medjat://auth`.
+ * the user's real browser, which hands the session back over `permedjat://auth`.
  *
  * The nonce below is what makes the returning link trustworthy — anything
  * arriving on the protocol that does not carry the value this process just
@@ -69,7 +69,7 @@ function handleAuthLink(rawUrl) {
   } catch {
     return;
   }
-  if (url.protocol !== 'medjat:' || url.hostname !== 'auth') return;
+  if (url.protocol !== 'permedjat:' || url.hostname !== 'auth') return;
 
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
@@ -156,7 +156,7 @@ function createWindow() {
     minHeight: 680,
     show: false,
     backgroundColor: '#F9FCFC',
-    title: 'Medjat Central',
+    title: 'Permedjat Central',
     autoHideMenuBar: !IS_MAC,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -166,7 +166,7 @@ function createWindow() {
       spellcheck: false,
       // Sign-in popups inherit this preload; the bridge checks the origin against this
       // so it is never handed to Google's or Apple's pages.
-      additionalArguments: [`--medjat-app-origin=${APP_ORIGIN}`],
+      additionalArguments: [`--permedjat-app-origin=${APP_ORIGIN}`],
     },
   });
 
@@ -238,15 +238,15 @@ function createWindow() {
 // ---------------------------------------------------------------- session
 
 /**
- * Claims `medjat://` so the browser can hand a finished sign-in back to us. In
+ * Claims `permedjat://` so the browser can hand a finished sign-in back to us. In
  * development the executable is Electron itself, so the script path has to ride
  * along or the OS launches a bare Electron with no app.
  */
 function registerProtocol() {
   if (process.defaultApp && process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient('medjat', process.execPath, [path.resolve(process.argv[1])]);
+    app.setAsDefaultProtocolClient('permedjat', process.execPath, [path.resolve(process.argv[1])]);
   } else {
-    app.setAsDefaultProtocolClient('medjat');
+    app.setAsDefaultProtocolClient('permedjat');
   }
 }
 
@@ -293,7 +293,7 @@ function buildMenu() {
     ...(IS_MAC
       ? [
           {
-            label: 'Medjat Central',
+            label: 'Permedjat Central',
             submenu: [
               { role: 'about', label: 'عن التطبيق' },
               { type: 'separator' },
@@ -369,7 +369,7 @@ function buildMenu() {
       submenu: [
         {
           label: 'الدعم الفني',
-          click: () => shell.openExternal('https://medjatapp.com/support.html'),
+          click: () => shell.openExternal('https://permedjatapp.com/support.html'),
         },
         {
           label: 'فتح في المتصفح',
@@ -398,7 +398,7 @@ if (!app.requestSingleInstanceLock()) {
   // Windows and Linux deliver the protocol URL as an argument to a second launch
   // rather than through open-url.
   app.on('second-instance', (_event, argv) => {
-    const link = argv.find((arg) => arg.startsWith('medjat://'));
+    const link = argv.find((arg) => arg.startsWith('permedjat://'));
     if (link) handleAuthLink(link);
     if (!mainWindow) return;
     if (mainWindow.isMinimized()) mainWindow.restore();

@@ -33,8 +33,8 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "Medjat Central — لوحة إدارة الموارد البشرية",
-    template: "%s | Medjat Central",
+    default: "Permedjat Central — لوحة إدارة الموارد البشرية",
+    template: "%s | Permedjat Central",
   },
   description:
     "لوحة إدارة الموارد البشرية والرواتب — حضور وانصراف، رواتب، إجازات، تقارير.",
@@ -51,7 +51,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Medjat Central",
+    title: "Permedjat Central",
   },
 };
 

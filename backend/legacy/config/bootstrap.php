@@ -1,6 +1,6 @@
 <?php
 
-if (defined('MEDJAT_BOOTSTRAPPED')) {
+if (defined('PERMEDJAT_BOOTSTRAPPED')) {
     return;
 }
 
@@ -85,7 +85,7 @@ setCorsHeaders();
     // Attendance terminals (device/iclock.php) cannot send the app secret —
     // the firmware has no field for it. They authenticate by serial number
     // instead, and an unclaimed serial can do nothing but say hello.
-    if (defined('MEDJAT_DEVICE_ENDPOINT')) {
+    if (defined('PERMEDJAT_DEVICE_ENDPOINT')) {
         return;
     }
 
@@ -122,4 +122,4 @@ setCorsHeaders();
     }
 })();
 
-define('MEDJAT_BOOTSTRAPPED', true);
+define('PERMEDJAT_BOOTSTRAPPED', true);

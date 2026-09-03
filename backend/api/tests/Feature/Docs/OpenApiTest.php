@@ -14,7 +14,7 @@ use Tests\TestCase;
  *
  * A document generated once and committed is a document that starts lying on
  * the next merge. The check here is that regenerating produces exactly what is
- * on disk, so adding a route fails the build until `php artisan medjat:openapi`
+ * on disk, so adding a route fails the build until `php artisan permedjat:openapi`
  * has been run.
  */
 final class OpenApiTest extends TestCase
@@ -59,7 +59,7 @@ final class OpenApiTest extends TestCase
         $this->assertSame(
             $this->generated(),
             $this->committed(),
-            'docs/openapi.json is stale — run: php artisan medjat:openapi',
+            'docs/openapi.json is stale — run: php artisan permedjat:openapi',
         );
     }
 

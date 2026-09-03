@@ -53,7 +53,7 @@ export default function LoginPage() {
   const subscribe = () => () => {};
 
   // Set when this page is the browser half of a desktop sign-in: the app opened
-  // us with ?desktop=<nonce> and is waiting on medjat:// for the result.
+  // us with ?desktop=<nonce> and is waiting on permedjat:// for the result.
   const desktopState = useSyncExternalStore(
     subscribe,
     () => new URLSearchParams(window.location.search).get("desktop"),
@@ -78,7 +78,7 @@ export default function LoginPage() {
         const { code } = await desktopAuthorize(desktopState);
         setHandedOff(true);
         window.location.href =
-          `medjat://auth?code=${encodeURIComponent(code)}` +
+          `permedjat://auth?code=${encodeURIComponent(code)}` +
           `&state=${encodeURIComponent(desktopState)}`;
         return;
       } catch (err) {
@@ -168,7 +168,7 @@ export default function LoginPage() {
   function handOffToBrowser(provider: "google" | "apple") {
     setBusy(provider);
     setWaitingOnBrowser(true);
-    window.medjat?.signInWithBrowser?.();
+    window.permedjat?.signInWithBrowser?.();
   }
 
   async function onGoogle() {
@@ -202,14 +202,14 @@ export default function LoginPage() {
   }
 
   // Browser half of the desktop flow: the session has been handed back over
-  // medjat:// and this tab has nothing left to do.
+  // permedjat:// and this tab has nothing left to do.
   if (handedOff) {
     return (
       <Card>
         <CardHeader className="items-center text-center">
           <CardTitle className="text-headline-md">تم تسجيل الدخول</CardTitle>
           <CardDescription>
-            ارجع إلى تطبيق Medjat Central — يمكنك إغلاق هذه الصفحة.
+            ارجع إلى تطبيق Permedjat Central — يمكنك إغلاق هذه الصفحة.
           </CardDescription>
         </CardHeader>
       </Card>

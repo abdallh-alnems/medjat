@@ -14,14 +14,14 @@
 
 set -uo pipefail
 
-REMOTE="${MEDJAT_SSH_HOST:-medjat}"
-REMOTE_DIR="/var/www/medjat/backend"
+REMOTE="${PERMEDJAT_SSH_HOST:-permedjat}"
+REMOTE_DIR="/var/www/permedjat/backend"
 LOCAL_DIR="$(cd "$(dirname "$0")" && pwd)"
 MYSQL_BIN="${MYSQL_BIN:-/Applications/MAMP/Library/bin/mysql80/bin/mysql}"
 [ -x "$MYSQL_BIN" ] || MYSQL_BIN="$(command -v mysql)"
 DB_HOST="${DB_HOST:-127.0.0.1}"; DB_PORT="${DB_PORT:-8889}"
 DB_USER="${DB_USER:-root}";      DB_PASS="${DB_PASS:-root}"
-DB_NAME="${DB_NAME:-medjat}"
+DB_NAME="${DB_NAME:-permedjat}"
 
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 FAIL=0
@@ -37,7 +37,7 @@ fi
 # The queries below quote identifiers with double quotes, so the remote -e
 # argument must be single-quoted or the two layers of quoting cancel out and
 # mysql silently receives an empty statement.
-rmysql() { ssh "$REMOTE" "mysql -umedjat -p$REMOTE_PASS medjat -N -B -e '$1'" 2>/dev/null; }
+rmysql() { ssh "$REMOTE" "mysql -upermedjat -p$REMOTE_PASS permedjat -N -B -e '$1'" 2>/dev/null; }
 lmysql() { "$MYSQL_BIN" -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" ${DB_PASS:+-p"$DB_PASS"} "$DB_NAME" -N -B -e "$1" 2>/dev/null; }
 
 step "1/3  Code"
@@ -63,7 +63,7 @@ elif diff -q "$TMP/local.txt" "$TMP/prod.txt" >/dev/null; then
 else
   echo "  ✗ schema differs:"
   diff "$TMP/local.txt" "$TMP/prod.txt" | grep '^[<>]' | sed 's/^</      local only: /; s/^>/      prod  only: /' | head -25
-  echo "      → rebuild local from prod: ssh $REMOTE 'mysqldump -umedjat -p… medjat' | mysql … medjat"
+  echo "      → rebuild local from prod: ssh $REMOTE 'mysqldump -upermedjat -p… permedjat' | mysql … permedjat"
   FAIL=1
 fi
 

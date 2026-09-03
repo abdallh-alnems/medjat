@@ -101,8 +101,8 @@ class MyServices extends GetxService {
           kDebugMode ? Duration.zero : const Duration(hours: 1),
     ));
     await remoteConfig.setDefaults(const {
-      'medjat_central_min_version': '0.0.0',
-      'medjat_central_maintenance_enabled': false,
+      'permedjat_central_min_version': '0.0.0',
+      'permedjat_central_maintenance_enabled': false,
     });
   }
 }

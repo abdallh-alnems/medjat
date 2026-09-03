@@ -111,7 +111,7 @@ that cannot reach it records nothing and says so. The trade is that **no
 biometric data exists at rest on the tablet** — a stolen wall-mounted device
 carries no face templates for anybody. The two cannot be separated.
 
-**Raising `medjat_kiosk_min_version` takes branches offline.** The store apps can
+**Raising `permedjat_kiosk_min_version` takes branches offline.** The store apps can
 send a user to a store; a directly-installed kiosk has nowhere to be sent, so
 somebody must physically visit each tablet. Check the blast radius first:
 
@@ -125,7 +125,7 @@ minutes and falls back to the last known-good value. A Firebase outage must neve
 stop every kiosk in every company from recording attendance.
 
 **Captures expire.** `app/cron/purge_kiosk_captures.php` must be in
-`/etc/cron.d/medjat`. Without it, images accumulate indefinitely — roughly 1,700
+`/etc/cron.d/permedjat`. Without it, images accumulate indefinitely — roughly 1,700
 a month for a 40-person branch — and the retention promise in the spec is unmet.
 
 ---

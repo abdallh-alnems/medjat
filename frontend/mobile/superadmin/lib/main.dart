@@ -19,8 +19,8 @@ import 'core/constant/theme/theme.dart';
 /// `android/app/google-services.json` and no `google-services` Gradle plugin,
 /// so `Firebase.initializeApp()` threw and was swallowed below, which is why
 /// support push notifications never actually arrived here. The Android app is
-/// now registered in the `medjat` Firebase project as
-/// `com.khawarizmie.medjat_admin` and both Gradle plugins are applied.
+/// now registered in the `permedjat` Firebase project as
+/// `com.khawarizmie.permedjat_admin` and both Gradle plugins are applied.
 bool firebaseReady = false;
 
 void main() async {
@@ -49,16 +49,16 @@ void main() async {
     DeviceOrientation.portraitUp,
   ]));
 
-  runApp(const MedjatAdminApp());
+  runApp(const PermedjatAdminApp());
 }
 
-class MedjatAdminApp extends StatelessWidget {
-  const MedjatAdminApp({super.key});
+class PermedjatAdminApp extends StatelessWidget {
+  const PermedjatAdminApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'Medjat Admin',
+      title: 'Permedjat Admin',
       debugShowCheckedModeBanner: false,
       initialRoute: AppRoutes.splash,
       getPages: getPages,

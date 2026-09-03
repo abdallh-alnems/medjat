@@ -63,19 +63,19 @@ App-control values live as Remote Config parameters (read/written by the backend
 ```json
 {
   "apps": [
-    { "key": "medjat_app",     "name": "Employee App",       "min_version": "1.2.0", "maintenance": false, "supports_maintenance": true },
-    { "key": "medjat_central", "name": "HR Management App",   "min_version": "1.4.1", "maintenance": false, "supports_maintenance": true },
-    { "key": "medjat_admin",   "name": "Admin App",          "min_version": "1.0.0", "maintenance": null,  "supports_maintenance": false }
+    { "key": "permedjat_app",     "name": "Employee App",       "min_version": "1.2.0", "maintenance": false, "supports_maintenance": true },
+    { "key": "permedjat_central", "name": "HR Management App",   "min_version": "1.4.1", "maintenance": false, "supports_maintenance": true },
+    { "key": "permedjat_admin",   "name": "Admin App",          "min_version": "1.0.0", "maintenance": null,  "supports_maintenance": false }
   ]
 }
 ```
 
 Validation rules:
 - `min_version`: non-empty, dotted-numeric (`^\d+(\.\d+){0,3}$`); empty/`0.0.0` = no force update. Reject malformed (FR-017).
-- `maintenance`: boolean; only accepted for `medjat_app` and `medjat_central` (reject for `medjat_admin`, FR-014).
+- `maintenance`: boolean; only accepted for `permedjat_app` and `permedjat_central` (reject for `permedjat_admin`, FR-014).
 - High-impact writes (maintenance=true, or raising min_version) are confirmed in the UI (FR-018) and audited (FR-002).
 
-## Flutter models (medjat_admin)
+## Flutter models (permedjat_admin)
 
 - **SupportTicketModel**: id, tenantId, tenantName, subject, category, priority, status, lastMessageAt, lastMessagePreview, unreadForSupport. (from `admin_support/list.php` + `messages.php` `ticket`)
 - **SupportMessageModel**: id, ticketId, senderType, body, createdAt. (`sender_super_admin_id`/`sender_admin_id` collapsed to `senderType` for display)

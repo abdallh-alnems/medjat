@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Medjat migration runner.
+# Permedjat migration runner.
 #
 # Applies every dated .sql file in this directory exactly once, in filename
 # order, and records what it applied in the `schema_migrations` table. A file
@@ -21,14 +21,14 @@
 #
 # Production is reached by exporting those first and running this ON the server
 # — MySQL there does not listen publicly:
-#   ssh medjat 'cd /var/www/medjat/backend/database/migrations && \
-#     DB_PORT=3306 DB_USER=medjat DB_PASS=... ./migrate.sh --status'
+#   ssh permedjat 'cd /var/www/permedjat/backend/database/migrations && \
+#     DB_PORT=3306 DB_USER=permedjat DB_PASS=... ./migrate.sh --status'
 
 set -euo pipefail
 
 DB_HOST="${DB_HOST:-127.0.0.1}"
 DB_PORT="${DB_PORT:-8889}"
-DB_NAME="${DB_NAME:-medjat}"
+DB_NAME="${DB_NAME:-permedjat}"
 DB_USER="${DB_USER:-root}"
 DB_PASS="${DB_PASS:-root}"
 MYSQL_BIN="${MYSQL_BIN:-/Applications/MAMP/Library/bin/mysql80/bin/mysql}"
@@ -69,7 +69,7 @@ if [ "$MODE" = "bootstrap" ]; then
   if [ "${TABLE_COUNT:-0}" -gt 1 ]; then
     echo "✗ refusing --bootstrap: ${DB_NAME} already has ${TABLE_COUNT} tables."
     echo "  schema.sql is for an empty database. To rebuild local from production:"
-    echo "  ssh medjat 'mysqldump ... medjat' | mysql ... medjat"
+    echo "  ssh permedjat 'mysqldump ... permedjat' | mysql ... permedjat"
     exit 1
   fi
   echo "→ loading schema.sql into empty database"

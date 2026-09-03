@@ -329,7 +329,7 @@ final class KioskPairingTest extends TestCase
         // Checked before anybody raises the minimum: a directly-installed kiosk
         // has no store to be sent to, so somebody must visit each tablet.
         $this->pairedStation();
-        $this->gate->set('medjat_kiosk', '2.0.0');
+        $this->gate->set('permedjat_kiosk', '2.0.0');
 
         $this->asAdmin()->postJson('/v1/kiosk/stations', ['branch_id' => $this->branchId])
             ->assertOk()
@@ -341,7 +341,7 @@ final class KioskPairingTest extends TestCase
     public function test_a_current_tablet_is_not_flagged(): void
     {
         $this->pairedStation();
-        $this->gate->set('medjat_kiosk', '1.0.0');
+        $this->gate->set('permedjat_kiosk', '1.0.0');
 
         $this->asAdmin()->postJson('/v1/kiosk/stations', ['branch_id' => $this->branchId])
             ->assertOk()

@@ -8,7 +8,7 @@ description: "Task list for Branch Kiosk — Shared Tablet Attendance"
 **Prerequisites**: [plan.md](./plan.md), [spec.md](./spec.md), [research.md](./research.md), [data-model.md](./data-model.md), [contracts/](./contracts/)
 
 **Tests**: No automated test tasks are generated. The specification does not ask
-for TDD, and this repository has **no PHP test harness** — `medjat_app` has no
+for TDD, and this repository has **no PHP test harness** — `permedjat_app` has no
 widget-test suite either. Each story therefore ends with explicit **manual
 verification** tasks drawn from [quickstart.md](./quickstart.md). These are not
 optional: they are the only gate this feature has.
@@ -25,7 +25,7 @@ shipped on its own.
 
 - Backend: `backend_medjet/` — one endpoint per file under `app/<module>/`, shared logic in `core/`
 - Kiosk app: `frontend/mobile/kiosk/` — a **standalone Flutter project**
-- Shared: `frontend/mobile/shared/` — the face pipeline and its model, depended on by both `medjat_app` and `medjat_kiosk`
+- Shared: `frontend/mobile/shared/` — the face pipeline and its model, depended on by both `permedjat_app` and `permedjat_kiosk`
 - Management: `frontend/mobile/manager/` (Flutter) and `frontend/web/manager/` (Next.js)
 
 ---
@@ -36,9 +36,9 @@ shipped on its own.
 
 - [X] T001 [P] Create backend module directories `backend_medjet/app/kiosk/` and `backend_medjet/app/kiosk/admin/`
 - [X] T002 [P] Create capture storage directory `backend_medjet/uploads/kiosk/`. Note: `uploads/` is entirely gitignored in this repo and directories are created at runtime with `mkdir(..., 0755, true)` — see `BiometricEnrollment::storeReferencePhoto()`. No tracked keeper file; the local directory is for MAMP only
-- [X] T003 Create the shared package `frontend/mobile/shared/` (`publish_to: none`) and move `face_embedder.dart`, `face_liveness.dart`, and `assets/models/mobilefacenet.tflite` into it from `medjat_app`. Change the asset key to `packages/medjat_shared/assets/models/mobilefacenet.tflite` — a package asset is not reachable at its bare path
+- [X] T003 Create the shared package `frontend/mobile/shared/` (`publish_to: none`) and move `face_embedder.dart`, `face_liveness.dart`, and `assets/models/mobilefacenet.tflite` into it from `permedjat_app`. Change the asset key to `packages/permedjat_shared/assets/models/mobilefacenet.tflite` — a package asset is not reachable at its bare path
 - [X] T004 Migrate `frontend/mobile/employee/` onto the package: add the path dependency, drop `assets/models/` from its pubspec so the 5 MB model is not bundled twice, delete the two local face files, repoint the three importers to `package:permedjat_shared/permedjat_shared.dart`, and confirm `flutter analyze lib` is clean
-- [X] T005 Create the standalone kiosk project `frontend/mobile/kiosk/` (`flutter create --platforms=android`), set `applicationId`/`namespace` to `com.khawarizmie.medjat.kiosk`, move the Kotlin source to the matching package, set `minSdk = 29`, wire release signing from `key.properties` as `medjat_app` does, and write `android/app/src/main/AndroidManifest.xml` with `WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`, camera, portrait, `showWhenLocked`, and an optional HOME intent filter so a supervisor can make it the launcher
+- [X] T005 Create the standalone kiosk project `frontend/mobile/kiosk/` (`flutter create --platforms=android`), set `applicationId`/`namespace` to `com.khawarizmie.permedjat.kiosk`, move the Kotlin source to the matching package, set `minSdk = 29`, wire release signing from `key.properties` as `permedjat_app` does, and write `android/app/src/main/AndroidManifest.xml` with `WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`, camera, portrait, `showWhenLocked`, and an optional HOME intent filter so a supervisor can make it the launcher
 - [X] T006 Run `backend_medjet/check-drift.sh` and resolve any pre-existing drift before writing migrations — starting dirty makes your damage indistinguishable from existing damage
 
 ---
@@ -63,7 +63,7 @@ shipped on its own.
 - [X] T015 [P] Create `backend_medjet/models/StationRecognitionLogModel.php` — insert an attempt, query with filters, and a score-distribution aggregate
 - [X] T016 Add `kiosk_devices`, `kiosk_access`, `kiosk_evidence` to `PermissionMiddleware::PERMISSIONS` in `backend_medjet/core/PermissionMiddleware.php`, **and** to `ROLE_DEFAULTS` per the table in [R-006](./research.md). In the same edit add the missing `biometric_enroll` and `biometric_delete` to `PERMISSIONS` — they are already granted in `ROLE_DEFAULTS` but absent from the canonical list
 - [X] T017 [P] Add `'kiosk'` to `AttendanceMethodResolver::ALLOWED` in `backend_medjet/core/AttendanceMethodResolver.php`
-- [X] T018 [P] Add a `medjat_kiosk` entry to `RemoteConfigService::APPS` in `backend_medjet/core/RemoteConfigService.php` with `min_version_key` and `maintenance_key`
+- [X] T018 [P] Add a `permedjat_kiosk` entry to `RemoteConfigService::APPS` in `backend_medjet/core/RemoteConfigService.php` with `min_version_key` and `maintenance_key`
 - [X] T019 [P] Add kiosk message keys to `backend_medjet/lang/ar.php` and `backend_medjet/lang/en.php` — every refusal returns a `message_key`, never a rendered English string
 
 ### Kiosk app foundation
@@ -84,7 +84,7 @@ shipped on its own.
 - [X] T022 [US1] Create `backend_medjet/core/KioskPairing.php` — issue a hashed single-use code with `expires_at` computed **in SQL** (`DATE_ADD(NOW(), INTERVAL ? SECOND)`), and redeem it through one guarded `UPDATE ... WHERE used_at IS NULL AND expires_at > NOW()` so two tablets racing one code cannot both pair
 - [X] T023 [US1] Implement `backend_medjet/app/kiosk/create_pairing_code.php` — `X-Firebase-Token`, permission `kiosk_devices`, refuses when `branches.station_enabled = 0`, returns the plaintext code exactly once
 - [X] T024 [US1] Implement `backend_medjet/app/kiosk/pair.php` — unauthenticated, rate-limited per IP via `RateLimiter`, creates the station row and issues the token, returns branch name and tenant timezone. Unknown/expired/consumed all return one `410` so the endpoint is not an oracle
-- [X] T025 [US1] Implement `backend_medjet/app/kiosk/heartbeat.php` — `X-Kiosk-Token`, returns tenant-zone `server_time` via `TenantClock` plus branch settings; returns `401` on revocation, `426` below `medjat_kiosk_min_version`, `503` in maintenance
+- [X] T025 [US1] Implement `backend_medjet/app/kiosk/heartbeat.php` — `X-Kiosk-Token`, returns tenant-zone `server_time` via `TenantClock` plus branch settings; returns `401` on revocation, `426` below `permedjat_kiosk_min_version`, `503` in maintenance
 - [X] T026 [P] [US1] Implement `backend_medjet/app/kiosk/list.php` — permission `kiosk_devices`, returns each station's `app_version`, `below_min_version`, `last_seen_at`, `is_offline`, and `punch_count`
 - [X] T027 [P] [US1] Implement `backend_medjet/app/kiosk/revoke.php` — permission `kiosk_devices`, sets station `revoked` and stamps the live token row; must not orphan `attendance.station_id` on historical rows
 - [X] T028 [US1] Build the pairing screen in `frontend/mobile/kiosk/lib/view/pairing_screen.dart` — code entry, branch confirmation, and persistence of the returned token
@@ -172,11 +172,11 @@ shipped on its own.
 
 - [X] T067 [US5] Implement screen pinning (lock task) entry and exit in `frontend/mobile/kiosk/lib/logic/kiosk_lock_controller.dart` — deliberately **not** `DEVICE_ADMIN`, which attracts Play policy scrutiny for no gain here
 - [X] T068 [P] [US5] Hold a wakelock while the kiosk screen is foreground and return to identification after each interaction or a short idle period (FR-021)
-- [X] T069 [P] [US5] Add a `BOOT_COMPLETED` receiver in `frontend/mobile/kiosk/android/app/src/main/kotlin/com/khawarizmie/medjat/kiosk/` so the tablet returns to its branch's kiosk screen after a restart with nobody signing in (FR-023)
+- [X] T069 [P] [US5] Add a `BOOT_COMPLETED` receiver in `frontend/mobile/kiosk/android/app/src/main/kotlin/com/khawarizmie/permedjat/kiosk/` so the tablet returns to its branch's kiosk screen after a restart with nobody signing in (FR-023)
 - [X] T070 [US5] Wire kiosk-mode release to `admin/close.php` with `release_kiosk_mode: true`, reachable only through the administration area — never a static PIN
 - [X] T071 [US5] Throttle repeated invalid access codes on the tablet and record the event (User Story 5 scenario 4)
 - [ ] T072 [US5] **Verify on a physical Android tablet** — screen pinning and boot behaviour do not reproduce in an emulator. Confirm back, home, and recents cannot leave the kiosk, and that the screen never sleeps
-- [ ] T073 [US5] **Verify the separation holds**: build both apps and run `aapt dump permissions` on each. The employee APK must carry **neither** `RECEIVE_BOOT_COMPLETED` nor `WAKE_LOCK`, and the two must report different package names. Then confirm the employee app still enrolls and verifies a face after the `medjat_shared` migration — that path now loads its model from a package asset, and a wrong asset key fails as "face unavailable" rather than as a build error
+- [ ] T073 [US5] **Verify the separation holds**: build both apps and run `aapt dump permissions` on each. The employee APK must carry **neither** `RECEIVE_BOOT_COMPLETED` nor `WAKE_LOCK`, and the two must report different package names. Then confirm the employee app still enrolls and verifies a face after the `permedjat_shared` migration — that path now loads its model from a package asset, and a wrong asset key fails as "face unavailable" rather than as a build error
 
 **Checkpoint**: The tablet behaves like an appliance rather than a phone lying on a table.
 
@@ -226,8 +226,8 @@ shipped on its own.
 
 - [ ] T092 [P] Tune capture downscaling against real branch volume — at the 2 MB enrollment cap ten branches would generate roughly 34 GB a month, which is why kiosk captures are evidence, not reference images
 - [X] T093 [P] Confirm every kiosk refusal path returns a `message_key` resolved through `I18n` in both `ar` and `en`, and that the kiosk renders RTL correctly with IBM Plex Sans Arabic
-- [X] T094 Create the two Firebase Remote Config parameters `medjat_kiosk_min_version` and `medjat_kiosk_maintenance_enabled` in project `medjat` — without them the kiosk entry resolves to `0.0.0` and no version gate exists
-- [X] T095 Add the capture purge to `/etc/cron.d/medjat` (Africa/Cairo) alongside the existing rollover, catch-up, and alert jobs
+- [X] T094 Create the two Firebase Remote Config parameters `permedjat_kiosk_min_version` and `permedjat_kiosk_maintenance_enabled` in project `permedjat` — without them the kiosk entry resolves to `0.0.0` and no version gate exists
+- [X] T095 Add the capture purge to `/etc/cron.d/permedjat` (Africa/Cairo) alongside the existing rollover, catch-up, and alert jobs
 - [X] T096 Deploy with `backend_medjet/deploy.sh --dry-run`, then `deploy.sh`, then `backend_medjet/check-drift.sh` — never edit a file on the server, never run SQL by hand
 - [X] T097 Write the threshold tuning runbook into `backend_medjet/app/kiosk/README.md` — ship every tenant in `log_only`, read the distribution, set threshold and margin, then switch to `enforce`. Record that `FaceMatchService::DEFAULT_THRESHOLD` is 0.450 for 1:1 while `tenants.face_match_threshold` still carries a column default of 0.650, so stored data and the PHP constant disagree
 - [ ] T098 Run the full [quickstart.md](./quickstart.md) verification pass end to end on a physical tablet against the live backend

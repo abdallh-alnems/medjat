@@ -103,7 +103,7 @@ final class AuthEmail {
     }
 
     private static function appName(): string {
-        return getenv('APP_NAME') ?: 'Medjat';
+        return getenv('APP_NAME') ?: 'Permedjat';
     }
 
     private static function sanitizeColor(string $color): string {

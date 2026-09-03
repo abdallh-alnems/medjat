@@ -1,6 +1,6 @@
-# أصول App Store — ميدجات (تطبيق الموظف) iOS
+# أصول App Store — بيرمدجات (تطبيق الموظف) iOS
 
-تطبيق الموظف (bundle `com.khawarizmie.medjat`). iPhone.
+تطبيق الموظف (bundle `com.khawarizmie.permedjat`). iPhone.
 
 ## 📁 المحتويات
 ```
@@ -15,7 +15,7 @@ app_store/
 8 لقطات لكل لغة: الحضور · بياناتي · راتبي · الإجازات · المستندات · السُلَف · العُهد · حسابي.
 
 ## 📝 نصوص App Store
-**اسم التطبيق (≤30):** عربي `ميدجات للموارد البشرية` · EN `Medjat HR & Attendance`
+**اسم التطبيق (≤30):** عربي `بيرمدجات للموارد البشرية` · EN `Permedjat HR & Attendance`
 **Subtitle (≤30):** عربي `حضور ورواتب وإجازات` · EN `Attendance, payslips & leaves`
 **Keywords (≤100):**
 ```
@@ -25,12 +25,12 @@ HR,attendance,payslip,salary,leaves,clock in,QR,documents,advance,employee
 **الوصف:** (نفس وصف Google Play في `../../play_store_assets/README.md`)
 
 ## 🔗 روابط App Store Connect
-- Privacy Policy: `https://medjatapp.com/privacy-policy`
-- Support: `https://medjatapp.com`
+- Privacy Policy: `https://permedjatapp.com/privacy-policy`
+- Support: `https://permedjatapp.com`
 
 ## 🔑 بيانات مراجعة (Sign-in) — دائمة لا تنتهي
 - رقم الهاتف: `+201000000000` (بعد +20 اكتب `1000000000`)
-- كود التفعيل: `MEDJAT2026`
+- كود التفعيل: `PERMEDJAT2026`
 ```
 Sign in with the phone number and activation code above (Egypt +20). No SMS/OTP.
 This is a permanent reviewer employee account with sample data; all screens are accessible.

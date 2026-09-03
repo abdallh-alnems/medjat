@@ -14,7 +14,7 @@
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove"/>
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" tools:node="remove"/>
     <application
-        android:label="Medjat"
+        android:label="Permedjat"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -39,14 +39,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
             <!-- Employee join deep link (Android App Links). Verified against
-                 https://medjatapp.com/.well-known/assetlinks.json so the link
+                 https://permedjatapp.com/.well-known/assetlinks.json so the link
                  opens the app directly without a chooser. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="https"
-                      android:host="medjatapp.com"
+                      android:host="permedjatapp.com"
                       android:pathPrefix="/join"/>
             </intent-filter>
         </activity>

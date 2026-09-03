@@ -79,7 +79,7 @@ final class OpenApiGenerator
         return [
             'openapi' => '3.1.0',
             'info' => [
-                'title' => 'Medjat API',
+                'title' => 'Permedjat API',
                 'version' => '1',
                 'description' => trim('
 Attendance, payroll, leave and documents for a multi-tenant HR system.
@@ -96,7 +96,7 @@ PATCH and DELETE. POST on an action path (`/approve`, `/terminate`) is not an
 oversight: those are actions, not resource mutations.
                 '),
             ],
-            'servers' => [['url' => 'https://api.medjatapp.com', 'description' => 'Production']],
+            'servers' => [['url' => 'https://api.permedjatapp.com', 'description' => 'Production']],
             'components' => [
                 'securitySchemes' => [
                     'adminToken' => ['type' => 'apiKey', 'in' => 'header', 'name' => 'X-Firebase-Token'],

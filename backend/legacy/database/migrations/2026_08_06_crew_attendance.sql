@@ -5,7 +5,7 @@
 --
 -- THE GAP
 --
--- Every self-service method Medjat has assumes the worker is holding a working
+-- Every self-service method Permedjat has assumes the worker is holding a working
 -- smartphone with the app on it. A construction site with thirty labourers has
 -- one of those, and it belongs to the foreman. The kiosk does not help either:
 -- it needs a fixed tablet, mains power and a door, and a site has none of them.

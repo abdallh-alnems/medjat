@@ -13,7 +13,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
-const SOURCE = path.join(ROOT, '..', 'medjat_central', 'branding', 'icon_master.png');
+const SOURCE = path.join(ROOT, '..', 'permedjat_central', 'branding', 'icon_master.png');
 const BUILD = path.join(ROOT, 'build');
 
 if (!fs.existsSync(SOURCE)) {
@@ -23,7 +23,7 @@ if (!fs.existsSync(SOURCE)) {
 
 fs.mkdirSync(BUILD, { recursive: true });
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'medjat-icons-'));
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'permedjat-icons-'));
 
 function resize(size, destination) {
   execFileSync('sips', ['-z', String(size), String(size), SOURCE, '--out', destination], {

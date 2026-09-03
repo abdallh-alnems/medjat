@@ -1,4 +1,4 @@
-# Alertmanager for Medjat.
+# Alertmanager for Permedjat.
 #
 # Everything leaves through one webhook to a local sender (port 9099), which
 # decides which channels to use. Keeping the channel choice out of here means
@@ -9,7 +9,7 @@ global:
   resolve_timeout: 5m
 
 route:
-  receiver: medjat-default
+  receiver: permedjat-default
   # Group by alert name so a burst about one thing is one message, and by
   # severity so a critical is never delayed behind a warning.
   group_by: ['alertname', 'severity']
@@ -26,7 +26,7 @@ route:
     # what turns it into one daily "everything is fine" message.
     - matchers:
         - severity = "heartbeat"
-      receiver: medjat-heartbeat
+      receiver: permedjat-heartbeat
       group_wait: 0s
       # Poked every 15 minutes on purpose. The sender enforces "once a day at
       # HEARTBEAT_HOUR", so the pulse lands at a fixed clock time instead of
@@ -36,22 +36,22 @@ route:
 
     - matchers:
         - severity = "critical"
-      receiver: medjat-critical
+      receiver: permedjat-critical
       group_wait: 30s
       repeat_interval: 2h
 
 receivers:
-  - name: medjat-default
+  - name: permedjat-default
     webhook_configs:
       - url: 'http://127.0.0.1:9099/alert'
         send_resolved: true
 
-  - name: medjat-critical
+  - name: permedjat-critical
     webhook_configs:
       - url: 'http://127.0.0.1:9099/alert'
         send_resolved: true
 
-  - name: medjat-heartbeat
+  - name: permedjat-heartbeat
     webhook_configs:
       - url: 'http://127.0.0.1:9099/alert'
         send_resolved: false

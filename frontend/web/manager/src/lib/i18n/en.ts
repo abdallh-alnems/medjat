@@ -2,7 +2,7 @@ import type { Dictionary } from "./ar";
 
 export const en: Dictionary = {
   // ── App / general ──
-  app_name: "Medjat Central",
+  app_name: "Permedjat Central",
   admin_panel: "Admin Panel",
   hr_management_panel: "HR Management Panel",
   loading: "Loading...",
@@ -646,7 +646,7 @@ export const en: Dictionary = {
     "No branch has the rotating code enabled. Turn it on in that branch's attendance method settings first.",
   rotating_qr_pick_branch: "Choose the branch whose screen this is",
   rotating_qr_alt: "Rotating attendance code",
-  rotating_qr_instruction: "Scan this code in the Medjat app to record your attendance",
+  rotating_qr_instruction: "Scan this code in the Permedjat app to record your attendance",
   rotating_qr_stale: "Display has stopped — tell an administrator",
   face_settings: "Face recognition settings",
   face_settings_hint: "Applied to every branch unless the branch sets its own.",
@@ -940,7 +940,7 @@ export const en: Dictionary = {
   emp_photo_notice: "A photo of you will be taken and stored with this attendance record for your manager to review if needed.",
   emp_blocked_gps_only:
     "Your assigned attendance method cannot be used from a browser. Please check "
-    + "in from the Medjat app, or ask your HR administrator to enable \"GPS only\" for you.",
+    + "in from the Permedjat app, or ask your HR administrator to enable \"GPS only\" for you.",
   emp_take_photo: "Take photo",
   emp_retake: "Retake",
   emp_submitting: "Recording…",
@@ -985,14 +985,14 @@ export const en: Dictionary = {
 
   // ── Install as an app (PWA) ──
   install_title: "Install the app",
-  install_heading: "Install Medjat Central on your device",
+  install_heading: "Install Permedjat Central on your device",
   install_subheading:
     "The same panel, opening from a desktop icon in its own window — with no file to download.",
   install_action: "Install the app",
   install_working: "Opening…",
   install_installed_title: "Installed",
   install_installed_body:
-    "You will find Medjat Central in the Start menu and on your desktop.",
+    "You will find Permedjat Central in the Start menu and on your desktop.",
   install_standalone_title: "You are using the installed app",
   install_standalone_body: "It is already installed on this device.",
   install_dismissed: "Install cancelled. You can try again at any time.",

@@ -5,7 +5,7 @@ final class RateLimiter {
 
     private static function getCacheDir(): string {
         if (!isset(self::$cacheDir)) {
-            self::$cacheDir = sys_get_temp_dir() . '/medjat_rate_limit';
+            self::$cacheDir = sys_get_temp_dir() . '/permedjat_rate_limit';
             if (!is_dir(self::$cacheDir)) {
                 @mkdir(self::$cacheDir, 0700, true);
             }

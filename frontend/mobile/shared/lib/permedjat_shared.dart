@@ -1,4 +1,4 @@
-/// Code shared by the Medjat employee app and the branch kiosk.
+/// Code shared by the Permedjat employee app and the branch kiosk.
 ///
 /// **Why this package exists.** The employee app and the kiosk are two separate
 /// products with separate binaries, but they both extract a face embedding and

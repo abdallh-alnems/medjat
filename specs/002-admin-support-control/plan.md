@@ -5,7 +5,7 @@
 
 ## Summary
 
-Extend the **medjat_admin** Flutter app (the platform's super-admin / support-team panel) with two capabilities over the existing PHP/MySQL backend:
+Extend the **permedjat_admin** Flutter app (the platform's super-admin / support-team panel) with two capabilities over the existing PHP/MySQL backend:
 
 1. **Support inbox & chat** — list all tenant support tickets, open a ticket, view the full message thread, reply (text only), change status, filter by status/company, with live refresh of new messages and push alerts to support devices.
 2. **App control center** — a `superadmin`-only screen that reads and writes the per-app **minimum required version** and **stop/maintenance switch** by updating the shared **Firebase Remote Config** keys the apps already consume. The backend performs the Remote Config writes via the already-vendored `kreait/firebase-php` Admin SDK.
@@ -14,11 +14,11 @@ Most of the support backend already exists (`app/admin_support/{list,reply,messa
 
 ## Technical Context
 
-**Language/Version**: PHP 8.x (backend), Dart 3.11 / Flutter (medjat_admin app), GetX state management
-**Primary Dependencies**: Backend — `kreait/firebase-php` (Remote Config + FCM, already vendored), existing `AdminAuth`/`AdminBaseApi`/`Database`/`NotificationService`. Frontend — `get`, `http`, `flutter_secure_storage`, `flutter_dotenv`; **NEW**: `firebase_core` + `firebase_messaging` in medjat_admin (currently absent) for support push only
-**Storage**: MySQL 8 via MAMP (`medjat`, host 127.0.0.1 port 8889, root/root). Tables `support_tickets`, `support_messages` already exist (migration `2026_06_support.sql`). Firebase Remote Config holds the app-control values. **NEW** table for super-admin device tokens
+**Language/Version**: PHP 8.x (backend), Dart 3.11 / Flutter (permedjat_admin app), GetX state management
+**Primary Dependencies**: Backend — `kreait/firebase-php` (Remote Config + FCM, already vendored), existing `AdminAuth`/`AdminBaseApi`/`Database`/`NotificationService`. Frontend — `get`, `http`, `flutter_secure_storage`, `flutter_dotenv`; **NEW**: `firebase_core` + `firebase_messaging` in permedjat_admin (currently absent) for support push only
+**Storage**: MySQL 8 via MAMP (`permedjat`, host 127.0.0.1 port 8889, root/root). Tables `support_tickets`, `support_messages` already exist (migration `2026_06_support.sql`). Firebase Remote Config holds the app-control values. **NEW** table for super-admin device tokens
 **Testing**: `flutter_test` for the admin app; backend follows existing manual/endpoint conventions (no formal PHP test suite in repo)
-**Target Platform**: Android + iOS (medjat_admin); PHP web API behind `config/bootstrap.php`
+**Target Platform**: Android + iOS (permedjat_admin); PHP web API behind `config/bootstrap.php`
 **Project Type**: Mobile app + API (Option 3)
 **Performance Goals**: First reply to a waiting ticket < 60s (SC-001); new message visible in an open thread < 10s via polling (SC-003); maintenance/version change effective within one app launch/foreground (SC-004/005)
 **Constraints**: Reuse existing apps' Remote Config read logic unchanged (HR app `UpdateService` + `MaintenanceGate`); Admin app is version-only (no kill switch); replies text-only; shared ticket queue (no assignment) in v1
@@ -95,8 +95,8 @@ frontend/mobile/superadmin/lib/
     ├── support/support_thread_screen.dart  # NEW
     └── app_control/app_control_screen.dart # NEW
 
-frontend/mobile/employee/  (Employee) — verify/add RC read of medjat_app_min_version + medjat_app_maintenance_enabled
-frontend/mobile/manager/ (HR) — already reads medjat_central_* keys (no change)
+frontend/mobile/employee/  (Employee) — verify/add RC read of permedjat_app_min_version + permedjat_app_maintenance_enabled
+frontend/mobile/manager/ (HR) — already reads permedjat_central_* keys (no change)
 ```
 
 **Structure Decision**: Mobile + API (Option 3). The backend extends the existing `app/admin_*` endpoint convention (thin PHP files using `AdminAuth::require()` + `SupportModel`/new services). The admin app follows its established GetX layering: `data/model` → `data/data_source/remote/*_data` → `logic/controller/*` → `view/screen/*`, registered via `*Binding` classes in `app_pages.dart`. The deprecated `force_update` flow is superseded by `app_control`.
@@ -107,9 +107,9 @@ frontend/mobile/manager/ (HR) — already reads medjat_central_* keys (no change
 
 ## Risks & Notes
 
-- **Support push (FR-010b / SC-009) is the largest new surface.** medjat_admin has **no Firebase** today (username/password auth, no `firebase_*` packages). Delivering push requires adding `firebase_core`+`firebase_messaging`, a `google-services.json`/`GoogleService-Info.plist`, a new `super_admin_devices` table, a device-register endpoint, and `NotificationService::sendToSupportTeam()`. **Mitigation**: ship US1 (inbox+reply+live refresh via polling) and US2 (app control) first; push can land as a follow-up slice without blocking core value. In-app unread indicators (`unread_for_support`) work without Firebase.
+- **Support push (FR-010b / SC-009) is the largest new surface.** permedjat_admin has **no Firebase** today (username/password auth, no `firebase_*` packages). Delivering push requires adding `firebase_core`+`firebase_messaging`, a `google-services.json`/`GoogleService-Info.plist`, a new `super_admin_devices` table, a device-register endpoint, and `NotificationService::sendToSupportTeam()`. **Mitigation**: ship US1 (inbox+reply+live refresh via polling) and US2 (app control) first; push can land as a follow-up slice without blocking core value. In-app unread indicators (`unread_for_support`) work without Firebase.
 - **App-control is backend-only Firebase.** The admin app calls `admin_app_control/{get,set}.php`; the backend uses `kreait/firebase-php` to read/update the Remote Config template. The admin app needs **no** Firebase for this. Confirm a service-account credential is available to the backend (same one used by existing `NotificationService`).
-- **Employee + Admin app RC wiring.** The HR app already reads its keys. Confirm the Employee app reads `medjat_app_min_version` / `medjat_app_maintenance_enabled`; add the gate/service if missing. The Admin app needs a `medjat_admin_min_version` force-update check (version-only, no maintenance).
+- **Employee + Admin app RC wiring.** The HR app already reads its keys. Confirm the Employee app reads `permedjat_app_min_version` / `permedjat_app_maintenance_enabled`; add the gate/service if missing. The Admin app needs a `permedjat_admin_min_version` force-update check (version-only, no maintenance).
 - **Live refresh = polling.** Reuse the existing `after_id` parameter on `admin_support/messages.php`; controller polls every ~5s while a thread is open (meets SC-003's 10s).
 - **Roles.** Support endpoints require `admin`; app-control endpoints require `superadmin` (`AdminAuth::require('superadmin')`), matching the existing force-update endpoint.
 

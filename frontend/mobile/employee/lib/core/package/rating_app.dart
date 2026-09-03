@@ -9,7 +9,7 @@ class RateMyAppController extends GetxController {
     minLaunches: 7,
     remindLaunches: 10,
     appStoreIdentifier: '',
-    googlePlayIdentifier: 'com.khawarizmie.medjat',
+    googlePlayIdentifier: 'com.khawarizmie.permedjat',
   );
 
   @override

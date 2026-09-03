@@ -40,7 +40,7 @@ import { toast } from "sonner";
 import { Building2, UserPlus, Loader2, LifeBuoy, MailCheck } from "lucide-react";
 import type { TKey } from "@/lib/i18n/ar";
 
-const SUPPORT_EMAIL = "support@medjatapp.com";
+const SUPPORT_EMAIL = "support@permedjatapp.com";
 
 const ROLE_KEY: Record<AdminRole, TKey> = {
   general_manager: "general_manager",

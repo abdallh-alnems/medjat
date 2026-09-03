@@ -1,10 +1,10 @@
 name: permedjat_kiosk
-description: "Medjat branch kiosk — shared tablet attendance"
+description: "Permedjat branch kiosk — shared tablet attendance"
 publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  # Kept in step with medjat_app and medjat_shared.
+  # Kept in step with permedjat_app and permedjat_shared.
   sdk: ^3.11.1
 
 dependencies:
@@ -13,13 +13,13 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  # Face pipeline + the MobileFaceNet model, shared with medjat_app.
+  # Face pipeline + the MobileFaceNet model, shared with permedjat_app.
   # The server matches embeddings from both products against one stored vector
   # per employee, so extraction must be identical. One copy, not two.
   permedjat_shared:
     path: ../shared
 
-  # Version constraints deliberately match medjat_app.
+  # Version constraints deliberately match permedjat_app.
   get: ^4.7.2
   http: ^1.2.2
   connectivity_plus: ^6.1.4
@@ -34,12 +34,12 @@ dependencies:
   device_info_plus: ^11.2.0
 
   # Reports the running version on every heartbeat; the server compares it
-  # against medjat_kiosk_min_version and answers 426 when it is too old.
+  # against permedjat_kiosk_min_version and answers 426 when it is too old.
   package_info_plus: ^8.1.2
 
   cupertino_icons: ^1.0.8
 
-  # Firebase. Versions match medjat_app so one `flutter pub upgrade` moves the
+  # Firebase. Versions match permedjat_app so one `flutter pub upgrade` moves the
   # whole repo together.
   #
   # The server remains the only authority on whether this tablet may serve
@@ -53,7 +53,7 @@ dependencies:
   firebase_crashlytics: ^4.3.0
   # Branch/station-level usage only — never anything identifying an employee.
   firebase_analytics: ^11.4.0
-  # Data-only messages on `maintenance_medjat_kiosk`. No notification is ever
+  # Data-only messages on `maintenance_permedjat_kiosk`. No notification is ever
   # shown: a kiosk must not carry a surface an employee can tap out of.
   firebase_messaging: ^15.2.0
   # Realtime config updates. The kiosk is permanently foregrounded, so

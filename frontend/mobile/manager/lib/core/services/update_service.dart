@@ -14,10 +14,10 @@ import '../utils/version_compare.dart';
 
 enum UpdateAction { none, optional, force }
 
-/// يقرأ `medjat_central_min_version` من Remote Config لتحديد التحديث الإجباري،
+/// يقرأ `permedjat_central_min_version` من Remote Config لتحديد التحديث الإجباري،
 /// ويستخدم in-app updates على Android و upgrader على iOS.
 class UpdateService extends GetxService {
-  static const String _minVersionKey = 'medjat_central_min_version';
+  static const String _minVersionKey = 'permedjat_central_min_version';
 
   bool _checking = false;
   DateTime? _lastCheckTime;

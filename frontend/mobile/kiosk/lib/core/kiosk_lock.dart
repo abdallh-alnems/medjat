@@ -11,7 +11,7 @@ import 'package:flutter/services.dart';
 class KioskLock {
   KioskLock._();
 
-  static const _channel = MethodChannel('medjat.kiosk/lock');
+  static const _channel = MethodChannel('permedjat.kiosk/lock');
 
   static Future<bool> enter() => _invoke('enterKioskMode');
 

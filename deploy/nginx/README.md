@@ -1,12 +1,12 @@
 # Server-side nginx / Cloudflare rules that are **not** deployed by `deploy.sh`
 
 `deploy.sh` rsyncs application code only. The nginx vhosts live on the server
-(`/etc/nginx/sites-available/medjat*`, `/etc/nginx/snippets/medjat-common.conf`)
+(`/etc/nginx/sites-available/permedjat*`, `/etc/nginx/snippets/permedjat-common.conf`)
 and are recorded here so a rebuilt server can be brought back to the same state.
 
 ## `uploads/` lockdown — 2026-08-15
 
-**What was wrong.** `snippets/medjat-common.conf` sets `root /var/www/medjat` and
+**What was wrong.** `snippets/permedjat-common.conf` sets `root /var/www/permedjat` and
 ends with `location / { try_files $uri $uri/ =404; }`. The deny list covered
 `config|core|models|vendor|migrations|seeds|scripts|lang` but **not `uploads`**,
 so every stored file was a public static file to anyone holding the URL:
@@ -28,7 +28,7 @@ authenticated PHP endpoint (`documents/view.php`, `payroll/get_slip_pdf.php`,
 `attendance/punch_photo.php`). `kiosk/capture.php` even carries the comment
 "uploads/ is not web-served", which was the assumption this closes.
 
-**Origin fix** — in `/etc/nginx/snippets/medjat-common.conf`, immediately after
+**Origin fix** — in `/etc/nginx/snippets/permedjat-common.conf`, immediately after
 the existing `config|core|models|...` deny line:
 
 ```nginx
@@ -44,7 +44,7 @@ Then `nginx -t && systemctl reload nginx`.
 
 **Edge fix** — the origin rule cannot evict what Cloudflare already cached, and
 the zone token has no cache-purge scope, so a WAF custom rule blocks the path
-before cache instead (zone `medjatapp.com`, phase `http_request_firewall_custom`):
+before cache instead (zone `permedjatapp.com`, phase `http_request_firewall_custom`):
 
 ```
 action:     block
@@ -62,8 +62,8 @@ curl -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE/rulesets/phases/ht
 **Verify** (both layers, from outside):
 
 ```bash
-curl -sI https://api.medjatapp.com/backend_medjet/uploads/payslips/1/<any>.pdf | head -1   # 403
-curl -s -o /dev/null -w '%{http_code}\n' https://api.medjatapp.com/backend_medjet/app/auth/login.php  # 401, still alive
+curl -sI https://api.permedjatapp.com/backend_medjet/uploads/payslips/1/<any>.pdf | head -1   # 403
+curl -s -o /dev/null -w '%{http_code}\n' https://api.permedjatapp.com/backend_medjet/app/auth/login.php  # 401, still alive
 ```
 
-A backup of the pre-change snippet is at `/root/medjat-common.conf.bak-20260815`.
+A backup of the pre-change snippet is at `/root/permedjat-common.conf.bak-20260815`.

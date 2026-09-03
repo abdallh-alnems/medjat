@@ -12,7 +12,7 @@
 -- below follows from that difference — the credential is bound to one branch,
 -- it is revocable, and it is never an employee token.
 --
--- Medjat had a station/kiosk system before; it was removed in 2026-06 but only
+-- Permedjat had a station/kiosk system before; it was removed in 2026-06 but only
 -- half the removal was applied. `branches.station_*`, `attendance.station_id`,
 -- `attendance.recognition_confidence`, the `station_*` values in
 -- `attendance.recognition_method`, and `'kiosk'` in the check_in/check_out

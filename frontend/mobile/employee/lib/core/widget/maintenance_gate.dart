@@ -13,16 +13,16 @@ import '../services/firebase_ready.dart';
 const String kPendingMaintenanceKey = 'pending_maintenance';
 
 /// موضوع FCM الذي يشترك فيه التطبيق لاستقبال إشارات الصيانة الفورية.
-const String kMaintenanceTopic = 'maintenance_medjat_app';
+const String kMaintenanceTopic = 'maintenance_permedjat_app';
 
-/// يقرأ `medjat_app_maintenance_enabled` من Remote Config ويعرض شاشة الصيانة
+/// يقرأ `permedjat_app_maintenance_enabled` من Remote Config ويعرض شاشة الصيانة
 /// عند تفعيلها. يستمع للتحديثات الحيّة عبر onConfigUpdated، ويعيد الفحص عند
 /// عودة التطبيق للمقدمة، ويستجيب فورًا لإشعار FCM عبر [trigger].
 class MaintenanceGate extends StatefulWidget {
   final Widget child;
   const MaintenanceGate({super.key, required this.child});
 
-  static const String _key = 'medjat_app_maintenance_enabled';
+  static const String _key = 'permedjat_app_maintenance_enabled';
 
   static _MaintenanceGateState? _instance;
 

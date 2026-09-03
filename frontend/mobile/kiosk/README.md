@@ -1,6 +1,6 @@
-# medjat_kiosk
+# permedjat_kiosk
 
-Medjat branch kiosk — shared tablet attendance
+Permedjat branch kiosk — shared tablet attendance
 
 ## Getting Started
 

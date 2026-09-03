@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../../../config/bootstrap.php';
 
 /**
- * Links a terminal User ID to a Medjat employee (or unlinks it).
+ * Links a terminal User ID to a Permedjat employee (or unlinks it).
  *
  * Linking replays the punches that arrived before the link existed. Without
  * that, the first day of a new device — the day everyone is enrolled and

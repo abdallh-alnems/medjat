@@ -1,5 +1,5 @@
 name: permedjat_admin
-description: "Medjat Admin — Super Admin Panel for HR SaaS"
+description: "Permedjat Admin — Super Admin Panel for HR SaaS"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -41,7 +41,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.1
 
-# App icon (Medjat — pharaonic papyrus, admin / Maat). Regenerate: dart run flutter_launcher_icons
+# App icon (Permedjat — pharaonic papyrus, admin / Maat). Regenerate: dart run flutter_launcher_icons
 flutter_launcher_icons:
   android: true
   ios: false

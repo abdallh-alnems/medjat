@@ -46,7 +46,7 @@ final class KioskEmployeeCode {
         if (is_string($pepper) && $pepper !== '') {
             return $pepper;
         }
-        return (string) (getenv('SECURITY_KEY') ?: 'medjat-kiosk-fallback-pepper');
+        return (string) (getenv('SECURITY_KEY') ?: 'permedjat-kiosk-fallback-pepper');
     }
 
     public static function hash(string $code): string {

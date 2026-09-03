@@ -8,11 +8,11 @@ PSL_SUPPORTED_ACCOUNT_CREATION_METHODS,PSL_ACM_OAUTH,false,MULTIPLE_CHOICE,ما 
 PSL_SUPPORTED_ACCOUNT_CREATION_METHODS,PSL_ACM_OTHER,false,MULTIPLE_CHOICE,ما هي طريقة إنشاء الحساب التي يوفِّرها تطبيقك؟ يُرجى اختيار جميع الطرق المتوفِّرة. / أخرى
 PSL_SUPPORTED_ACCOUNT_CREATION_METHODS,PSL_ACM_NONE,false,MULTIPLE_CHOICE,ما هي طريقة إنشاء الحساب التي يوفِّرها تطبيقك؟ يُرجى اختيار جميع الطرق المتوفِّرة. / لا يسمح التطبيق للمستخدم بإنشاء حساب
 PSL_ACM_SPECIFY,,,MAYBE_REQUIRED,قدِّم وصفًا لطريقة إنشاء الحساب التي يوفِّرها تطبيقك
-PSL_ACCOUNT_DELETION_URL,,https://medjatapp.com/delete-account,MAYBE_REQUIRED,أضِف رابطًا يتيح للمستخدم طلب حذف حسابه والبيانات المرتبطة به 
+PSL_ACCOUNT_DELETION_URL,,https://permedjatapp.com/delete-account,MAYBE_REQUIRED,أضِف رابطًا يتيح للمستخدم طلب حذف حسابه والبيانات المرتبطة به 
 PSL_SUPPORT_DATA_DELETION_BY_USER,DATA_DELETION_YES,true,SINGLE_CHOICE,هل يتم توفير طريقة للمستخدمين لطلب حذف بياناتهم؟ / نعم
 PSL_SUPPORT_DATA_DELETION_BY_USER,DATA_DELETION_NO,false,SINGLE_CHOICE,هل يتم توفير طريقة للمستخدمين لطلب حذف بياناتهم؟ / لا
 PSL_SUPPORT_DATA_DELETION_BY_USER,DATA_DELETION_NO_AUTO_DELETED,false,SINGLE_CHOICE,هل يتم توفير طريقة للمستخدمين لطلب حذف بياناتهم؟ / لا، ولكن يتم حذف بيانات المستخدمين تلقائيًا خلال 90 يومًا
-PSL_DATA_DELETION_URL,,https://medjatapp.com/delete-account,MAYBE_REQUIRED,عنوان URL لطلب حذف البيانات
+PSL_DATA_DELETION_URL,,https://permedjatapp.com/delete-account,MAYBE_REQUIRED,عنوان URL لطلب حذف البيانات
 PSL_DATA_COLLECTION_COMPLIES_FAMILY_POLICY,,,OPTIONAL,"لا تُجب عن هذا السؤال إلا إذا أشرت إلى أنّ الفئة العمرية التي يستهدفها تطبيقك تشمل الأطفال، أو كنت مشتركًا في برنامج ""التطبيقات المناسبة للعائلة"". وإذا كان أي مما سبق صحيحًا، عليك اتّباع سياسة العائلات في Google Play (https://support.google.com/googleplay/android-developer/answer/9893335). هل تريد السماح للمستخدمين بالتعرّف على هذا الالتزام في قسم ""أمان البيانات"" ضمن بطاقة بيانات المتجر؟"
 PSL_INDEPENDENTLY_VALIDATED,,false,OPTIONAL,"وفقًا لإطار عمل تقييم أمان تطبيقات الأجهزة الجوّالة (MASA)، هل خضع تطبيقك لمراجعة أمان مستقلة؟ عليك عدم الإجابة بـ ""نعم"" إلا إذا كانت نتائج المراجعة جيدة."
 PSL_UPI_BADGE_OPT_IN,,,OPTIONAL,هل تريد عرض هذه الشارة على بطاقة بيانات المتجر؟

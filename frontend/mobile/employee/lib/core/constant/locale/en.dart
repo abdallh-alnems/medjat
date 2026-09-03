@@ -1,5 +1,5 @@
 const Map<String, String> en = {
-  'app_name': 'Medjat',
+  'app_name': 'Permedjat',
 
   // General
   'loading': 'Loading...',
@@ -48,7 +48,7 @@ const Map<String, String> en = {
   'password': 'Password',
 
   // Splash
-  'medjat': 'Medjat',
+  'permedjat': 'Permedjat',
 
   // Home
   'welcome': 'Welcome, @name',
@@ -422,7 +422,7 @@ const Map<String, String> en = {
   'install_now': 'Install Now',
   'maintenance': 'Under Maintenance',
   'maintenance_message': 'The app is currently under maintenance, we\'ll be back soon',
-  'upgrade_body': '\n\nA new version of Medjat is available now 📱\n\n New features and improvements ✨\n Bug fixes and better performance 🔧\n Enhanced security and protection 🛡️\n\nWe recommend updating for the best experience! 💪',
+  'upgrade_body': '\n\nA new version of Permedjat is available now 📱\n\n New features and improvements ✨\n Bug fixes and better performance 🔧\n Enhanced security and protection 🛡️\n\nWe recommend updating for the best experience! 💪',
 
   // Notification channel
   'notif_channel_name': 'Important notifications',

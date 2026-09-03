@@ -115,7 +115,7 @@ export default function InstallPage() {
       <header className="flex flex-col items-center text-center">
         <Image
           src="/logo.png"
-          alt="Medjat Central"
+          alt="Permedjat Central"
           width={72}
           height={72}
           priority

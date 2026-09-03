@@ -48,7 +48,7 @@ try {
 
 // Route the verification action through our own branded page instead of
 // Firebase's default handler (keeps mode/oobCode/apiKey/lang, swaps base URL).
-$actionBase = getenv('APP_ACTION_URL') ?: 'https://medjatapp.com/auth-action.html';
+$actionBase = getenv('APP_ACTION_URL') ?: 'https://permedjatapp.com/auth-action.html';
 $q = parse_url($link, PHP_URL_QUERY);
 if ($actionBase !== '' && $q) {
     $link = $actionBase . (strpos($actionBase, '?') !== false ? '&' : '?') . $q;

@@ -3,11 +3,11 @@
 **Feature Branch**: `001-rebuild-employee-app`
 **Created**: 2026-05-31
 **Status**: Draft
-**Input**: User description: "Medjat is an HR product with two apps: the management app (medjat_central, already finished) and the employee app (medjat_app, still in progress). The employee app was built the wrong way — employees should sign in with their phone number and an activation code (not the current email/Google flow). Other capabilities will be added later. See REBUILD_PHONE_CODE_PLAN.md for details."
+**Input**: User description: "Permedjat is an HR product with two apps: the management app (permedjat_central, already finished) and the employee app (permedjat_app, still in progress). The employee app was built the wrong way — employees should sign in with their phone number and an activation code (not the current email/Google flow). Other capabilities will be added later. See REBUILD_PHONE_CODE_PLAN.md for details."
 
 ## Overview
 
-The management side of the Medjat HR product is complete. Company administrators already create employees, capture their phone numbers, and generate short-lived activation codes. The employee-facing app, however, was built around an email / social sign-in flow that does not fit how the business actually onboards employees. Employees do not self-register; they are handed a phone number record and an activation code by their company's administration.
+The management side of the Permedjat HR product is complete. Company administrators already create employees, capture their phone numbers, and generate short-lived activation codes. The employee-facing app, however, was built around an email / social sign-in flow that does not fit how the business actually onboards employees. Employees do not self-register; they are handed a phone number record and an activation code by their company's administration.
 
 This feature rebuilds the employee app so that an employee signs in once with their **phone number + activation code**, then stays signed in on that device until their session is intentionally ended (by signing out or when administration re-issues their code). After sign-in the employee can use the existing employee capabilities — leave requests, attendance, payroll slips, personal profile/documents, and notifications — all tied to their own identity rather than to a separately registered account.
 

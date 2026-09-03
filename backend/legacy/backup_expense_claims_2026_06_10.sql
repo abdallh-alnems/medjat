@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 8.0.44, for macos12.7 (arm64)
 --
--- Host: 127.0.0.1    Database: medjat
+-- Host: 127.0.0.1    Database: permedjat
 -- ------------------------------------------------------
 -- Server version	8.0.44
 

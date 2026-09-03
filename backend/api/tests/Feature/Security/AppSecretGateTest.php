@@ -21,7 +21,7 @@ final class AppSecretGateTest extends TestCase
 {
     use DatabaseTransactions;
 
-    private const USER = 'medjat-app';
+    private const USER = 'permedjat-app';
 
     private const KEY = 'the-shared-secret';
 

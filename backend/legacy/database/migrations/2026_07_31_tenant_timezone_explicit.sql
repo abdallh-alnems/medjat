@@ -5,7 +5,7 @@
 --
 -- `tenants.timezone` defaults to 'Africa/Cairo', so the value alone cannot say
 -- whether a company picked Cairo or simply never picked anything. The company
--- settings screen in medjat_central inferred it from the value:
+-- settings screen in permedjat_central inferred it from the value:
 --
 --     if (timezone == 'Africa/Cairo') { autoDetectFromDevice(); }
 --

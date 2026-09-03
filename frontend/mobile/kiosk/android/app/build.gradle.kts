@@ -5,8 +5,8 @@ plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
-    // Reads android/app/google-services.json (package com.khawarizmie.medjat.kiosk,
-    // registered in the `medjat` Firebase project).
+    // Reads android/app/google-services.json (package com.khawarizmie.permedjat.kiosk,
+    // registered in the `permedjat` Firebase project).
     id("com.google.gms.google-services")
     // Uploads the mapping/symbol files so a crash on a wall-mounted tablet
     // arrives readable rather than as an obfuscated frame.
@@ -14,7 +14,7 @@ plugins {
 }
 
 // Load upload-signing credentials from android/key.properties (not committed),
-// the same arrangement medjat_app uses. The kiosk gets its own keystore: it is
+// the same arrangement permedjat_app uses. The kiosk gets its own keystore: it is
 // a separate application id and cannot be signed with the employee app's key.
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
@@ -23,7 +23,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.khawarizmie.medjat.kiosk"
+    namespace = "com.khawarizmie.permedjat.kiosk"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -33,7 +33,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.khawarizmie.medjat.kiosk"
+        applicationId = "com.khawarizmie.permedjat.kiosk"
         // Android 10+. Screen pinning (lock task) and the boot receiver both
         // behave predictably from here; below it they do not.
         minSdk = 29

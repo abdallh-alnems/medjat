@@ -1,13 +1,13 @@
 {
-  "name": "medjat_central_desktop",
+  "name": "permedjat_central_desktop",
   "version": "1.0.0",
-  "description": "Medjat Central — desktop shell (macOS / Windows)",
+  "description": "Permedjat Central — desktop shell (macOS / Windows)",
   "private": true,
   "main": "src/main.js",
   "author": "Khawarizmie",
   "scripts": {
     "start": "electron .",
-    "dev": "MEDJAT_URL=http://localhost:3000 electron .",
+    "dev": "PERMEDJAT_URL=http://localhost:3000 electron .",
     "icons": "node scripts/make-icons.js",
     "pack": "electron-builder --dir",
     "build:mac": "electron-builder --mac",
@@ -21,8 +21,8 @@
     "electron-builder": "^26.0.0"
   },
   "build": {
-    "appId": "com.khawarizmie.medjat.desktop",
-    "productName": "Medjat Central",
+    "appId": "com.khawarizmie.permedjat.desktop",
+    "productName": "Permedjat Central",
     "copyright": "Copyright © 2026 Khawarizmie",
     "directories": {
       "output": "dist",
@@ -35,9 +35,9 @@
     "afterPack": "scripts/adhoc-sign.js",
     "protocols": [
       {
-        "name": "Medjat Central sign-in",
+        "name": "Permedjat Central sign-in",
         "schemes": [
-          "medjat"
+          "permedjat"
         ]
       }
     ],
@@ -60,7 +60,7 @@
       }
     },
     "dmg": {
-      "title": "Medjat Central"
+      "title": "Permedjat Central"
     },
     "win": {
       "icon": "build/icon.ico",
@@ -79,7 +79,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Medjat Central"
+      "shortcutName": "Permedjat Central"
     }
   },
   "allowScripts": {

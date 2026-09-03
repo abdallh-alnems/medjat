@@ -1,5 +1,5 @@
-// Medjat Central — shell-only service worker (offline cache, NO Web Push in v1).
-const CACHE_NAME = "medjat-shell-v3";
+// Permedjat Central — shell-only service worker (offline cache, NO Web Push in v1).
+const CACHE_NAME = "permedjat-shell-v3";
 const SHELL_ASSETS = ["/", "/manifest.json", "/icons/icon-192.png"];
 
 self.addEventListener("install", (event) => {

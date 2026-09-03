@@ -1,6 +1,6 @@
-# Medjat Central Web — سجل الإصلاحات
+# Permedjat Central Web — سجل الإصلاحات
 
-كل الإصلاحات اللي اتعملت عشان الموقع (`medjat_central_web`) يشتغل على الـ backend الحي ويطابق التطبيق.
+كل الإصلاحات اللي اتعملت عشان الموقع (`permedjat_central_web`) يشتغل على الـ backend الحي ويطابق التطبيق.
 
 ## 1) تسجيل الدخول ما كانش بيثبت
 - **السبب:** الـ backend بيغلّف كل رد ناجح في `{ status:"success", data:{...} }`، بينما الـ frontend متوقّع رد مسطّح.

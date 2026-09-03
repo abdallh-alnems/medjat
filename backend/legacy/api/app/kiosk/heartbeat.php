@@ -7,7 +7,7 @@
  * periodically thereafter:
  *
  *   401  the token was revoked, or the station was unpaired  -> wipe and re-pair
- *   426  this build is below medjat_kiosk_min_version        -> supervisor must update
+ *   426  this build is below permedjat_kiosk_min_version        -> supervisor must update
  *   503  maintenance is on for the kiosk app                 -> wait it out
  *
  * A revoked tablet cannot be told anything while it is switched off, so
@@ -33,7 +33,7 @@ $appVersion = isset($kiosk['input']['app_version'])
 
 // Cached and fail-open: a Firebase outage must not stop every kiosk in every
 // company from recording attendance.
-$gate = RemoteConfigService::gateFor('medjat_kiosk');
+$gate = RemoteConfigService::gateFor('permedjat_kiosk');
 
 if (!empty($gate['maintenance'])) {
     Response::fail(I18n::t('kiosk_maintenance'), 503, 'kiosk_maintenance');

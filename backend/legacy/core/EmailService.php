@@ -12,7 +12,7 @@ final class EmailService {
             $smtpPort = (int) (getenv('SMTP_PORT') ?: 587);
             $smtpUser = getenv('SMTP_USER') ?: '';
             $smtpPass = getenv('SMTP_PASS') ?: '';
-            $smtpFrom = getenv('SMTP_FROM') ?: 'noreply@medjat.com';
+            $smtpFrom = getenv('SMTP_FROM') ?: 'noreply@permedjat.com';
             $smtpSecure = getenv('SMTP_SECURE') ?: 'tls';
 
             if (class_exists('PHPMailer\PHPMailer\PHPMailer')) {
@@ -45,7 +45,7 @@ final class EmailService {
         $mail->Password = $pass;
         $mail->SMTPSecure = $secure === 'ssl' ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
 
-        $mail->setFrom($from, 'Medjat');
+        $mail->setFrom($from, 'Permedjat');
         $mail->addAddress($to);
         $mail->isHTML(true);
         $mail->Subject = $subject;
@@ -144,7 +144,7 @@ final class EmailService {
                 return false;
             }
 
-            $headers = 'From: Medjat <' . $from . '>' . "\r\n"
+            $headers = 'From: Permedjat <' . $from . '>' . "\r\n"
                 . 'To: <' . $to . '>' . "\r\n"
                 . 'Subject: =?UTF-8?B?' . base64_encode($subject) . '?=' . "\r\n"
                 . 'MIME-Version: 1.0' . "\r\n"
@@ -173,7 +173,7 @@ final class EmailService {
 
     private static function sendViaMail(string $to, string $subject, string $htmlBody, string $from): bool {
         $headers = implode("\r\n", [
-            'From: Medjat <' . $from . '>',
+            'From: Permedjat <' . $from . '>',
             'Content-Type: text/html; charset=UTF-8',
             'MIME-Version: 1.0',
         ]);

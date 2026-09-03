@@ -1,6 +1,6 @@
 -- =====================================================================
 -- COMPREHENSIVE TEST SEED — every state of every major entity.
--- Target: tenant 1 (ميدجات التجريبية), employee 1 (Ibrahim) & 2 (Reviewer),
+-- Target: tenant 1 (بيرمدجات التجريبية), employee 1 (Ibrahim) & 2 (Reviewer),
 --         admin 1 (GM, approver), branches 1 (Shibin) & 2 (Main).
 --
 -- Everything is tagged so you can wipe it in one go (see CLEANUP at the end):
@@ -8,9 +8,9 @@
 --   - payroll uses months 2020-01/02/03
 --   - attendance uses dates in 2025-12
 --   - test employees are named "TEST ..."
--- Run the whole file in phpMyAdmin (database u869543217_medjat) → SQL tab.
+-- Run the whole file in phpMyAdmin (database u869543217_permedjat) → SQL tab.
 -- =====================================================================
-USE `u869543217_medjat`;
+USE `u869543217_permedjat`;
 
 -- ── EMPLOYEES: every status (active already exists as emp 1 & 2) ───────
 INSERT INTO `employees` (`tenant_id`,`branch_id`,`name`,`job_title`,`base_salary`,`hire_date`,`status`) VALUES

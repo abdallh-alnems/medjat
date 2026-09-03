@@ -1,7 +1,7 @@
-# Medjat App - Agent Guidelines
+# Permedjat App - Agent Guidelines
 
 ## Project Overview
-Flutter mobile application — the Medjat **employee** app.
+Flutter mobile application — the Permedjat **employee** app.
 - **Version**: 1.0.3+7
 - **SDK**: Flutter 3.11.1+
 - **State Management**: GetX

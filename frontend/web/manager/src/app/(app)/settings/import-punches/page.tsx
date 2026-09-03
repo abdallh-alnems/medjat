@@ -91,11 +91,11 @@ export default function ImportPunchesPage() {
    * before anything is written, exactly as if a file had been chosen.
    */
   async function readFromDevice() {
-    if (!window.medjat?.readDevice) return;
+    if (!window.permedjat?.readDevice) return;
     setDeviceBusy(true);
     resetOutcome();
     try {
-      const res = await window.medjat.readDevice({ ip: deviceIp.trim() });
+      const res = await window.permedjat.readDevice({ ip: deviceIp.trim() });
       if (!res.ok) {
         setError(res.error ?? t("error_generic"));
         return;

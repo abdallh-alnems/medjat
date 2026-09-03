@@ -11,17 +11,17 @@ not recalled; file references are given so they can be re-checked.
 ## R-001 — Where the employee web surface lives
 
 **Decision**: A new route group `src/app/(employee)/` inside the existing
-`medjat_central_web` Next.js application, deployed to the same origin
-(`app.medjatapp.com`), with its own auth context and **no imports from the admin
+`permedjat_central_web` Next.js application, deployed to the same origin
+(`app.permedjatapp.com`), with its own auth context and **no imports from the admin
 route tree**.
 
-**Rationale**: `medjat_central_web` is already deployed and operated (systemd
-`medjat-web.service`, nginx, Cloudflare TLS), and already carries the exact
+**Rationale**: `permedjat_central_web` is already deployed and operated (systemd
+`permedjat-web.service`, nginx, Cloudflare TLS), and already carries the exact
 platform pieces this surface needs: RTL, Arabic/English locales, the fonts, the
 Tailwind/shadcn design system, and an axios layer. A separate application would
 duplicate all of it to serve a single page.
 
-**Critical correction found during research**: `medjat_central_web` is an
+**Critical correction found during research**: `permedjat_central_web` is an
 **administrator** application. Its login (`src/lib/api/auth.ts`) posts a Firebase
 ID token to `app/auth/login.php` — the admin path. Employees authenticate through
 an entirely different endpoint (`app/auth/employee_login.php`, phone + activation
@@ -64,7 +64,7 @@ script. Guessing is further bounded by per-phone lockout and per-IP rate limits
 
 **Why not a password**: this is what ZenHR, Bayzat and Jisr use, and it is the
 market's ESS pattern. Rejected because those products identify employees by
-**company email**; Medjat identifies by **phone**, and its target workforce
+**company email**; Permedjat identifies by **phone**, and its target workforce
 includes site and shift staff who have no work email and for whom a numeric
 secret on a phone keypad is materially easier. The security difference is
 recovered through lockout rather than entropy.
@@ -259,6 +259,6 @@ itself.
 - Exact copy for the administrator-facing disclosure of what the web channel
   cannot verify (FR-014) — wording, both languages.
 - Whether the shared-device flag surfaces as a column in the existing attendance
-  review screen or as a separate report in `medjat_central`.
+  review screen or as a separate report in `permedjat_central`.
 - Playwright coverage boundary: geolocation and camera are mockable in Playwright,
   but a denied-permission path may need manual verification on a real device.

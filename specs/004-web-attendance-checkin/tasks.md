@@ -5,7 +5,7 @@
 
 **Tests**: The specification does not request TDD. Test tasks appear only where
 `plan.md` already commits to the tooling (`vitest`, `playwright` — both already
-configured in `medjat_central_web`). There is no PHP test harness in this repo,
+configured in `permedjat_central_web`). There is no PHP test harness in this repo,
 so backend verification is the manual matrix in `quickstart.md`.
 
 **Organization**: Grouped by user story so each can be implemented, tested and
@@ -61,7 +61,7 @@ shipped on its own.
 
 **Goal**: An employee with no app installed can activate, check in, and check out from a browser.
 
-**Independent test**: On a device with no Medjat app, open the link, activate with a phone and activation code, check in inside a branch's approved area, and confirm the punch appears in that employee's attendance record carrying the same fields an app punch carries.
+**Independent test**: On a device with no Permedjat app, open the link, activate with a phone and activation code, check in inside a branch's approved area, and confirm the punch appears in that employee's attendance record carrying the same fields an app punch carries.
 
 **Note**: Testable with `tenants.web_attendance_enabled = 1` set directly in the test database — the settings UI is US2.
 
@@ -125,9 +125,9 @@ shipped on its own.
 
 - [X] T043 [US3] Wire `SharedDeviceDetector` (T013) into T020 and T021 — when a second employee punches from the same `device_id` within the tenant working day, set `shared_device_flag` on **this punch and the other employee's punches too**; a flag that marked only the second party would read as an accusation of one side
 - [X] T044 [US3] Write `web_shared_device` to `attendance_security_logs` on detection, and confirm it **never** rejects the punch (FR-020) — consistent with how `is_vpn` and the existing flags already behave
-- [X] T045 [P] [US3] Expose `check_in_origin`, `check_out_origin`, `check_in_photo`, `check_out_photo` and `shared_device_flag` in the attendance read endpoints consumed by `medjat_central`
+- [X] T045 [P] [US3] Expose `check_in_origin`, `check_out_origin`, `check_in_photo`, `check_out_photo` and `shared_device_flag` in the attendance read endpoints consumed by `permedjat_central`
 - [X] T046 [US3] Serve punch images only to callers permitted to review that employee's attendance — an unauthenticated path under `uploads/` would publish employees' photographs to anyone who guesses a filename
-- [X] T047 [US3] Surface the image and the shared-device flag in the `medjat_central` attendance review screen
+- [X] T047 [US3] Surface the image and the shared-device flag in the `permedjat_central` attendance review screen
 - [X] T048 [US3] Verify the flag is advisory in the UI — presented as information for a human decision, never as an automatic rejection
 
 **Checkpoint**: All three stories complete.
@@ -141,7 +141,7 @@ shipped on its own.
 - [X] T051 [P] Lint every changed PHP file with the MAMP binary `/Applications/MAMP/bin/php/php8.4.15/bin/php -l`
 - [ ] T052 Work through the manual verification matrix in `quickstart.md` §6 — the cross-channel and clock-skew rows in particular, which no automated test covers
 - [ ] T053 Run `backend_medjet/check-drift.sh`, then `deploy.sh --dry-run`, then `deploy.sh`, then `check-drift.sh` again — it must come back clean
-- [ ] T054 Build and restart the front end separately — `deploy.sh` does **not** deploy it; it is the systemd unit `medjat-web.service` on Hetzner
+- [ ] T054 Build and restart the front end separately — `deploy.sh` does **not** deploy it; it is the systemd unit `permedjat-web.service` on Hetzner
 - [ ] T055 Enable the channel for **one** willing company and read `attendance_security_logs` for a week before offering it more widely
 
 ---

@@ -24,22 +24,22 @@ void main() async {
     debugPrint('initialServices failed: $e\n$s');
   }
 
-  runApp(const MedjatEmployeeApp());
+  runApp(const PermedjatEmployeeApp());
 
   WidgetsBinding.instance.addPostFrameCallback((_) {
     unawaited(Get.find<MyServices>().initGmsServices());
   });
 }
 
-class MedjatEmployeeApp extends StatelessWidget {
-  const MedjatEmployeeApp({super.key});
+class PermedjatEmployeeApp extends StatelessWidget {
+  const PermedjatEmployeeApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     final localeService = Get.find<LocaleService>();
 
     return GetMaterialApp(
-      title: 'Medjat',
+      title: 'Permedjat',
       debugShowCheckedModeBanner: false,
       initialRoute: AppRoutes.splash,
       getPages: getPages,

@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useT } from "@/lib/i18n/use-t";
 import { ApiError, login, phoneSchema } from "@/features/employee-attendance/api";
 
-const REMEMBERED_PHONE = "medjat_emp_phone";
+const REMEMBERED_PHONE = "permedjat_emp_phone";
 
 export default function EmployeeLoginPage() {
   const { t, dir } = useT();

@@ -25,7 +25,7 @@ test.describe("US9 — settings, team & permissions", () => {
   test.skip("invite an admin shows pending + code", async ({ page }) => {
     await page.goto("/team");
     await page.getByRole("button", { name: /invite admin|دعوة مسؤول/i }).click();
-    await page.getByLabel(/email|البريد/i).fill("newadmin@medjat.com");
+    await page.getByLabel(/email|البريد/i).fill("newadmin@permedjat.com");
     await page.getByRole("button", { name: /^(send|إرسال)$/i }).click();
     await expect(page.getByText(/pending|بانتظار/i)).toBeVisible();
   });

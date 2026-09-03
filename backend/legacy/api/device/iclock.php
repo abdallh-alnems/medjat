@@ -21,7 +21,7 @@
 
 // Tells bootstrap to skip the app-secret gate: this request comes from
 // hardware, not from one of the mobile apps.
-define('MEDJAT_DEVICE_ENDPOINT', true);
+define('PERMEDJAT_DEVICE_ENDPOINT', true);
 
 require_once __DIR__ . '/../../config/bootstrap.php';
 

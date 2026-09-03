@@ -8,7 +8,7 @@ import '../../../data/model/attendance_device_model.dart';
 import '../../../data/model/employee_model.dart';
 import '../../../logic/controller/devices/device_users_controller.dart';
 
-/// Links the User IDs stored on a terminal to Medjat employees, and shows the
+/// Links the User IDs stored on a terminal to Permedjat employees, and shows the
 /// raw punch feed for when someone insists the machine did not record them.
 ///
 /// Two tabs without a TabController: GetBuilder already rebuilds on `setTab`,

@@ -1,5 +1,5 @@
 name: permedjat_central
-description: "Medjat Central — HR Attendance & Payroll Management App"
+description: "Permedjat Central — HR Attendance & Payroll Management App"
 publish_to: 'none'
 version: 1.0.1+7
 
@@ -63,7 +63,7 @@ dev_dependencies:
   mocktail: ^1.0.4
   flutter_launcher_icons: ^0.14.1
 
-# App icon (Medjat — pharaonic papyrus). Regenerate: dart run flutter_launcher_icons
+# App icon (Permedjat — pharaonic papyrus). Regenerate: dart run flutter_launcher_icons
 flutter_launcher_icons:
   android: true
   ios: true

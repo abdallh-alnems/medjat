@@ -1,13 +1,13 @@
 {
     "openapi": "3.1.0",
     "info": {
-        "title": "Medjat API",
+        "title": "Permedjat API",
         "version": "1",
         "description": "Attendance, payroll, leave and documents for a multi-tenant HR system.\n\nEvery response carries the same envelope. A success is `{\"status\":\"success\",\"data\":…}`.\nA refusal is `{\"status\":\"fail\",\"code\":…,\"message\":…,\"error_code\":…}`, where `error_code`\nis the stable key to branch on — `message` is prose and is translated.\n\n`Accept-Language: ar` or `en` chooses the language of `message`. Anything else\nfalls back to the server default.\n\nWrites are POST unless they replace or remove an addressable resource, which are\nPATCH and DELETE. POST on an action path (`/approve`, `/terminate`) is not an\noversight: those are actions, not resource mutations."
     },
     "servers": [
         {
-            "url": "https://api.medjatapp.com",
+            "url": "https://api.permedjatapp.com",
             "description": "Production"
         }
     ],

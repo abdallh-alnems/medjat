@@ -40,10 +40,10 @@ class KioskFirebase {
   /// The topic `v1/admin/app-control` publishes to when the kiosk's
   /// maintenance switch is flipped, named the same way as the other apps:
   /// `maintenance_<app key>`.
-  static const String maintenanceTopic = 'maintenance_medjat_kiosk';
+  static const String maintenanceTopic = 'maintenance_permedjat_kiosk';
 
-  static const String _minVersionKey = 'medjat_kiosk_min_version';
-  static const String _maintenanceKey = 'medjat_kiosk_maintenance_enabled';
+  static const String _minVersionKey = 'permedjat_kiosk_min_version';
+  static const String _maintenanceKey = 'permedjat_kiosk_maintenance_enabled';
 
   static RemoteSignal? _onRemoteSignal;
   static StreamSubscription<RemoteConfigUpdate>? _rcSub;

@@ -31,7 +31,7 @@ class LoginScreen extends StatelessWidget {
               children: [
                 const SizedBox(height: AppSpacing.s8),
                 Text(
-                  'Medjat',
+                  'Permedjat',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Geist',
