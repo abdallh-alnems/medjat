@@ -88,22 +88,30 @@ fi
 systemctl reload nginx
 
 echo
-echo "=== 5. verify — the old hosts must still answer ==="
+echo "=== 5. verify — each new host must answer exactly like its old twin ==="
+# Not "is it 200": several of these legitimately answer 307, 302 or 401, and
+# /backend/ is a 404 on both because it is a prefix, not an endpoint. What has
+# to hold is that the new name reaches the *same* vhost as the old one, so the
+# test is that the two status codes agree and neither is nginx's default server.
 ok=0; bad=0
-probe() {
-  if curl -fsS -o /dev/null --resolve "$1:443:127.0.0.1" "https://$1$2" -k 2>/dev/null \
-     || curl -fsS -o /dev/null -H "Host: $1" "http://127.0.0.1$2" 2>/dev/null; then
-    echo "   ok   $1$2"; ok=$((ok+1))
+code() { curl -s -o /dev/null -w '%{http_code}' --max-time 10 -H "Host: $1" "http://127.0.0.1$2" 2>/dev/null; }
+pair() { # pair <old host> <new host> <path>
+  local a b
+  a=$(code "$1" "$3"); b=$(code "$2" "$3")
+  if [ -z "$a" ] || [ "$a" = "000" ]; then
+    echo "   FAIL $1$3 did not answer at all ($a)"; bad=$((bad+1)); return
+  fi
+  if [ "$a" = "$b" ]; then
+    echo "   ok   $2$3 -> $b  (matches $1)"; ok=$((ok+1))
   else
-    echo "   FAIL $1$2"; bad=$((bad+1))
+    echo "   FAIL $2$3 -> $b  but $1$3 -> $a"; bad=$((bad+1))
   fi
 }
-probe api.medjatapp.com /backend/
-probe app.medjatapp.com /
-probe medjatapp.com     /
-probe api.permedjat.com /backend/
-probe app.permedjat.com /
-probe permedjat.com     /
+pair medjatapp.com         permedjat.com         /
+pair api.medjatapp.com     api.permedjat.com     /.well-known/assetlinks.json
+pair app.medjatapp.com     app.permedjat.com     /
+pair grafana.medjatapp.com grafana.permedjat.com /
+pair db.medjatapp.com      db.permedjat.com      /
 
 echo
 if [ "$bad" -gt 0 ]; then
