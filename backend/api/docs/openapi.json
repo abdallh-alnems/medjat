@@ -7,7 +7,7 @@
     },
     "servers": [
         {
-            "url": "https://api.permedjatapp.com",
+            "url": "https://api.permedjat.com",
             "description": "Production"
         }
     ],

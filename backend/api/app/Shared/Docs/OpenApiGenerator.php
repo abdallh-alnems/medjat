@@ -96,7 +96,7 @@ PATCH and DELETE. POST on an action path (`/approve`, `/terminate`) is not an
 oversight: those are actions, not resource mutations.
                 '),
             ],
-            'servers' => [['url' => 'https://api.permedjatapp.com', 'description' => 'Production']],
+            'servers' => [['url' => 'https://api.permedjat.com', 'description' => 'Production']],
             'components' => [
                 'securitySchemes' => [
                     'adminToken' => ['type' => 'apiKey', 'in' => 'header', 'name' => 'X-Firebase-Token'],

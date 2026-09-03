@@ -39,14 +39,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
             <!-- Employee join deep link (Android App Links). Verified against
-                 https://permedjatapp.com/.well-known/assetlinks.json so the link
+                 https://permedjat.com/.well-known/assetlinks.json so the link
                  opens the app directly without a chooser. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="https"
-                      android:host="permedjatapp.com"
+                      android:host="permedjat.com"
                       android:pathPrefix="/join"/>
             </intent-filter>
         </activity>

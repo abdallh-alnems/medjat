@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# The only supported way to change the live web app (app.permedjatapp.com).
+# The only supported way to change the live web app (app.permedjat.com).
 #
 # Next.js ships as one build, not as individual files: whatever is in this
 # directory is what goes live. So run --dry-run first and read the list.
@@ -16,7 +16,7 @@ REMOTE="${PERMEDJAT_SSH_HOST:-permedjat}"
 REMOTE_DIR="/var/www/permedjat-web/central"
 LOCAL_DIR="$(cd "$(dirname "$0")" && pwd)"
 SERVICE="permedjat-web.service"
-SITE_URL="https://app.permedjatapp.com"
+SITE_URL="https://app.permedjat.com"
 
 DRY=0
 case "${1:-}" in

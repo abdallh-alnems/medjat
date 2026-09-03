@@ -1,7 +1,7 @@
 # permedjat_central_desktop
 
 Desktop shell for **Permedjat Central** — a real installable app (`.dmg` on macOS, `.exe`
-installer on Windows) whose window renders the live web app at `app.permedjatapp.com`.
+installer on Windows) whose window renders the live web app at `app.permedjat.com`.
 
 ## Why it is built this way
 
@@ -24,7 +24,7 @@ a stale cache.
 
 ```bash
 npm install
-npm start                 # against production (app.permedjatapp.com)
+npm start                 # against production (app.permedjat.com)
 npm run dev               # against a local `npm run dev` on :3000
 PERMEDJAT_URL=… npm start    # against anything else
 ```

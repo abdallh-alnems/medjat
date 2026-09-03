@@ -62,9 +62,9 @@ HR,attendance,payroll,employees,leaves,time tracking,manager,shifts,workforce,cl
 **Description (≤4000):** (same as the Google Play English full description)
 
 ## 🔗 روابط App Store Connect
-- **Privacy Policy URL:** `https://permedjatapp.com/privacy-policy`
-- **Support URL:** `https://permedjatapp.com`
-- **Marketing URL (اختياري):** `https://permedjatapp.com`
+- **Privacy Policy URL:** `https://permedjat.com/privacy-policy`
+- **Support URL:** `https://permedjat.com`
+- **Marketing URL (اختياري):** `https://permedjat.com`
 
 ## 🔑 بيانات مراجعة App Store (Sign-in)
 نفس فكرة Google: زوّد المراجع ببريد + كلمة مرور حساب فيه بيانات (لا تستخدمه أثناء المراجعة — جلسة واحدة نشطة لكل حساب). Google/Apple sign-in اختياري.

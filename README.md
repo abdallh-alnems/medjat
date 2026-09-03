@@ -42,7 +42,7 @@ REST API بلغة **PHP 8.x** على قاعدة **MySQL 8**، مستضاف عل�
 مركز التحكّم الكامل للشركة: إدارة الموظفين والفروع والفئات، تصميم الورديات والجدول الأسبوعي، اعتماد الإجازات، تشغيل الرواتب والتعديلات الجماعية والتسويات، ضبط طرق الحضور وشبكات الفروع وأجهزة البصمة، والتقارير مع التصدير (PDF/Word/DOCX). يدعم العربية والإنجليزية. (Android + iOS)
 
 ### 4) نسخة الويب — `frontend/web/manager/`
-منفذ ويب لتطبيق الإدارة بـ **Next.js 16 (App Router)** و React 19 و TypeScript، يتحدّث إلى **نفس الباك إند ونفس مشروع Firebase** عبر وسيط `/api/[...path]` يحقن بيانات الـ Basic-auth على الخادم. مُستضاف ذاتيًا على نفس خادم Hetzner على `app.permedjatapp.com`.
+منفذ ويب لتطبيق الإدارة بـ **Next.js 16 (App Router)** و React 19 و TypeScript، يتحدّث إلى **نفس الباك إند ونفس مشروع Firebase** عبر وسيط `/api/[...path]` يحقن بيانات الـ Basic-auth على الخادم. مُستضاف ذاتيًا على نفس خادم Hetzner على `app.permedjat.com`.
 
 ### 5) لوحة الـ Super Admin — `frontend/mobile/superadmin/`
 للفريق الداخلي: إدارة الشركات العميلة (Tenants) والمستخدمين الداخليين، الدعم الفني، سجل التدقيق، والتحكّم عن بُعد في حالة التطبيقات (تحديث إجباري/صيانة) عبر Firebase Remote Config. (Android)
@@ -69,7 +69,7 @@ REST API بلغة **PHP 8.x** على قاعدة **MySQL 8**، مستضاف عل�
 - **مكافحة التلاعب:** رفض الموقع المزيّف (`is_mock_location`) اختياري لكل شركة وعلى Android فقط، وكل محاولة محجوبة تُسجَّل في `attendance_security_logs`.
 - **التوقيت لكل شركة:** كل حساب للوقت يمرّ عبر `TenantClock` (من `tenants.timezone`) لا عبر `date()`/`NOW()` المباشرة، وباسم المنطقة الزمنية لا بإزاحة ثابتة.
 - **قفل الرواتب عند الاعتماد:** الاعتماد يُجمّد أرقام الدورة كاملة؛ يُعرض الرقم المجمّد للمعتمد/المدفوع وتقدير حيّ للمسوّدة.
-- **روابط الانضمام:** الرمز + الرابط + الـ QR يتشاركون صفّ تفعيل أحادي الاستخدام، و deep links على `permedjatapp.com/join`.
+- **روابط الانضمام:** الرمز + الرابط + الـ QR يتشاركون صفّ تفعيل أحادي الاستخدام، و deep links على `permedjat.com/join`.
 - **التحكّم عن بُعد:** قيم التحديث الإجباري/الصيانة في Firebase Remote Config، يُحرّرها فريق الـ Admin وتقرؤها التطبيقات عند الإقلاع (مع رسالة FCM للتأثير الفوري).
 
 ---
@@ -134,7 +134,7 @@ npm run dev
 | permedjat_app | Android · iOS | `com.khawarizmie.permedjat` |
 | permedjat_central | Android · iOS | `com.khawarizmie.permedjatCentral` |
 | permedjat_admin | Android | `com.khawarizmie.permedjat_admin` |
-| permedjat_central_web | الويب | `app.permedjatapp.com` |
+| permedjat_central_web | الويب | `app.permedjat.com` |
 
 ---
 
@@ -144,13 +144,13 @@ npm run dev
 
 | النطاق | الخدمة |
 |--------|--------|
-| `api.permedjatapp.com/backend_medjet` | الباك إند PHP |
-| `app.permedjatapp.com` | نسخة الويب (Next.js عبر systemd `permedjat-web.service`) |
-| `permedjatapp.com` + `www` | الموقع التعريفي الثابت + `/join` و`/.well-known/*` |
-| `grafana.permedjatapp.com` | مراقبة (Grafana + Prometheus) |
-| `db.permedjatapp.com` | Adminer لعرض القاعدة (خلف basic-auth) |
+| `api.permedjat.com/backend_medjet` | الباك إند PHP |
+| `app.permedjat.com` | نسخة الويب (Next.js عبر systemd `permedjat-web.service`) |
+| `permedjat.com` + `www` | الموقع التعريفي الثابت + `/join` و`/.well-known/*` |
+| `grafana.permedjat.com` | مراقبة (Grafana + Prometheus) |
+| `db.permedjat.com` | Adminer لعرض القاعدة (خلف basic-auth) |
 | المنفذ `8090` (بـ IP مباشرة) | أجهزة البصمة ZKTeco — HTTP عادي خارج Cloudflare |
 
 - **المهام المجدولة:** `/etc/cron.d/permedjat` بتوقيت القاهرة — ترحيل أرصدة الإجازات 00:00/00:30، تدارك الغياب 23:50، التنبيهات اليومية 07:00، ونسخة احتياطية للقاعدة 02:00 (يُحتفظ بها 14 يومًا).
-- **النطاق والبريد:** `permedjatapp.com` موثّق بالكامل للبريد (SMTP من Hostinger + نطاق مخصّص لـ Firebase)؛ سجلات البريد تبقى DNS-only ولا تُمرَّر عبر Cloudflare.
+- **النطاق والبريد:** `permedjat.com` موثّق بالكامل للبريد (SMTP من Hostinger + نطاق مخصّص لـ Firebase)؛ سجلات البريد تبقى DNS-only ولا تُمرَّر عبر Cloudflare.
 - **Firebase:** مشروع `permedjat` (FCM + Remote Config + Analytics/Crashlytics + Auth).

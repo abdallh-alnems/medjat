@@ -27,7 +27,7 @@ Permedjat/backend_medjet/
 الرابط العام حاليًا:
 
 ```
-api.permedjatapp.com/backend_medjet/app/auth/login.php
+api.permedjat.com/backend_medjet/app/auth/login.php
 ```
 
 الـ nginx docroot هو الفولدر الأب (`root /var/www/permedjat;`)، **فاسم الفولدر هو نفسه مقطع في الرابط**.

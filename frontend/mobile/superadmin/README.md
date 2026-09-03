@@ -84,7 +84,7 @@ lib/
 
 ## الباك إند
 
-REST API بلغة **PHP 8.x** في `backend_medjet/` — كل endpoint في ملف منفصل داخل `backend_medjet/app/<module>/` (وحدات المسؤول: `admin`، `admin_support`، `admin_app_control`). تعتمد المصادقة على `AdminAuth` / `AdminBaseApi`، والقاعدة **MySQL 8** (محليًا عبر MAMP؛ والخادم الحيّ Hetzner على `api.permedjatapp.com/backend_medjet`). كل عمليات الكتابة تستخدم **POST** (وليس PUT).
+REST API بلغة **PHP 8.x** في `backend_medjet/` — كل endpoint في ملف منفصل داخل `backend_medjet/app/<module>/` (وحدات المسؤول: `admin`، `admin_support`، `admin_app_control`). تعتمد المصادقة على `AdminAuth` / `AdminBaseApi`، والقاعدة **MySQL 8** (محليًا عبر MAMP؛ والخادم الحيّ Hetzner على `api.permedjat.com/backend_medjet`). كل عمليات الكتابة تستخدم **POST** (وليس PUT).
 
 ---
 

@@ -44,7 +44,7 @@ Then `nginx -t && systemctl reload nginx`.
 
 **Edge fix** — the origin rule cannot evict what Cloudflare already cached, and
 the zone token has no cache-purge scope, so a WAF custom rule blocks the path
-before cache instead (zone `permedjatapp.com`, phase `http_request_firewall_custom`):
+before cache instead (zone `permedjat.com`, phase `http_request_firewall_custom`):
 
 ```
 action:     block
@@ -62,8 +62,8 @@ curl -X PUT "https://api.cloudflare.com/client/v4/zones/$ZONE/rulesets/phases/ht
 **Verify** (both layers, from outside):
 
 ```bash
-curl -sI https://api.permedjatapp.com/backend_medjet/uploads/payslips/1/<any>.pdf | head -1   # 403
-curl -s -o /dev/null -w '%{http_code}\n' https://api.permedjatapp.com/backend_medjet/app/auth/login.php  # 401, still alive
+curl -sI https://api.permedjat.com/backend_medjet/uploads/payslips/1/<any>.pdf | head -1   # 403
+curl -s -o /dev/null -w '%{http_code}\n' https://api.permedjat.com/backend_medjet/app/auth/login.php  # 401, still alive
 ```
 
 A backup of the pre-change snippet is at `/root/permedjat-common.conf.bak-20260815`.

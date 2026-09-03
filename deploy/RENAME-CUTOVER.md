@@ -13,25 +13,49 @@ deploy, it is a silently dead installed base.
 
 | | |
 |---|---|
-| `permedjatapp.com` | registered, added to Cloudflare, DNS proxied, Full-strict |
+| `permedjat.com` | bought, in Cloudflare, DNS proxied, Full-strict, origin certificate covering `permedjat.com` and `*.permedjat.com` |
 | A fresh DB backup | `/usr/local/bin/medjat-backup.sh` once, by hand, before anything |
-| A maintenance window | sections 3–6 stop the site for a few minutes |
+| A maintenance window | sections 3-6 stop the site for a few minutes |
+
+Host map, old to new:
+
+| old | new |
+|---|---|
+| `medjatapp.com`, `www.` | `permedjat.com`, `www.` |
+| `api.medjatapp.com` | `api.permedjat.com` |
+| `app.medjatapp.com` | `app.permedjat.com` |
+| `grafana.medjatapp.com` | `grafana.permedjat.com` |
+| `db.medjatapp.com` | `db.permedjat.com` |
 
 ---
 
-## 1. The old domain never goes away
+## 1. The old domain is retired last, not first
+
+The destination is `permedjat.com` alone. The order that gets there without an
+outage switches the old domain off at the **end**.
 
 Every build already in Google Play, the App Store and AppGallery calls
-`https://api.medjatapp.com/backend` — and the older ones call
-`/backend_medjet`. Those strings are frozen inside binaries on people's
-phones. They cannot be updated, only replaced by an install of the new app.
+`https://api.medjatapp.com/backend`, and the older ones call `/backend_medjet`.
+Those strings are frozen inside binaries on people's phones. Deleting the DNS
+record does not migrate those users, it takes them offline with no way back:
+the replacement apps carry **new package ids**, so they are different listings
+that a phone will never receive as an update.
 
-So `medjatapp.com` keeps its DNS, its certificate and its `server_name` entry
-**indefinitely**. The new domain is added beside it, not in place of it. Both
-resolve to the same origin and the same document root; nothing behind them is
-duplicated.
+So:
 
-The same is true of the `/backend_medjet` location block. Leave it.
+1. **Add** `permedjat.com` beside `medjatapp.com`. Both resolve to the same
+   origin, document root and database. Nothing is duplicated; only `server_name`
+   grows. That is sections 2-7.
+2. Ship the new apps, on the new ids and the new domain (sections 9-11).
+3. **Measure** rather than guess. Section 15 turns "is anyone still calling the
+   old host?" into a number.
+4. Retire `medjatapp.com` once that number is zero, per section 15.
+
+Jumping straight to step 4 is the one action in this document that cannot be
+undone by putting something back.
+
+The `/backend_medjet` location block follows the same rule: it lives until the
+old host is retired, then goes with it.
 
 ---
 
@@ -56,7 +80,7 @@ already carry the new paths, the new zone names (`permedjat_devices`,
 Each `server_name` must name **both** domains:
 
 ```nginx
-server_name api.permedjatapp.com api.medjatapp.com;
+server_name api.permedjat.com api.medjatapp.com;
 ```
 
 Do not reload yet — the paths those files point at do not exist until section 3.
@@ -71,7 +95,7 @@ mv /var/www/medjat      /var/www/permedjat
 mv /var/www/medjat-web  /var/www/permedjat-web
 ```
 
-The public URL does **not** move. `api.permedjatapp.com/backend` is a `location
+The public URL does **not** move. `api.permedjat.com/backend` is a `location
 /backend` under `root /var/www/permedjat`, so renaming the parent directory
 changes nothing a client can see. That is why section 1 works.
 
@@ -207,7 +231,7 @@ working. `ssh medjat` no longer resolves.
 `.well-known/assetlinks.json` and `apple-app-site-association` now carry
 `com.khawarizmie.permedjat*`. They must be served from **both** domains, because
 the installed apps verify against `medjatapp.com` and the new ones against
-`permedjatapp.com`.
+`permedjat.com`.
 
 The SHA-256 certificate fingerprints in `assetlinks.json` are still the old
 ones. A new Play listing gets a **new** Play App Signing certificate, so those
@@ -306,8 +330,8 @@ force-update screen is the existing channel for exactly this.
 
 | | why |
 |---|---|
-| `/backend_medjet` URL prefix | published builds call it; renaming it breaks them |
-| `medjatapp.com` and its DNS/TLS | same reason — section 1 |
+| `/backend_medjet` URL prefix | published builds call it; it retires together with the old host, section 15 |
+| `medjatapp.com` and its DNS/TLS | kept alive until section 15 says it is safe to switch off |
 | `SECURITY_USER=khawarizmie_medjat` | a shared credential, not a name. Rotating it means changing it in the server env, all four apps and the web app in one shot |
 | `REVIEW_DEMO_CODE=MEDJAT2026` | printed in the store review notes; change it with the listing |
 | S3 bucket `medjat-documents` | renaming a bucket means creating a new one and copying every object |
@@ -323,9 +347,9 @@ force-update screen is the existing channel for exactly this.
 ```bash
 backend/legacy/check-drift.sh          # code, schema and ledger must agree
 backend/legacy/deploy.sh --dry-run
-curl -sI https://api.permedjatapp.com/backend/            # new domain
+curl -sI https://api.permedjat.com/backend/            # new domain
 curl -sI https://api.medjatapp.com/backend/               # old domain still 200
-curl -s  https://api.permedjatapp.com/.well-known/assetlinks.json
+curl -s  https://api.permedjat.com/.well-known/assetlinks.json
 systemctl status permedjat-web.service permedjat-alerts.service
 sudo -u www-data /usr/local/bin/permedjat-cron-absences.sh   # exits 0
 ```
@@ -337,3 +361,92 @@ other way, reload. Nothing in them destroys data.
 
 Sections 10 and 11 do not reverse. Do not start them until the rest has been
 running for a while.
+
+---
+
+## 15. Retiring `medjatapp.com`
+
+This is the last step of the migration and the only irreversible one. It is
+gated on a measurement, not on a date.
+
+### The precondition
+
+Nobody is calling the old host any more. Two ways to know, use both:
+
+**Cloudflare.** In the `medjatapp.com` zone, Analytics → Traffic, grouped by
+hostname, over the last 30 days. `api.medjatapp.com` is the one that matters —
+it is the app traffic. The promo host and `app.` can be redirected instead of
+retired, so they do not gate anything.
+
+**The origin.** Cloudflare only sees what reaches it; the access log is the
+ground truth, and it also tells you *who* is still calling:
+
+```bash
+ssh permedjat
+
+# requests to the old host in the last day, by path
+awk '$0 ~ /medjatapp\.com/ {print $7}' /var/log/nginx/access.log \
+  | sed 's/?.*//' | sort | uniq -c | sort -rn | head -20
+
+# and by app version, if the apps send one
+grep 'medjatapp\.com' /var/log/nginx/access.log \
+  | grep -oE 'Permedjat/[0-9.]+|Medjat/[0-9.]+' | sort | uniq -c
+```
+
+If you want this as a running number rather than a spot check, add a
+`server_name`-labelled counter to the nginx metrics that
+`permedjat-node-metrics.sh` already exports, and put the old host on a Grafana
+panel. Then the decision is a graph that reaches zero and stays there.
+
+### Before it can reach zero
+
+- The new apps are live in all three stores under the new ids.
+- The old apps have told their users to move. The admin panel's maintenance /
+  force-update screen is the channel: point the old builds' force-update message
+  at the new listing, so opening the old app becomes a wall with a store link.
+  Remote Config for the **old** Firebase project drives those builds, so it has
+  to still exist at that point (section 10).
+- The web app and the desktop shell are on `app.permedjat.com`, and anyone with
+  the old URL bookmarked is being redirected (see below).
+
+### The retirement itself
+
+Do it in this order, and leave a week between the last two steps.
+
+```bash
+# 1. Stop serving the old host from the app; redirect it instead.
+#    Everything that is a browser gets moved; everything that is an app gets a
+#    301 it will not follow, which is the point — it shows up in the logs.
+server {
+    listen 443 ssl;
+    server_name medjatapp.com www.medjatapp.com app.medjatapp.com api.medjatapp.com;
+    return 301 https://permedjat.com$request_uri;   # api. -> api.permedjat.com
+}
+
+# 2. Watch the log for a week. Anything still arriving is a client that has to
+#    be chased, not a client that will fix itself.
+
+# 3. Remove the server block, then the DNS records in Cloudflare.
+#    Keep the zone itself and the MX/SPF/DKIM/DMARC records if any mail
+#    address on the old domain is still in use anywhere — a store listing, a
+#    support address, an old invoice. Mail is the thing people forget.
+```
+
+### Mail moves before, not after
+
+`noreply@medjatapp.com` sends the verification and reset mail. The repo now
+points at `noreply@permedjat.com`, which will silently fail authentication
+until `permedjat.com` has its own SPF, DKIM and DMARC records and the sender is
+verified with the SMTP provider. Set that up and send a test through the real
+path **before** section 2, or the first thing the new domain does is drop
+everybody's password-reset mail into spam.
+
+Firebase's custom email-action domain is configured per project and needs the
+same treatment on the new project.
+
+### What is not reversible
+
+DNS and the server block come back in minutes. What does not come back is a
+customer whose only copy of the app pointed at a host that stopped answering
+while the replacement was not yet installable. That is what the precondition is
+protecting, and it is the reason this section is numbered 15 and not 2.

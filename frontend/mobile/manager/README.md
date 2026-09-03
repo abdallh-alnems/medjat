@@ -4,7 +4,7 @@
 
 > هذا أحد تطبيقات المنصّة:
 > - **permedjat_central** (هذا المشروع) — تطبيق الإدارة/الموارد البشرية للشركة.
-> - **permedjat_central_web** — نسخة الويب من هذا التطبيق (Next.js 16) على `app.permedjatapp.com`.
+> - **permedjat_central_web** — نسخة الويب من هذا التطبيق (Next.js 16) على `app.permedjat.com`.
 > - **permedjat_app** — تطبيق الموظف (الحضور، الراتب، المستندات).
 > - **permedjat_admin** — لوحة الـ Super Admin للفريق الداخلي.
 
@@ -112,7 +112,7 @@ lib/
 
 ## الباك إند
 
-REST API بلغة **PHP 8.x** في `backend_medjet/` — كل endpoint في ملف منفصل داخل `backend_medjet/app/<module>/`، والمنطق المشترك في `backend_medjet/core/`. القاعدة **MySQL 8** (محليًا عبر MAMP على المنفذ `8889`، المستخدم/كلمة المرور `root/root`، قاعدة `permedjat`؛ والخادم الحيّ Hetzner على `api.permedjatapp.com/backend_medjet`).
+REST API بلغة **PHP 8.x** في `backend_medjet/` — كل endpoint في ملف منفصل داخل `backend_medjet/app/<module>/`، والمنطق المشترك في `backend_medjet/core/`. القاعدة **MySQL 8** (محليًا عبر MAMP على المنفذ `8889`، المستخدم/كلمة المرور `root/root`، قاعدة `permedjat`؛ والخادم الحيّ Hetzner على `api.permedjat.com/backend_medjet`).
 
 > بعض الميزات (التعديلات الجماعية، تجاوزات طرق الحضور، ترحيل الإجازات المتقدّم، الجلسة الواحدة النشطة، أجهزة البصمة) تتطلّب **migrations مكتوبة يدويًا** تُشغَّل على قاعدة MySQL 8 الحيّة، لأن `schema.sql` يستخدم صياغة `ADD COLUMN IF NOT EXISTS` الخاصة بـ MariaDB.
 

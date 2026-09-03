@@ -27,7 +27,7 @@ PING="https://hc-ping.com/${UUID}"
 SECRET="24f90498cfabccf4888efa11baad8eb9a60e8ccd6ebbc0f4"
 URL="http://127.0.0.1/backend/api/app/cron/${ENDPOINT}?key=${SECRET}&cron_secret=${SECRET}"
 
-resp=$(curl -sS -f --max-time 300 "$URL" -H "Host: api.permedjatapp.com" 2>&1)
+resp=$(curl -sS -f --max-time 300 "$URL" -H "Host: api.permedjat.com" 2>&1)
 rc=$?
 
 echo "$resp"

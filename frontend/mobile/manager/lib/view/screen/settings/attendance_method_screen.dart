@@ -3531,7 +3531,7 @@ class _WebAttendanceSection extends StatelessWidget {
               _WebNoticeCard(
                 icon: Icons.link_outlined,
                 title: 'web_attendance_link'.tr,
-                lines: const ['https://app.permedjatapp.com/me/login'],
+                lines: const ['https://app.permedjat.com/me/login'],
                 footnote: 'web_attendance_link_hint'.tr,
               ),
               if (ctrl.categories.isNotEmpty) ...[

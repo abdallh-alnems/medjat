@@ -41,7 +41,7 @@ messaging / no Web Push**) · shadcn + Tailwind v4 · RTL Arabic-first.
 ## Deployment (self-hosted on the Hetzner server)
 
 The app is **not** on Vercel. It runs as a Node service on the same server as the PHP
-backend, at **`app.permedjatapp.com`**, behind Nginx and Cloudflare. It can't be a static
+backend, at **`app.permedjat.com`**, behind Nginx and Cloudflare. It can't be a static
 export — the BFF proxy `src/app/api/[...path]/route.ts` injects the secret
 `SECURITY_USER`/`SECURITY_KEY` server-side.
 
@@ -58,11 +58,11 @@ export — the BFF proxy `src/app/api/[...path]/route.ts` injects the secret
    systemctl restart permedjat-web        # runs `next start -H 127.0.0.1 -p 3000` as www-data
    ```
 3. Env lives in `/var/www/permedjat-web/central/.env.local` (not in git): `SECURITY_USER`,
-   `SECURITY_KEY`, `NEXT_PUBLIC_API_HOST=https://api.permedjatapp.com/backend_medjet`,
+   `SECURITY_KEY`, `NEXT_PUBLIC_API_HOST=https://api.permedjat.com/backend_medjet`,
    `NEXT_PUBLIC_FIREBASE_*`.
 4. Nginx vhost `/etc/nginx/sites-available/permedjat-web` terminates TLS (Cloudflare Origin CA)
    and proxies 443 → `127.0.0.1:3000`.
-5. In the Firebase console for the `permedjat` project (already done for `app.permedjatapp.com`):
+5. In the Firebase console for the `permedjat` project (already done for `app.permedjat.com`):
    - Auth → **Authorized domains**: the deploy domain (and `localhost` for dev).
    - Auth → **Sign-in method**: **Google** and **Apple** enabled for web.
      - Apple: a **Services ID** + return URL `https://<domain>/__/auth/handler`.

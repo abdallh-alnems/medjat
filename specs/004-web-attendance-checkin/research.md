@@ -12,7 +12,7 @@ not recalled; file references are given so they can be re-checked.
 
 **Decision**: A new route group `src/app/(employee)/` inside the existing
 `permedjat_central_web` Next.js application, deployed to the same origin
-(`app.permedjatapp.com`), with its own auth context and **no imports from the admin
+(`app.permedjat.com`), with its own auth context and **no imports from the admin
 route tree**.
 
 **Rationale**: `permedjat_central_web` is already deployed and operated (systemd

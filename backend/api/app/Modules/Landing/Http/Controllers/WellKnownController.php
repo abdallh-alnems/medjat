@@ -18,8 +18,8 @@ use Illuminate\Http\Response;
  * otherwise 403 the Android one.
  *
  * There are two pairs, because there are two apps claiming two domains. The
- * employee app declares permedjatapp.com; the management app declares
- * api.permedjatapp.com. Serving the wrong pair does not fail loudly — the link
+ * employee app declares permedjat.com; the management app declares
+ * api.permedjat.com. Serving the wrong pair does not fail loudly — the link
  * just opens a web page instead of the app, which looks exactly like the app
  * not being installed.
  *

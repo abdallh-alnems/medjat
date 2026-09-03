@@ -169,7 +169,7 @@ project API key is in [[permedjat-server-credentials]].
 alive; it says nothing about whether the world can *reach* the API. If the
 server is healthy but Cloudflare, DNS or nginx is broken, beacons keep arriving
 and healthchecks stays quiet. A free UptimeRobot monitor on
-`api.permedjatapp.com` (set to treat **401** as success) closes that last gap.
+`api.permedjat.com` (set to treat **401** as success) closes that last gap.
 
 ### Two more things found while auditing this
 

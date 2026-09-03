@@ -169,13 +169,13 @@ migrations. SSH alias `permedjat` is configured in `~/.ssh/config`.
 - **Server:** single **Hetzner VPS** (Ubuntu 26.04, PHP 8.5 / MySQL 8.4 / Nginx) behind
   **Cloudflare** (proxied, Full-strict, origin IP hidden; UFW allows 80/443 from Cloudflare ranges
   only). Deploy is `rsync` from the Mac — no CI.
-  - `api.permedjatapp.com/backend` → the backend at `/var/www/permedjat/backend`.
+  - `api.permedjat.com/backend` → the backend at `/var/www/permedjat/backend`.
     `/backend_medjet` is the pre-rename prefix and is still matched, because app
     builds already in the stores call it.
-  - `app.permedjatapp.com` → Next.js via systemd `permedjat-web.service` (`next start` on :3000)
-  - `permedjatapp.com` + `www` → static promo site (`frontend/web/site`), plus `/join` and
+  - `app.permedjat.com` → Next.js via systemd `permedjat-web.service` (`next start` on :3000)
+  - `permedjat.com` + `www` → static promo site (`frontend/web/site`), plus `/join` and
     `/.well-known/*` deep links served from the backend copies
-  - `grafana.permedjatapp.com` (Grafana + Prometheus) and `db.permedjatapp.com` (Adminer, basic-auth)
+  - `grafana.permedjat.com` (Grafana + Prometheus) and `db.permedjat.com` (Adminer, basic-auth)
 - **Cron:** `/etc/cron.d/permedjat` (Africa/Cairo) — leave rollover 00:00+00:30 (CLI), catch-up absences
   23:50, daily alerts 07:00 (both via `/usr/local/bin/permedjat-cron-*.sh`, which pass **both** `key=`
   and `cron_secret=`), mysqldump backup 02:00 with 14-day retention.

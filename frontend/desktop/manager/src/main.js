@@ -3,7 +3,7 @@
 /**
  * Permedjat Central — desktop shell.
  *
- * The window renders the live web app (app.permedjatapp.com), so every `deploy-web.sh`
+ * The window renders the live web app (app.permedjat.com), so every `deploy-web.sh`
  * reaches installed copies without shipping a new installer. Anything the browser
  * cannot do — local network, file system, silent printing — belongs here in the main
  * process and is handed to the page through `src/preload.js`.
@@ -22,7 +22,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
 
-const APP_URL = process.env.PERMEDJAT_URL || 'https://app.permedjatapp.com';
+const APP_URL = process.env.PERMEDJAT_URL || 'https://app.permedjat.com';
 const APP_ORIGIN = new URL(APP_URL).origin;
 const IS_MAC = process.platform === 'darwin';
 
@@ -369,7 +369,7 @@ function buildMenu() {
       submenu: [
         {
           label: 'الدعم الفني',
-          click: () => shell.openExternal('https://permedjatapp.com/support.html'),
+          click: () => shell.openExternal('https://permedjat.com/support.html'),
         },
         {
           label: 'فتح في المتصفح',

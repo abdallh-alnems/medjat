@@ -41,7 +41,7 @@ return [
     'web' => [
         // Where the management web app lives, for links the panel hands an
         // operator (impersonation, and anything else that opens a real session).
-        'base_url' => (string) env('CENTRAL_WEB_URL', 'https://app.permedjatapp.com'),
+        'base_url' => (string) env('CENTRAL_WEB_URL', 'https://app.permedjat.com'),
     ],
 
     'stores' => [
@@ -58,15 +58,15 @@ return [
     'join' => [
         // Must be a domain that hosts the App Links / Universal Links association
         // files, or the link opens a web page instead of the app.
-        'base_url' => (string) env('APP_JOIN_BASE_URL', 'https://permedjatapp.com'),
+        'base_url' => (string) env('APP_JOIN_BASE_URL', 'https://permedjat.com'),
     ],
 
     'mail' => [
         // Our own branded action page, which enforces the app's password rules.
         // Firebase's query string is carried across unchanged, so switching this
         // needs no change in the Firebase console.
-        'action_url' => (string) env('APP_ACTION_URL', 'https://permedjatapp.com/auth-action.html'),
-        'logo_url' => (string) env('APP_LOGO_URL', 'https://permedjatapp.com/email-logo.png'),
+        'action_url' => (string) env('APP_ACTION_URL', 'https://permedjat.com/auth-action.html'),
+        'logo_url' => (string) env('APP_LOGO_URL', 'https://permedjat.com/email-logo.png'),
     ],
 
     'firebase' => [

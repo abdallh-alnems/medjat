@@ -25,7 +25,7 @@ final class ManagerInviteMailer {
     /**
      * Public URL of the bridge page that opens the app via its custom scheme and
      * falls back to web/store. Derived from the current request so it works on
-     * whatever host the backend is being served from (api.permedjatapp.com live,
+     * whatever host the backend is being served from (api.permedjat.com live,
      * localhost:8888 under MAMP).
      */
     public static function joinUrl(string $code): string {
@@ -36,7 +36,7 @@ final class ManagerInviteMailer {
         $apiPos = strpos($scriptName, '/api/');
         $backendRoot = $apiPos !== false ? substr($scriptName, 0, $apiPos) : '';
         $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? 'api.permedjatapp.com';
+        $host = $_SERVER['HTTP_HOST'] ?? 'api.permedjat.com';
 
         return $scheme . '://' . $host . $backendRoot
             . '/join_team.php?code=' . rawurlencode($code);

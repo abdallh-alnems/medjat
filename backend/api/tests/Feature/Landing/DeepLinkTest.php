@@ -48,11 +48,11 @@ final class DeepLinkTest extends TestCase
 
     public function test_an_invitation_link_offers_the_web_app_when_one_is_configured(): void
     {
-        Config::set('permedjat.web.base_url', 'https://app.permedjatapp.com');
+        Config::set('permedjat.web.base_url', 'https://app.permedjat.com');
 
         $this->get('/join_team?code=AB12CD34')
             ->assertOk()
-            ->assertSee('https://app.permedjatapp.com/onboarding?code=AB12CD34', false);
+            ->assertSee('https://app.permedjat.com/onboarding?code=AB12CD34', false);
     }
 
     public function test_a_malformed_invitation_code_is_refused_without_a_scheme_link(): void
@@ -89,7 +89,7 @@ final class DeepLinkTest extends TestCase
 
     public function test_the_api_host_serves_the_management_apps_association_files(): void
     {
-        $this->get('http://api.permedjatapp.com/.well-known/assetlinks.json')
+        $this->get('http://api.permedjat.com/.well-known/assetlinks.json')
             ->assertOk()
             ->assertHeader('Content-Type', 'application/json')
             ->assertSee('permedjat_central', false);
@@ -99,7 +99,7 @@ final class DeepLinkTest extends TestCase
     {
         // Two apps, two domains: serving the wrong pair does not fail loudly,
         // the link just quietly opens a web page instead of the app.
-        $this->get('http://permedjatapp.com/.well-known/assetlinks.json')
+        $this->get('http://permedjat.com/.well-known/assetlinks.json')
             ->assertOk()
             ->assertSee('com.khawarizmie.permedjat', false)
             ->assertDontSee('permedjat_central', false);
@@ -108,7 +108,7 @@ final class DeepLinkTest extends TestCase
     public function test_the_extensionless_apple_file_is_served_as_json(): void
     {
         // The OS refuses anything that is not.
-        $this->get('http://api.permedjatapp.com/.well-known/apple-app-site-association')
+        $this->get('http://api.permedjat.com/.well-known/apple-app-site-association')
             ->assertOk()
             ->assertHeader('Content-Type', 'application/json')
             ->assertSee('applinks', false);

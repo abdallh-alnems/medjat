@@ -51,7 +51,7 @@ final class ActivationCodeModel {
      * app isn't installed. Base is configurable via APP_JOIN_BASE_URL.
      */
     public static function buildJoinLink(string $token): string {
-        $base = rtrim(getenv('APP_JOIN_BASE_URL') ?: 'https://permedjatapp.com', '/');
+        $base = rtrim(getenv('APP_JOIN_BASE_URL') ?: 'https://permedjat.com', '/');
         return $base . '/join?token=' . urlencode($token);
     }
 

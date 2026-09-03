@@ -10,7 +10,7 @@
 	</array>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>applinks:api.permedjatapp.com</string>
+		<string>applinks:api.permedjat.com</string>
 	</array>
 </dict>
 </plist>

@@ -6,7 +6,7 @@
 	<string>production</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>https://permedjatapp.com</string>
+		<string>https://permedjat.com</string>
 	</array>
 	<!-- Access WiFi Information: lets the app read the connected access point's
 	     BSSID for the wifi_gps attendance method. iOS also requires location

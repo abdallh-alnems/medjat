@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | This host serves an API, not a site — the marketing pages live on
-| permedjatapp.com and the management app on app.permedjatapp.com. The skeleton's
+| permedjat.com and the management app on app.permedjat.com. The skeleton's
 | welcome page was still here, which told anybody who found the domain what
 | framework and version it runs.
 |

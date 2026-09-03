@@ -25,8 +25,8 @@ HR,attendance,payslip,salary,leaves,clock in,QR,documents,advance,employee
 **الوصف:** (نفس وصف Google Play في `../../play_store_assets/README.md`)
 
 ## 🔗 روابط App Store Connect
-- Privacy Policy: `https://permedjatapp.com/privacy-policy`
-- Support: `https://permedjatapp.com`
+- Privacy Policy: `https://permedjat.com/privacy-policy`
+- Support: `https://permedjat.com`
 
 ## 🔑 بيانات مراجعة (Sign-in) — دائمة لا تنتهي
 - رقم الهاتف: `+201000000000` (بعد +20 اكتب `1000000000`)

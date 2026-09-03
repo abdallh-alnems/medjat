@@ -18,7 +18,7 @@ set -euo pipefail
 REMOTE="${PERMEDJAT_SSH_HOST:-permedjat}"
 REMOTE_DIR="/var/www/permedjat/backend"
 LOCAL_DIR="$(cd "$(dirname "$0")" && pwd)"
-API_URL="https://api.permedjatapp.com/backend"
+API_URL="https://api.permedjat.com/backend"
 
 DRY=0; CODE_ONLY=0
 case "${1:-}" in

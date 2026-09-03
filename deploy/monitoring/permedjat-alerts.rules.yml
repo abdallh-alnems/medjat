@@ -18,7 +18,7 @@ groups:
           severity: critical
         annotations:
           summary: "الـAPI لا يستجيب"
-          detail: "api.permedjatapp.com لا يرد منذ دقيقتين — لا حضور ولا رواتب ولا أي عملية من أي تطبيق."
+          detail: "api.permedjat.com لا يرد منذ دقيقتين — لا حضور ولا رواتب ولا أي عملية من أي تطبيق."
 
       # Straight at nginx on the box. Comparing this with ApiDown separates
       # "our server is broken" from "the path to it is broken" (Cloudflare,
@@ -40,7 +40,7 @@ groups:
           severity: critical
         annotations:
           summary: "تطبيق الويب لا يستجيب"
-          detail: "app.permedjatapp.com لا يرد — لوحة الإدارة وحضور الموظفين من المتصفح متوقفان."
+          detail: "app.permedjat.com لا يرد — لوحة الإدارة وحضور الموظفين من المتصفح متوقفان."
 
       - alert: PromoSiteDown
         expr: probe_success{job="blackbox-promo"} == 0
@@ -49,7 +49,7 @@ groups:
           severity: warning
         annotations:
           summary: "الموقع الترويجي لا يستجيب"
-          detail: "permedjatapp.com متوقف — العملاء الحاليون لا يتأثرون، لكن الزوار الجدد لا يرون شيئًا."
+          detail: "permedjat.com متوقف — العملاء الحاليون لا يتأثرون، لكن الزوار الجدد لا يرون شيئًا."
 
   - name: permedjat-services
     rules:

@@ -101,9 +101,9 @@ lib/
 
 ## الباك إند
 
-REST API بلغة **PHP 8.x** في `backend_medjet/` — كل endpoint في ملف منفصل داخل `backend_medjet/app/<module>/`، والمنطق المشترك في `backend_medjet/core/`. القاعدة **MySQL 8** (محليًا عبر MAMP على المنفذ `8889`، قاعدة `permedjat`؛ والخادم الحيّ Hetzner على `api.permedjatapp.com/backend_medjet`).
+REST API بلغة **PHP 8.x** في `backend_medjet/` — كل endpoint في ملف منفصل داخل `backend_medjet/app/<module>/`، والمنطق المشترك في `backend_medjet/core/`. القاعدة **MySQL 8** (محليًا عبر MAMP على المنفذ `8889`، قاعدة `permedjat`؛ والخادم الحيّ Hetzner على `api.permedjat.com/backend_medjet`).
 
-> **روابط الانضمام (Join):** الرمز + الرابط + الـ QR يتشاركون صفّ تفعيل أحادي الاستخدام، والـ deep links على `permedjatapp.com/join` — مع خطوات نشر يدوية (migration، ملف `.well-known`، capability على iOS).
+> **روابط الانضمام (Join):** الرمز + الرابط + الـ QR يتشاركون صفّ تفعيل أحادي الاستخدام، والـ deep links على `permedjat.com/join` — مع خطوات نشر يدوية (migration، ملف `.well-known`، capability على iOS).
 
 ---
 

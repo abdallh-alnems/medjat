@@ -139,7 +139,7 @@ class AuthController extends GetxController {
 
   void _handleDeepLink(Uri uri) {
     // Team-invitation hand-off from the email, via either:
-    //   • Universal / App Link:  https://permedjatapp.com/join_team?code=XXXX
+    //   • Universal / App Link:  https://permedjat.com/join_team?code=XXXX
     //   • custom-scheme bridge:  permedjatcentral://join?code=XXXX
     final isHttpsInvite =
         (uri.scheme == 'https' || uri.scheme == 'http') &&

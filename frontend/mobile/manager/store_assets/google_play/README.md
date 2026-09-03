@@ -140,7 +140,7 @@ This app is intended for business owners and managers subscribed to the Permedja
 أنشئ هذا الحساب وفعّل بريده وأضف له شركة فيها بيانات، ثم لا تسجّل الدخول به حتى تنتهي المراجعة
 (التطبيق يسمح بجلسة نشطة واحدة فقط لكل حساب):
 
-- **البريد:** `review@permedjatapp.com`
+- **البريد:** `review@permedjat.com`
 - **كلمة المرور:** `Permedjat#Review2026`
 - طريقة الدخول: **بريد + كلمة مرور** (وليس Google أو Apple).
 

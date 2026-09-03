@@ -17,7 +17,7 @@ The app can be accessed in two ways. Either is sufficient.
 On the join screen tap **Scan Join QR** and scan the attached QR image
 (`review_demo_join_qr.png`). It signs straight into the same demo employee.
 The attached QR encodes:
-`https://permedjatapp.com/join?token=1413c55ff3123e4d00ced52db278c2db96b54fd9c5b3029c8d4c6e6fd611b93a`
+`https://permedjat.com/join?token=1413c55ff3123e4d00ced52db278c2db96b54fd9c5b3029c8d4c6e6fd611b93a`
 
 Both credentials are permanent demo logins: they never consume an activation
 code and never expire, so they remain valid for every future review.

@@ -24,7 +24,7 @@ set -euo pipefail
 REMOTE="${PERMEDJAT_SSH_HOST:-permedjat}"
 REMOTE_DIR="${PERMEDJAT_REMOTE_DIR:-/var/www/permedjat/api}"
 LOCAL_DIR="$(cd "$(dirname "$0")" && pwd)"
-API_URL="${PERMEDJAT_API_URL:-https://api.permedjatapp.com/backend}"
+API_URL="${PERMEDJAT_API_URL:-https://api.permedjat.com/backend}"
 PHP_FPM="${PERMEDJAT_PHP_FPM:-php8.5-fpm}"
 
 DRY=0; CODE_ONLY=0

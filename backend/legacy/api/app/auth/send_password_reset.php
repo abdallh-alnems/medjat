@@ -28,7 +28,7 @@ try {
     // password rules) instead of Firebase's default handler. We keep Firebase's
     // query string (mode, oobCode, apiKey, lang) and only swap the base URL — no
     // Firebase Console action-URL change needed.
-    $actionBase = getenv('APP_ACTION_URL') ?: 'https://permedjatapp.com/auth-action.html';
+    $actionBase = getenv('APP_ACTION_URL') ?: 'https://permedjat.com/auth-action.html';
     $q = parse_url($link, PHP_URL_QUERY);
     if ($actionBase !== '' && $q) {
         $link = $actionBase . (strpos($actionBase, '?') !== false ? '&' : '?') . $q;
