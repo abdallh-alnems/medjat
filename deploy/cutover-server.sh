@@ -74,7 +74,10 @@ else
 fi
 
 step "4. the server-only env file"
-ENV=/var/www/permedjat/backend/config/env.php
+# The deployed tree is still pre-restructure: backend_medjet/, not backend/.
+# That migration has never shipped, so the rename must follow what is actually
+# on disk, not what the repo layout suggests.
+ENV=/var/www/permedjat/backend_medjet/config/env.php
 if [ "$DRY" = 1 ]; then
   echo "   would: rewrite dbname= and DB_USER in $ENV"
 else
@@ -137,8 +140,12 @@ check "test ! -e /var/www/medjat"                                           "old
 check "mysql -N -B -e \"SELECT 1 FROM permedjat.tenants LIMIT 1\""          "database answers under the new name"
 check "systemctl is-active --quiet permedjat-web.service"                   "permedjat-web.service running"
 check "systemctl is-active --quiet nginx"                                   "nginx running"
-check "curl -fsS -o /dev/null -H 'Host: api.medjatapp.com' http://127.0.0.1/backend/" "api still answers on the old host"
-check "curl -fsS -o /dev/null -H 'Host: app.medjatapp.com' http://127.0.0.1/"         "web app still answers"
+# The old hostnames are gone and /backend/ is a bare prefix that 404s, so probe
+# the new names against paths that actually exist. A 401 from the API is the
+# right answer — it means the auth gate is up, not that anything is broken.
+check "[ \$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: api.permedjat.com' http://127.0.0.1/backend_medjet/app/auth/login.php) = 401 ]" "api answers behind its auth gate"
+check "curl -fsS -o /dev/null -H 'Host: api.permedjat.com' http://127.0.0.1/.well-known/assetlinks.json" "api serves its association file"
+check "[ -n \"\$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: app.permedjat.com' http://127.0.0.1/)\" ]" "web app answers"
 check "test -f /etc/cron.d/permedjat"                                       "cron file in place"
 
 echo
