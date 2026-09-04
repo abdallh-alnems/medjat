@@ -15,7 +15,7 @@ use Illuminate\Console\Command;
  */
 final class GenerateOpenApiCommand extends Command
 {
-    protected $signature = 'medjat:openapi {--check : Fail if the committed document is out of date}';
+    protected $signature = 'permedjat:openapi {--check : Fail if the committed document is out of date}';
 
     protected $description = 'Generates the OpenAPI description of the API.';
 
@@ -31,7 +31,7 @@ final class GenerateOpenApiCommand extends Command
             $current = is_file($path) ? file_get_contents($path) : null;
 
             if ($current !== $json) {
-                $this->error('docs/openapi.json is out of date. Run: php artisan medjat:openapi');
+                $this->error('docs/openapi.json is out of date. Run: php artisan permedjat:openapi');
 
                 return self::FAILURE;
             }

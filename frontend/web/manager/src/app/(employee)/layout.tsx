@@ -15,7 +15,7 @@ import { LocaleToggle } from "@/features/employee-attendance/locale-toggle";
  */
 
 export const metadata: Metadata = {
-  title: "تسجيل الحضور | Medjat",
+  title: "تسجيل الحضور | Permedjat",
   description: "سجّل حضورك وانصرافك من المتصفح.",
   robots: { index: false, follow: false },
 };

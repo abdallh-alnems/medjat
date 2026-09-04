@@ -5,8 +5,8 @@ import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:http/http.dart' as http;
 
-import 'package:medjat_app/core/class/crud.dart';
-import 'package:medjat_app/data/model/user_model.dart';
+import 'package:permedjat_app/core/class/crud.dart';
+import 'package:permedjat_app/data/model/user_model.dart';
 
 class MockHttpClient extends Mock implements http.Client {}
 

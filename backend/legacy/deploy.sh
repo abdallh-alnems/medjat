@@ -11,14 +11,14 @@
 #   ./deploy.sh              push code, apply pending migrations, verify
 #   ./deploy.sh --code-only  push code, skip migrations
 #
-# Requires an `medjat` host in ~/.ssh/config.
+# Requires a `permedjat` host in ~/.ssh/config.
 
 set -euo pipefail
 
-REMOTE="${MEDJAT_SSH_HOST:-medjat}"
-REMOTE_DIR="/var/www/medjat/backend"
+REMOTE="${PERMEDJAT_SSH_HOST:-permedjat}"
+REMOTE_DIR="/var/www/permedjat/backend"
 LOCAL_DIR="$(cd "$(dirname "$0")" && pwd)"
-API_URL="https://api.medjatapp.com/backend"
+API_URL="https://api.permedjat.com/backend"
 
 DRY=0; CODE_ONLY=0
 case "${1:-}" in
@@ -52,7 +52,7 @@ fi
 if [ "$DRY" = "1" ]; then
   step "Dry run — nothing was changed"
   ssh "$REMOTE" "cd $REMOTE_DIR/database/migrations && \
-    DB_PORT=3306 DB_USER=medjat DB_PASS=\$(cd $REMOTE_DIR && php -r 'require \"config/env.php\"; echo getenv(\"DB_PASS\");') \
+    DB_PORT=3306 DB_USER=permedjat DB_PASS=\$(cd $REMOTE_DIR && php -r 'require \"config/env.php\"; echo getenv(\"DB_PASS\");') \
     MYSQL_BIN=\$(command -v mysql) ./migrate.sh --status"
   exit 0
 fi
@@ -62,7 +62,7 @@ if [ "$CODE_ONLY" = "1" ]; then
   echo "  (skipped — --code-only)"
 else
   ssh "$REMOTE" "cd $REMOTE_DIR/database/migrations && chmod +x migrate.sh && \
-    DB_PORT=3306 DB_USER=medjat DB_PASS=\$(cd $REMOTE_DIR && php -r 'require \"config/env.php\"; echo getenv(\"DB_PASS\");') \
+    DB_PORT=3306 DB_USER=permedjat DB_PASS=\$(cd $REMOTE_DIR && php -r 'require \"config/env.php\"; echo getenv(\"DB_PASS\");') \
     MYSQL_BIN=\$(command -v mysql) ./migrate.sh" | sed 's/^/  /'
 fi
 

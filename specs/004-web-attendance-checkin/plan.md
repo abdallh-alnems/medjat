@@ -32,7 +32,7 @@ land in `attendance_security_logs`.
 **Language/Version**: PHP 8.4 local (MAMP) / 8.5 live · TypeScript 5, React 19, Next.js 16 (App Router)
 **Primary Dependencies**: Existing `core/` services — `Auth`, `GpsService`, `NetworkVerifier`, `TenantClock`, `RateLimiter`, `Validator`, `Response`, `BiometricEnrollment` (photo-storage pattern). Web: TanStack Query, Zustand, React Hook Form + Zod, Tailwind, shadcn/Base UI, axios.
 **Storage**: MySQL 8.4 (live) — additive migrations only; images to `backend_medjet/uploads/`
-**Testing**: PHP — manual endpoint exercise against MAMP (no PHP test harness in repo). Web — vitest (unit) + playwright (e2e), both already configured in `medjat_central_web`.
+**Testing**: PHP — manual endpoint exercise against MAMP (no PHP test harness in repo). Web — vitest (unit) + playwright (e2e), both already configured in `permedjat_central_web`.
 **Target Platform**: Mobile and desktop browsers, Safari iOS 16+ / Chrome Android — device geolocation and camera required
 **Project Type**: Web application (Next.js front end + existing PHP REST backend)
 **Performance Goals**: SC-001 first-ever check-in ≤ 60 s end-to-end; SC-002 returning check-out ≤ 15 s. Neither is server-bound — both are dominated by geolocation acquisition and camera warm-up, so the budget is a UX budget, not a latency budget.
@@ -63,7 +63,7 @@ constitution.
 | **Migrations**: new dated file, never edit an applied one, MySQL 8 has no `ADD COLUMN IF NOT EXISTS` | Three additive migrations, plain `ADD COLUMN`; `platform` enum extended with full re-statement | ✅ Planned |
 | **Never trust the client's verdict** | The browser asserts nothing the server acts on; location, IP and time are all judged server-side | ✅ Planned |
 | **Run `check-drift.sh` before and after** | Part of the deployment step in [quickstart.md](./quickstart.md) | ✅ Planned |
-| **Arabic-first RTL, IBM Plex Sans Arabic + Geist** | Employee surface inherits `medjat_central_web` locale + theme setup | ✅ Planned |
+| **Arabic-first RTL, IBM Plex Sans Arabic + Geist** | Employee surface inherits `permedjat_central_web` locale + theme setup | ✅ Planned |
 
 **One deviation is recorded in Complexity Tracking**: the employee web surface
 lives inside the admin web application rather than in its own deployment.
@@ -133,7 +133,7 @@ frontend/mobile/manager/lib/
 **Structure Decision**: Web application (Option 2 shape) mapped onto the
 repository's real directories. The backend keeps its one-endpoint-per-file
 convention under `app/<module>/` with shared logic in `core/`. The employee
-surface is a **new route group inside the existing `medjat_central_web`
+surface is a **new route group inside the existing `permedjat_central_web`
 deployment** rather than a fourth front-end project — see Complexity Tracking
 for why, and [R-001](./research.md) for what was rejected.
 
@@ -141,5 +141,5 @@ for why, and [R-001](./research.md) for what was rejected.
 
 | Violation | Why Needed | Simpler Alternative Rejected Because |
 |-----------|------------|-------------------------------------|
-| Employee surface shares an origin with the admin web app | `app.medjatapp.com` is already deployed, TLS-terminated, systemd-managed, RTL- and locale-configured, with the axios/Tailwind/shadcn stack in place. A separate deployment doubles the ops surface (second systemd unit, second nginx vhost, second build) for a feature serving 16 employees today. | A separate Next.js app was rejected on operational cost at this scale. The accepted risk is same-origin: a script injection in the admin tree could reach employee session state. Mitigated by (a) route-group isolation with no shared imports, (b) the employee session being an httpOnly cookie unreadable to script, (c) the surface exposing attendance only (FR-027), so the blast radius is a forged punch, not payroll data. **Revisit if the surface ever grows past attendance.** |
+| Employee surface shares an origin with the admin web app | `app.permedjat.com` is already deployed, TLS-terminated, systemd-managed, RTL- and locale-configured, with the axios/Tailwind/shadcn stack in place. A separate deployment doubles the ops surface (second systemd unit, second nginx vhost, second build) for a feature serving 16 employees today. | A separate Next.js app was rejected on operational cost at this scale. The accepted risk is same-origin: a script injection in the admin tree could reach employee session state. Mitigated by (a) route-group isolation with no shared imports, (b) the employee session being an httpOnly cookie unreadable to script, (c) the surface exposing attendance only (FR-027), so the blast radius is a forged punch, not payroll data. **Revisit if the surface ever grows past attendance.** |
 | A third credential type (PIN) alongside activation codes and app tokens | The browser needs a *repeatable* secret; the activation code is single-use and 24-hour-lived by design, and the app token is a bearer credential that cannot be re-derived by the employee. Without a repeatable secret, either sessions never end (unsafe on shared devices) or HR re-issues a code daily (unworkable). | Extending the activation code to be reusable was rejected: it is deliberately single-use, and making it durable would weaken the *app's* onboarding too. An SMS one-time code was rejected on cost and latency (no gateway exists). WebAuthn was rejected for this release — see [R-003](./research.md). |

@@ -35,7 +35,7 @@ jobs:
         image: mysql:8.4
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: medjat_laravel_test
+          MYSQL_DATABASE: permedjat_laravel_test
         ports:
           - 3306:3306
         options: >-
@@ -83,7 +83,7 @@ jobs:
         run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress
 
       - name: API description is current
-        run: php artisan medjat:openapi --check --env=testing
+        run: php artisan permedjat:openapi --check --env=testing
 
       - name: Tests
         run: php artisan test

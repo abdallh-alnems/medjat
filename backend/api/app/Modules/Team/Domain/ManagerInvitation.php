@@ -219,7 +219,7 @@ final class ManagerInvitation
      */
     public static function joinUrl(string $code): string
     {
-        return rtrim(Config::string('medjat.join.base_url'), '/').'/join_team?code='.rawurlencode($code);
+        return rtrim(Config::string('permedjat.join.base_url'), '/').'/join_team?code='.rawurlencode($code);
     }
 
     private static function expiryOf(int $invitationId): string

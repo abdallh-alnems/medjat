@@ -6,7 +6,7 @@ plugins {
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
     // Reads android/app/google-services.json (package com.khawarizmie.medjat.kiosk,
-    // registered in the `medjat` Firebase project).
+    // registered in the `permedjat` Firebase project).
     id("com.google.gms.google-services")
     // Uploads the mapping/symbol files so a crash on a wall-mounted tablet
     // arrives readable rather than as an obfuscated frame.
@@ -14,7 +14,7 @@ plugins {
 }
 
 // Load upload-signing credentials from android/key.properties (not committed),
-// the same arrangement medjat_app uses. The kiosk gets its own keystore: it is
+// the same arrangement permedjat_app uses. The kiosk gets its own keystore: it is
 // a separate application id and cannot be signed with the employee app's key.
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")

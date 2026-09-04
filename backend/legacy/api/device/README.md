@@ -27,11 +27,11 @@ swallows its own errors on purpose.
 The firmware has nowhere to put a token, so the serial number is the identity.
 That is safe because of what an unknown serial can actually do: create an
 `unclaimed` row and be told `OK`. It cannot reach any company's data until
-someone with `manage_company_settings` types that serial into medjat_central,
+someone with `manage_company_settings` types that serial into permedjat_central,
 and a serial already claimed by another company is refused.
 
 `config/bootstrap.php` skips the app-secret Basic gate for this file only, via
-the `MEDJAT_DEVICE_ENDPOINT` constant defined at the top of `iclock.php`.
+the `PERMEDJAT_DEVICE_ENDPOINT` constant defined at the top of `iclock.php`.
 
 ## Server setup (once)
 
@@ -48,11 +48,11 @@ created, so this does not publish the origin behind Cloudflare.
 
 ### 1. nginx
 
-Add `/etc/nginx/sites-available/medjat-devices` (see `nginx-devices.conf` next
+Add `/etc/nginx/sites-available/permedjat-devices` (see `nginx-devices.conf` next
 to this file), then:
 
 ```bash
-ln -s /etc/nginx/sites-available/medjat-devices /etc/nginx/sites-enabled/
+ln -s /etc/nginx/sites-available/permedjat-devices /etc/nginx/sites-enabled/
 nginx -t && systemctl reload nginx
 ```
 
@@ -92,7 +92,7 @@ curl "http://178.104.90.133:8090/iclock/cdata?SN=TEST123&options=all"
 # Expect: GET OPTION FROM: TEST123 ...
 ```
 
-Then in medjat_central the device shows as **seen but unclaimed** until its
+Then in permedjat_central the device shows as **seen but unclaimed** until its
 serial is registered.
 
 ## Bringing up an unfamiliar model

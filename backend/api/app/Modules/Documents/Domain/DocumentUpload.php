@@ -39,12 +39,12 @@ final class DocumentUpload
         $extension = mb_strtolower($file->getClientOriginalExtension());
 
         /** @var list<string> $allowed */
-        $allowed = Config::array('medjat.uploads.allowed_types');
+        $allowed = Config::array('permedjat.uploads.allowed_types');
         if (! in_array($extension, $allowed, true)) {
             throw new ApiFailure(__('messages.file_type_not_allowed'), 400, 'file_type_not_allowed');
         }
 
-        if ($file->getSize() > Config::integer('medjat.uploads.max_bytes')) {
+        if ($file->getSize() > Config::integer('permedjat.uploads.max_bytes')) {
             throw new ApiFailure(__('messages.file_size_exceeds_limit'), 400, 'file_size_exceeds_limit');
         }
 

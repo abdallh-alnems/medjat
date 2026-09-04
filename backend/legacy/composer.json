@@ -1,6 +1,6 @@
 {
-    "name": "medjat/backend",
-    "description": "Medjat HR Attendance & Payroll SaaS Backend API",
+    "name": "permedjat/backend",
+    "description": "Permedjat HR Attendance & Payroll SaaS Backend API",
     "type": "project",
     "require": {
         "php": ">=7.4",

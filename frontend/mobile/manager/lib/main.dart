@@ -13,16 +13,16 @@ import 'core/services/locale_service.dart';
 void main() async {
   await initialServices();
 
-  runApp(const MedjatCentralApp());
+  runApp(const PermedjatCentralApp());
 }
 
-class MedjatCentralApp extends StatelessWidget {
-  const MedjatCentralApp({super.key});
+class PermedjatCentralApp extends StatelessWidget {
+  const PermedjatCentralApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'Medjat Central',
+      title: 'Permedjat Central',
       debugShowCheckedModeBanner: false,
       initialRoute: AppRoutes.splash,
       getPages: getPages,

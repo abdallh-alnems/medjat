@@ -39,7 +39,7 @@ final class SuperAdminAuthTest extends TestCase
 
         $this->operatorId = (int) DB::table('super_admins')->insertGetId([
             'username' => $this->username,
-            'email' => $this->username.'@medjat.test',
+            'email' => $this->username.'@permedjat.test',
             'password_hash' => password_hash(self::PASSWORD, PASSWORD_BCRYPT, ['cost' => 4]),
             'display_name' => 'Desk operator',
             'role' => 'admin',
@@ -105,7 +105,7 @@ final class SuperAdminAuthTest extends TestCase
     {
         $uid = 'google-'.bin2hex(random_bytes(5));
 
-        $this->login(['token' => $this->firebase->issue($uid, $this->username.'@medjat.test')])
+        $this->login(['token' => $this->firebase->issue($uid, $this->username.'@permedjat.test')])
             ->assertOk()
             ->assertJsonPath('data.user.role_key', 'admin');
 
@@ -124,7 +124,7 @@ final class SuperAdminAuthTest extends TestCase
     {
         DB::table('super_admins')->where('id', $this->operatorId)->update(['is_active' => 0]);
 
-        $this->login(['token' => $this->firebase->issue('uid-x', $this->username.'@medjat.test')])
+        $this->login(['token' => $this->firebase->issue('uid-x', $this->username.'@permedjat.test')])
             ->assertStatus(403);
     }
 

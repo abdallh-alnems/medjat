@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:medjat_central/core/class/status_request.dart';
-import 'package:medjat_central/data/data_source/remote/company_settings_data/company_settings_data.dart';
-import 'package:medjat_central/logic/controller/settings/company_settings_controller.dart';
+import 'package:permedjat_central/core/class/status_request.dart';
+import 'package:permedjat_central/data/data_source/remote/company_settings_data/company_settings_data.dart';
+import 'package:permedjat_central/logic/controller/settings/company_settings_controller.dart';
 import '../helpers/test_helpers.dart';
 
 class MockCompanySettingsData extends Mock implements CompanySettingsData {}

@@ -1,4 +1,4 @@
-# Alert rules for Medjat.
+# Alert rules for Permedjat.
 #
 # Deliberately few. An alert that fires when nothing is wrong teaches you to
 # ignore alerts, and an ignored alert is worse than none — you keep the noise
@@ -8,7 +8,7 @@
 #           warning  = it will hurt if ignored for days, Telegram only.
 
 groups:
-  - name: medjat-availability
+  - name: permedjat-availability
     rules:
       # Through Cloudflare — what a real phone experiences.
       - alert: ApiDown
@@ -18,7 +18,7 @@ groups:
           severity: critical
         annotations:
           summary: "الـAPI لا يستجيب"
-          detail: "api.medjatapp.com لا يرد منذ دقيقتين — لا حضور ولا رواتب ولا أي عملية من أي تطبيق."
+          detail: "api.permedjat.com لا يرد منذ دقيقتين — لا حضور ولا رواتب ولا أي عملية من أي تطبيق."
 
       # Straight at nginx on the box. Comparing this with ApiDown separates
       # "our server is broken" from "the path to it is broken" (Cloudflare,
@@ -40,7 +40,7 @@ groups:
           severity: critical
         annotations:
           summary: "تطبيق الويب لا يستجيب"
-          detail: "app.medjatapp.com لا يرد — لوحة الإدارة وحضور الموظفين من المتصفح متوقفان."
+          detail: "app.permedjat.com لا يرد — لوحة الإدارة وحضور الموظفين من المتصفح متوقفان."
 
       - alert: PromoSiteDown
         expr: probe_success{job="blackbox-promo"} == 0
@@ -49,14 +49,14 @@ groups:
           severity: warning
         annotations:
           summary: "الموقع الترويجي لا يستجيب"
-          detail: "medjatapp.com متوقف — العملاء الحاليون لا يتأثرون، لكن الزوار الجدد لا يرون شيئًا."
+          detail: "permedjat.com متوقف — العملاء الحاليون لا يتأثرون، لكن الزوار الجدد لا يرون شيئًا."
 
-  - name: medjat-services
+  - name: permedjat-services
     rules:
       # node_exporter reports a series per unit per state. The 'active' series
       # dropping to 0 means the unit is not running, whatever the reason.
       - alert: ServiceDown
-        expr: node_systemd_unit_state{state="active", name=~"mysql.service|nginx.service|php8.5-fpm.service|medjat-web.service"} == 0
+        expr: node_systemd_unit_state{state="active", name=~"mysql.service|nginx.service|php8.5-fpm.service|permedjat-web.service"} == 0
         for: 2m
         labels:
           severity: critical
@@ -75,7 +75,7 @@ groups:
           summary: "هدف مراقبة لا يرد: {{ $labels.job }}"
           detail: "Prometheus لا يستطيع قراءة {{ $labels.instance }} — الإنذارات المعتمدة عليه صامتة الآن."
 
-  - name: medjat-resources
+  - name: permedjat-resources
     rules:
       - alert: DiskSpaceLow
         expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} < 0.20
@@ -106,13 +106,13 @@ groups:
           summary: "الذاكرة المتاحة أقل من 10%"
           detail: "الجهاز على وشك قتل عملية — عادةً MySQL أو Next.js، وكلاهما يوقف الخدمة."
 
-  - name: medjat-jobs
+  - name: permedjat-jobs
     rules:
-      # Written by medjat-node-metrics.sh every five minutes from the newest
-      # file in /var/backups/medjat. A backup that silently stopped is only
+      # Written by permedjat-node-metrics.sh every five minutes from the newest
+      # file in /var/backups/permedjat. A backup that silently stopped is only
       # discovered on the day you need it.
       - alert: BackupStale
-        expr: medjat_backup_age_seconds > 108000
+        expr: permedjat_backup_age_seconds > 108000
         for: 10m
         labels:
           severity: warning
@@ -124,7 +124,7 @@ groups:
       # one company. This catches the failure nobody reports because the app
       # just "doesn't work" for them.
       - alert: HighServerErrorRate
-        expr: medjat_nginx_5xx_last5m > 20
+        expr: permedjat_nginx_5xx_last5m > 20
         for: 5m
         labels:
           severity: warning
@@ -132,7 +132,7 @@ groups:
           summary: "أخطاء 500 كثيرة في الـAPI"
           detail: "{{ $value }} خطأ خادم في آخر خمس دقائق — شيء ما يفشل دون أن يسقط الموقع."
 
-  - name: medjat-heartbeat
+  - name: permedjat-heartbeat
     rules:
       # Always firing, on purpose. Alertmanager routes it to the heartbeat
       # receiver, which sends "everything is fine" once a day. It exists to

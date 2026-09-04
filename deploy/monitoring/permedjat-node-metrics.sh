@@ -3,8 +3,8 @@
 # Writes two facts node_exporter cannot know by itself into the textfile
 # collector, every five minutes:
 #
-#   medjat_backup_age_seconds   how old the newest database dump is
-#   medjat_nginx_5xx_last5m     server errors in the API access log
+#   permedjat_backup_age_seconds   how old the newest database dump is
+#   permedjat_nginx_5xx_last5m     server errors in the API access log
 #
 # Both exist because "the site answers 200" is not the same as "the product
 # works". A backup that quietly stopped and an endpoint failing for one company
@@ -17,27 +17,27 @@
 set -euo pipefail
 
 OUT_DIR="/var/lib/prometheus/node-exporter"
-OUT="$OUT_DIR/medjat.prom"
+OUT="$OUT_DIR/permedjat.prom"
 TMP="$OUT.$$.tmp"
-BACKUP_DIR="/var/backups/medjat"
+BACKUP_DIR="/var/backups/permedjat"
 ACCESS_LOG="/var/log/nginx/access.log"
 
 mkdir -p "$OUT_DIR"
 
 {
-  echo "# HELP medjat_backup_age_seconds Age of the newest database backup."
-  echo "# TYPE medjat_backup_age_seconds gauge"
+  echo "# HELP permedjat_backup_age_seconds Age of the newest database backup."
+  echo "# TYPE permedjat_backup_age_seconds gauge"
   newest=$(ls -t "$BACKUP_DIR"/*.sql.gz 2>/dev/null | head -1 || true)
   if [ -n "$newest" ]; then
-    echo "medjat_backup_age_seconds $(( $(date +%s) - $(stat -c %Y "$newest") ))"
+    echo "permedjat_backup_age_seconds $(( $(date +%s) - $(stat -c %Y "$newest") ))"
   else
     # No backup at all is worse than an old one, so report an age that trips
     # every threshold rather than reporting nothing and looking healthy.
-    echo "medjat_backup_age_seconds 999999"
+    echo "permedjat_backup_age_seconds 999999"
   fi
 
-  echo "# HELP medjat_nginx_5xx_last5m Server errors in the last five minutes."
-  echo "# TYPE medjat_nginx_5xx_last5m gauge"
+  echo "# HELP permedjat_nginx_5xx_last5m Server errors in the last five minutes."
+  echo "# TYPE permedjat_nginx_5xx_last5m gauge"
   if [ -r "$ACCESS_LOG" ]; then
     # Combined log format puts the status code in field 9:
     #   ip - - [25/Aug/2026:00:46:48 +0300] "GET /x HTTP/2.0" 500 1234 ...
@@ -53,9 +53,9 @@ mkdir -p "$OUT_DIR"
       }
       END { print n + 0 }
     ')
-    echo "medjat_nginx_5xx_last5m ${count}"
+    echo "permedjat_nginx_5xx_last5m ${count}"
   else
-    echo "medjat_nginx_5xx_last5m 0"
+    echo "permedjat_nginx_5xx_last5m 0"
   fi
 } > "$TMP"
 

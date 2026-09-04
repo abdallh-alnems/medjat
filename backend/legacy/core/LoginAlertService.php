@@ -101,7 +101,7 @@ final class LoginAlertService {
                 . '<body style="font-family:\'IBM Plex Sans Arabic\',Tahoma,Arial,sans-serif;direction:rtl;text-align:right;padding:24px;background:#f9f9f9;">'
                 . '<div style="max-width:480px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">'
                 . '<h2 style="color:#1a1a1a;margin:0 0 16px;">تسجيل دخول جديد</h2>'
-                . '<p style="color:#444;font-size:15px;line-height:1.7;">تم تسجيل دخول جديد إلى حسابك في Medjat.</p>'
+                . '<p style="color:#444;font-size:15px;line-height:1.7;">تم تسجيل دخول جديد إلى حسابك في Permedjat.</p>'
                 . '<table style="width:100%;margin:16px 0;font-size:14px;color:#555;">'
                 . '<tr><td style="padding:6px 0;font-weight:600;">التاريخ والوقت:</td><td style="padding:6px 0;">' . htmlspecialchars($time) . '</td></tr>'
                 . '<tr><td style="padding:6px 0;font-weight:600;">عنوان IP:</td><td style="padding:6px 0;">' . htmlspecialchars($ip) . '</td></tr>'
@@ -110,7 +110,7 @@ final class LoginAlertService {
                 . '<p style="color:#888;font-size:13px;line-height:1.6;">إن لم تكن أنت، غيّر كلمة السر فوراً.</p>'
                 . '</div></body></html>';
 
-            EmailService::send($to, 'تسجيل دخول جديد إلى حسابك في Medjat', $html);
+            EmailService::send($to, 'تسجيل دخول جديد إلى حسابك في Permedjat', $html);
         } catch (Exception $e) {
             error_log('LoginAlertService email error: ' . $e->getMessage());
         }

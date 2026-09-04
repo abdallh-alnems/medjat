@@ -92,7 +92,7 @@ return [
     'generic_error' => 'Something went wrong. Please try again.',
 
     // Browser attendance
-    'web_attendance_not_allowed' => 'Your company does not allow recording attendance from a browser. Please use the Medjat app.',
+    'web_attendance_not_allowed' => 'Your company does not allow recording attendance from a browser. Please use the Permedjat app.',
     'web_pin_reject_length' => 'The PIN must be exactly 6 digits.',
     'web_pin_reject_repeated' => 'A PIN of one repeated digit is too easy to guess. Choose another.',
     'web_pin_reject_sequence' => 'Consecutive digits like 123456 are the first thing an attacker tries. Choose another.',
@@ -109,7 +109,7 @@ return [
     // "Network", not "WiFi": the browser is matched on IP address, and the
     // employee may be on mobile data rather than on any wireless network.
     'web_wrong_network' => 'Attendance must be recorded from the branch network. You are on a network that is not approved.',
-    'web_needs_gps_only' => 'Browser attendance needs the "GPS only" method enabled for you. Ask your HR administrator, or use the Medjat app.',
+    'web_needs_gps_only' => 'Browser attendance needs the "GPS only" method enabled for you. Ask your HR administrator, or use the Permedjat app.',
     'web_pin_reset_done' => 'The PIN has been reset. Give the employee the new activation code.',
 
     // Branch kiosk — shown on a tablet bolted to a wall, read by a worker in a
@@ -125,7 +125,7 @@ return [
     'kiosk_ambiguous' => 'The image was not clear enough to be sure who you are. Step a little closer and try again, or use your personal code.',
     'kiosk_not_enrolled' => 'Your face is not enrolled yet. Ask your supervisor to enrol it.',
     'kiosk_out_of_branch' => 'You are not assigned to this branch.',
-    'kiosk_wrong_method' => 'Your attendance method is not the kiosk. Use the Medjat app.',
+    'kiosk_wrong_method' => 'Your attendance method is not the kiosk. Use the Permedjat app.',
     'kiosk_liveness_failed' => 'Look straight at the camera and follow the prompt.',
     'kiosk_spoofing_suspected' => 'We could not confirm a live person in front of the camera. Try again.',
     'kiosk_too_soon' => 'We already recorded you a moment ago.',

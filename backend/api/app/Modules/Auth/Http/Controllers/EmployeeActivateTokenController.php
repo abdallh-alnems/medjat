@@ -88,7 +88,7 @@ final class EmployeeActivateTokenController
      */
     private function resolveDemo(string $token): ?Employee
     {
-        $demoToken = trim(Config::string('medjat.review_demo.token'));
+        $demoToken = trim(Config::string('permedjat.review_demo.token'));
 
         if ($demoToken === '' || ! hash_equals($demoToken, $token)) {
             return null;

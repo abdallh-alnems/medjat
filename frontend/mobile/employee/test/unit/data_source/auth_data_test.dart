@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:medjat_app/data/model/user_model.dart';
+import 'package:permedjat_app/data/model/user_model.dart';
 
 void main() {
   group('AuthData unit', () {

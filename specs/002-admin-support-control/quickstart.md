@@ -3,8 +3,8 @@
 How to build, wire, and verify this feature. Order follows the user-story priorities so each slice is independently shippable.
 
 ## Prerequisites
-- MAMP MySQL running: `medjat` DB on `127.0.0.1:8889` (root/root). Apply migration:
-  `mysql -u root -proot -h 127.0.0.1 -P 8889 medjat < backend_medjet/migrations/2026_06_admin_support_control.sql`
+- MAMP MySQL running: `permedjat` DB on `127.0.0.1:8889` (root/root). Apply migration:
+  `mysql -u root -proot -h 127.0.0.1 -P 8889 permedjat < backend_medjet/migrations/2026_06_admin_support_control.sql`
 - Backend Firebase service-account credential available (same one `NotificationService` uses) — needed for Remote Config writes and FCM.
 - Flutter: `cd frontend/mobile/superadmin && flutter pub get`.
 
@@ -29,7 +29,7 @@ Admin app:
 3. Replace the deprecated `forceUpdate` route/binding with `appControl`; gate the menu entry on `role == superadmin`.
 **Verify (SC-004/005/007/008)**: set Employee min_version above a test device → device forced to update on next launch/foreground; enable Employee maintenance (confirm dialog appears) → device shows maintenance screen; disable → access returns; malformed version rejected (422); RC fetch failure → app never locks out.
 
-## Slice 3 — Support push (US push, FR-010b/SC-009) — adds Firebase to medjat_admin
+## Slice 3 — Support push (US push, FR-010b/SC-009) — adds Firebase to permedjat_admin
 1. Migration adds `super_admin_devices`.
 2. Add `firebase_core` + `firebase_messaging` to `frontend/mobile/superadmin/pubspec.yaml`; add platform Firebase config files; init in `main.dart`.
 3. `admin/devices/register.php` (upsert token); register on login/start; request notification permission.

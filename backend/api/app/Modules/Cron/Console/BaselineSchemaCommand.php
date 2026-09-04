@@ -31,12 +31,12 @@ use Illuminate\Support\Facades\Schema;
  */
 final class BaselineSchemaCommand extends Command
 {
-    protected $signature = 'medjat:baseline {--pretend : Show the plan and change nothing}';
+    protected $signature = 'permedjat:baseline {--pretend : Show the plan and change nothing}';
 
     protected $description = 'Adopt an existing database: record already-present migrations as applied, run the rest';
 
     /**
-     * Tables that prove this is a real Medjat database rather than an empty one
+     * Tables that prove this is a real Permedjat database rather than an empty one
      * somebody meant to migrate normally.
      *
      * @var list<string>

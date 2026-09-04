@@ -7,7 +7,7 @@
 
 Put a shared tablet at the branch door so workers without smartphones can record
 their own attendance. It is the largest functional gap against every competitor,
-and Medjat built it once already — the tables were dropped in 2026-06 but the
+and Permedjat built it once already — the tables were dropped in 2026-06 but the
 `branches.station_*` and `attendance.station_id` columns survive in production,
 so this rebuilds on foundations rather than from nothing.
 
@@ -48,11 +48,11 @@ fleet versioning is a third entry in `RemoteConfigService::APPS`.
 ## Technical Context
 
 **Language/Version**: PHP 8.4 local (MAMP) / 8.5 live · Dart 3.11 / Flutter (GetX, MVVM) · TypeScript 5, React 19, Next.js 16 for the management web surface
-**Primary Dependencies**: Existing `core/` services — `Auth`, `FaceMatchService`, `BiometricEnrollment`, `GpsService`, `TenantClock`, `PermissionMiddleware`, `TenantMiddleware`, `RateLimiter`, `RemoteConfigService`, `I18n`, `Response`. Kiosk app: `get`, `http`, `camera`, `google_mlkit_face_detection`, `flutter_secure_storage`, `connectivity_plus`, `device_info_plus`, plus `medjat_shared` (path dependency) carrying `tflite_flutter` and `mobilefacenet.tflite` (5.2 MB, BSD-3). **No Firebase SDK on the tablet** — the version gate is a server-side heartbeat response
+**Primary Dependencies**: Existing `core/` services — `Auth`, `FaceMatchService`, `BiometricEnrollment`, `GpsService`, `TenantClock`, `PermissionMiddleware`, `TenantMiddleware`, `RateLimiter`, `RemoteConfigService`, `I18n`, `Response`. Kiosk app: `get`, `http`, `camera`, `google_mlkit_face_detection`, `flutter_secure_storage`, `connectivity_plus`, `device_info_plus`, plus `permedjat_shared` (path dependency) carrying `tflite_flutter` and `mobilefacenet.tflite` (5.2 MB, BSD-3). **No Firebase SDK on the tablet** — the version gate is a server-side heartbeat response
 **Storage**: MySQL 8.4 (live) — four additive migrations, no drops or narrowing. Captures to `backend_medjet/uploads/kiosk/`, purged on a schedule
 **Testing**: PHP — manual endpoint exercise against MAMP (no PHP test harness in the repo). Flutter — `flutter analyze lib`; kiosk flows verified on a physical Android tablet, since screen pinning and boot behaviour do not reproduce in an emulator
 **Target Platform**: Android tablets (Android 10+), screen pinning for lockdown. iOS explicitly out of scope — the face pipeline would work unchanged on iPad, the lockdown would not
-**Project Type**: Standalone Android app + a shared Flutter package + existing PHP REST backend + management surfaces in `medjat_central` and `medjat_central_web`
+**Project Type**: Standalone Android app + a shared Flutter package + existing PHP REST backend + management surfaces in `permedjat_central` and `permedjat_central_web`
 **Performance Goals**: SC-001 approach-to-confirmation under 10 s — dominated by camera warm-up and network round trip, not by matching. A 200-candidate 1:N scan is 200 × 192 float operations, microseconds; there is no throughput problem here
 **Constraints**:
 - No offline operation whatsoever — server-only identification (FR-024)
@@ -133,7 +133,7 @@ backend_medjet/
 │   ├── BiometricEnrollment.php         # reused for enrollment photos
 │   ├── PermissionMiddleware.php        # + 3 kiosk permissions (+ fix biometric_*)
 │   ├── AttendanceMethodResolver.php    # + 'kiosk' in ALLOWED
-│   └── RemoteConfigService.php         # + medjat_kiosk app entry
+│   └── RemoteConfigService.php         # + permedjat_kiosk app entry
 ├── models/
 │   ├── KioskStationModel.php           # NEW
 │   ├── KioskTokenModel.php             # NEW
@@ -145,9 +145,9 @@ backend_medjet/
 
 frontend/mobile/shared/                # NEW package — the one shared thing
 ├── pubspec.yaml                        # publish_to: none, path-depended
-├── lib/medjat_shared.dart              # barrel
-├── lib/src/face/face_embedder.dart     # MOVED out of medjat_app
-├── lib/src/face/face_liveness.dart     # MOVED out of medjat_app
+├── lib/permedjat_shared.dart              # barrel
+├── lib/src/face/face_embedder.dart     # MOVED out of permedjat_app
+├── lib/src/face/face_liveness.dart     # MOVED out of permedjat_app
 └── assets/models/mobilefacenet.tflite  # MOVED — one copy, 5.2 MB
 
 frontend/mobile/kiosk/                 # NEW standalone Flutter app (Android)
@@ -162,13 +162,13 @@ frontend/mobile/kiosk/                 # NEW standalone Flutter app (Android)
     ├── AndroidManifest.xml             # WAKE_LOCK, BOOT_COMPLETED, camera, HOME
     └── kotlin/.../KioskBootReceiver.kt # returns after a power cut
 
-frontend/mobile/employee/                   # employee app — now depends on medjat_shared
+frontend/mobile/employee/                   # employee app — now depends on permedjat_shared
 frontend/mobile/manager/               # management: kiosk tab on a branch
 frontend/web/manager/           # same surfaces on the web port
 ```
 
 **Structure Decision**: Three Flutter projects, not two and not one.
-`medjat_kiosk` is a **standalone application** — its own project, package name,
+`permedjat_kiosk` is a **standalone application** — its own project, package name,
 manifest, signing key, and release cadence. It is not a flavor of the employee
 app and not a mode inside it.
 
@@ -177,8 +177,8 @@ both extract embeddings and send them to a backend that compares them against
 one column (`employees.face_embedding`). Two copies of `face_embedder.dart`
 would eventually diverge — a model swap applied to one, a changed crop margin,
 a different tflite version — and the failure mode is silent: the server keeps
-comparing, and simply stops recognising people. `medjat_shared` makes that class
-of bug structurally impossible, and `medjat_app` was migrated onto it as part of
+comparing, and simply stops recognising people. `permedjat_shared` makes that class
+of bug structurally impossible, and `permedjat_app` was migrated onto it as part of
 this work (verified with `flutter analyze lib`).
 
 The kiosk carries **no Firebase SDK**. The version gate and maintenance switch

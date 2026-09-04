@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:medjat_central/core/utils/version_compare.dart';
+import 'package:permedjat_central/core/utils/version_compare.dart';
 
 void main() {
   group('isVersionLower', () {

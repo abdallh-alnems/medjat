@@ -10,7 +10,7 @@
 Let an employee record their attendance — check in and check out — from a **web
 browser**, without installing the employee mobile app.
 
-Today attendance can only be self-recorded from the Medjat employee app on the
+Today attendance can only be self-recorded from the Permedjat employee app on the
 employee's own phone. If the app is not installed, the phone is broken, storage
 is full, or the employee is sitting at an office computer, there is no way to
 record attendance at all except asking an administrator to enter it manually.
@@ -57,7 +57,7 @@ this specification has a reason to exist, and with it alone the market gap is
 closed. Every other story exists to make this one safe or governable.
 
 **Independent Test**: Can be fully tested by opening the check-in link on a
-device with no Medjat app installed, recording a check-in inside a branch's
+device with no Permedjat app installed, recording a check-in inside a branch's
 approved area, and confirming the punch appears in that employee's attendance
 record with the same fields an app punch carries.
 
@@ -304,7 +304,7 @@ attendance.
 - **FR-025**: Disabling web attendance MUST NOT delete or invalidate attendance
   already recorded through it.
 - **FR-026**: The browser interface MUST be available in Arabic and English and
-  MUST render correctly right-to-left, consistent with every other Medjat
+  MUST render correctly right-to-left, consistent with every other Permedjat
   interface.
 
 #### Explicitly out of scope for this release
@@ -335,7 +335,7 @@ attendance.
 
 ### Measurable Outcomes
 
-- **SC-001**: An employee with no Medjat application installed can record a
+- **SC-001**: An employee with no Permedjat application installed can record a
   check-in from opening the link to seeing confirmation in under 60 seconds,
   including identifying themselves for the first time.
 - **SC-002**: A returning employee can record a check-out in under 15 seconds from

@@ -1,4 +1,4 @@
-# Medjat API - Apache Configuration
+# Permedjat API - Apache Configuration
 
 # Enable Rewrite Engine
 RewriteEngine On

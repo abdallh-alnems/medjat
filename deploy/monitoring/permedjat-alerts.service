@@ -1,21 +1,21 @@
 [Unit]
-Description=Medjat alert sender (Alertmanager webhook → WhatsApp + Telegram)
+Description=Permedjat alert sender (Alertmanager webhook → WhatsApp + Telegram)
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/medjat-alert-sender.py
+ExecStart=/usr/local/bin/permedjat-alert-sender.py
 Restart=always
 RestartSec=5
 # Runs as its own unprivileged user: it holds the bot token and needs nothing
 # else on this machine.
-User=medjat-alerts
-Group=medjat-alerts
+User=permedjat-alerts
+Group=permedjat-alerts
 # The config file carries the credentials and is read on every send.
-ReadOnlyPaths=/etc/medjat-alerts.env
-# /var/lib/medjat-alerts — remembers the day the pulse was last sent.
-StateDirectory=medjat-alerts
+ReadOnlyPaths=/etc/permedjat-alerts.env
+# /var/lib/permedjat-alerts — remembers the day the pulse was last sent.
+StateDirectory=permedjat-alerts
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict

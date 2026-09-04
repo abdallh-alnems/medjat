@@ -11,7 +11,7 @@
 ## ١. الوضع الحالي
 
 ```
-Medjat/backend_medjet/
+Permedjat/backend_medjet/
 ├── app/          256 endpoint   (تطبيقات الموظف والإدارة، وبداخلها app/cron/)
 ├── admin/        22  endpoint   (لوحة السوبر أدمن)
 ├── device/                      (استقبال بصمة ZKTeco على بورت 8090)
@@ -27,10 +27,10 @@ Medjat/backend_medjet/
 الرابط العام حاليًا:
 
 ```
-api.medjatapp.com/backend_medjet/app/auth/login.php
+api.permedjat.com/backend_medjet/app/auth/login.php
 ```
 
-الـ nginx docroot هو الفولدر الأب (`root /var/www/medjat;`)، **فاسم الفولدر هو نفسه مقطع في الرابط**.
+الـ nginx docroot هو الفولدر الأب (`root /var/www/permedjat;`)، **فاسم الفولدر هو نفسه مقطع في الرابط**.
 أي تغيير في الاسم أو في التقسيم يغيّر الروابط، إلا إذا عالجناها في nginx صراحةً.
 
 ---
@@ -63,8 +63,8 @@ backend/
 
 | النوع | الملفات | طريقة الاستدعاء |
 |---|---|---|
-| **كرون CLI** | `scripts/cron_leave_rollover.php` | `php8.5 /var/www/.../cron_leave_rollover.php` — مسار مطلق في `/etc/cron.d/medjat` |
-| **كرون HTTP** | `app/cron/catchup_absences.php`<br>`app/cron/run_alerts.php`<br>`app/cron/purge_kiosk_captures.php` | `curl https://api.../app/cron/....php?key=…&cron_secret=…` من `/usr/local/bin/medjat-cron-*.sh` |
+| **كرون CLI** | `scripts/cron_leave_rollover.php` | `php8.5 /var/www/.../cron_leave_rollover.php` — مسار مطلق في `/etc/cron.d/permedjat` |
+| **كرون HTTP** | `app/cron/catchup_absences.php`<br>`app/cron/run_alerts.php`<br>`app/cron/purge_kiosk_captures.php` | `curl https://api.../app/cron/....php?key=…&cron_secret=…` من `/usr/local/bin/permedjat-cron-*.sh` |
 
 النوع الثاني **endpoints حقيقية لها روابط عامة**. لو نُقلت إلى فولدر `cron/` يقع تناقض مباشر:
 
@@ -91,8 +91,8 @@ backend/
 |---|---|---|
 | 1 | إعادة كتابة الـ includes | **282 ملف**: 274 بـ `__DIR__ . '/../../config/bootstrap.php'`، 4 بعمق 1، 4 بعمق 3 |
 | 2 | قاعدة المنع في nginx | `location ~* /(config\|core\|models\|vendor\|migrations\|seeds\|scripts\|lang)/ { deny all; }` — تُعاد كتابتها بالكامل |
-| 3 | مسار كرون الـ CLI | `/etc/cron.d/medjat` (مسار مطلق) |
-| 4 | روابط كرون HTTP | ٣ ملفات في `/usr/local/bin/medjat-cron-*.sh` |
+| 3 | مسار كرون الـ CLI | `/etc/cron.d/permedjat` (مسار مطلق) |
+| 4 | روابط كرون HTTP | ٣ ملفات في `/usr/local/bin/permedjat-cron-*.sh` |
 | 5 | سكربتات النشر | `deploy.sh` · `check-drift.sh` · `migrations/migrate.sh` |
 | 6 | ملفات `.env` | ٤ ملفات + إعادة بناء تطبيقات Flutter (إن تغيّرت الروابط) |
 | 7 | مسارات الرفع | ثوابت مثل `__DIR__ . '/../../uploads/documents/'` |

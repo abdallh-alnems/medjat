@@ -59,12 +59,12 @@ def build(out_path, lang):
 
     # --- النصوص ---
     if lang=="ar":
-        brand = ar("ميدجات"); sub = ar("الحضور والموارد البشرية")
+        brand = ar("بيرمدجات"); sub = ar("الحضور والموارد البشرية")
         tag   = ar("حضور بالموقع · رواتب · إجازات · مستندات")
         bf = ImageFont.truetype(FB, 96); sf = ImageFont.truetype(FS, 40); tf = ImageFont.truetype(FM, 27)
         anchor_right = W - 70                # محاذاة لليمين
     else:
-        brand = "Medjat"; sub = "HR & Attendance"
+        brand = "Permedjat"; sub = "HR & Attendance"
         tag   = "GPS attendance · Payslips · Leaves · Documents"
         bf = ImageFont.truetype(GE, 92, index=0); sf = ImageFont.truetype(GE, 38, index=2); tf = ImageFont.truetype(GE, 25, index=5)
         anchor_left = ix + isz + 56          # محاذاة لليسار بعد الأيقونة

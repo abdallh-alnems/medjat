@@ -1,6 +1,6 @@
-# Tasks: Medjat Central — Web Edition
+# Tasks: Permedjat Central — Web Edition
 
-**Input**: Design documents from `/specs/003-medjat-central-web/`
+**Input**: Design documents from `/specs/003-permedjat-central-web/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/api-catalog.md
 
 **Tests**: Included — plan D14 commits to Vitest + RTL (unit/component), MSW (contract
@@ -29,10 +29,10 @@ testable. **MVP = Setup + Foundational + US1.**
 - [X] T002 Install runtime deps (react-query, zustand, axios, firebase, react-hook-form, zod, shadcn/@base-ui, tailwind v4, lucide, sonner, next-themes, recharts, date-fns, dayjs, jspdf, html2canvas, xlsx, react-day-picker, react-markdown, remark-gfm, qrcode, input-otp) in `package.json`
 - [X] T003 [P] Install + configure dev tooling (Vitest, RTL, jsdom, MSW, Playwright, Prettier + tailwind plugin) in `package.json`, `vitest.config.ts`, `playwright.config.ts`, `.prettierrc`
 - [X] T004 [P] Initialize shadcn and add base UI primitives (button, input, label, card, dialog, sheet, dropdown-menu, select, tabs, badge, avatar, skeleton, popover, calendar, separator, sonner, input-otp, textarea, table) in `src/components/ui/`
-- [X] T005 [P] Port Medjat theme tokens (brand #2563EB/#60A5FA, warm accent, canvas/surface, error/warning/success, radii) into `src/app/globals.css` with light/dark CSS variables
+- [X] T005 [P] Port Permedjat theme tokens (brand #2563EB/#60A5FA, warm accent, canvas/surface, error/warning/success, radii) into `src/app/globals.css` with light/dark CSS variables
 - [X] T006 [P] Add self-hosted web fonts (IBM Plex Sans Arabic primary, Geist) to `public/fonts/` and wire in `src/app/layout.tsx` (re-acquire real fonts — do NOT copy corrupted Flutter Geist .ttf)
 - [X] T007 [P] Create `.env.local.example` (server-only SECURITY_USER/KEY, NEXT_PUBLIC_API_HOST, NEXT_PUBLIC_FIREBASE_*) and `README.md`
-- [X] T008 [P] Add PWA assets: `public/manifest.json` (Medjat papyrus icons, RTL, theme color), `public/icons/`, shell `public/sw.js` (offline only, no push)
+- [X] T008 [P] Add PWA assets: `public/manifest.json` (Permedjat papyrus icons, RTL, theme color), `public/icons/`, shell `public/sw.js` (offline only, no push)
 
 **Checkpoint**: App builds and runs an empty themed shell.
 

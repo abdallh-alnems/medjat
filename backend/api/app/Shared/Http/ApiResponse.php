@@ -7,7 +7,7 @@ namespace App\Shared\Http;
 use Illuminate\Http\JsonResponse;
 
 /**
- * The wire format of the Medjat API.
+ * The wire format of the Permedjat API.
  *
  * Four Flutter builds already published to Google Play, the App Store and
  * AppGallery parse these envelopes field by field, so the shape is a contract,

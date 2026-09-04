@@ -70,7 +70,7 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'medjat'.tr,
+              'permedjat'.tr,
               style: TextStyle(
                 fontFamily: 'Geist',
                 fontSize: 36,

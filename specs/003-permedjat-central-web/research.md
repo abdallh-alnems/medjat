@@ -1,4 +1,4 @@
-# Phase 0 — Research: Medjat Central Web Edition
+# Phase 0 — Research: Permedjat Central Web Edition
 
 All spec-level ambiguities were resolved during `/speckit.clarify` (Session 2026-06-20).
 This document records the technical decisions, each with rationale and rejected
@@ -23,7 +23,7 @@ alternatives, and resolves the planning-level open items so design can proceed w
   The browser axios client uses `baseURL: "/api"`; the server client uses `API_HOST`.
 - **Rationale**: Keeps `SECURITY_USER`/`SECURITY_KEY` server-only (SC-006). Identical to
   `farkha_web/src/app/api/[...path]/route.ts` and `src/lib/api/client.ts`.
-- **Medjat-specific extension (important)**: The Medjat backend authenticates the user
+- **Permedjat-specific extension (important)**: The Permedjat backend authenticates the user
   and tenant via custom headers, not the Basic auth slot. The proxy MUST forward, when
   present on the incoming request:
   - `X-Firebase-Token` — the user's Firebase ID token (the farkha proxy only forwards
@@ -75,7 +75,7 @@ alternatives, and resolves the planning-level open items so design can proceed w
 ## D6. UI system, theming, RTL, i18n
 
 - **Decision**: shadcn + Tailwind v4 + `tw-animate-css`, `next-themes` for light/dark.
-  Port Medjat's color tokens into CSS variables (brand `#2563EB`/dark `#60A5FA`, warm
+  Port Permedjat's color tokens into CSS variables (brand `#2563EB`/dark `#60A5FA`, warm
   accent `#B8860B`, teal-tinted canvas/surface, error/warning/success). Self-host
   IBM Plex Sans Arabic (primary) + Geist. Root `<html dir="rtl" lang="ar">` with an
   English LTR toggle. Port the `ar.dart`/`en.dart` dictionaries to a lightweight i18n
@@ -84,7 +84,7 @@ alternatives, and resolves the planning-level open items so design can proceed w
 - **Note on fonts**: memory flags that the Flutter project's Geist `.ttf` are LFS/HTML
   pointer files (corrupted). Re-acquire real Geist + IBM Plex Sans Arabic web fonts for
   the web app rather than copying from the Flutter assets.
-- **Rationale**: Matches farkha (Cairo there → IBM Plex Sans Arabic here to match Medjat
+- **Rationale**: Matches farkha (Cairo there → IBM Plex Sans Arabic here to match Permedjat
   branding); preserves the app's two locales and visual identity.
 - **Alternatives rejected**: MUI/Chakra (diverges from farkha + shadcn); CSS-in-JS
   runtime (Tailwind v4 is the established approach).
@@ -128,7 +128,7 @@ alternatives, and resolves the planning-level open items so design can proceed w
   and history. The attendance-method setting screen saves `qr_gps`/`gps_only`/`manual`
   for the separate employee app. **No employee self check-in.** Biometric = view status
   + delete only (`biometric/status.php`, `biometric/delete.php`); no webcam capture.
-- **Rationale**: Clarification; `medjat_central` is the manager surface.
+- **Rationale**: Clarification; `permedjat_central` is the manager surface.
 
 ## D11. Branch geolocation
 

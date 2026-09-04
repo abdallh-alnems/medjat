@@ -159,7 +159,7 @@ final class EmployeeLoginAction
      */
     private function resolveDemoLogin(string $code): ?Employee
     {
-        $demoCode = strtoupper(trim(Config::string('medjat.review_demo.code')));
+        $demoCode = strtoupper(trim(Config::string('permedjat.review_demo.code')));
 
         if ($demoCode === '' || $code !== $demoCode) {
             return null;
@@ -174,7 +174,7 @@ final class EmployeeLoginAction
      */
     public function demoEmployee(): ?Employee
     {
-        $demoPhone = trim(Config::string('medjat.review_demo.phone'));
+        $demoPhone = trim(Config::string('permedjat.review_demo.phone'));
 
         if ($demoPhone === '') {
             return null;

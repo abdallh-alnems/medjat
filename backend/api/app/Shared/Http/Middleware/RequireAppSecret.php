@@ -29,8 +29,8 @@ final class RequireAppSecret
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $user = Value::string(config('medjat.app_secret.user'));
-        $key = Value::string(config('medjat.app_secret.key'));
+        $user = Value::string(config('permedjat.app_secret.user'));
+        $key = Value::string(config('permedjat.app_secret.key'));
 
         if ($user === '' || $key === '') {
             return $next($request);
@@ -57,7 +57,7 @@ final class RequireAppSecret
 
     private function isCron(Request $request): bool
     {
-        $expected = Value::string(config('medjat.cron.secret'));
+        $expected = Value::string(config('permedjat.cron.secret'));
 
         if ($expected === '') {
             return false;

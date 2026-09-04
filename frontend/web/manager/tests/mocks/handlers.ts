@@ -36,7 +36,7 @@ export const handlers = [
       user: {
         id: 1,
         name: "اختباري",
-        email: "test@medjat.com",
+        email: "test@permedjat.com",
         firebase_uid: "test-uid",
         role: "general_manager",
         branch_id: null,

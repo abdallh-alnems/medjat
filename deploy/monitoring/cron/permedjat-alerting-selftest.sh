@@ -5,7 +5,7 @@
 # Telegram answering.
 #
 # This closes the one blind spot the rest of the system cannot cover. If
-# medjat-alerts.service dies, every Prometheus alert is written to a socket
+# permedjat-alerts.service dies, every Prometheus alert is written to a socket
 # nobody is listening on — the server stays healthy, healthchecks keeps getting
 # its liveness beacon, and the first sign of trouble is a real outage that never
 # reaches your phone. The classic "who watches the watcher" hole, and the only
@@ -30,6 +30,6 @@ curl -fsS -m 5 http://127.0.0.1:9093/-/healthy >/dev/null 2>&1 \
     || fail "alertmanager not answering on 9093"
 
 curl -fsS -m 5 http://127.0.0.1:9099/ >/dev/null 2>&1 \
-    || fail "medjat-alerts sender not answering on 9099"
+    || fail "permedjat-alerts sender not answering on 9099"
 
 curl -fsS -m 10 --retry 2 "$PING" >/dev/null 2>&1

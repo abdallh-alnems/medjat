@@ -12,7 +12,7 @@
  * IP correlation is still there.
  */
 
-const COOKIE_NAME = "medjat_emp_device";
+const COOKIE_NAME = "permedjat_emp_device";
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
 function readCookie(name: string): string | null {

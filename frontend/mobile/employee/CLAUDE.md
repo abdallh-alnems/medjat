@@ -1,11 +1,11 @@
-# Medjat App
+# Permedjat App
 
 تطبيق Flutter للموظف. الواجهة عربية RTL.
 
 ## هيكل المشروع
 
 ```
-Medjat/
+Permedjat/
 ├── frontend/mobile/employee/    — تطبيق Flutter (هذا المشروع)
 └── backend_medjet/          — PHP REST API
 ```
@@ -78,10 +78,10 @@ flutter clean && flutter pub get
 
 - **بصمة الوجه انتقلت إلى حزمة مشتركة.** `FaceEmbedder` و`LivenessDetector` وملف الموديل
   `mobilefacenet.tflite` صاروا في `frontend/mobile/shared/`، ويستوردهم التطبيق عبر
-  `package:medjat_shared/medjat_shared.dart`. السبب: تطبيق الكيوسك يرسل embeddings إلى نفس
+  `package:permedjat_shared/permedjat_shared.dart`. السبب: تطبيق الكيوسك يرسل embeddings إلى نفس
   العمود (`employees.face_embedding`)، فلو وُجدت نسختان من كود الاستخراج وتباعدتا، يتوقف
   التطابق **بصمت** دون خطأ في أي مكان.
-  - الموديل يُحمَّل من `packages/medjat_shared/assets/models/mobilefacenet.tflite`؛ المسار
+  - الموديل يُحمَّل من `packages/permedjat_shared/assets/models/mobilefacenet.tflite`؛ المسار
     المجرّد لا يعمل لأن الأصل يملكه package.
   - عند تعديل الحزمة شغّل `flutter pub get` في **كلا** التطبيقين — مسار path لا يُعاد حلّه تلقائيًا.
   - إن فشل التحميل تظهر `face_unavailable` — وهذا مقصود: الفشل ظاهر ولا يُقبَل الحضور صامتًا.

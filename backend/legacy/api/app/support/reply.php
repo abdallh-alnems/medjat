@@ -57,7 +57,7 @@ AuditLogModel::log($tenantId, $auth['admin_id'], 'support.ticket.reply', 'suppor
 
 try {
     EmailService::send(
-        getenv('SUPPORT_EMAIL') ?: 'support@medjatapp.com',
+        getenv('SUPPORT_EMAIL') ?: 'support@permedjat.com',
         'Reply on Ticket #' . $ticketId,
         "Admin #{$auth['admin_id']} replied to ticket #{$ticketId}:\n\n{$body}"
     );

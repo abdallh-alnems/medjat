@@ -1,7 +1,7 @@
-# medjat_central_desktop
+# permedjat_central_desktop
 
-Desktop shell for **Medjat Central** — a real installable app (`.dmg` on macOS, `.exe`
-installer on Windows) whose window renders the live web app at `app.medjatapp.com`.
+Desktop shell for **Permedjat Central** — a real installable app (`.dmg` on macOS, `.exe`
+installer on Windows) whose window renders the live web app at `app.permedjat.com`.
 
 ## Why it is built this way
 
@@ -9,7 +9,7 @@ The app has two halves, and they update differently:
 
 | | Lives in | Updates by |
 |---|---|---|
-| Every screen, feature and fix | `medjat_central_web` (the server) | `deploy-web.sh` — installed copies pick it up on next launch |
+| Every screen, feature and fix | `permedjat_central_web` (the server) | `deploy-web.sh` — installed copies pick it up on next launch |
 | Window, menu, icon, native capabilities | this project (the user's machine) | shipping a new installer |
 
 So product work stays in the web app and reaches desktop users with no re-install. Only
@@ -24,9 +24,9 @@ a stale cache.
 
 ```bash
 npm install
-npm start                 # against production (app.medjatapp.com)
+npm start                 # against production (app.permedjat.com)
 npm run dev               # against a local `npm run dev` on :3000
-MEDJAT_URL=… npm start    # against anything else
+PERMEDJAT_URL=… npm start    # against anything else
 ```
 
 `npm install` alone is not enough on npm 12+: install scripts are blocked by default and
@@ -37,8 +37,8 @@ missing, run `npm install-scripts approve electron electron-winstaller`.
 
 ```bash
 npm run icons       # regenerates build/icon.{icns,ico,png} from the shared brand master
-npm run build:mac   # dist/Medjat Central-<version>-arm64.dmg + …-1.0.0.dmg (Intel)
-npm run build:win   # dist/Medjat Central Setup <version>.exe
+npm run build:mac   # dist/Permedjat Central-<version>-arm64.dmg + …-1.0.0.dmg (Intel)
+npm run build:win   # dist/Permedjat Central Setup <version>.exe
 ```
 
 macOS builds **arm64 and x64 as separate DMGs**, not a universal binary: merging two
@@ -97,7 +97,7 @@ npm run sign:dmg              # skips images that already validate
 npm run sign:dmg -- --force   # re-sign regardless
 ```
 
-It reads credentials from the notarytool keychain profile `medjat-notarize`
+It reads credentials from the notarytool keychain profile `permedjat-notarize`
 (`NOTARY_PROFILE` overrides). A finished image reports:
 
 ```
@@ -116,7 +116,7 @@ stored profile instead — but `xcrun notarytool store-credentials` only complet
 from a real interactive Terminal. Run it there first, or stay with the env vars above:
 
 ```bash
-xcrun notarytool store-credentials "medjat-notarize" \
+xcrun notarytool store-credentials "permedjat-notarize" \
   --apple-id "<apple-id-email>" --team-id "<TEAMID>"
 ```
 
@@ -148,7 +148,7 @@ contextBridge.exposeInMainWorld('medjat', {
 ```
 
 ```ts
-// medjat_central_web — feature-detected, so browsers are unaffected
+// permedjat_central_web — feature-detected, so browsers are unaffected
 if (window.medjat?.isDesktop) {
   const punches = await window.medjat.readDevice({ ip });
 }

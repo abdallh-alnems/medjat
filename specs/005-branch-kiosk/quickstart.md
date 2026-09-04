@@ -21,7 +21,7 @@ means you will not be able to tell your damage from the pre-existing damage.
 
 ## 1. Backend against MAMP
 
-MySQL on `127.0.0.1:8889`, `root`/`root`, database `medjat`. Use the MAMP PHP
+MySQL on `127.0.0.1:8889`, `root`/`root`, database `permedjat`. Use the MAMP PHP
 binary — system `php` is a different version:
 
 ```bash
@@ -116,8 +116,8 @@ it silently stops matching people.
 Confirm the two apps really are separate:
 
 ```bash
-cd ../medjat_app  && flutter build apk --debug
-cd ../medjat_kiosk && flutter build apk --debug
+cd ../permedjat_app  && flutter build apk --debug
+cd ../permedjat_kiosk && flutter build apk --debug
 
 # different packages, and the employee APK must carry NEITHER
 # RECEIVE_BOOT_COMPLETED NOR WAKE_LOCK
@@ -125,8 +125,8 @@ aapt dump permissions ../employee/build/app/outputs/flutter-apk/app-debug.apk
 aapt dump permissions build/app/outputs/flutter-apk/app-debug.apk
 ```
 
-Then exercise face check-in in `medjat_app` once. Its model now loads from
-`packages/medjat_shared/assets/models/mobilefacenet.tflite`; a wrong asset key
+Then exercise face check-in in `permedjat_app` once. Its model now loads from
+`packages/permedjat_shared/assets/models/mobilefacenet.tflite`; a wrong asset key
 surfaces as "face unavailable" at runtime, not as a build failure, so a green
 build proves nothing here.
 
@@ -204,15 +204,15 @@ Both of these were completed for the 2026-08-05 deploy; they are recorded here
 because a fresh environment still needs them.
 
 1. **Remote Config parameters.** ✅ Done — `medjat_kiosk_min_version` (`0.0.0`)
-   and `medjat_kiosk_maintenance_enabled` (`false`) exist in project `medjat`
+   and `medjat_kiosk_maintenance_enabled` (`false`) exist in project `permedjat`
    (template v15). `RemoteConfigService::APPS` reads them by name; without them
    the kiosk entry resolves to `0.0.0` and no version gate exists.
-2. **Cron.** ✅ Done — `/usr/local/bin/medjat-cron-kiosk-purge.sh` runs at 03:30
-   from `/etc/cron.d/medjat`. Note it is called over **HTTP**, like the other
+2. **Cron.** ✅ Done — `/usr/local/bin/permedjat-cron-kiosk-purge.sh` runs at 03:30
+   from `/etc/cron.d/permedjat`. Note it is called over **HTTP**, like the other
    crons: the endpoint authenticates on a query parameter, which a CLI
    invocation would not supply. Entry:
    ```
-   30 3 * * * www-data /usr/bin/php /var/www/medjat/backend_medjet/app/cron/purge_kiosk_captures.php
+   30 3 * * * www-data /usr/bin/php /var/www/permedjat/backend_medjet/app/cron/purge_kiosk_captures.php
    ```
    Until this runs, FR-056 is unmet and captures accumulate indefinitely.
 3. **Uploads directory.** `backend_medjet/uploads/kiosk/` must exist and be

@@ -1,15 +1,15 @@
-# Feature Specification: Medjat Central — Web Edition
+# Feature Specification: Permedjat Central — Web Edition
 
-**Feature Branch**: `003-medjat-central-web`
+**Feature Branch**: `003-permedjat-central-web`
 **Created**: 2026-06-19
 **Status**: Draft
 **Input**: User description: "عايز احول التطبيق دة frontend/mobile/manager الي موقع ويب اريد كل التفاصيل الذي فية واريد ان تستخدم نفس الطريقة هذة frontend/farkha_web"
 
 ## Summary
 
-Deliver a full-featured **web edition** of the existing Medjat Central HR & payroll
-admin application. Today Medjat Central exists only as a mobile app (the
-`medjat_central` Flutter project). HR administrators and company managers want to
+Deliver a full-featured **web edition** of the existing Permedjat Central HR & payroll
+admin application. Today Permedjat Central exists only as a mobile app (the
+`permedjat_central` Flutter project). HR administrators and company managers want to
 do the same work from a desktop or laptop browser without installing anything.
 
 The web edition must reproduce **every administrator-facing capability** present in
@@ -30,7 +30,7 @@ explicit requirement so the two web properties stay consistent and maintainable.
 
 ### Session 2026-06-20
 
-- Q: On the web edition, who performs attendance check-in? → A: Admin-only. `medjat_central` is the manager app and has **no employee self check-in**. Web attendance = (a) manual recording of check-in/out by an admin, (b) viewing the live/today board (25s polling) and history, and (c) saving the company attendance-method setting (`qr_gps` / `gps_only` / `manual`) that the *separate employee app* consumes. Employee self check-in (QR/GPS/face capture) is NOT part of this product on web or mobile admin.
+- Q: On the web edition, who performs attendance check-in? → A: Admin-only. `permedjat_central` is the manager app and has **no employee self check-in**. Web attendance = (a) manual recording of check-in/out by an admin, (b) viewing the live/today board (25s polling) and history, and (c) saving the company attendance-method setting (`qr_gps` / `gps_only` / `manual`) that the *separate employee app* consumes. Employee self check-in (QR/GPS/face capture) is NOT part of this product on web or mobile admin.
 - Q: Is `geolocator` / camera in the admin app used for check-in? → A: No. Geolocation is used only to capture a branch/company geofence location when defining a branch (admin convenience); web equivalent = browser geolocation "use my location" plus manual coordinate/map entry. Biometric/face is review-only here — the controller receives a precomputed face embedding and supports viewing enrollment status and deleting it; new face capture happens in the employee app, so on web biometric = view status + delete (no webcam capture).
 - Q: Does v1 ship full feature-parity at once, or in phases? → A: Full parity in a single release — all 10 user stories ship together for v1. Story priorities (P1–P3) remain useful for build ordering but are not a phased release boundary.
 - Q: Does web need push notifications, or is the in-app list enough? → A: In-app notifications list + preferences only (fetched by polling the backend). No browser/Web Push, no service-worker push, no web FCM token registration in v1. Web Push may be added later.
@@ -467,7 +467,7 @@ notifications, reviews the activity/audit log, and manages their own account
 ### Measurable Outcomes
 
 - **SC-001**: 100% of the administrator-facing capabilities available in the mobile
-  `medjat_central` app are available in the web edition (feature-parity checklist
+  `permedjat_central` app are available in the web edition (feature-parity checklist
   fully covered), excluding only capabilities explicitly scoped out for being
   device-hardware-dependent.
 - **SC-002**: An administrator can sign in and reach their company dashboard in under
@@ -498,7 +498,7 @@ notifications, reviews the activity/audit log, and manages their own account
   server-state caching, a shared component/design system, RTL Arabic-first theming with
   light/dark support, and PWA installability. This is a stated requirement, not just a
   default.
-- **Backend unchanged**: The existing Medjat backend API and database are reused as-is;
+- **Backend unchanged**: The existing Permedjat backend API and database are reused as-is;
   this feature delivers a new web client only and does not change backend contracts.
   Any endpoint the mobile app calls is assumed callable by the web client through the
   proxy.
@@ -506,7 +506,7 @@ notifications, reviews the activity/audit log, and manages their own account
   separate user store is created. Google and Apple sign-in are configured for web
   origins.
 - **Scope is administrator-facing**: This product targets HR admins and managers (the
-  audience of `medjat_central`), not the employee self-service experience.
+  audience of `permedjat_central`), not the employee self-service experience.
 - **Single-release delivery**: v1 ships full feature-parity (all 10 user stories) in one
   release. Priorities P1–P3 guide build order, not separate shippable phases.
 - **Notifications**: In-app notifications list and preferences only; no browser/Web Push
@@ -516,7 +516,7 @@ notifications, reviews the activity/audit log, and manages their own account
 - **Export & print**: PDF, Excel (.xlsx), and CSV export plus printing are in scope via
   browser-based generation, following the farkha_web toolkit. The mobile app's Word
   (.docx) export is intentionally replaced by Excel on web.
-- **No self check-in**: `medjat_central` (and therefore this web edition) is the
+- **No self check-in**: `permedjat_central` (and therefore this web edition) is the
   admin/manager surface only. It records manual attendance and reviews it; employee
   self check-in (QR/GPS/face) lives in the separate employee app and is out of scope
   here. See Clarifications (Session 2026-06-20).

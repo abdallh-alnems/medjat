@@ -13,12 +13,12 @@ import { NextRequest, NextResponse } from "next/server";
  */
 
 const API_HOST =
-  process.env.NEXT_PUBLIC_API_HOST ?? "https://api.medjatapp.com/backend";
+  process.env.NEXT_PUBLIC_API_HOST ?? "https://api.permedjat.com/backend";
 
 const SECURITY_USER = process.env.SECURITY_USER ?? "";
 const SECURITY_KEY = process.env.SECURITY_KEY ?? "";
 
-export const EMPLOYEE_SESSION_COOKIE = "medjat_emp_session";
+export const EMPLOYEE_SESSION_COOKIE = "permedjat_emp_session";
 
 /** Endpoints this route is allowed to call. An open relay would let any backend path be reached. */
 const ENDPOINTS = {

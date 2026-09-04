@@ -531,7 +531,7 @@
 				DEVELOPMENT_TEAM = PN886D65DG;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Medjat Central";
+				INFOPLIST_KEY_CFBundleDisplayName = "Permedjat Central";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -727,7 +727,7 @@
 				DEVELOPMENT_TEAM = PN886D65DG;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Medjat Central";
+				INFOPLIST_KEY_CFBundleDisplayName = "Permedjat Central";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -759,7 +759,7 @@
 				DEVELOPMENT_TEAM = PN886D65DG;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Medjat Central";
+				INFOPLIST_KEY_CFBundleDisplayName = "Permedjat Central";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

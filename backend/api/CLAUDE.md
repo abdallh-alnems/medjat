@@ -12,7 +12,7 @@ that `docs/openapi.json` is current.
 php vendor/bin/pint                    # formatting
 php vendor/bin/phpstan analyse         # static analysis, level max
 php artisan test                       # against real MySQL, not SQLite
-php artisan medjat:openapi             # after adding or changing a route
+php artisan permedjat:openapi             # after adding or changing a route
 ```
 
 Use the MAMP binary, not the system one:
@@ -34,7 +34,7 @@ Use the MAMP binary, not the system one:
   server scores it.
 - **Migrations assume an empty database.** No `hasTable` guards, no MariaDB
   `IF NOT EXISTS` — each runs once, in order. Adopting an existing database is
-  `php artisan medjat:baseline`, not `migrate`.
+  `php artisan permedjat:baseline`, not `migrate`.
 - **Slow side effects go through `Shared\Async\AfterResponse`**, not inline and
   not the queue. See README, "Rules that bite".
 
@@ -45,6 +45,6 @@ by other subjects, is Shared. Modules may depend on Shared and on each other;
 nothing in Shared reaches back into a Module. A subject owns all its entry
 points, including its console commands.
 
-Everything this application configures lives in `config/medjat.php`, because
+Everything this application configures lives in `config/permedjat.php`, because
 `env()` returns null outside `config/` once the configuration is cached — which
 every deploy does.

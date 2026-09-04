@@ -1,9 +1,9 @@
 'use strict';
 
 /**
- * Medjat Central — desktop shell.
+ * Permedjat Central — desktop shell.
  *
- * The window renders the live web app (app.medjatapp.com), so every `deploy-web.sh`
+ * The window renders the live web app (app.permedjat.com), so every `deploy-web.sh`
  * reaches installed copies without shipping a new installer. Anything the browser
  * cannot do — local network, file system, silent printing — belongs here in the main
  * process and is handed to the page through `src/preload.js`.
@@ -22,7 +22,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const crypto = require('node:crypto');
 
-const APP_URL = process.env.MEDJAT_URL || 'https://app.medjatapp.com';
+const APP_URL = process.env.PERMEDJAT_URL || 'https://app.permedjat.com';
 const APP_ORIGIN = new URL(APP_URL).origin;
 const IS_MAC = process.platform === 'darwin';
 
@@ -39,7 +39,7 @@ const AUTH_HOSTS = [
   'appleid.cdn-apple.com',
 ];
 
-app.setName('Medjat Central');
+app.setName('Permedjat Central');
 
 let mainWindow = null;
 
@@ -69,7 +69,7 @@ function handleAuthLink(rawUrl) {
   } catch {
     return;
   }
-  if (url.protocol !== 'medjat:' || url.hostname !== 'auth') return;
+  if (url.protocol !== 'permedjat:' || url.hostname !== 'auth') return;
 
   const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
@@ -156,7 +156,7 @@ function createWindow() {
     minHeight: 680,
     show: false,
     backgroundColor: '#F9FCFC',
-    title: 'Medjat Central',
+    title: 'Permedjat Central',
     autoHideMenuBar: !IS_MAC,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -166,7 +166,7 @@ function createWindow() {
       spellcheck: false,
       // Sign-in popups inherit this preload; the bridge checks the origin against this
       // so it is never handed to Google's or Apple's pages.
-      additionalArguments: [`--medjat-app-origin=${APP_ORIGIN}`],
+      additionalArguments: [`--permedjat-app-origin=${APP_ORIGIN}`],
     },
   });
 
@@ -293,7 +293,7 @@ function buildMenu() {
     ...(IS_MAC
       ? [
           {
-            label: 'Medjat Central',
+            label: 'Permedjat Central',
             submenu: [
               { role: 'about', label: 'عن التطبيق' },
               { type: 'separator' },
@@ -369,7 +369,7 @@ function buildMenu() {
       submenu: [
         {
           label: 'الدعم الفني',
-          click: () => shell.openExternal('https://medjatapp.com/support.html'),
+          click: () => shell.openExternal('https://permedjat.com/support.html'),
         },
         {
           label: 'فتح في المتصفح',

@@ -34,7 +34,7 @@ scrape_configs:
       module: [api_401]
     scrape_interval: 30s
     static_configs:
-      - targets: ['https://api.medjatapp.com/backend/api/app/auth/login.php']
+      - targets: ['https://api.permedjat.com/backend/api/app/auth/login.php']
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -66,7 +66,7 @@ scrape_configs:
       module: [web_up]
     scrape_interval: 30s
     static_configs:
-      - targets: ['https://app.medjatapp.com/']
+      - targets: ['https://app.permedjat.com/']
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -81,7 +81,7 @@ scrape_configs:
       module: [http_200]
     scrape_interval: 60s
     static_configs:
-      - targets: ['https://medjatapp.com/']
+      - targets: ['https://permedjat.com/']
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target

@@ -1,4 +1,4 @@
-# طرق تسجيل الحضور في Medjat — وأين تعمل كل طريقة
+# طرق تسجيل الحضور في Permedjat — وأين تعمل كل طريقة
 
 > آخر تحديث: 2026-08-18
 > المرجع الوحيد للحقيقة في الكود: `backend_medjet/core/AttendanceMethodResolver.php`
@@ -11,7 +11,7 @@
 
 ## 1. الخلاصة في جدول واحد
 
-| الطريقة | تطبيق الموظف `medjat_app` (Android + iOS) | متصفّح الموظف `/me` | تطبيق الإدارة `medjat_central` (Android + iOS) | ويب الإدارة `medjat_central_web` + الديسكتوب | الكشك `medjat_kiosk` (تابلت Android) | جهاز بصمة ZKTeco |
+| الطريقة | تطبيق الموظف `permedjat_app` (Android + iOS) | متصفّح الموظف `/me` | تطبيق الإدارة `permedjat_central` (Android + iOS) | ويب الإدارة `permedjat_central_web` + الديسكتوب | الكشك `permedjat_kiosk` (تابلت Android) | جهاز بصمة ZKTeco |
 |---|:--:|:--:|:--:|:--:|:--:|:--:|
 | `qr_gps` — QR + موقع | ✅ | ➖ | ⚙️ ملصق QR الثابت | ⚙️ شاشة QR المتغيّر | ➖ | ➖ |
 | `gps_only` — موقع فقط | ✅ | ✅ | ➖ | ➖ | ➖ | ➖ |
@@ -26,7 +26,7 @@
 **دلالة الرموز:** ✅ الحضور يُسجَّل فعلياً من هنا · ⚙️ لا يُسجَّل هنا، لكن هذه هي المنصة التي
 تُعِدّ الطريقة أو تشغّل ما تحتاجه · ➖ غير مدعومة · ⚠️ انظر التفصيل.
 
-**منصات لا تُسجِّل حضوراً إطلاقاً:** `medjat_admin` (لوحة السوبر-أدمن) — تعرض طرق الشركة
+**منصات لا تُسجِّل حضوراً إطلاقاً:** `permedjat_admin` (لوحة السوبر-أدمن) — تعرض طرق الشركة
 للتشخيص فقط (`lib/data/model/tenant_diagnostics_model.dart`)، ولا تكتب أي حضور.
 
 ---
@@ -153,7 +153,7 @@
 
 ### `kiosk` — تابلت مشترك عند باب الفرع
 
-- **من أين تُسجَّل:** تطبيق `medjat_kiosk` — **Android فقط** (لا يوجد مجلّد iOS في المشروع).
+- **من أين تُسجَّل:** تطبيق `permedjat_kiosk` — **Android فقط** (لا يوجد مجلّد iOS في المشروع).
 - **ليست خدمة ذاتية:** الموظف لا يحمل اعتماداً، والتابلت يفوّض نفسه بتوكن مربوط بالفرع
   (`Auth::authenticateKiosk`).
 - **مساران للتعرّف:**
@@ -185,7 +185,7 @@
 
 ### `manual` — إدخال إداري
 
-- **من أين تُسجَّل:** تطبيق الإدارة `medjat_central` **و** ويب الإدارة (والديسكتوب معه).
+- **من أين تُسجَّل:** تطبيق الإدارة `permedjat_central` **و** ويب الإدارة (والديسكتوب معه).
 - **الخادم:** `app/attendance/manual_check_in.php` — يتطلّب صلاحية `manage_attendance`،
   ويرفض إن لم تكن `manual` ضمن طرق الشركة، ويحصر المُدخِلين في
   `manual_attendance_admin_ids` إن ضُبطت.
@@ -194,7 +194,7 @@
 
 ## 4. المنصات — ماذا تدعم كل واحدة
 
-### `medjat_app` — تطبيق الموظف (Android + iOS، وAppGallery)
+### `permedjat_app` — تطبيق الموظف (Android + iOS، وAppGallery)
 
 المنصّة الوحيدة الكاملة: `qr_gps`, `gps_only`, `face_selfie`, `photo_gps`, `wifi_gps`,
 `crew_gps` — إضافة إلى المزامنة دون اتصال (`offline`).
@@ -223,18 +223,18 @@
   ويُنفَّذ منذ 2026-08-25 عبر `NetworkVerifier::verifyBrowser()` في `check_in.php` و
   `check_out.php`. قبل ذلك كان `network_constraint` **إعلامياً فقط** (القسم 6.2).
 
-### `medjat_central` — تطبيق الإدارة (Android + iOS)
+### `permedjat_central` — تطبيق الإدارة (Android + iOS)
 
 لا يسجّل حضوراً ذاتياً. يُسجّل `manual`، ويُعِدّ الباقي: شاشة طرق الحضور، ملصق QR للفرع،
 إدارة الأجهزة، إدارة الأكشاك، اعتماد شبكات الفرع.
 
-### `medjat_central_web` + `medjat_central_desktop`
+### `permedjat_central_web` + `permedjat_central_desktop`
 
 نفس صلاحيات تطبيق الإدارة على الويب، وتزيد بشيئين لا وجود لهما في تطبيق الإدارة:
 **شاشة الـQR المتغيّر** على الباب، و**قراءة جهاز البصمة عبر الشبكة المحلية** (الديسكتوب فقط).
 الديسكتوب غلاف Electron فوق نفس الويب، فكل ما ينطبق على الويب ينطبق عليه.
 
-### `medjat_kiosk` — تابلت الفرع (Android فقط)
+### `permedjat_kiosk` — تابلت الفرع (Android فقط)
 
 الطريقة `kiosk` وحدها. لا يوجد على الجهاز أي اعتماد لموظف بعينه.
 
@@ -242,7 +242,7 @@
 
 الطريقة `device` وحدها، عبر `device/iclock.php` (تفاصيل البروتوكول في `device/README.md`).
 
-### `medjat_admin`
+### `permedjat_admin`
 
 لا يكتب حضوراً. يعرض طرق الشركة للتشخيص فقط.
 
@@ -252,14 +252,14 @@
 
 | المستوى | العمود | الشاشة |
 |---|---|---|
-| الشركة | `tenants.attendance_methods` | `medjat_central` → إعدادات → طرق الحضور · و`frontend/web/manager/src/app/(app)/settings/attendance-method` |
+| الشركة | `tenants.attendance_methods` | `permedjat_central` → إعدادات → طرق الحضور · و`frontend/web/manager/src/app/(app)/settings/attendance-method` |
 | الفرع | `branches.attendance_methods` | نفس الشاشتين (تبويب الفروع) |
 | الفئة الوظيفية | `employee_categories.attendance_methods` | نفس الشاشتين (تبويب الفئات) → `app/attendance/set_method_override.php` |
 | الموظف | `employees.attendance_methods` | نفس الشاشتين (تبويب الموظفين) → نفس النقطة |
 
 **ما لا يظهر في قائمة الاختيار — والفرق بين الشاشتين ليس تجميلياً:**
 
-| | ويب الإدارة | تطبيق الإدارة `medjat_central` |
+| | ويب الإدارة | تطبيق الإدارة `permedjat_central` |
 |---|---|---|
 | الملف | `settings/attendance-method/page.tsx` (ثابت `METHODS`) | `attendance_method_controller.dart` (ثابت `allMethods`) |
 | طبيعة القائمة | **عرض** — `toggleMethod` يعدّل ما أرسله الخادم | **مِصفاة** على رد الخادم عند التحميل |

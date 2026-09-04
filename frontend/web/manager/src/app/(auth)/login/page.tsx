@@ -209,7 +209,7 @@ export default function LoginPage() {
         <CardHeader className="items-center text-center">
           <CardTitle className="text-headline-md">تم تسجيل الدخول</CardTitle>
           <CardDescription>
-            ارجع إلى تطبيق Medjat Central — يمكنك إغلاق هذه الصفحة.
+            ارجع إلى تطبيق Permedjat Central — يمكنك إغلاق هذه الصفحة.
           </CardDescription>
         </CardHeader>
       </Card>

@@ -51,7 +51,7 @@ final class KioskEmployeeCode
 
         $fallback = config('app.key');
 
-        return is_string($fallback) && $fallback !== '' ? $fallback : 'medjat-kiosk-fallback-pepper';
+        return is_string($fallback) && $fallback !== '' ? $fallback : 'permedjat-kiosk-fallback-pepper';
     }
 
     public static function hash(string $code): string

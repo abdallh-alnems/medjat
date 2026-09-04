@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:medjat_app/core/constant/locale/ar.dart';
-import 'package:medjat_app/core/constant/locale/en.dart';
+import 'package:permedjat_app/core/constant/locale/ar.dart';
+import 'package:permedjat_app/core/constant/locale/en.dart';
 
 void main() {
   group('locale files', () {

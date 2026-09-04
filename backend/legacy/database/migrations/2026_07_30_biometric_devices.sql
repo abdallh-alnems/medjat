@@ -9,12 +9,12 @@
 -- customer router with no port forwarding).
 --
 -- The flow this schema serves:
---   1. HR types the device SERIAL NUMBER into medjat_central -> the row here is
+--   1. HR types the device SERIAL NUMBER into permedjat_central -> the row here is
 --      claimed by that tenant and bound to one branch.
 --   2. HR enrols fingerprints ON THE DEVICE, which assigns each person a
 --      numeric "User ID" (PIN). The device pushes its user list to us, so those
 --      IDs show up in the app without anyone typing them.
---   3. HR links each device User ID to a Medjat employee (`device_users`).
+--   3. HR links each device User ID to a Permedjat employee (`device_users`).
 --   4. Every punch lands in `device_punches` (raw, never lost) and is then
 --      applied to the `attendance` table.
 --
@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS `attendance_devices` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------
--- 3) Device User ID -> Medjat employee
+-- 3) Device User ID -> Permedjat employee
 -- ------------------------------------------------------------
 -- Mapped PER DEVICE, not per tenant: every terminal numbers its users from 1,
 -- so "user 3" on the factory device and "user 3" on the office device are

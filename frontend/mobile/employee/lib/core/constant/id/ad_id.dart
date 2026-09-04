@@ -2,7 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 
-/// Centralised AdMob unit IDs for the Medjat employee app (per-platform).
+/// Centralised AdMob unit IDs for the Permedjat employee app (per-platform).
 ///
 /// Android app id: `ca-app-pub-8595701567488603~8653915019`
 /// iOS app id:     `ca-app-pub-8595701567488603~2330701747` (set in Info.plist)

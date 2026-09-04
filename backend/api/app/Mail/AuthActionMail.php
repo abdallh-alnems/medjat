@@ -58,7 +58,7 @@ final class AuthActionMail extends Mailable
             with: [
                 'lang' => $this->lang,
                 'appName' => $this->appName(),
-                'logoUrl' => Config::string('medjat.mail.logo_url'),
+                'logoUrl' => Config::string('permedjat.mail.logo_url'),
                 'link' => $this->link,
                 'greeting' => $this->greeting(),
                 'title' => $strings['title'],

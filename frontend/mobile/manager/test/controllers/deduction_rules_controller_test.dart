@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:medjat_central/core/class/status_request.dart';
-import 'package:medjat_central/data/data_source/remote/deduction_rule_data/deduction_rule_data.dart';
-import 'package:medjat_central/data/model/deduction_rule_model.dart';
-import 'package:medjat_central/logic/controller/settings/deduction_rules_controller.dart';
+import 'package:permedjat_central/core/class/status_request.dart';
+import 'package:permedjat_central/data/data_source/remote/deduction_rule_data/deduction_rule_data.dart';
+import 'package:permedjat_central/data/model/deduction_rule_model.dart';
+import 'package:permedjat_central/logic/controller/settings/deduction_rules_controller.dart';
 import '../helpers/test_helpers.dart';
 
 class MockDeductionRuleData extends Mock implements DeductionRuleData {}

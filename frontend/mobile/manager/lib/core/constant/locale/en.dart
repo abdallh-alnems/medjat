@@ -1,6 +1,6 @@
 const Map<String, String> en = {
   // ── General ──
-  'app_name': 'Medjat Central',
+  'app_name': 'Permedjat Central',
   'admin_panel': 'Admin Panel',
   'hr_management_panel': 'HR Management Panel',
   'loading': 'Loading...',
@@ -296,7 +296,7 @@ const Map<String, String> en = {
   'qr_poster_title': 'Branch QR Poster',
   'qr_poster_heading': 'Scan to check in',
   'qr_poster_instruction':
-      'Open the Medjat app and point the camera at this code to check in or out.',
+      'Open the Permedjat app and point the camera at this code to check in or out.',
   'qr_poster_gps_radius': 'You must be within @meters m of the branch',
   'qr_branch_unavailable': 'Unable to load branch details',
   'qr_not_generated_yet':
@@ -314,7 +314,7 @@ const Map<String, String> en = {
 
   'login_phone': 'Login phone number',
   'activation_code_share_message':
-      'Hi @employee_name 👋\nHere are your Medjat app sign-in details:\n\n📱 Login phone: @phone\n🔑 Activation code: @code\n\nThis code is valid for 24 hours only.',
+      'Hi @employee_name 👋\nHere are your Permedjat app sign-in details:\n\n📱 Login phone: @phone\n🔑 Activation code: @code\n\nThis code is valid for 24 hours only.',
   'duration_hours_minutes': '@hoursh @minutesm',
   'duration_minutes': '@minutesm',
   'duration_expired': 'expired',
@@ -1690,7 +1690,7 @@ const Map<String, String> en = {
 
   // ── Upgrade Messages ──
   'upgrade_body':
-      '\nA new version of Medjat Admin is available 📱\n\n New features and improvements ✨\n Bug fixes and performance 🔧\n Enhanced security 🛡️\n\n We recommend updating for the best experience! 💪',
+      '\nA new version of Permedjat Admin is available 📱\n\n New features and improvements ✨\n Bug fixes and performance 🔧\n Enhanced security 🛡️\n\n We recommend updating for the best experience! 💪',
   'upgrade_prompt':
       'An app update is required for best performance and experience',
   'upgrade_title': 'Update Available',
@@ -2047,7 +2047,7 @@ const Map<String, String> en = {
   'type_message': 'Type a message...',
   'no_messages_yet': 'No messages yet',
   'support_and_help': 'Support & Help',
-  'support_hint': 'Contact Medjat support team',
+  'support_hint': 'Contact Permedjat support team',
   'ticket_status_open': 'Open',
   'ticket_status_pending_support': 'Awaiting Support',
   'ticket_status_pending_user': 'Awaiting Reply',

@@ -39,7 +39,7 @@ final class CronTest extends TestCase
         parent::setUp();
         TenantClock::flush();
 
-        Config::set('medjat.cron.secret', self::SECRET);
+        Config::set('permedjat.cron.secret', self::SECRET);
         $this->app->instance(PushSender::class, new FakePushSender);
 
         $this->tenantId = $this->createTenant();
@@ -113,7 +113,7 @@ final class CronTest extends TestCase
     {
         // A missing environment variable must not become an open door on
         // endpoints that terminate employees and delete photographs.
-        Config::set('medjat.cron.secret', '');
+        Config::set('permedjat.cron.secret', '');
 
         $this->fire('/v1/cron/run-alerts')->assertStatus(403);
         $this->fire('/v1/cron/run-alerts', '')->assertStatus(403);

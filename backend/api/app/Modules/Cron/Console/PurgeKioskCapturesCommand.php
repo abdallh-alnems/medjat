@@ -15,7 +15,7 @@ use Illuminate\Console\Command;
  */
 final class PurgeKioskCapturesCommand extends Command
 {
-    protected $signature = 'medjat:purge-kiosk-captures';
+    protected $signature = 'permedjat:purge-kiosk-captures';
 
     protected $description = 'Deletes kiosk captures whose retention window has passed.';
 

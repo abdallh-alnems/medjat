@@ -132,8 +132,8 @@ final class NotificationService {
     }
 
     /**
-     * Push to the employees of one company — the people using medjat_app, not
-     * the managers using medjat_central.
+     * Push to the employees of one company — the people using permedjat_app, not
+     * the managers using permedjat_central.
      *
      * Employee devices live in the same `admin_devices` table, reached through
      * `employees.admin_id`, which is why sendToTenant() (which joins `admins`

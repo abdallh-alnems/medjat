@@ -37,7 +37,7 @@ AuditLogModel::log($tenantId, $auth['admin_id'], 'support.ticket.create', 'suppo
 
 try {
     EmailService::send(
-        getenv('SUPPORT_EMAIL') ?: 'support@medjatapp.com',
+        getenv('SUPPORT_EMAIL') ?: 'support@permedjat.com',
         'New Support Ticket #' . $ticketId,
         "New ticket from tenant #{$tenantId}: {$subject}\n\n{$body}"
     );

@@ -1,14 +1,14 @@
-# Medjat Development Guidelines
+# Permedjat Development Guidelines
 
 Last updated: 2026-08-03
 
-**Medjat** is a multi-tenant HR SaaS (attendance, shifts, leaves, payroll, documents) for the
-Egypt / North-Africa market. UIs are **Arabic-first (RTL)**; medjat_app, medjat_central and the web
-app also ship English (medjat_admin is Arabic-only). One PHP backend serves four Flutter apps, one
+**Permedjat** is a multi-tenant HR SaaS (attendance, shifts, leaves, payroll, documents) for the
+Egypt / North-Africa market. UIs are **Arabic-first (RTL)**; permedjat_app, permedjat_central and the web
+app also ship English (permedjat_admin is Arabic-only). One PHP backend serves four Flutter apps, one
 Next.js web port, and a desktop shell that wraps that web port.
 
 ```
-Medjat/
+Permedjat/
 ├── backend/
 │   ├── api/                 ← Laravel 13 REST API on MySQL 8 — the core (Hetzner VPS)
 │   └── legacy/              ← the PHP 8.x backend it replaces. STILL WHAT IS DEPLOYED.
@@ -18,7 +18,7 @@ Medjat/
 │   │   ├── manager/         ← Company HR/management app (Android/iOS)
 │   │   ├── kiosk/           ← Branch kiosk (Android tablet) — shared-device attendance
 │   │   ├── superadmin/      ← Internal super-admin panel (Android)
-│   │   └── shared/          ← package `medjat_shared` — shared between the Flutter apps
+│   │   └── shared/          ← package `permedjat_shared` — shared between the Flutter apps
 │   ├── web/                 ← the `npm` toolchain
 │   │   ├── manager/         ← Next.js 16 web port of mobile/manager (self-hosted)
 │   │   └── site/            ← Static promo/landing + privacy, delete-account, support
@@ -27,7 +27,7 @@ Medjat/
 └── specs/                   ← spec-kit feature specs
 ```
 
-Each subproject has its own `README.md` (and `medjat_app` its own `CLAUDE.md`) with deeper detail.
+Each subproject has its own `README.md` (and `permedjat_app` its own `CLAUDE.md`) with deeper detail.
 
 ## Tech Stack
 
@@ -39,7 +39,7 @@ Each subproject has its own `README.md` (and `medjat_app` its own `CLAUDE.md`) w
   MVVM layering (`core/` `data/` `logic/` `view/`), `http` via a `CRUD` class, Firebase (Auth,
   Messaging, Remote Config, Crashlytics), `flutter_dotenv` (`.env` required), RTL.
   Fonts: **IBM Plex Sans Arabic** (Arabic) + **Geist** (Latin/numerals) — not Cairo.
-- **medjat_central_web:** TypeScript 5, React 19, Next.js 16 (App Router), TanStack Query (server
+- **permedjat_central_web:** TypeScript 5, React 19, Next.js 16 (App Router), TanStack Query (server
   state), Zustand, React Hook Form + Zod, shadcn/Base UI, Tailwind, Recharts, axios.
 
 ## Two backends, for now
@@ -123,14 +123,14 @@ covering how the Laravel side is laid out and run.
 
 ## Local development
 
-- **Backend:** run against **MAMP**. MySQL on `127.0.0.1:8889`, `root`/`root`, database `medjat`.
+- **Backend:** run against **MAMP**. MySQL on `127.0.0.1:8889`, `root`/`root`, database `permedjat`.
   Use the MAMP PHP binary, not system php:
   `/Applications/MAMP/bin/php/php8.4.15/bin/php`.
-- **Flutter apps:** `flutter run --dart-define-from-file=.env` (medjat_app) or `flutter run`
-  (medjat_central / medjat_admin load `.env` as an asset). Point the app at the MAMP backend; for
+- **Flutter apps:** `flutter run --dart-define-from-file=.env` (permedjat_app) or `flutter run`
+  (permedjat_central / permedjat_admin load `.env` as an asset). Point the app at the MAMP backend; for
   Android use `adb reverse` + a cleartext debug manifest. Lint with `flutter analyze lib` (bare
   `flutter analyze` scans FlutterFire example files under `build/` and reports phantom errors).
-- **medjat_central_web:** `npm run dev` (or `dev:https`), `npm run build`, `npm run lint`,
+- **permedjat_central_web:** `npm run dev` (or `dev:https`), `npm run build`, `npm run lint`,
   `npm test` (vitest), `npm run test:e2e` (playwright).
 
 ## Deployment
@@ -164,30 +164,30 @@ snapshot of the current schema, so `migrate.sh --bootstrap` loads it into an *em
 immediately baselines every migration rather than replaying them. `migrations/archive/` holds the
 old destructive drop migrations and must never be run (one drops `candidates`, still queried by
 `models/AuditLogModel.php`). Rebuild local from production with a dump — never by replaying
-migrations. SSH alias `medjat` is configured in `~/.ssh/config`.
+migrations. SSH alias `permedjat` is configured in `~/.ssh/config`.
 
 - **Server:** single **Hetzner VPS** (Ubuntu 26.04, PHP 8.5 / MySQL 8.4 / Nginx) behind
   **Cloudflare** (proxied, Full-strict, origin IP hidden; UFW allows 80/443 from Cloudflare ranges
   only). Deploy is `rsync` from the Mac — no CI.
-  - `api.medjatapp.com/backend` → the backend at `/var/www/medjat/backend`.
+  - `api.permedjat.com/backend` → the backend at `/var/www/permedjat/backend`.
     `/backend_medjet` is the pre-rename prefix and is still matched, because app
     builds already in the stores call it.
-  - `app.medjatapp.com` → Next.js via systemd `medjat-web.service` (`next start` on :3000)
-  - `medjatapp.com` + `www` → static promo site (`frontend/web/site`), plus `/join` and
+  - `app.permedjat.com` → Next.js via systemd `permedjat-web.service` (`next start` on :3000)
+  - `permedjat.com` + `www` → static promo site (`frontend/web/site`), plus `/join` and
     `/.well-known/*` deep links served from the backend copies
-  - `grafana.medjatapp.com` (Grafana + Prometheus) and `db.medjatapp.com` (Adminer, basic-auth)
-- **Cron:** `/etc/cron.d/medjat` (Africa/Cairo) — leave rollover 00:00+00:30 (CLI), catch-up absences
-  23:50, daily alerts 07:00 (both via `/usr/local/bin/medjat-cron-*.sh`, which pass **both** `key=`
+  - `grafana.permedjat.com` (Grafana + Prometheus) and `db.permedjat.com` (Adminer, basic-auth)
+- **Cron:** `/etc/cron.d/permedjat` (Africa/Cairo) — leave rollover 00:00+00:30 (CLI), catch-up absences
+  23:50, daily alerts 07:00 (both via `/usr/local/bin/permedjat-cron-*.sh`, which pass **both** `key=`
   and `cron_secret=`), mysqldump backup 02:00 with 14-day retention.
 - **Android release:** signed with upload keystore at `android/app/upload-keystore.jks` (gitignored),
   wired via `key.properties` in `build.gradle.kts`; `flutter build appbundle --release` for store.
-- **Firebase:** project `medjat`. Maintenance/force-update is driven by Remote Config; the admin
+- **Firebase:** project `permedjat`. Maintenance/force-update is driven by Remote Config; the admin
   toggle also pushes an FCM topic for instant effect.
 
 ## Specs
 
 Feature specs live in `specs/` (spec-kit): `001-rebuild-employee-app`, `002-admin-support-control`,
-`003-medjat-central-web`.
+`003-permedjat-central-web`.
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->

@@ -1,6 +1,6 @@
 const Map<String, String> ar = {
   // ── General ──
-  'app_name': 'Medjat Central',
+  'app_name': 'Permedjat Central',
   'admin_panel': 'لوحة الإدارة',
   'hr_management_panel': 'لوحة إدارة الموارد البشرية',
   'loading': 'جاري التحميل...',
@@ -294,7 +294,7 @@ const Map<String, String> ar = {
   'qr_poster_title': 'QR الفرع للطباعة',
   'qr_poster_heading': 'مسح QR لتسجيل الحضور',
   'qr_poster_instruction':
-      'افتح تطبيق Medjat ووجّه الكاميرا إلى الكود لتسجيل حضورك أو انصرافك.',
+      'افتح تطبيق Permedjat ووجّه الكاميرا إلى الكود لتسجيل حضورك أو انصرافك.',
   'qr_poster_gps_radius': 'يجب التواجد في نطاق @meters متر من الفرع',
   'qr_branch_unavailable': 'تعذّر تحميل بيانات الفرع',
   'qr_not_generated_yet':
@@ -312,7 +312,7 @@ const Map<String, String> ar = {
 
   'login_phone': 'رقم تسجيل الدخول',
   'activation_code_share_message':
-      'مرحباً @employee_name 👋\nهذه بيانات الدخول لتطبيق Medjat الخاص بك:\n\n📱 رقم تسجيل الدخول: @phone\n🔑 كود التفعيل: @code\n\nالكود صالح لمدة 24 ساعة فقط.',
+      'مرحباً @employee_name 👋\nهذه بيانات الدخول لتطبيق Permedjat الخاص بك:\n\n📱 رقم تسجيل الدخول: @phone\n🔑 كود التفعيل: @code\n\nالكود صالح لمدة 24 ساعة فقط.',
   'duration_hours_minutes': '@hours س @minutes د',
   'duration_minutes': '@minutes د',
   'duration_expired': 'منتهٍ',
@@ -1673,7 +1673,7 @@ const Map<String, String> ar = {
 
   // ── Upgrade Messages ──
   'upgrade_body':
-      '\nنسخة جديدة من تطبيق مدجات للإدارة متوفرة الآن 📱\n\n مميزات جديدة وتحسينات ✨\n إصلاح الأخطاء وتحسين الأداء 🔧\n أمان محسن وحماية أفضل 🛡️\n\n ننصح بتحديث التطبيق للحصول على أفضل تجربة! 💪',
+      '\nنسخة جديدة من تطبيق بيرمدجات للإدارة متوفرة الآن 📱\n\n مميزات جديدة وتحسينات ✨\n إصلاح الأخطاء وتحسين الأداء 🔧\n أمان محسن وحماية أفضل 🛡️\n\n ننصح بتحديث التطبيق للحصول على أفضل تجربة! 💪',
   'upgrade_prompt': 'تحديث التطبيق مطلوب لضمان أفضل أداء وتجربة مستخدم',
   'upgrade_title': 'تحديث متاح',
 
@@ -2027,7 +2027,7 @@ const Map<String, String> ar = {
   'type_message': 'اكتب رسالة...',
   'no_messages_yet': 'لا توجد رسائل بعد',
   'support_and_help': 'الدعم والمساعدة',
-  'support_hint': 'تواصل مع فريق دعم Medjat',
+  'support_hint': 'تواصل مع فريق دعم Permedjat',
   'ticket_status_open': 'مفتوحة',
   'ticket_status_pending_support': 'بانتظار الدعم',
   'ticket_status_pending_user': 'بانتظار ردك',

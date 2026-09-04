@@ -1,9 +1,9 @@
 #!/bin/bash
 #
-# Runs one Medjat cron endpoint over localhost and reports the *real* outcome
+# Runs one Permedjat cron endpoint over localhost and reports the *real* outcome
 # to healthchecks.io.
 #
-# Usage: medjat-cron-run.sh <endpoint.php> <healthchecks-uuid>
+# Usage: permedjat-cron-run.sh <endpoint.php> <healthchecks-uuid>
 #
 # Why this exists. The wrappers this replaces called `curl -s` with no `-f`, so
 # they exited 0 whatever the server answered — a 500, a PHP fatal, an HTML
@@ -18,8 +18,8 @@
 
 set -uo pipefail
 
-ENDPOINT="${1:?usage: medjat-cron-run.sh <endpoint.php> <uuid>}"
-UUID="${2:?usage: medjat-cron-run.sh <endpoint.php> <uuid>}"
+ENDPOINT="${1:?usage: permedjat-cron-run.sh <endpoint.php> <uuid>}"
+UUID="${2:?usage: permedjat-cron-run.sh <endpoint.php> <uuid>}"
 PING="https://hc-ping.com/${UUID}"
 
 # The endpoints authenticate on a query parameter and send both key= and
@@ -27,7 +27,7 @@ PING="https://hc-ping.com/${UUID}"
 SECRET="24f90498cfabccf4888efa11baad8eb9a60e8ccd6ebbc0f4"
 URL="http://127.0.0.1/backend/api/app/cron/${ENDPOINT}?key=${SECRET}&cron_secret=${SECRET}"
 
-resp=$(curl -sS -f --max-time 300 "$URL" -H "Host: api.medjatapp.com" 2>&1)
+resp=$(curl -sS -f --max-time 300 "$URL" -H "Host: api.permedjat.com" 2>&1)
 rc=$?
 
 echo "$resp"

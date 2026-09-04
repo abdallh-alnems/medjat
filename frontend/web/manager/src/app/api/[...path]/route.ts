@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
  * BFF proxy. All browser→backend traffic goes through here so backend Basic-auth
  * credentials (SECURITY_USER / SECURITY_KEY) never reach the browser (SC-006).
  *
- * Beyond farkha_web's Authorization-only proxy, the Medjat backend authenticates the
+ * Beyond farkha_web's Authorization-only proxy, the Permedjat backend authenticates the
  * user/tenant via custom headers, so we also forward (when present on the incoming
  * request):
  *   - X-Firebase-Token  (Firebase ID token)
@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
  * while injecting `Authorization: Basic …` server-side.
  */
 const API_HOST =
-  process.env.NEXT_PUBLIC_API_HOST ?? "https://api.medjatapp.com/backend";
+  process.env.NEXT_PUBLIC_API_HOST ?? "https://api.permedjat.com/backend";
 
 const SECURITY_USER = process.env.SECURITY_USER ?? "";
 const SECURITY_KEY = process.env.SECURITY_KEY ?? "";
@@ -82,7 +82,7 @@ async function proxyRequest(request: NextRequest, pathSegments: string[]) {
     "Content-Type": contentType ?? "application/json",
   };
 
-  // Forward Medjat-specific auth/tenant/device headers from the browser.
+  // Forward Permedjat-specific auth/tenant/device headers from the browser.
   for (const name of PASSTHROUGH_HEADERS) {
     const value = request.headers.get(name);
     if (value) headers[name] = value;

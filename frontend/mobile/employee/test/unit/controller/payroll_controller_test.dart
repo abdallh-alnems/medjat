@@ -2,10 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:medjat_app/core/class/crud.dart';
-import 'package:medjat_app/core/class/status_request.dart';
-import 'package:medjat_app/data/data_source/remote/payroll_data/payroll_data.dart';
-import 'package:medjat_app/logic/controller/payroll/payroll_controller.dart';
+import 'package:permedjat_app/core/class/crud.dart';
+import 'package:permedjat_app/core/class/status_request.dart';
+import 'package:permedjat_app/data/data_source/remote/payroll_data/payroll_data.dart';
+import 'package:permedjat_app/logic/controller/payroll/payroll_controller.dart';
 
 import '../../helpers/test_helpers.dart';
 

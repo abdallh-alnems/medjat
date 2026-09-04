@@ -13,7 +13,7 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Config;
 
 /**
- * "Join this company's team on Medjat."
+ * "Join this company's team on Permedjat."
  *
  * One message whether a colleague sent it or the support desk did while
  * onboarding a new client. The person receiving it cannot tell, and should not
@@ -52,7 +52,7 @@ final class TeamInvitationMail extends Mailable
             with: [
                 'lang' => 'ar',
                 'appName' => $this->appName(),
-                'logoUrl' => Config::string('medjat.mail.logo_url'),
+                'logoUrl' => Config::string('permedjat.mail.logo_url'),
                 'title' => 'دعوة للانضمام',
                 'intro' => "تمت دعوتك للانضمام إلى فريق «{$this->companyName}» بصفة {$roleLabel}."
                     .' افتح الرابط أدناه أو أدخل الرمز في التطبيق.',
@@ -67,6 +67,6 @@ final class TeamInvitationMail extends Mailable
 
     private function appName(): string
     {
-        return Config::string('app.name', 'Medjat');
+        return Config::string('app.name', 'Permedjat');
     }
 }

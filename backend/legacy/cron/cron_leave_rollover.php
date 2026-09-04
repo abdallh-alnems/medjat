@@ -12,7 +12,7 @@
  * expired days dynamically.
  *
  * Schedule on Hostinger (hPanel → Cron Jobs), daily, e.g. 00:30:
- *   /usr/bin/php /home/USER/domains/medjatapp.com/.../backend/scripts/cron_leave_rollover.php >> /home/USER/cron_rollover.log 2>&1
+ *   /usr/bin/php /home/USER/domains/permedjat.com/.../backend/scripts/cron_leave_rollover.php >> /home/USER/cron_rollover.log 2>&1
  *
  * Manual / testing:
  *   php scripts/cron_leave_rollover.php --force                 # run now for all enabled tenants

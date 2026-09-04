@@ -1,11 +1,11 @@
-# Medjat App — تطبيق الموظف
+# Permedjat App — تطبيق الموظف
 
-تطبيق **Flutter** للموظفين ضمن منصة **Medjat** لإدارة الحضور والرواتب (HR SaaS) الموجّهة لسوق مصر وشمال إفريقيا. الواجهة عربية بالكامل (RTL). من خلاله يسجّل الموظف حضوره، ويتابع راتبه ومستنداته، ويقدّم طلبات الإجازات والسلف.
+تطبيق **Flutter** للموظفين ضمن منصة **Permedjat** لإدارة الحضور والرواتب (HR SaaS) الموجّهة لسوق مصر وشمال إفريقيا. الواجهة عربية بالكامل (RTL). من خلاله يسجّل الموظف حضوره، ويتابع راتبه ومستنداته، ويقدّم طلبات الإجازات والسلف.
 
 > هذا أحد تطبيقات المنصّة:
-> - **medjat_app** (هذا المشروع) — تطبيق الموظف: الحضور والانصراف، الراتب، المستندات.
-> - **medjat_central** (+ نسخة الويب `medjat_central_web`) — تطبيق الإدارة/الموارد البشرية: اعتماد الإجازات، تشغيل الرواتب، إدارة الفروع.
-> - **medjat_admin** — لوحة الـ Super Admin للفريق الداخلي.
+> - **permedjat_app** (هذا المشروع) — تطبيق الموظف: الحضور والانصراف، الراتب، المستندات.
+> - **permedjat_central** (+ نسخة الويب `permedjat_central_web`) — تطبيق الإدارة/الموارد البشرية: اعتماد الإجازات، تشغيل الرواتب، إدارة الفروع.
+> - **permedjat_admin** — لوحة الـ Super Admin للفريق الداخلي.
 
 ---
 
@@ -101,9 +101,9 @@ lib/
 
 ## الباك إند
 
-REST API بلغة **PHP 8.x** في `backend_medjet/` — كل endpoint في ملف منفصل داخل `backend_medjet/app/<module>/`، والمنطق المشترك في `backend_medjet/core/`. القاعدة **MySQL 8** (محليًا عبر MAMP على المنفذ `8889`، قاعدة `medjat`؛ والخادم الحيّ Hetzner على `api.medjatapp.com/backend_medjet`).
+REST API بلغة **PHP 8.x** في `backend_medjet/` — كل endpoint في ملف منفصل داخل `backend_medjet/app/<module>/`، والمنطق المشترك في `backend_medjet/core/`. القاعدة **MySQL 8** (محليًا عبر MAMP على المنفذ `8889`، قاعدة `permedjat`؛ والخادم الحيّ Hetzner على `api.permedjat.com/backend_medjet`).
 
-> **روابط الانضمام (Join):** الرمز + الرابط + الـ QR يتشاركون صفّ تفعيل أحادي الاستخدام، والـ deep links على `medjatapp.com/join` — مع خطوات نشر يدوية (migration، ملف `.well-known`، capability على iOS).
+> **روابط الانضمام (Join):** الرمز + الرابط + الـ QR يتشاركون صفّ تفعيل أحادي الاستخدام، والـ deep links على `permedjat.com/join` — مع خطوات نشر يدوية (migration، ملف `.well-known`، capability على iOS).
 
 ---
 
@@ -112,8 +112,8 @@ REST API بلغة **PHP 8.x** في `backend_medjet/` — كل endpoint في مل
 ### المتطلّبات
 - Flutter SDK ‏`^3.11.1`
 - جهاز/محاكي Android أو iOS
-- إعداد Firebase (مشروع `medjat`) — ملفّات `google-services.json` / `GoogleService-Info.plist`
-- باك إند Medjat قيد التشغيل (محليًا عبر MAMP أو على الخادم)
+- إعداد Firebase (مشروع `permedjat`) — ملفّات `google-services.json` / `GoogleService-Info.plist`
+- باك إند Permedjat قيد التشغيل (محليًا عبر MAMP أو على الخادم)
 
 ### الخطوات
 

@@ -56,7 +56,7 @@ class AdminResetPasswordApi extends AdminBaseApi {
                 // Route the action through our own branded page (which enforces
                 // the app's password rules) instead of Firebase's default
                 // handler — same swap as the self-service endpoint.
-                $actionBase = getenv('APP_ACTION_URL') ?: 'https://medjatapp.com/auth-action.html';
+                $actionBase = getenv('APP_ACTION_URL') ?: 'https://permedjat.com/auth-action.html';
                 $q = parse_url($link, PHP_URL_QUERY);
                 if ($actionBase !== '' && $q) {
                     $link = $actionBase . (strpos($actionBase, '?') !== false ? '&' : '?') . $q;

@@ -1,4 +1,4 @@
-# Phase 1 — Quickstart: Medjat Central Web Edition
+# Phase 1 — Quickstart: Permedjat Central Web Edition
 
 How to scaffold, configure, run, and verify the web app. Mirrors the `farkha_web` setup.
 
@@ -7,8 +7,8 @@ How to scaffold, configure, run, and verify the web app. Mirrors the `farkha_web
 ```bash
 cd frontend
 # New Next.js app (App Router, TS, Tailwind v4)
-npx create-next-app@latest medjat_central_web --ts --eslint --app --src-dir --use-npm
-cd medjat_central_web
+npx create-next-app@latest permedjat_central_web --ts --eslint --app --src-dir --use-npm
+cd permedjat_central_web
 # Core deps (parity with farkha_web)
 npm i @tanstack/react-query zustand axios firebase react-hook-form @hookform/resolvers zod \
       class-variance-authority clsx tailwind-merge tw-animate-css lucide-react sonner \
@@ -28,7 +28,7 @@ Create `.env.local` (see `.env.local.example`):
 # Server-only (NEVER prefixed NEXT_PUBLIC — stays in the proxy)
 SECURITY_USER=...            # backend Basic-auth user (same as Flutter .env SECURITY_USER)
 SECURITY_KEY=...             # backend Basic-auth key
-NEXT_PUBLIC_API_HOST=...     # e.g. https://<host>/backend_medjat  (same as Flutter API_HOST)
+NEXT_PUBLIC_API_HOST=...     # e.g. https://<host>/backend_permedjat  (same as Flutter API_HOST)
 
 # Firebase web config (same project as mobile)
 NEXT_PUBLIC_FIREBASE_API_KEY=...
@@ -50,7 +50,7 @@ NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=...
 
 - `src/app/api/[...path]/route.ts` — forwards to `NEXT_PUBLIC_API_HOST`, injects
   `Authorization: Basic …`, and passes through `X-Firebase-Token`, `X-Tenant-Id`,
-  `X-Device-Id` from the incoming request (Medjat-specific vs farkha).
+  `X-Device-Id` from the incoming request (Permedjat-specific vs farkha).
 - `src/lib/api/client.ts` — browser axios `baseURL: "/api"`; a request interceptor adds
   the current Firebase ID token + tenant id + device id headers.
 

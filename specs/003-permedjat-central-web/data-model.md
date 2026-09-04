@@ -1,4 +1,4 @@
-# Phase 1 — Data Model: Medjat Central Web Edition
+# Phase 1 — Data Model: Permedjat Central Web Edition
 
 Entities are **client-side TypeScript types** mirroring the backend JSON returned by the
 existing PHP API. They are ported from `frontend/mobile/manager/lib/data/model/*.dart`.

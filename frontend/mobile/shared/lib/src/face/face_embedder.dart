@@ -34,7 +34,7 @@ class FaceEmbedder {
   /// every app that depends on it. Dropping the prefix loads nothing and
   /// surfaces as "face check-in unavailable".
   static const String _modelAsset =
-      'packages/medjat_shared/assets/models/mobilefacenet.tflite';
+      'packages/permedjat_shared/assets/models/mobilefacenet.tflite';
   static const int _inputSize = 112;
   static const int _embeddingSize = 192;
 

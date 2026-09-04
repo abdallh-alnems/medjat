@@ -17,8 +17,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 // Sign-in popups on the Firebase/Google/Apple domains load with this same preload.
 // Only the app itself (and the bundled offline page) may see the bridge.
-const originArg = process.argv.find((arg) => arg.startsWith('--medjat-app-origin='));
-const appOrigin = originArg ? originArg.slice('--medjat-app-origin='.length) : null;
+const originArg = process.argv.find((arg) => arg.startsWith('--permedjat-app-origin='));
+const appOrigin = originArg ? originArg.slice('--permedjat-app-origin='.length) : null;
 const isTrustedPage = location.protocol === 'file:' || location.origin === appOrigin;
 
 if (isTrustedPage) {

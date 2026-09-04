@@ -45,7 +45,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  static const String _supportEmail = 'support@medjatapp.com';
+  static const String _supportEmail = 'support@permedjat.com';
 
   Future<String?> _firebaseToken() async {
     final fbUser = FirebaseAuth.instance.currentUser;

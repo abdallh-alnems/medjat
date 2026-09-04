@@ -13,11 +13,11 @@ import 'view/identify_screen.dart';
 import 'view/pairing_screen.dart';
 import 'view/status_screen.dart';
 
-/// The Medjat branch kiosk.
+/// The Permedjat branch kiosk.
 ///
 /// A separate application from the employee app — separate package, separate
 /// release, separate permissions — sharing only the face pipeline through the
-/// `medjat_shared` package, because both products must extract embeddings the
+/// `permedjat_shared` package, because both products must extract embeddings the
 /// same way for the server to match them against one stored vector.
 ///
 /// This app never signs anybody in. It holds a credential bound to a **branch**
@@ -41,7 +41,7 @@ Future<void> main() async {
   // Nothing on a kiosk should be reachable by swiping in from an edge.
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
 
-  runApp(const MedjatKioskApp());
+  runApp(const PermedjatKioskApp());
 
   // Firebase starts after the first frame and is never awaited. On a tablet
   // without Google Play services these calls hang rather than throw, and a
@@ -59,8 +59,8 @@ Future<void> main() async {
   });
 }
 
-class MedjatKioskApp extends StatelessWidget {
-  const MedjatKioskApp({super.key});
+class PermedjatKioskApp extends StatelessWidget {
+  const PermedjatKioskApp({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -15,7 +15,7 @@ use Illuminate\Console\Command;
  */
 final class CatchUpAbsencesCommand extends Command
 {
-    protected $signature = 'medjat:catch-up-absences';
+    protected $signature = 'permedjat:catch-up-absences';
 
     protected $description = 'Backfills absence records for every active company.';
 

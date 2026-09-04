@@ -2,7 +2,7 @@
   "mcpServers": {
     "filesystem": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/nims/StudioProjects/Medjat"]
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/nims/StudioProjects/Permedjat"]
     }
   }
 }

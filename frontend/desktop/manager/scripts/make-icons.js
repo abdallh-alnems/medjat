@@ -23,7 +23,7 @@ if (!fs.existsSync(SOURCE)) {
 
 fs.mkdirSync(BUILD, { recursive: true });
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'medjat-icons-'));
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'permedjat-icons-'));
 
 function resize(size, destination) {
   execFileSync('sips', ['-z', String(size), String(size), SOURCE, '--out', destination], {

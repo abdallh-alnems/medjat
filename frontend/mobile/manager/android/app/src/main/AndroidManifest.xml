@@ -20,7 +20,7 @@
          permission; strip it too so the app truly carries no advertising ID. -->
     <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" tools:node="remove"/>
     <application
-        android:label="Medjat Central"
+        android:label="Permedjat Central"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true">
@@ -52,19 +52,19 @@
                 <data android:scheme="medjatcentral"/>
             </intent-filter>
             <!-- App Link: team-invitation email link opens the app directly.
-                 Verified via https://api.medjatapp.com/.well-known/assetlinks.json -->
+                 Verified via https://api.permedjat.com/.well-known/assetlinks.json -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="https"
-                      android:host="api.medjatapp.com"
+                      android:host="api.permedjat.com"
                       android:pathPrefix="/backend/join_team.php"/>
                 <!-- Pre-rename path. Invitation emails already delivered carry
                      this URL and stay valid for as long as their code does, so
                      the filter has to keep matching it. -->
                 <data android:scheme="https"
-                      android:host="api.medjatapp.com"
+                      android:host="api.permedjat.com"
                       android:pathPrefix="/backend_medjet/join_team.php"/>
             </intent-filter>
         </activity>

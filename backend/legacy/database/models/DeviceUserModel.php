@@ -1,7 +1,7 @@
 <?php
 
 /**
- * The mapping between a User ID stored on a terminal and a Medjat employee.
+ * The mapping between a User ID stored on a terminal and a Permedjat employee.
  *
  * Rows appear here two ways: the device announces its user list (so HR sees
  * the IDs without typing them), or an unknown ID punches. Either way the row

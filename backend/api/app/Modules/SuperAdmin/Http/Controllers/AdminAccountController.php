@@ -354,7 +354,7 @@ final class AdminAccountController
             ]);
         }
 
-        $webBase = rtrim(Config::string('medjat.web.base_url'), '/');
+        $webBase = rtrim(Config::string('permedjat.web.base_url'), '/');
 
         return ApiResponse::success([
             'admin' => [

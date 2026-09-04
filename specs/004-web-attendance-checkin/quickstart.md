@@ -20,7 +20,7 @@ cannot tell your changes from someone else's later.
 
 ## 2. Local backend (MAMP)
 
-MySQL on `127.0.0.1:8889`, user `root`, password `root`, database `medjat`. Use
+MySQL on `127.0.0.1:8889`, user `root`, password `root`, database `permedjat`. Use
 the MAMP PHP binary, never system php:
 
 ```bash
@@ -157,7 +157,7 @@ backend_medjet/check-drift.sh          # must come back clean
 ```
 
 The front end is **not** deployed by `deploy.sh`. It is the systemd unit
-`medjat-web.service` on Hetzner (`next start` on :3000 behind nginx), so it needs
+`permedjat-web.service` on Hetzner (`next start` on :3000 behind nginx), so it needs
 its own build and restart.
 
 **Ship with the channel off.** It is off by default in the migration, so a deploy

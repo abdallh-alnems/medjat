@@ -29,7 +29,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
 
     private companion object {
-        const val CHANNEL = "medjat.kiosk/lock"
+        const val CHANNEL = "permedjat.kiosk/lock"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,7 +63,7 @@ class MainActivity : FlutterActivity() {
         // Pinning can be refused by the OS or unavailable on a stripped build.
         // The kiosk still works — it is simply easier to navigate away from —
         // so this reports failure rather than crashing a device on a wall.
-        android.util.Log.w("MedjatKiosk", "startLockTask failed", e)
+        android.util.Log.w("PermedjatKiosk", "startLockTask failed", e)
         false
     }
 
@@ -71,7 +71,7 @@ class MainActivity : FlutterActivity() {
         if (isLocked()) stopLockTask()
         true
     } catch (e: Exception) {
-        android.util.Log.w("MedjatKiosk", "stopLockTask failed", e)
+        android.util.Log.w("PermedjatKiosk", "stopLockTask failed", e)
         false
     }
 

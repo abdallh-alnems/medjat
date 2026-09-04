@@ -1,11 +1,11 @@
 -- ============================================================
--- Medjat database schema
+-- Permedjat database schema
 --
 -- GENERATED from the live production database — do not hand-edit.
 -- Regenerate with:
---   ssh medjat "mysqldump -umedjat -p... --no-data --skip-comments \
+--   ssh permedjat "mysqldump -upermedjat -p... --no-data --skip-comments \
 --     --skip-add-drop-table --routines \
---     --ignore-table=medjat.schema_migrations medjat" > schema.sql
+--     --ignore-table=permedjat.schema_migrations permedjat" > schema.sql
 --
 -- This is a snapshot of the CURRENT schema, not a starting point that the
 -- files in this directory then evolve. `migrate.sh --bootstrap` loads it into

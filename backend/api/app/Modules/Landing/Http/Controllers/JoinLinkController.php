@@ -38,11 +38,11 @@ final class JoinLinkController
         $token = trim(Value::string($request->query('token')));
 
         return view('landing.join-employee', [
-            'title' => 'الانضمام إلى Medjat',
-            'heading' => 'تطبيق Medjat للموظفين',
+            'title' => 'الانضمام إلى Permedjat',
+            'heading' => 'تطبيق Permedjat للموظفين',
             'valid' => $token !== '' && preg_match(self::TOKEN_PATTERN, $token) === 1,
-            'android' => Config::string('medjat.stores.employee_android'),
-            'ios' => Config::string('medjat.stores.employee_ios'),
+            'android' => Config::string('permedjat.stores.employee_android'),
+            'ios' => Config::string('permedjat.stores.employee_ios'),
         ]);
     }
 
@@ -57,17 +57,17 @@ final class JoinLinkController
         $code = trim(Value::string($request->query('code')));
         $valid = $code !== '' && preg_match(self::CODE_PATTERN, $code) === 1;
 
-        $webBase = rtrim(Config::string('medjat.web.base_url'), '/');
+        $webBase = rtrim(Config::string('permedjat.web.base_url'), '/');
 
         return view('landing.join-team', [
-            'title' => 'الانضمام إلى الفريق على Medjat',
+            'title' => 'الانضمام إلى الفريق على Permedjat',
             'heading' => 'دعوة للانضمام إلى الفريق',
             'valid' => $valid,
             'code' => $code,
             'appUrl' => $valid ? 'medjatcentral://join?code='.rawurlencode($code) : '',
             'webUrl' => $valid && $webBase !== '' ? $webBase.'/onboarding?code='.rawurlencode($code) : '',
-            'android' => Config::string('medjat.stores.central_android'),
-            'ios' => Config::string('medjat.stores.central_ios'),
+            'android' => Config::string('permedjat.stores.central_android'),
+            'ios' => Config::string('permedjat.stores.central_ios'),
         ]);
     }
 }

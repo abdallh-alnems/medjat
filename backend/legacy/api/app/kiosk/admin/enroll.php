@@ -3,7 +3,7 @@
  * Enrol an employee's face at the kiosk.
  *
  * This is what makes the feature self-contained for the person it exists for.
- * Every other enrollment path in Medjat assumes a phone in the employee's hand;
+ * Every other enrollment path in Permedjat assumes a phone in the employee's hand;
  * a worker without a smartphone had no way to enrol a face at all, which meant
  * one-to-many identification could never recognise them.
  *

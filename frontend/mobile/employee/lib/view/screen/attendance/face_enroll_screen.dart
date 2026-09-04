@@ -5,7 +5,7 @@ import '../../../core/class/status_request.dart';
 import '../../../core/constant/theme/app_colors.dart';
 import '../../../core/constant/theme/app_spacing.dart';
 import '../../../core/constant/theme/app_text_styles.dart';
-import 'package:medjat_shared/medjat_shared.dart';
+import 'package:permedjat_shared/permedjat_shared.dart';
 import '../../../logic/controller/attendance/face_controller.dart';
 import 'widgets/face_capture_view.dart';
 

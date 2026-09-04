@@ -15,8 +15,8 @@ Added sections: Technology Constraints · Development Workflow · Governance
 Removed sections: none
 
 Templates sync status:
-  ✅ .specify/templates/constitution-template.md — updated with Medjat-style examples
-  ✅ .specify/templates/plan-template.md — Constitution Check references the 5 principles; Technical Context pre-filled with Medjat stack
+  ✅ .specify/templates/constitution-template.md — updated with Permedjat-style examples
+  ✅ .specify/templates/plan-template.md — Constitution Check references the 5 principles; Technical Context pre-filled with Permedjat stack
   ✅ .specify/templates/spec-template.md — Arabic RTL + mobile context; no principle conflicts
   ✅ .specify/templates/tasks-template.md — MVVM phases and Farkha paths; no principle conflicts
   ✅ .specify/templates/checklist-template.md — RTL/theme/observability gates aligned
@@ -30,9 +30,9 @@ Runtime guidance sync:
 Deferred TODOs: none
 -->
 
-# Medjat App Constitution
+# Permedjat App Constitution
 
-تطبيق Flutter. تُوجّه هذه الوثيقة كل خطط المزايا، والـ reviews، وقرارات الهندسة داخل `frontend/mobile/employee/` ومشاريعها المصاحبة (`backend_medjat/`). ما يُذكر هنا MUST يُحترم؛ أي انحراف يُوثَّق في `plan.md → Complexity Tracking`.
+تطبيق Flutter. تُوجّه هذه الوثيقة كل خطط المزايا، والـ reviews، وقرارات الهندسة داخل `frontend/mobile/employee/` ومشاريعها المصاحبة (`backend_permedjat/`). ما يُذكر هنا MUST يُحترم؛ أي انحراف يُوثَّق في `plan.md → Complexity Tracking`.
 
 ## Core Principles
 
@@ -68,7 +68,7 @@ Deferred TODOs: none
 - لا استخدام مباشر لـ `http.get` / `http.post` خارج `lib/data/data_source/remote/`.
 - الاستجابات تُعالَج عبر `StatusRequest` enum و `HandlingData` widget.
 - الـ endpoints تُعرَّف في `core/constant/` (routes/api)؛ لا hard-coded URLs داخل الـ controllers أو الـ views.
-- الـ PHP backend في `backend_medjat/app/` — كل endpoint في ملف منفصل، الـ queries في `backend_medjat/core/queries/`.
+- الـ PHP backend في `backend_permedjat/app/` — كل endpoint في ملف منفصل، الـ queries في `backend_permedjat/core/queries/`.
 
 **Rationale**: طبقة واحدة = مكان واحد لإضافة headers، معالجة أخطاء، retry، analytics. تغيير URL أو إضافة auth header يجب أن يلمس ملفاً واحداً لا عشرة.
 

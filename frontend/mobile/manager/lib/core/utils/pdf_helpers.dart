@@ -29,5 +29,5 @@ String pdfCompanyTitle([String? override]) {
     final name = Get.find<CompanySettingsController>().companyData['name'];
     if (name is String && name.trim().isNotEmpty) return name.trim();
   }
-  return 'Medjat';
+  return 'Permedjat';
 }

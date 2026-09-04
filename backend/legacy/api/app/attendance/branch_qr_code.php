@@ -10,7 +10,7 @@
  *
  * This endpoint authenticates the *administrator* who opened the display page,
  * not the display itself. That is a deliberate first step, not the end state:
- * the page runs in medjat_central_web where an administrator is already signed
+ * the page runs in permedjat_central_web where an administrator is already signed
  * in, so it needs no new credential system to be useful today.
  *
  * The cost is real and should be understood before this is rolled out widely: a

@@ -28,7 +28,7 @@ final class AuthenticateCron
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $expected = Value::string(config('medjat.cron.secret'));
+        $expected = Value::string(config('permedjat.cron.secret'));
 
         $provided = Value::string($request->query('key'))
             ?: Value::string($request->query('cron_secret'))

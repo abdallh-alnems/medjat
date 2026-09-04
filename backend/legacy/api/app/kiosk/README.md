@@ -125,7 +125,7 @@ minutes and falls back to the last known-good value. A Firebase outage must neve
 stop every kiosk in every company from recording attendance.
 
 **Captures expire.** `app/cron/purge_kiosk_captures.php` must be in
-`/etc/cron.d/medjat`. Without it, images accumulate indefinitely — roughly 1,700
+`/etc/cron.d/permedjat`. Without it, images accumulate indefinitely — roughly 1,700
 a month for a 40-person branch — and the retention promise in the spec is unmet.
 
 ---

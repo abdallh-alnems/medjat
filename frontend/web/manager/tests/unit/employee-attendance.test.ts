@@ -89,7 +89,7 @@ describe("phoneSchema", () => {
 describe("getDeviceId", () => {
   beforeEach(() => {
     // jsdom keeps cookies between tests; clear the one under test.
-    document.cookie = "medjat_emp_device=; path=/; max-age=0";
+    document.cookie = "permedjat_emp_device=; path=/; max-age=0";
   });
 
   afterEach(() => {
@@ -99,7 +99,7 @@ describe("getDeviceId", () => {
   it("creates an id and persists it in a cookie", () => {
     const id = getDeviceId();
     expect(id).toBeTruthy();
-    expect(document.cookie).toContain("medjat_emp_device=");
+    expect(document.cookie).toContain("permedjat_emp_device=");
     expect(document.cookie).toContain(encodeURIComponent(id));
   });
 

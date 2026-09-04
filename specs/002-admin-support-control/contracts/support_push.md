@@ -1,6 +1,6 @@
 # Contract: Support Push (super-admin devices)
 
-Adds FCM delivery to the support team. Separate slice (medjat_admin currently has no Firebase).
+Adds FCM delivery to the support team. Separate slice (permedjat_admin currently has no Firebase).
 
 ## POST `/admin/devices/register.php` — NEW
 Auth: Bearer `<admin_token>`, role `admin`.
@@ -24,7 +24,7 @@ NotificationService::sendToSupportTeam(
 - Send a multicast FCM message via the existing kreait messaging client.
 - Best-effort: failures are logged, never block the ticket write.
 
-## Client behavior (medjat_admin)
+## Client behavior (permedjat_admin)
 - On login/app-start: request notification permission, fetch FCM token, call `/admin/devices/register.php`.
 - On notification tap with `data.type='support'`: deep-link to the support thread for `ticket_id`.
 - Independent of push, the inbox always shows `unread_for_support` badges (works with no Firebase).

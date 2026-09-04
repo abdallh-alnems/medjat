@@ -2,8 +2,8 @@
 
 **Feature**: `004-web-attendance-checkin`
 
-Consumed by `medjat_central` (Flutter) and, if it grows a settings screen, by
-`medjat_central_web`.
+Consumed by `permedjat_central` (Flutter) and, if it grows a settings screen, by
+`permedjat_central_web`.
 
 ⚠️ **Permission gating must match exactly.** Frontend menu and tab gates must use
 the same permission the endpoint enforces. A mismatch does not fail politely —
@@ -113,7 +113,7 @@ the one call that severs browser access at once.
 
 **Permission**: whatever already governs attendance review — unchanged.
 
-Attendance rows returned to `medjat_central` gain:
+Attendance rows returned to `permedjat_central` gain:
 
 | Field | Purpose |
 |---|---|

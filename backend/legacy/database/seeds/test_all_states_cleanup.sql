@@ -1,5 +1,5 @@
--- Removes everything inserted by test_all_states.sql. Run in u869543217_medjat.
-USE `u869543217_medjat`;
+-- Removes everything inserted by test_all_states.sql. Run in u869543217_permedjat.
+USE `u869543217_permedjat`;
 
 DELETE FROM loan_installments WHERE loan_id IN (SELECT id FROM employee_loans WHERE reason LIKE 'TEST%');
 DELETE FROM employee_loans      WHERE reason  LIKE 'TEST%';

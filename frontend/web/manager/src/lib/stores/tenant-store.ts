@@ -19,7 +19,7 @@ export const useTenantStore = create<TenantState>()(
       clearTenant: () => set({ tenantId: null, tenantName: null }),
     }),
     {
-      name: "medjat-tenant",
+      name: "permedjat-tenant",
     },
   ),
 );

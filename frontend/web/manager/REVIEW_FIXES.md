@@ -1,6 +1,6 @@
-# تعليمات إصلاح — مراجعة CodeRabbit لمشروع medjat_central_web
+# تعليمات إصلاح — مراجعة CodeRabbit لمشروع permedjat_central_web
 
-_تاريخ المراجعة: 2026-06-20 · الفرع: 003-medjat-central-web · الأساس: main_
+_تاريخ المراجعة: 2026-06-20 · الفرع: 003-permedjat-central-web · الأساس: main_
 
 ## للنموذج المنفِّذ — اقرأ هذا أولاً
 
@@ -496,7 +496,7 @@ In tests/contract/warnings-performance.test.ts around lines 13 - 66, The warning
 
 ### 67. `tests/e2e/us1-auth.spec.ts`  ·  _tests_
 
-In tests/e2e/us1-auth.spec.ts around lines 18 - 21, The test file contains hardcoded fallback credentials in the authentication setup that expose test account credentials in version control. In the fill method calls for email and password input (where getByLabel is used with /email/i and /password/i patterns), remove the hardcoded fallback values ("test@medjat.com" and "password") from the nullish coalescing operators. Either remove the ?? operator and its fallback entirely to require the environment variables be set, or replace the fallbacks with clearly fake placeholders like "REQUIRED_SET_E2E_EMAIL" and "REQUIRED_SET_E2E_PASSWORD" that will fail loudly during test execution if the environment variables are not properly configured.
+In tests/e2e/us1-auth.spec.ts around lines 18 - 21, The test file contains hardcoded fallback credentials in the authentication setup that expose test account credentials in version control. In the fill method calls for email and password input (where getByLabel is used with /email/i and /password/i patterns), remove the hardcoded fallback values ("test@permedjat.com" and "password") from the nullish coalescing operators. Either remove the ?? operator and its fallback entirely to require the environment variables be set, or replace the fallbacks with clearly fake placeholders like "REQUIRED_SET_E2E_EMAIL" and "REQUIRED_SET_E2E_PASSWORD" that will fail loudly during test execution if the environment variables are not properly configured.
 
   ```suggested
     await page.getByLabel(/email/i).fill(process.env.E2E_EMAIL ?? "");
@@ -515,7 +515,7 @@ In tests/e2e/us10-support-account.spec.ts around lines 33 - 37, In the "change l
 
 ### 70. `tests/e2e/us2-dashboard.spec.ts`  ·  _tests_
 
-In tests/e2e/us2-dashboard.spec.ts around lines 12 - 15, Remove the hardcoded credential fallback values from the email and password input fields in the test. The fill calls for getByLabel(/email/i) and getByLabel(/password/i) are using the null coalescing operator with hardcoded defaults ("test@medjat.com" and "password" respectively). Remove these fallback values and rely only on the E2E_EMAIL and E2E_PASSWORD environment variables, so that the test fails fast if credentials are not properly configured rather than exposing test credentials in the codebase.
+In tests/e2e/us2-dashboard.spec.ts around lines 12 - 15, Remove the hardcoded credential fallback values from the email and password input fields in the test. The fill calls for getByLabel(/email/i) and getByLabel(/password/i) are using the null coalescing operator with hardcoded defaults ("test@permedjat.com" and "password" respectively). Remove these fallback values and rely only on the E2E_EMAIL and E2E_PASSWORD environment variables, so that the test fails fast if credentials are not properly configured rather than exposing test credentials in the codebase.
 
   ```suggested
     await page.getByLabel(/email/i).fill(process.env.E2E_EMAIL ?? "");
@@ -526,7 +526,7 @@ In tests/e2e/us2-dashboard.spec.ts around lines 12 - 15, Remove the hardcoded cr
 
 ### 71. `tests/e2e/us3-employees.spec.ts`  ·  _tests_
 
-In tests/e2e/us3-employees.spec.ts around lines 10 - 13, The email and password fill calls in the test contain hardcoded fallback credentials that expose test credentials in version control. Remove the default fallback values from both the email fill statement (getByLabel(/email/i).fill(...)) and the password fill statement (getByLabel(/password/i).fill(...)) so that only the environment variables E2E_EMAIL and E2E_PASSWORD are used directly without any ?? "test@medjat.com" or ?? "password" defaults. If needed, add validation to ensure these required environment variables are set before the test runs, rather than providing hardcoded alternatives.
+In tests/e2e/us3-employees.spec.ts around lines 10 - 13, The email and password fill calls in the test contain hardcoded fallback credentials that expose test credentials in version control. Remove the default fallback values from both the email fill statement (getByLabel(/email/i).fill(...)) and the password fill statement (getByLabel(/password/i).fill(...)) so that only the environment variables E2E_EMAIL and E2E_PASSWORD are used directly without any ?? "test@permedjat.com" or ?? "password" defaults. If needed, add validation to ensure these required environment variables are set before the test runs, rather than providing hardcoded alternatives.
 
   ```suggested
     await page.getByLabel(/email/i).fill(process.env.E2E_EMAIL ?? "");

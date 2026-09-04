@@ -1,5 +1,5 @@
 const Map<String, String> ar = {
-  'app_name': 'Medjat',
+  'app_name': 'Permedjat',
 
   // General
   'loading': 'جاري التحميل...',
@@ -48,7 +48,7 @@ const Map<String, String> ar = {
   'password': 'كلمة السر',
 
   // Splash
-  'medjat': 'Medjat',
+  'permedjat': 'Permedjat',
 
   // Home
   'welcome': 'مرحباً، @name',
@@ -418,7 +418,7 @@ const Map<String, String> ar = {
   'install_now': 'تركيب الآن',
   'maintenance': 'تحت الصيانة',
   'maintenance_message': 'التطبيق تحت الصيانة حالياً، سنعود قريباً',
-  'upgrade_body': '\n\nنسخة جديدة من تطبيق مدجات متوفرة الآن 📱\n\n مميزات جديدة وتحسينات ✨\n إصلاح الأخطاء وتحسين الأداء 🔧\n أمان محسن وحماية أفضل 🛡️\n\nننصح بتحديث التطبيق للحصول على أفضل تجربة! 💪',
+  'upgrade_body': '\n\nنسخة جديدة من تطبيق بيرمدجات متوفرة الآن 📱\n\n مميزات جديدة وتحسينات ✨\n إصلاح الأخطاء وتحسين الأداء 🔧\n أمان محسن وحماية أفضل 🛡️\n\nننصح بتحديث التطبيق للحصول على أفضل تجربة! 💪',
 
   // قناة الإشعارات
   'notif_channel_name': 'إشعارات مهمة',

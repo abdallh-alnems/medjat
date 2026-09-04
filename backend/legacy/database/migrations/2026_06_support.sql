@@ -1,6 +1,6 @@
 -- Support / Tickets feature
 -- MySQL 8 compatible (no MariaDB-specific syntax)
--- Run: mysql -u root -proot -h 127.0.0.1 -P 8889 medjat < migrations/2026_06_support.sql
+-- Run: mysql -u root -proot -h 127.0.0.1 -P 8889 permedjat < migrations/2026_06_support.sql
 
 CREATE TABLE IF NOT EXISTS `support_tickets` (
   `id` int unsigned NOT NULL AUTO_INCREMENT,

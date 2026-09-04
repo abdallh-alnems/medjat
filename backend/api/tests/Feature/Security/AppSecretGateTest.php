@@ -21,7 +21,7 @@ final class AppSecretGateTest extends TestCase
 {
     use DatabaseTransactions;
 
-    private const USER = 'medjat-app';
+    private const USER = 'permedjat-app';
 
     private const KEY = 'the-shared-secret';
 
@@ -34,9 +34,9 @@ final class AppSecretGateTest extends TestCase
         $this->app->instance(FirebaseTokenVerifier::class, new FakeFirebaseTokenVerifier);
         $this->app->instance(PushSender::class, new FakePushSender);
 
-        Config::set('medjat.app_secret.user', self::USER);
-        Config::set('medjat.app_secret.key', self::KEY);
-        Config::set('medjat.cron.secret', self::CRON_SECRET);
+        Config::set('permedjat.app_secret.user', self::USER);
+        Config::set('permedjat.app_secret.key', self::KEY);
+        Config::set('permedjat.cron.secret', self::CRON_SECRET);
     }
 
     public function test_a_request_without_the_secret_is_refused(): void
@@ -77,8 +77,8 @@ final class AppSecretGateTest extends TestCase
     {
         // How local development runs: the alternative makes a fresh checkout
         // answer 401 to everything with no clue why.
-        Config::set('medjat.app_secret.user', '');
-        Config::set('medjat.app_secret.key', '');
+        Config::set('permedjat.app_secret.user', '');
+        Config::set('permedjat.app_secret.key', '');
 
         $this->getJson('/v1/settings/company')->assertStatus(400);
     }

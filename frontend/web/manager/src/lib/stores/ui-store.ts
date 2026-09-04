@@ -27,7 +27,7 @@ export const useUIStore = create<UIState>()(
         })),
     }),
     {
-      name: "medjat-ui",
+      name: "permedjat-ui",
     },
   ),
 );

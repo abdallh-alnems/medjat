@@ -154,10 +154,10 @@ tablet's own clock, which on a cheap tablet with no SIM is routinely wrong.
 |---|---|---|
 | `401` | Token revoked or unknown | Wipe local state, return to the pairing screen |
 | `426` | `app_version` below `medjat_kiosk_min_version` | Show the supervisor-facing update message; refuse to identify anyone (FR-053) |
-| `503` | Maintenance mode enabled for `medjat_kiosk` | Show the maintenance screen |
+| `503` | Maintenance mode enabled for `permedjat_kiosk` | Show the maintenance screen |
 
 `426` and `503` both come from `RemoteConfigService`, which gains a third app
-entry alongside `medjat_app` and `medjat_central` ([R-007](../research.md)).
+entry alongside `permedjat_app` and `permedjat_central` ([R-007](../research.md)).
 
 ---
 

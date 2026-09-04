@@ -23,7 +23,7 @@ subprojects {
 // subprojects like tflite_flutter that otherwise mix Java 1.8 with Kotlin 21
 // and fail the build outright.
 //
-// Lifted from medjat_app, which hit exactly this and solved it the same way.
+// Lifted from permedjat_app, which hit exactly this and solved it the same way.
 // It belongs here rather than in app/build.gradle.kts because the failing task
 // is the PLUGIN's own compile, which app-level compileOptions never reach.
 subprojects {

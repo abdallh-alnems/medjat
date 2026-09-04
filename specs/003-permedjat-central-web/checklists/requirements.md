@@ -1,4 +1,4 @@
-# Specification Quality Checklist: Medjat Central — Web Edition
+# Specification Quality Checklist: Permedjat Central — Web Edition
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-06-19

@@ -1,5 +1,5 @@
-name: medjat_app
-description: "Medjat Employee App — HR Attendance & Payroll"
+name: permedjat_app
+description: "Permedjat Employee App — HR Attendance & Payroll"
 publish_to: 'none'
 version: 1.0.3+7
 
@@ -15,7 +15,7 @@ dependencies:
   # Face pipeline + the MobileFaceNet model, shared with the kiosk app.
   # The server matches embeddings from both products against one stored vector
   # per employee, so extraction must be identical — hence one copy, not two.
-  medjat_shared:
+  permedjat_shared:
     path: ../shared
 
   cupertino_icons: ^1.0.8
@@ -86,7 +86,7 @@ dev_dependencies:
   build_runner: ^2.4.13
   flutter_launcher_icons: ^0.14.1
 
-# App icon (Medjat — pharaonic papyrus, employee). Regenerate: dart run flutter_launcher_icons
+# App icon (Permedjat — pharaonic papyrus, employee). Regenerate: dart run flutter_launcher_icons
 flutter_launcher_icons:
   android: true
   ios: true
@@ -103,7 +103,7 @@ flutter:
     - assets/fonts/
     - assets/images/
     - assets/lottie/
-    # assets/models/ moved to the medjat_shared package. Listing it here too
+    # assets/models/ moved to the permedjat_shared package. Listing it here too
     # would bundle a second 5 MB copy of the model into this APK.
 
   fonts:

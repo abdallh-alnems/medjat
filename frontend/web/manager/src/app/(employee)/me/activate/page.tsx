@@ -55,7 +55,7 @@ export default function EmployeeActivatePage() {
     setBusy(true);
     try {
       await activate({ phone: phone.trim(), activation_code: code.trim(), pin });
-      window.localStorage.setItem("medjat_emp_phone", phone.trim());
+      window.localStorage.setItem("permedjat_emp_phone", phone.trim());
       router.replace("/me/attendance");
     } catch (err) {
       if (err instanceof ApiError) {

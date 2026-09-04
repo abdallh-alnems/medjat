@@ -1,4 +1,4 @@
-# Implementation Handoff — Medjat Central Web Edition
+# Implementation Handoff — Permedjat Central Web Edition
 
 > **مذكرة تسليم لنموذج/مطوّر آخر يبدأ من سياق بارد.**
 > اقرأ هذا الملف **بالكامل أولاً**، ثم نفّذ `tasks.md` بالترتيب. هذا الملف موجِّه
@@ -25,13 +25,13 @@ reach the browser.
 
 | # | File | What it gives you |
 |---|------|-------------------|
-| 1 | `specs/003-medjat-central-web/spec.md` | WHAT to build + WHY (10 user stories, 35 FRs, 9 success criteria, clarifications). The `## Clarifications` section settles 5 decisions — **do not re-litigate them**. |
-| 2 | `specs/003-medjat-central-web/plan.md` | The stack, project structure, and the target app folder. |
-| 3 | `specs/003-medjat-central-web/research.md` | 14 technical decisions (D1–D14) with rationale. When in doubt about "how", this answers it. |
-| 4 | `specs/003-medjat-central-web/data-model.md` | Every entity → becomes a TS type in `src/lib/types/`. |
-| 5 | `specs/003-medjat-central-web/contracts/api-catalog.md` | **The full backend endpoint list** (every PHP path), grouped by domain. This is your API module map + MSW mock list. |
-| 6 | `specs/003-medjat-central-web/quickstart.md` | Scaffold, env vars, run, and the 13 verification steps. |
-| 7 | `specs/003-medjat-central-web/tasks.md` | **113 ordered, checklisted tasks.** This is your execution plan. Work top to bottom; respect phase checkpoints. |
+| 1 | `specs/003-permedjat-central-web/spec.md` | WHAT to build + WHY (10 user stories, 35 FRs, 9 success criteria, clarifications). The `## Clarifications` section settles 5 decisions — **do not re-litigate them**. |
+| 2 | `specs/003-permedjat-central-web/plan.md` | The stack, project structure, and the target app folder. |
+| 3 | `specs/003-permedjat-central-web/research.md` | 14 technical decisions (D1–D14) with rationale. When in doubt about "how", this answers it. |
+| 4 | `specs/003-permedjat-central-web/data-model.md` | Every entity → becomes a TS type in `src/lib/types/`. |
+| 5 | `specs/003-permedjat-central-web/contracts/api-catalog.md` | **The full backend endpoint list** (every PHP path), grouped by domain. This is your API module map + MSW mock list. |
+| 6 | `specs/003-permedjat-central-web/quickstart.md` | Scaffold, env vars, run, and the 13 verification steps. |
+| 7 | `specs/003-permedjat-central-web/tasks.md` | **113 ordered, checklisted tasks.** This is your execution plan. Work top to bottom; respect phase checkpoints. |
 
 **Two reference codebases you will read constantly:**
 
@@ -98,8 +98,8 @@ These are settled in `spec.md` → `## Clarifications`. Treat as law:
 ## 5. The single most important file: the proxy (`/api/[...path]/route.ts`)
 
 Mirror `farkha_web/src/app/api/[...path]/route.ts` **but extend it**. The farkha proxy
-only forwards `Authorization`. Medjat's backend authenticates via custom headers, so the
-Medjat proxy MUST also forward, when present on the incoming request:
+only forwards `Authorization`. Permedjat's backend authenticates via custom headers, so the
+Permedjat proxy MUST also forward, when present on the incoming request:
 
 - `X-Firebase-Token` — the user's Firebase ID token
 - `X-Tenant-Id` — the selected company id

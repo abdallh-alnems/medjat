@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:medjat_central/core/class/crud.dart';
-import 'package:medjat_central/core/class/status_request.dart';
+import 'package:permedjat_central/core/class/crud.dart';
+import 'package:permedjat_central/core/class/status_request.dart';
 import '../../helpers/test_helpers.dart';
 
 http.Response utf8Response(String body, int statusCode) {

@@ -1,11 +1,11 @@
-# Medjat Admin — لوحة تحكم الـ Super Admin
+# Permedjat Admin — لوحة تحكم الـ Super Admin
 
-تطبيق **Flutter** للفريق الداخلي (Super Admin) في منصة **Medjat** لإدارة الحضور والرواتب (HR SaaS) الموجّهة لسوق مصر وشمال إفريقيا. يُدار من خلاله **كل عملاء المنصّة (Tenants)**، إضافةً إلى الدعم الفني والتحكّم في حالة التطبيقات عن بُعد. الواجهة عربية بالكامل (RTL).
+تطبيق **Flutter** للفريق الداخلي (Super Admin) في منصة **Permedjat** لإدارة الحضور والرواتب (HR SaaS) الموجّهة لسوق مصر وشمال إفريقيا. يُدار من خلاله **كل عملاء المنصّة (Tenants)**، إضافةً إلى الدعم الفني والتحكّم في حالة التطبيقات عن بُعد. الواجهة عربية بالكامل (RTL).
 
 > هذا أحد تطبيقات المنصّة:
-> - **medjat_admin** (هذا المشروع) — لوحة الـ Super Admin للفريق الداخلي.
-> - **medjat_central** (+ نسخة الويب `medjat_central_web`) — تطبيق الإدارة/الموارد البشرية للشركات العميلة.
-> - **medjat_app** — تطبيق الموظف.
+> - **permedjat_admin** (هذا المشروع) — لوحة الـ Super Admin للفريق الداخلي.
+> - **permedjat_central** (+ نسخة الويب `permedjat_central_web`) — تطبيق الإدارة/الموارد البشرية للشركات العميلة.
+> - **permedjat_app** — تطبيق الموظف.
 
 ---
 
@@ -26,7 +26,7 @@
 
 > **ملاحظة:** جداول الاشتراكات والخطط أُزيلت من المخطّط (`2026_06_14_drop_subscriptions_plans.sql`)، ولا توجد شاشات لها في التطبيق حاليًا.
 
-> **الدخول التشخيصي (Impersonation):** يقتصر على دور `superadmin`، ويتطلّب **سببًا مكتوبًا**، ويُسجَّل في سجلّنا **وفي سجل الشركة نفسها**. يُنتِج رمز Firebase مؤقّتًا (ساعة واحدة) تستهلكه صفحة `/impersonate` في `medjat_central_web`.
+> **الدخول التشخيصي (Impersonation):** يقتصر على دور `superadmin`، ويتطلّب **سببًا مكتوبًا**، ويُسجَّل في سجلّنا **وفي سجل الشركة نفسها**. يُنتِج رمز Firebase مؤقّتًا (ساعة واحدة) تستهلكه صفحة `/impersonate` في `permedjat_central_web`.
 
 > **تنبيه — Firebase غير مُهيّأ على أندرويد في هذا التطبيق:** لا يوجد `android/app/google-services.json` ولا إضافة `google-services` في Gradle، لذا يفشل `Firebase.initializeApp()` بصمت — وهذا يعني أن **إشعارات الدعم (FCM) لا تصل فعليًا**، وأن Crashlytics (المُضاف في الكود) لن يعمل حتى تُضاف التهيئة. الخطوات مكتوبة في تعليق أعلى `lib/main.dart`.
 
@@ -84,7 +84,7 @@ lib/
 
 ## الباك إند
 
-REST API بلغة **PHP 8.x** في `backend_medjet/` — كل endpoint في ملف منفصل داخل `backend_medjet/app/<module>/` (وحدات المسؤول: `admin`، `admin_support`، `admin_app_control`). تعتمد المصادقة على `AdminAuth` / `AdminBaseApi`، والقاعدة **MySQL 8** (محليًا عبر MAMP؛ والخادم الحيّ Hetzner على `api.medjatapp.com/backend_medjet`). كل عمليات الكتابة تستخدم **POST** (وليس PUT).
+REST API بلغة **PHP 8.x** في `backend_medjet/` — كل endpoint في ملف منفصل داخل `backend_medjet/app/<module>/` (وحدات المسؤول: `admin`، `admin_support`، `admin_app_control`). تعتمد المصادقة على `AdminAuth` / `AdminBaseApi`، والقاعدة **MySQL 8** (محليًا عبر MAMP؛ والخادم الحيّ Hetzner على `api.permedjat.com/backend_medjet`). كل عمليات الكتابة تستخدم **POST** (وليس PUT).
 
 ---
 
@@ -93,7 +93,7 @@ REST API بلغة **PHP 8.x** في `backend_medjet/` — كل endpoint في مل
 ### المتطلّبات
 - Flutter SDK ‏`^3.11.1`
 - جهاز/محاكي Android
-- باك إند Medjat قيد التشغيل (محليًا عبر MAMP أو على الخادم)
+- باك إند Permedjat قيد التشغيل (محليًا عبر MAMP أو على الخادم)
 
 ### الخطوات
 

@@ -1,6 +1,6 @@
-# Medjat backend
+# Permedjat backend
 
-The PHP backend for Medjat: a multi-tenant HR SaaS (attendance, shifts, leaves,
+The PHP backend for Permedjat: a multi-tenant HR SaaS (attendance, shifts, leaves,
 payroll, documents) for the Egypt / North-Africa market. One API serves four
 Flutter apps, a Next.js web port, a desktop shell over that web port, and the
 ZKTeco attendance terminals.
@@ -59,7 +59,7 @@ app/
 ```
 
 A subject owns *all* its entry points. The scheduled jobs are the clearest
-case: `medjat:run-alerts` on the command line and `/app/cron/run_alerts.php`
+case: `permedjat:run-alerts` on the command line and `/app/cron/run_alerts.php`
 over HTTP are two doors into one piece of work, so the commands live in
 `Modules/Cron/Console/` beside the code they run rather than in Laravel's
 default `app/Console/Commands`. That costs one explicit registration in
@@ -72,7 +72,7 @@ Shared and on each other; nothing in Shared reaches back into a Module.
 
 ```
 routes/api.php            every route, grouped by module, gate visible on each
-config/medjat.php         everything this application configures
+config/permedjat.php         everything this application configures
 resources/views/mail/     transactional email
 resources/views/landing/  deep-link fallback pages
 resources/well-known/     App Links / Universal Links association files
@@ -221,7 +221,7 @@ fails *silently* while every other URL keeps working — that `.env`, the source
 tree and `uploads/` are not readable over HTTP.
 
 `config:cache` runs on every deploy, which is why every tuned value lives in
-`config/medjat.php`: `env()` returns null outside `config/` once the cache
+`config/permedjat.php`: `env()` returns null outside `config/` once the cache
 exists, and a limit that silently becomes its default is worse than one that is
 wrong out loud.
 
@@ -237,8 +237,8 @@ MySQL 8 has no `ADD COLUMN IF NOT EXISTS`, so each runs once, in order. Point
 `artisan migrate` at production and it stops on `CREATE TABLE tenants`.
 
 ```bash
-php artisan medjat:baseline --pretend   # read the plan
-php artisan medjat:baseline             # adopt the schema
+php artisan permedjat:baseline --pretend   # read the plan
+php artisan permedjat:baseline             # adopt the schema
 ```
 
 It records the migrations whose tables already exist as applied without running
@@ -272,8 +272,8 @@ Three things the server must carry across, none of which lives in this repo:
 route:
 
 ```bash
-php artisan medjat:openapi           # write it
-php artisan medjat:openapi --check   # fail if it is stale (CI runs this)
+php artisan permedjat:openapi           # write it
+php artisan permedjat:openapi --check   # fail if it is stale (CI runs this)
 ```
 
 It is generated from the routing table rather than from annotations, and says
@@ -314,9 +314,9 @@ Three jobs, each reachable two ways — as an artisan command, and on the cron U
 the installed crontab currently calls with a shared secret:
 
 ```
-medjat:run-alerts              07:00  the morning digest
-medjat:catch-up-absences       23:50  the absence safety net
-medjat:purge-kiosk-captures    03:30  retention: deletes stored face captures
+permedjat:run-alerts              07:00  the morning digest
+permedjat:catch-up-absences       23:50  the absence safety net
+permedjat:purge-kiosk-captures    03:30  retention: deletes stored face captures
 ```
 
 `CRON_SECRET` unset refuses every cron request rather than accepting one. These

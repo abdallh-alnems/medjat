@@ -1,12 +1,12 @@
-# Implementation Plan: Medjat Central — Web Edition
+# Implementation Plan: Permedjat Central — Web Edition
 
-**Branch**: `003-medjat-central-web` | **Date**: 2026-06-20 | **Spec**: [spec.md](./spec.md)
-**Input**: Feature specification from `/specs/003-medjat-central-web/spec.md`
+**Branch**: `003-permedjat-central-web` | **Date**: 2026-06-20 | **Spec**: [spec.md](./spec.md)
+**Input**: Feature specification from `/specs/003-permedjat-central-web/spec.md`
 
 ## Summary
 
-Build a full-featured web edition of the Medjat Central HR/payroll **admin** app,
-reproducing every administrator-facing capability of the `medjat_central` Flutter app
+Build a full-featured web edition of the Permedjat Central HR/payroll **admin** app,
+reproducing every administrator-facing capability of the `permedjat_central` Flutter app
 against the **same backend API and Firebase project**. The implementation reuses the
 proven `farkha_web` architecture: Next.js App Router (React 19 + TypeScript), a
 server-side `/api/[...path]` proxy that injects backend Basic-auth credentials and
@@ -70,7 +70,7 @@ constitution:
 ### Documentation (this feature)
 
 ```text
-specs/003-medjat-central-web/
+specs/003-permedjat-central-web/
 ├── plan.md              # This file
 ├── research.md          # Phase 0 — decisions & rationale
 ├── data-model.md        # Phase 1 — entities & relationships
@@ -90,7 +90,7 @@ A new sibling web app under `frontend/`, mirroring `farkha_web` conventions:
 frontend/web/manager/
 ├── public/
 │   ├── manifest.json
-│   ├── icons/                     # PWA + Medjat papyrus icon set
+│   ├── icons/                     # PWA + Permedjat papyrus icon set
 │   ├── fonts/                     # IBM Plex Sans Arabic, Geist (self-hosted)
 │   └── sw.js                      # PWA shell SW (no push in v1)
 ├── src/
@@ -130,7 +130,7 @@ frontend/web/manager/
 │   │   │   └── layout.tsx                    # AppShell + auth/tenant guard
 │   │   ├── api/[...path]/route.ts            # BFF proxy (creds + token + tenant)
 │   │   ├── layout.tsx                        # root: providers, RTL, theme, fonts
-│   │   └── globals.css                       # Medjat theme tokens (teal/blue brand)
+│   │   └── globals.css                       # Permedjat theme tokens (teal/blue brand)
 │   ├── components/
 │   │   ├── layout/  (app-shell, sidebar/nav, topbar, mobile bottom-nav, guards)
 │   │   ├── ui/      (shadcn primitives)
@@ -153,7 +153,7 @@ frontend/web/manager/
 ```
 
 **Structure Decision**: Web application (Option 2, frontend only). The backend
-(`backend_medjat`) and Firebase project are reused unchanged; this plan delivers a new
+(`backend_permedjat`) and Firebase project are reused unchanged; this plan delivers a new
 Next.js client at `frontend/web/manager/`, a direct sibling of the existing
 `frontend/mobile/manager` Flutter app, following `farkha_web`'s `src/app` + `src/lib`
 + `src/components` layout. Route groups `(auth)` and `(app)` separate the public auth

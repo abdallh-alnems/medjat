@@ -1,5 +1,5 @@
 -- ============================================================================
--- Medjat — Comprehensive seed covering ALL possible states (local MAMP only)
+-- Permedjat — Comprehensive seed covering ALL possible states (local MAMP only)
 -- Wipes every operational table and rebuilds one full company (tenant 3)
 -- with at least one row per enum/status across the whole schema.
 --
@@ -8,7 +8,7 @@
 --   admin 3 = farkha.nims (general_manager, tenant 3)  -> management app login
 --   employee 12 (+201023809407)                        -> employee app login
 --
--- Run: mysql -h127.0.0.1 -P8889 -uroot -proot medjat < seed_all_states.sql
+-- Run: mysql -h127.0.0.1 -P8889 -uroot -proot permedjat < seed_all_states.sql
 -- ============================================================================
 
 SET NAMES utf8mb4;
@@ -99,7 +99,7 @@ INSERT INTO tenants (id, name, timezone, currency, country_code, is_active,
   email_verified_at, attendance_methods, allow_offline_attendance,
   default_annual_leave_days, leave_carryover_max_days, cycle_start_day,
   commercial_register, company_address, company_phone)
-VALUES (3, 'شركة مدجات التجريبية', 'Asia/Riyadh', 'SAR', 'SA', 1,
+VALUES (3, 'شركة بيرمدجات التجريبية', 'Asia/Riyadh', 'SAR', 'SA', 1,
   NOW(), JSON_ARRAY('qr_gps','manual','offline'), 1,
   21, 10, 1, 'CR-1010101010', 'الرياض - حي العليا - طريق الملك فهد', '+966112345678');
 
@@ -126,11 +126,11 @@ INSERT INTO admins (id, firebase_uid, tenant_id, branch_id, name, phone, email,
  (2,  'VefQrxBWg9VJgTRxB1yOUCjXUBX2', NULL, NULL, 'عبدالله مصطفي', NULL, 'abdallhmoustafa295@gmail.com', 'google', 'pending', 1, NULL),
  (3,  'GACuXzpg9RZJSdkJWARghUTbeBp2', 3,    NULL, 'farkha.nims',   NULL, 'farkha.nims@gmail.com',       'google', 'general_manager', 1, NULL),
  -- (admin 4 = nimss.dev@gmail.com removed: deleted from Firebase + DB on request)
- (10, NULL, 3, NULL, 'منى الإدارية (HR)',      '+966500000010', 'hr.test@medjat.test',         'email', 'hr',             1, NULL),
- (11, NULL, 3, 1,    'طارق مدير الفرع',         '+966500000011', 'bm.test@medjat.test',         'email', 'branch_manager', 1, NULL),
- (12, NULL, 3, 1,    'حسام مسؤول الحضور',       '+966500000012', 'att.test@medjat.test',        'email', 'attendance',     1, NULL),
- (13, NULL, 3, NULL, 'سعد المراقب (Viewer)',    '+966500000013', 'viewer.test@medjat.test',     'email', 'viewer',         1, NULL),
- (14, NULL, 3, NULL, 'حساب معطّل قديم',         '+966500000014', 'old.test@medjat.test',        'email', 'viewer',         0, NULL),
+ (10, NULL, 3, NULL, 'منى الإدارية (HR)',      '+966500000010', 'hr.test@permedjat.test',         'email', 'hr',             1, NULL),
+ (11, NULL, 3, 1,    'طارق مدير الفرع',         '+966500000011', 'bm.test@permedjat.test',         'email', 'branch_manager', 1, NULL),
+ (12, NULL, 3, 1,    'حسام مسؤول الحضور',       '+966500000012', 'att.test@permedjat.test',        'email', 'attendance',     1, NULL),
+ (13, NULL, 3, NULL, 'سعد المراقب (Viewer)',    '+966500000013', 'viewer.test@permedjat.test',     'email', 'viewer',         1, NULL),
+ (14, NULL, 3, NULL, 'حساب معطّل قديم',         '+966500000014', 'old.test@permedjat.test',        'email', 'viewer',         0, NULL),
  -- employee-linked admin accounts (employee app)
  (30, 'employee:1',  3, 1, 'عبدالله القحطاني', '+966500000001', NULL, 'employee_code', 'employee', 1, 'dev-emp-1'),
  (31, 'employee:12', 3, 1, 'عبدالله (تجريبي)', '+201023809407', NULL, 'employee_code', 'employee', 1, 'dev-emp-12'),
@@ -632,10 +632,10 @@ INSERT INTO approval_request_steps (tenant_id, request_id, step_order, approver_
 -- ---------------------------------------------------------------------------
 INSERT INTO manager_invitations (tenant_id, email, name, role, branch_id, permissions, token_hash,
   expires_at, accepted_at, accepted_admin_id, cancelled_at, invited_by) VALUES
- (3, 'invite.pending@medjat.test',  'دعوة معلّقة',  'hr',             NULL, NULL, SHA2('inv-pending',256),  NOW() + INTERVAL 2 DAY, NULL, NULL, NULL, 3),
- (3, 'invite.accepted@medjat.test', 'دعوة مقبولة',  'branch_manager', 1,    JSON_OBJECT('manage_attendance',true), SHA2('inv-accepted',256), NOW() + INTERVAL 1 DAY, NOW() - INTERVAL 1 DAY, 11, NULL, 3),
- (3, 'invite.cancelled@medjat.test','دعوة ملغاة',   'viewer',         NULL, NULL, SHA2('inv-cancelled',256),NOW() + INTERVAL 1 DAY, NULL, NULL, NOW() - INTERVAL 2 HOUR, 3),
- (3, 'invite.expired@medjat.test',  'دعوة منتهية',  'attendance',     1,    NULL, SHA2('inv-expired',256),  NOW() - INTERVAL 1 DAY, NULL, NULL, NULL, 3);
+ (3, 'invite.pending@permedjat.test',  'دعوة معلّقة',  'hr',             NULL, NULL, SHA2('inv-pending',256),  NOW() + INTERVAL 2 DAY, NULL, NULL, NULL, 3),
+ (3, 'invite.accepted@permedjat.test', 'دعوة مقبولة',  'branch_manager', 1,    JSON_OBJECT('manage_attendance',true), SHA2('inv-accepted',256), NOW() + INTERVAL 1 DAY, NOW() - INTERVAL 1 DAY, 11, NULL, 3),
+ (3, 'invite.cancelled@permedjat.test','دعوة ملغاة',   'viewer',         NULL, NULL, SHA2('inv-cancelled',256),NOW() + INTERVAL 1 DAY, NULL, NULL, NOW() - INTERVAL 2 HOUR, 3),
+ (3, 'invite.expired@permedjat.test',  'دعوة منتهية',  'attendance',     1,    NULL, SHA2('inv-expired',256),  NOW() - INTERVAL 1 DAY, NULL, NULL, NULL, 3);
 
 -- ---------------------------------------------------------------------------
 -- 25) SUPPORT TICKETS + messages (all statuses)
@@ -668,17 +668,17 @@ INSERT INTO analytics_dashboards (tenant_id, admin_id, name, layout) VALUES
  (3, 10,'HR View', JSON_ARRAY(JSON_OBJECT('key','turnover','type','chart','position',1,'size','lg')));
 
 INSERT INTO login_attempts (identifier, identifier_type, tenant_id, admin_id, success, failure_reason, ip, user_agent) VALUES
- ('farkha.nims@gmail.com', 'email', 3, 3, 1, NULL, '127.0.0.1', 'MedjatAdmin/1.0'),
- ('hr.test@medjat.test',   'email', 3, 10, 0, 'wrong_password', '127.0.0.1', 'MedjatAdmin/1.0'),
- ('+201023809407',         'phone', 3, NULL, 1, NULL, '127.0.0.1', 'MedjatEmployee/1.0'),
- ('EMP-007',               'employee_code', 3, NULL, 0, 'not_activated', '127.0.0.1', 'MedjatEmployee/1.0'),
+ ('farkha.nims@gmail.com', 'email', 3, 3, 1, NULL, '127.0.0.1', 'PermedjatAdmin/1.0'),
+ ('hr.test@permedjat.test',   'email', 3, 10, 0, 'wrong_password', '127.0.0.1', 'PermedjatAdmin/1.0'),
+ ('+201023809407',         'phone', 3, NULL, 1, NULL, '127.0.0.1', 'PermedjatEmployee/1.0'),
+ ('EMP-007',               'employee_code', 3, NULL, 0, 'not_activated', '127.0.0.1', 'PermedjatEmployee/1.0'),
  ('203.0.113.5',           'ip', NULL, NULL, 0, 'rate_limited', '203.0.113.5', 'curl/8.0');
 
 INSERT INTO audit_log (tenant_id, admin_id, action, target_type, target_id, payload, ip, user_agent) VALUES
- (3, 3,  'payroll.approve', 'payroll',  '3',  JSON_OBJECT('month',@PREV), '127.0.0.1', 'MedjatAdmin/1.0'),
- (3, 3,  'employee.create', 'employee', '14', JSON_OBJECT('name','ريم الحربي'), '127.0.0.1', 'MedjatAdmin/1.0'),
- (3, 10, 'leave.approve',   'leave',    '1',  NULL, '127.0.0.1', 'MedjatAdmin/1.0'),
- (3, 3,  'settings.update', 'tenant',   '3',  JSON_OBJECT('field','currency','value','SAR'), '127.0.0.1', 'MedjatAdmin/1.0');
+ (3, 3,  'payroll.approve', 'payroll',  '3',  JSON_OBJECT('month',@PREV), '127.0.0.1', 'PermedjatAdmin/1.0'),
+ (3, 3,  'employee.create', 'employee', '14', JSON_OBJECT('name','ريم الحربي'), '127.0.0.1', 'PermedjatAdmin/1.0'),
+ (3, 10, 'leave.approve',   'leave',    '1',  NULL, '127.0.0.1', 'PermedjatAdmin/1.0'),
+ (3, 3,  'settings.update', 'tenant',   '3',  JSON_OBJECT('field','currency','value','SAR'), '127.0.0.1', 'PermedjatAdmin/1.0');
 
 -- ============================================================================
 -- 28) FULL ENUM COVERAGE — remaining enum values not hit above
@@ -687,7 +687,7 @@ INSERT INTO audit_log (tenant_id, admin_id, action, target_type, target_id, payl
 -- 28.1 admins.auth_provider = apple
 INSERT INTO admins (id, firebase_uid, tenant_id, branch_id, name, phone, email,
   auth_provider, role, is_active) VALUES
- (15, 'apple-uid-0001', 3, NULL, 'مدير عبر Apple', '+966500000015', 'apple.test@medjat.test', 'apple', 'viewer', 1);
+ (15, 'apple-uid-0001', 3, NULL, 'مدير عبر Apple', '+966500000015', 'apple.test@permedjat.test', 'apple', 'viewer', 1);
 
 -- 28.2 admin_sessions seed removed — table dropped 2026-06-13 (unused)
 
@@ -711,7 +711,7 @@ INSERT INTO employee_settlements (tenant_id, employee_id, reason, last_working_d
 -- 28.5 manager_invitations.role = general_manager
 INSERT INTO manager_invitations (tenant_id, email, name, role, branch_id, permissions, token_hash,
   expires_at, accepted_at, accepted_admin_id, cancelled_at, invited_by) VALUES
- (3, 'invite.gm@medjat.test', 'دعوة مدير عام', 'general_manager', NULL, NULL, SHA2('inv-gm',256), NOW() + INTERVAL 3 DAY, NULL, NULL, NULL, 3);
+ (3, 'invite.gm@permedjat.test', 'دعوة مدير عام', 'general_manager', NULL, NULL, SHA2('inv-gm',256), NOW() + INTERVAL 3 DAY, NULL, NULL, NULL, 3);
 
 -- 28.6 notifications.type = general, invite, support
 INSERT INTO notifications (tenant_id, admin_id, employee_id, type, title, title_ar, body, body_ar, data, sent_via, read_at) VALUES

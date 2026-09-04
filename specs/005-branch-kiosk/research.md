@@ -197,7 +197,7 @@ attendance clerk enrolls faces but does not browse colleagues' stored captures.
 `medjat_kiosk_maintenance_enabled`.
 
 **Rationale**: `core/RemoteConfigService.php:10` hardcodes a two-app list
-(`medjat_app`, `medjat_central`), each with `min_version_key`, `maintenance_key`,
+(`permedjat_app`, `permedjat_central`), each with `min_version_key`, `maintenance_key`,
 and `supports_maintenance`. Adding a third entry plus the two Remote Config
 parameters is the whole change; `app/admin_app_control/{get,set}.php` then covers
 the kiosk without new endpoints.
@@ -215,7 +215,7 @@ management app must be able to answer "which tablets would this break" first.
 
 **Decision**: Store captures under `uploads/attendance/kiosk/`, record the path on
 the punch, and purge with a new `app/cron/purge_kiosk_captures.php` added to
-`/etc/cron.d/medjat`.
+`/etc/cron.d/permedjat`.
 
 **Rationale**: `uploads/` already contains `attendance`, `documents`, `letters`,
 `payslips`, `signatures`, and `FaceMatchService::storeAuditSelfie()` (line 277)
@@ -255,11 +255,11 @@ recognising people — no exception, no log line, no obvious cause. Extracting t
 pipeline into a package makes that impossible rather than merely unlikely.
 
 **What moved**: `face_embedder.dart`, `face_liveness.dart`, and
-`assets/models/mobilefacenet.tflite` left `medjat_app` for `medjat_shared`, and
-`medjat_app` now depends on the package. The one code change the move required
+`assets/models/mobilefacenet.tflite` left `permedjat_app` for `permedjat_shared`, and
+`permedjat_app` now depends on the package. The one code change the move required
 is the asset key — a package's assets are addressed as
-`packages/medjat_shared/assets/models/mobilefacenet.tflite`, and dropping the
-prefix loads nothing. `medjat_app` was re-analysed clean after the migration.
+`packages/permedjat_shared/assets/models/mobilefacenet.tflite`, and dropping the
+prefix loads nothing. `permedjat_app` was re-analysed clean after the migration.
 
 **What is deliberately not shared**: the `CRUD` layer (the kiosk sends
 `X-Kiosk-Token`, the employee app sends `X-Employee-Token`, and the employee
@@ -345,7 +345,7 @@ channels.
 local decision.
 
 **Rationale**: This falls directly out of the clarification that server evaluation
-is absolute. The consequence is that `medjat_app`'s Hive-backed offline attendance
+is absolute. The consequence is that `permedjat_app`'s Hive-backed offline attendance
 queue is **not** reused — there is nothing to queue, because identification cannot
 happen without the server and a punch cannot exist without an identification.
 

@@ -30,7 +30,7 @@ final class FirebaseServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(FirebaseAuth::class, function (): FirebaseAuth {
-            $path = Config::string('medjat.firebase.credentials_path');
+            $path = Config::string('permedjat.firebase.credentials_path');
 
             if ($path === '' || ! is_file($path)) {
                 // The old backend logged this and returned null, so the first
@@ -55,7 +55,7 @@ final class FirebaseServiceProvider extends ServiceProvider
         );
 
         $this->app->singleton(Messaging::class, function (): Messaging {
-            $path = Config::string('medjat.firebase.credentials_path');
+            $path = Config::string('permedjat.firebase.credentials_path');
 
             if ($path === '' || ! is_file($path)) {
                 throw new RuntimeException("Firebase credentials not found at: {$path}");
@@ -81,7 +81,7 @@ final class FirebaseServiceProvider extends ServiceProvider
         );
 
         $this->app->singleton(RemoteConfig::class, function (): RemoteConfig {
-            $path = Config::string('medjat.firebase.credentials_path');
+            $path = Config::string('permedjat.firebase.credentials_path');
 
             if ($path === '' || ! is_file($path)) {
                 throw new RuntimeException("Firebase credentials not found at: {$path}");

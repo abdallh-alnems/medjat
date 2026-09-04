@@ -1,6 +1,6 @@
 # Phase 1 — Backend API Contract Catalog
 
-The web client consumes the **existing** Medjat PHP backend through the Next.js proxy.
+The web client consumes the **existing** Permedjat PHP backend through the Next.js proxy.
 Browser calls target `/api/<path>`; the proxy forwards to `${API_HOST}/<path>` with:
 
 - `Authorization: Basic base64(SECURITY_USER:SECURITY_KEY)` (server-injected, never in browser)

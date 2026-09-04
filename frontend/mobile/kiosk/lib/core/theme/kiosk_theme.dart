@@ -6,11 +6,11 @@ import 'package:flutter/material.dart';
 /// tired, in a queue, and not wearing their glasses. Every size here is larger
 /// than a phone app would use and every target is bigger than a thumb needs —
 /// that is the whole design brief, and it is why this is not simply a copy of
-/// medjat_app's theme.
+/// permedjat_app's theme.
 class KioskTheme {
   KioskTheme._();
 
-  /// The Medjat brand colour, shared across every product. Never substitute a
+  /// The Permedjat brand colour, shared across every product. Never substitute a
   /// blue here — the palette was unified on this teal deliberately.
   static const Color brand = Color(0xFF0E7C86);
   static const Color brandDark = Color(0xFF4FC6CC);

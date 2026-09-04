@@ -20,9 +20,9 @@ Body (one field per call, or both):
 { "app": "medjat_app", "min_version": "1.3.0", "maintenance": true }
 ```
 Rules:
-- `app ∈ {medjat_app, medjat_central, medjat_admin}`.
+- `app ∈ {permedjat_app, permedjat_central, permedjat_admin}`.
 - `min_version` (if present): non-empty, regex `^\d+(\.\d+){0,3}$` → writes `<app>_min_version`. Reject malformed (422, FR-017).
-- `maintenance` (if present): boolean → writes `<app>_maintenance_enabled`. **Rejected (422) when `app=medjat_admin`** (FR-014: Admin not stoppable).
+- `maintenance` (if present): boolean → writes `<app>_maintenance_enabled`. **Rejected (422) when `app=permedjat_admin`** (FR-014: Admin not stoppable).
 - Publishes the updated Remote Config template.
 - Audit `app_control.set_version` and/or `app_control.set_maintenance` with `{app, from, to}`.
 Response `data`: `{ app, min_version?, maintenance? }` (echo of new state).

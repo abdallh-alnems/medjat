@@ -14,7 +14,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("[medjat] global error:", error);
+    console.error("[permedjat] global error:", error);
   }, [error]);
 
   return (

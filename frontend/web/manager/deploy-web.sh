@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# The only supported way to change the live web app (app.medjatapp.com).
+# The only supported way to change the live web app (app.permedjat.com).
 #
 # Next.js ships as one build, not as individual files: whatever is in this
 # directory is what goes live. So run --dry-run first and read the list.
@@ -8,15 +8,15 @@
 #   ./deploy-web.sh --dry-run   show what would change, touch nothing
 #   ./deploy-web.sh             push source, install, build, restart, verify
 #
-# Requires an `medjat` host in ~/.ssh/config.
+# Requires a `permedjat` host in ~/.ssh/config.
 
 set -euo pipefail
 
-REMOTE="${MEDJAT_SSH_HOST:-medjat}"
-REMOTE_DIR="/var/www/medjat-web/central"
+REMOTE="${PERMEDJAT_SSH_HOST:-permedjat}"
+REMOTE_DIR="/var/www/permedjat-web/central"
 LOCAL_DIR="$(cd "$(dirname "$0")" && pwd)"
-SERVICE="medjat-web.service"
-SITE_URL="https://app.medjatapp.com"
+SERVICE="permedjat-web.service"
+SITE_URL="https://app.permedjat.com"
 
 DRY=0
 case "${1:-}" in

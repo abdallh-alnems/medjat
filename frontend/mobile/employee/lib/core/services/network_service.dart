@@ -10,7 +10,7 @@ class WifiInfo {
   final String? bssid;
 
   /// The network name. Informational only — the server never trusts it,
-  /// because anyone can name a hotspot "Medjat-Office".
+  /// because anyone can name a hotspot "Permedjat-Office".
   final String? ssid;
 
   const WifiInfo({this.bssid, this.ssid});

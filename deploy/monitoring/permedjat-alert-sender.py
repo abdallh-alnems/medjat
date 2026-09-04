@@ -17,7 +17,7 @@ Design rules this follows:
     party, so the text says "MySQL is down", never a credential.
   * Send in Arabic. The person reading it at 3am should not be translating.
 
-Config lives in /etc/medjat-alerts.env (mode 600):
+Config lives in /etc/permedjat-alerts.env (mode 600):
     TELEGRAM_TOKEN=...
     TELEGRAM_CHAT_ID=...
     WHATSAPP_PHONE=+201023809407
@@ -28,8 +28,8 @@ Any missing value simply disables that channel, so the service runs from the
 moment it is installed and starts sending as soon as a key is filled in.
 
 Usage:
-    medjat-alert-sender.py                 run the webhook receiver (systemd)
-    medjat-alert-sender.py --test          send a test message to every channel
+    permedjat-alert-sender.py                 run the webhook receiver (systemd)
+    permedjat-alert-sender.py --test          send a test message to every channel
 """
 
 import json
@@ -42,9 +42,9 @@ import urllib.request
 from datetime import datetime, timezone, timedelta
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-CONFIG_PATH = "/etc/medjat-alerts.env"
-# systemd StateDirectory=medjat-alerts creates and owns this.
-STATE_PATH = "/var/lib/medjat-alerts/heartbeat.date"
+CONFIG_PATH = "/etc/permedjat-alerts.env"
+# systemd StateDirectory=permedjat-alerts creates and owns this.
+STATE_PATH = "/var/lib/permedjat-alerts/heartbeat.date"
 LISTEN = ("127.0.0.1", 9099)
 CAIRO = timezone(timedelta(hours=3))  # Africa/Cairo, DST-free since 2023 rules
 TIMEOUT = 15
@@ -53,7 +53,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(message)s",
 )
-log = logging.getLogger("medjat-alerts")
+log = logging.getLogger("permedjat-alerts")
 
 
 def load_config() -> dict:
@@ -259,7 +259,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):  # noqa: N802
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b"medjat-alert-sender ok")
+        self.wfile.write(b"permedjat-alert-sender ok")
 
     def log_message(self, *args):
         pass  # journald already timestamps; the default access log is noise

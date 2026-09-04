@@ -39,7 +39,7 @@ final class NewDeviceLoginMail extends Mailable
             with: [
                 'lang' => 'ar',
                 'appName' => $this->appName(),
-                'logoUrl' => Config::string('medjat.mail.logo_url'),
+                'logoUrl' => Config::string('permedjat.mail.logo_url'),
                 'title' => 'تسجيل دخول جديد',
                 'intro' => 'تم تسجيل دخول جديد إلى حسابك في '.$this->appName().'.',
                 'rows' => [
@@ -53,6 +53,6 @@ final class NewDeviceLoginMail extends Mailable
 
     private function appName(): string
     {
-        return Config::string('app.name', 'Medjat');
+        return Config::string('app.name', 'Permedjat');
     }
 }

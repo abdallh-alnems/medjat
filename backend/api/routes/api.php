@@ -137,8 +137,8 @@ use Illuminate\Support\Facades\Route;
 | Two names for every endpoint, on purpose.
 |
 | `legacy` reproduces the old backend's URLs, .php suffix and all, because
-| API_HOST is compiled into the Flutter bundles: every medjat_app and
-| medjat_central install already in Google Play, the App Store and AppGallery
+| API_HOST is compiled into the Flutter bundles: every permedjat_app and
+| permedjat_central install already in Google Play, the App Store and AppGallery
 | asks for /app/auth/employee_logout.php and will keep asking for as long as it
 | stays installed. These are permanent, not transitional.
 |

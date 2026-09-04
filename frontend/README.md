@@ -1,4 +1,4 @@
-# frontend — واجهات Medjat
+# frontend — واجهات Permedjat
 
 المجلدات مقسّمة **بالتقنية**، لأن ده الفرق اللي بيهمّك في الشغل اليومي: أوامر البناء
 والاختبار مختلفة تمامًا بين Flutter و npm.
@@ -10,7 +10,7 @@ frontend/
 │   ├── manager/     تطبيق إدارة الشركة (Android / iOS)
 │   ├── kiosk/       كشك الفرع (تابلت Android)
 │   ├── superadmin/  لوحة الـ Super Admin الداخلية (Android)
-│   └── shared/      حزمة `medjat_shared` — كود مشترك بين تطبيقات Flutter
+│   └── shared/      حزمة `permedjat_shared` — كود مشترك بين تطبيقات Flutter
 ├── web/         أداة `npm`
 │   ├── manager/     نسخة الويب من تطبيق الإدارة (Next.js 16)
 │   └── site/        الموقع التعريفي والصفحات الثابتة (HTML)
@@ -38,13 +38,13 @@ cd desktop/manager && npm run dev
 
 ## ملاحظات تخصّ التقسيم
 
-- **اسم مجلد ≠ اسم حزمة.** أسماء حزم Dart لسه زي ما هي (`medjat_app`، `medjat_central`،
-  `medjat_admin`، `medjat_kiosk`، `medjat_shared`)، وكذلك `"name"` في package.json
-  (`medjat_central_web`، `medjat_central_desktop`). تغييرها كان هيكسر كل `import`
+- **اسم مجلد ≠ اسم حزمة.** أسماء حزم Dart لسه زي ما هي (`permedjat_app`، `permedjat_central`،
+  `permedjat_admin`، `permedjat_kiosk`، `permedjat_shared`)، وكذلك `"name"` في package.json
+  (`permedjat_central_web`، `permedjat_central_desktop`). تغييرها كان هيكسر كل `import`
   و`package:` في المشروع، فاتساب المجلدات اتغيّر بس.
 - **الحزمة المشتركة** مربوطة بـ `path: ../shared` في pubspec بتاع `employee` و`kiosk`.
   أي نقل تاني لازم يعدّل السطر ده في المشروعين.
 - **أصول الحزمة المشتركة** بتتقري بمفتاح
-  `packages/medjat_shared/assets/models/mobilefacenet.tflite` — ده اسم الحزمة مش مسار
+  `packages/permedjat_shared/assets/models/mobilefacenet.tflite` — ده اسم الحزمة مش مسار
   مجلد، فما بيتغيّرش مع إعادة التقسيم.
 - **`deploy-web.sh`** بيحدد مكانه بـ `dirname $0`، فبيتحرك مع المجلد من غير تعديل.

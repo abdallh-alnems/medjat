@@ -76,7 +76,7 @@ export const useAuthStore = create<AuthState>()(
         })),
     }),
     {
-      name: "medjat-auth",
+      name: "permedjat-auth",
       partialize: (state) => ({
         user: state.user,
         isLoggedIn: state.isLoggedIn,

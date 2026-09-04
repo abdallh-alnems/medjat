@@ -17,11 +17,11 @@
  *   npm run sign:dmg            # skips images that already validate
  *   npm run sign:dmg -- --force # re-signs regardless
  *
- * Credentials come from a notarytool keychain profile (default `medjat-notarize`,
+ * Credentials come from a notarytool keychain profile (default `permedjat-notarize`,
  * override with NOTARY_PROFILE). Create it once from a real Terminal — the write
  * does not complete from a non-interactive shell:
  *
- *   xcrun notarytool store-credentials "medjat-notarize" \
+ *   xcrun notarytool store-credentials "permedjat-notarize" \
  *     --apple-id "<apple-id-email>" --team-id "<TEAMID>"
  */
 
@@ -31,7 +31,7 @@ const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..');
 const DIST = path.join(ROOT, 'dist');
-const PROFILE = process.env.NOTARY_PROFILE || 'medjat-notarize';
+const PROFILE = process.env.NOTARY_PROFILE || 'permedjat-notarize';
 const IDENTITY = process.env.APPLE_IDENTITY || 'Developer ID Application';
 const force = process.argv.includes('--force');
 
