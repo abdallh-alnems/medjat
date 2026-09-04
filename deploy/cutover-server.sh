@@ -59,18 +59,49 @@ step "3. database"
 if [ "$DRY" = 1 ]; then
   echo "   would: CREATE DATABASE permedjat + RENAME TABLE x$(mysql -N -B -e "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='medjat' AND TABLE_TYPE='BASE TABLE'") + RENAME USER + GRANT"
 else
+  count_tables() { mysql -N -B -e "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='$1' AND TABLE_TYPE='BASE TABLE'"; }
+  SRC=$(count_tables medjat)
+  echo "   $SRC tables to move"
+
   mysql -e "CREATE DATABASE IF NOT EXISTS permedjat CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+
+  # group_concat_max_len defaults to 1024 bytes. Eighty-odd table names blow
+  # straight past that, and MySQL truncates the result *silently* — the first
+  # run of this script built half a statement, RENAME TABLE failed with a
+  # syntax error, and the script carried on to DROP DATABASE. Raise the limit
+  # in the same session as the SELECT.
   STMT=$(mysql -N -B -e "
+    SET SESSION group_concat_max_len = 1048576;
     SELECT CONCAT('RENAME TABLE ',
       GROUP_CONCAT('\`medjat\`.\`', TABLE_NAME, '\` TO \`permedjat\`.\`', TABLE_NAME, '\`' SEPARATOR ', '), ';')
     FROM information_schema.TABLES
     WHERE TABLE_SCHEMA='medjat' AND TABLE_TYPE='BASE TABLE';")
-  mysql -e "$STMT"
+
+  case "$STMT" in
+    *';') ;;
+    *) echo "   the generated RENAME statement is truncated or empty — nothing done" >&2; exit 1 ;;
+  esac
+
+  if ! mysql -e "$STMT"; then
+    echo "   RENAME TABLE failed. The old schema is untouched; nothing was dropped." >&2
+    exit 1
+  fi
+
+  # Only now, and only if every table actually arrived. The dump from step 0 is
+  # the backstop, but a backstop is not a plan: never drop on an assumption.
+  DST=$(count_tables permedjat)
+  if [ "$DST" != "$SRC" ]; then
+    echo "   moved $DST of $SRC tables — NOT dropping the old schema." >&2
+    echo "   Inspect both, then drop medjat by hand once you are satisfied." >&2
+    exit 1
+  fi
+
   mysql -e "RENAME USER 'medjat'@'localhost' TO 'permedjat'@'localhost';
             GRANT ALL PRIVILEGES ON permedjat.* TO 'permedjat'@'localhost';
+            REVOKE ALL PRIVILEGES ON \`medjat\`.* FROM 'permedjat'@'localhost';
             FLUSH PRIVILEGES;"
   mysql -e "DROP DATABASE medjat"
-  echo "   schema, user and grants moved"
+  echo "   $DST tables, user and grants moved"
 fi
 
 step "4. the server-only env file"
@@ -95,7 +126,14 @@ for s in medjat medjat-devices medjat-grafana medjat-panels medjat-web; do
   run "ln -sf ../sites-available/per$s /etc/nginx/sites-enabled/per$s"
 done
 run "mv /etc/nginx/medjat-panel.htpasswd /etc/nginx/permedjat-panel.htpasswd 2>/dev/null || true"
-run "sed -i 's#/var/www/medjat-web#/var/www/permedjat-web#g; s#/var/www/medjat#/var/www/permedjat#g; s#snippets/medjat-common#snippets/permedjat-common#g; s#medjat-panel.htpasswd#permedjat-panel.htpasswd#g; s#\\bmedjat_devices\\b#permedjat_devices#g; s#\\bmedjat_rate_limit\\b#permedjat_rate_limit#g' /etc/nginx/sites-available/per* /etc/nginx/snippets/permedjat-common.conf /etc/nginx/nginx.conf"
+# conf.d holds the limit_req_zone *definitions*. Leaving it out of this list is
+# how the first run renamed every use of medjat_devices while its definition
+# kept the old name — nginx then refused to load with "zero size shared memory
+# zone", after the paths had already moved.
+for z in /etc/nginx/conf.d/medjat-*.conf; do
+  [ -e "$z" ] && run "mv '$z' '/etc/nginx/conf.d/per$(basename "$z")'"
+done
+run "sed -i 's#/var/www/medjat-web#/var/www/permedjat-web#g; s#/var/www/medjat#/var/www/permedjat#g; s#snippets/medjat-common#snippets/permedjat-common#g; s#medjat-panel.htpasswd#permedjat-panel.htpasswd#g; s#\\bmedjat_devices\\b#permedjat_devices#g; s#\\bmedjat_rate_limit\\b#permedjat_rate_limit#g; s#\\bmedjat_web\\b#permedjat_web#g' /etc/nginx/sites-available/per* /etc/nginx/snippets/permedjat-common.conf /etc/nginx/conf.d/per*.conf /etc/nginx/nginx.conf"
 if [ "$DRY" = 0 ]; then
   nginx -t || { echo "   nginx config is broken — NOT reloading. Fix, then: systemctl reload nginx" >&2; exit 1; }
 fi
