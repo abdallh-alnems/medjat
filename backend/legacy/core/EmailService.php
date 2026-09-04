@@ -3,9 +3,19 @@
 final class EmailService {
     public static function send(string $to, string $subject, string $htmlBody): bool {
         try {
+            // Resend first, over HTTPS. The SMTP paths below are kept as a
+            // fallback, but they are no longer the way out of this box: Hetzner
+            // blocks outbound 25 and 465 by default, which is why nothing sent
+            // between the July migration and 2026-09-04 ever left — and why
+            // nobody noticed, since a failed send only ever returned false.
+            $resendKey = getenv('RESEND_API_KEY') ?: '';
+            if ($resendKey !== '') {
+                return self::sendViaResend($to, $subject, $htmlBody, $resendKey);
+            }
+
             $smtpHost = getenv('SMTP_HOST');
             if (empty($smtpHost)) {
-                error_log('EmailService: SMTP_HOST not configured, skipping email');
+                self::recordFailure($to, 'neither RESEND_API_KEY nor SMTP_HOST is configured');
                 return false;
             }
 
@@ -27,9 +37,73 @@ final class EmailService {
 
             return self::sendViaMail($to, $subject, $htmlBody, $smtpFrom);
         } catch (Exception $e) {
-            error_log('EmailService error: ' . $e->getMessage());
+            self::recordFailure($to, $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Posts the message to Resend over HTTPS. No SMTP port is involved, so no
+     * host's outbound mail policy can silence it.
+     */
+    private static function sendViaResend(string $to, string $subject, string $htmlBody, string $apiKey): bool {
+        $from = getenv('MAIL_FROM') ?: 'Permedjat <noreply@mail.permedjat.com>';
+        $payload = [
+            'from'    => $from,
+            'to'      => [$to],
+            'subject' => $subject,
+            'html'    => $htmlBody,
+        ];
+        // Replies belong in a mailbox a human reads, not in the sending domain.
+        $replyTo = getenv('MAIL_REPLY_TO') ?: '';
+        if ($replyTo !== '') {
+            $payload['reply_to'] = $replyTo;
+        }
+
+        $ch = curl_init('https://api.resend.com/emails');
+        curl_setopt_array($ch, [
+            CURLOPT_POST           => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_HTTPHEADER     => [
+                'Authorization: Bearer ' . $apiKey,
+                'Content-Type: application/json',
+            ],
+            CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
+        ]);
+        $body = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err  = curl_error($ch);
+        curl_close($ch);
+
+        if ($body === false || $code < 200 || $code >= 300) {
+            // The reason matters: a 422 is a bad address, a 403 is a revoked
+            // key, a 429 is the daily quota. Each needs a different response,
+            // so record which one it was rather than a bare failure.
+            self::recordFailure($to, sprintf(
+                'resend http %d%s %s',
+                $code,
+                $err !== '' ? " curl=$err" : '',
+                is_string($body) ? substr($body, 0, 300) : ''
+            ));
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Every failed send lands here, in the log and in a counter file the node
+     * metrics script exports to Prometheus. Silence is what let the mail
+     * outage run from July to September unnoticed; this is the fix for that,
+     * and it matters more than which provider is in front of it.
+     */
+    private static function recordFailure(string $to, string $reason): void {
+        $masked = preg_replace('/^(.).*(@.*)$/u', '$1***$2', $to);
+        error_log(sprintf('EmailService: send to %s failed — %s', $masked, $reason));
+
+        $path = getenv('MAIL_FAILURE_LOG') ?: '/var/log/permedjat-mail-failures.log';
+        $line = sprintf("%s\t%s\t%s\n", gmdate('c'), $masked, str_replace(["\n", "\t"], ' ', $reason));
+        @file_put_contents($path, $line, FILE_APPEND | LOCK_EX);
     }
 
     private static function sendViaPhpMailer(string $to, string $subject, string $htmlBody, string $host, int $port, string $user, string $pass, string $from, string $secure): bool {
